@@ -9,16 +9,28 @@ var UI = {
 // values saved in storage
 	width			: 1024,
 	height			: 600,
-// Constants describint alignation of UI elements in game window
+// Constants describing alignation of UI elements in game window
 	ALIGN_LEFT 		: "LEFT",
 	ALIGN_RIGHT 	: "RIGHT",
 	ALIGN_TOP 		: "TOP",
 	ALIGN_BOTTOM	: "BOTTOM",
 	ALIGN_CENTER	: "CENTER",
-// Constants describint when to show an element: on global map, in location or always
+// Constants describing when to show an element: on global map, in location or always
 	IN_LOCATION		: "In location",
 	ON_GLOBAL_MAP	: "On gobal map",
 	ALWAYS			: "Always",
+	// setting mode to MODE_DEFAULT actually sets mode to 
+	// MODE_ON_GLOBAL_MAP or MODE_IN_LOCATION depending on 
+	// where the player currently is.
+	MODE_DEFAULT 			: 9000,
+	MODE_ALWAYS 			: 0,
+	MODE_ON_GLOBAL_MAP		: 1,
+	MODE_IN_LOCATION		: 2,
+	MODE_MISSILE			: 3,
+	MODE_CHAT				: 4,
+	MODE_CURSOR_ACTION		: 5,
+	MODE_CONTAINER			: 6,
+	MODE_MENU				: -1,
 // System property for generating unique field names in notifiers' objects
 	_notifiersUniqueId : 0,
 // zIndexes for sorting UI elements
@@ -39,6 +51,17 @@ var UI = {
 		skillChange: {},
 		death: {},
 		dialoguePointRecieve: {},
+		dialogueEnd: {},
+		containerOpen: {},
+		containerChange: {},
+		/* Interface events */
+		spellSelect: {},
+		spellUnselect: {},
+		missileSelect: {},
+		missileUnselect: {},
+		accountCreateStart: {},
+		accountPlayersListCall: {},
+		playerCreateStart: {},
 		/* Game loading */
 		locationLoad: {},
 		worldLoad: {},
@@ -46,8 +69,7 @@ var UI = {
 		login: {},
 		loginError: {},
 		accountPlayersRecieve: {}
-	},
-	
+	},	
 // UI type automatically becomes registered when UIElement of this type is created
 // Types need to be registered so their keysActions are registered 
 // (see keysCore.js/Keys.registerKeyAction)
@@ -58,7 +80,8 @@ var UI = {
 	},
 // Object CSSStyleSheet. A stylesheet for custom rules of UIElements
 // This field will be set in onLoadEvents['customStylesheets']
-	styleSheet: null
+	styleSheet: null,
+	mode: -1
 };
 UI.notify = function _(groupName, data) {
 //	console["log"](groupName);
@@ -143,7 +166,17 @@ UI.enable = function _() {
 		}
 	}
 };
-
+UI.addListener = function _(notifier, func) {
+// Add custom function to listen to notifier
+	this.notifiers[notifier][UI._notifiersUniqueId++] = {update: func};
+};
+UI.setMode = function _(mode) {
+	if (mode == UI.MODE_DEFAULT) {
+		UI.mode = onGlobalMap ? UI.MODE_ON_GLOBAL_MAP : UI.MODE_IN_LOCATION;
+	} else {
+		UI.mode = mode;
+	}
+};
 function UIElement(type, hAlign, vAlign, notifiers, displayMode) {
 /* 
  * type - string that is equal to desired element's type name in UIElementTypes
@@ -174,11 +207,13 @@ function UIElement(type, hAlign, vAlign, notifiers, displayMode) {
 	// Register UIElementType's keysActions if it is still not registered
 		Keys.registerKeyAction(this.UIElementType.keysActions[actionName], actionName, this);
 	}
-	
+	if (this.UIElementType.listeners === undefined) {
+		throw new Error("Listeners are not given in UI element "+type);
+	}
 	for (var notifierName in this.UIElementType.listeners) {
 	// Add this element to all required notifiers
 		if (typeof this.UIElementType.listeners[notifierName] === "string") {
-			if (this.UIElementType.listeners[notifierName] === undefined) {
+			if (UI.notifiers[notifierName] === undefined || this.UIElementType.listeners[notifierName] === undefined) {
 				throw new Error("Can't set listener of UI element "
 						+this.type+" to nonexistent notifier "+this.UIElementType.listeners[notifierName]);
 			}
@@ -300,11 +335,15 @@ UIElement.prototype.addEventListener = function _(element, eventName, handlerNam
 	element.addEventListener(eventName, this.UIElementType.handlers[handlerName]);
 };
 UIElement.prototype.addCustomClass = function _(element, postfix) {
-/* Sets a class name to an element.
+/* Adds a class name to an element.
  * 
  * For example, if UIElement.gameAlert sets class name of 
  * div with postfix "Text", then this div will match 
  * selector "div.gameAlertText".
+ * 
+ * If element already has class name, then this element 
+ * will be multiclass. For setting className to particular class
+ * use UIElement.setCustomClass(); 
  * 
  * Use this element so custom class names won't conflict
  * with in-game class names.
@@ -314,6 +353,9 @@ UIElement.prototype.addCustomClass = function _(element, postfix) {
 	} else {
 		element.className += " "+this.type+postfix;
 	}
+};
+UIElement.prototype.setCustomClass = function _(element, className) {
+	element.className = this.type+className;
 };
 UIElement.prototype.addCSSRules = function _(ruleSet) {
 /* Adds custom rules of UIElements.
@@ -350,7 +392,7 @@ UIElement.prototype.addCSSRules = function _(ruleSet) {
 					rule = rule.substr(0,j)+this.type+rule.substr(j+6);
 				}
 			}
-			UI.styleSheet.insertRule(rule);
+			UI.styleSheet.insertRule(rule, 0);
 			lastPoint = i+1;
 		}
 	}
@@ -365,11 +407,16 @@ function UIWindow(type, hAlign, vAlign, notifiers, displayMode, keyMode) {
 		border:"2px solid #888"
 	});
 };
+
 onLoadEvents['uiWindowPrototype'] = function _() {
 	UIWindow.prototype = new UIElement("uiWindowPrototype", -1, -1, []);
-	UIWindow.prototype.chooseElementAsCloseButton = function _(element) {
+	UIWindow.prototype.chooseElementAsCloseButton = function _(element, func) {
 	// Makes certain element the button that closes this window
+	// Also sets onClose callback
 		var uiWindow = this;
+		if (func !== undefined) {
+			this._onClose = func;
+		}
 		this.closeButton = element;
 		this.closeButton.addEventListener("click", function() {
 			uiWindow.close();
@@ -377,10 +424,10 @@ onLoadEvents['uiWindowPrototype'] = function _() {
 	};
 	UIWindow.prototype.close = function _() {
 		this.hide();
+		this._onClose && this._onClose();
 	};
 };
 onLoadEvents['customStylesheets'] = function _() {
 	document.head.appendChild(document.createElement("style"));
 	UI.styleSheet = document.styleSheets[document.styleSheets.length-1];
-	UI.styleSheet.addRule("   img.lala ", "{color:#fff;}");
 };

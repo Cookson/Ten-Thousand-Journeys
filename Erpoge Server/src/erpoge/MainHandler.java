@@ -54,7 +54,9 @@ public class MainHandler extends WebSocketServer {
 	START_CONVERSATION		= 24,
 	DROP_UNIQUE				= 25,
 	PICK_UP_UNIQUE			= 26,
-	LOAD_PASSIVE_CONTENTS	= 27;
+	LOAD_PASSIVE_CONTENTS	= 27,
+	ACCOUNT_REGISTER		= 28,
+	PLAYER_CREATE			= 29;
 	public static final int MAX_NUM_OF_PLAYERS = 16;
 	public static final Gson gson = new Gson();
 	public static final Gson gsonIncludesStatic = new GsonBuilder()
@@ -117,16 +119,23 @@ public class MainHandler extends WebSocketServer {
 						conn.send("{\"a\":"+LOGIN+",\"error\":3}");
 					}
 				} else {
-//					conn.send(gson.toJson(3, Integer.class));
-					Accounts.addAccount(new Account(data.l, data.p));
-					Account account = Accounts.account(data.l);
+					conn.send("{\"a\":"+LOGIN+",\"error\":3}");
+				}
+				break;
+			case ACCOUNT_REGISTER:
+				ClientMessageAccountRegister accountRegsterData = gson.fromJson(message, ClientMessageAccountRegister.class);
+				if (Accounts.hasAccount(accountRegsterData.l)) {
+					conn.send("{\"a\":"+ACCOUNT_REGISTER+",\"error\":1}");
+				} else {
+					Accounts.addAccount(new Account(accountRegsterData.l, accountRegsterData.p));
+					Account account = Accounts.account(accountRegsterData.l);
 					PlayerCharacter shanok = world.createCharacter("player", "Bliot", 3, "Эльфоцап", 13, 26);
 					shanok.getItem(UniqueItem.createItemByClass(Item.CLASS_BOW, 0));
 					shanok.getItem(UniqueItem.createItemByClass(Item.CLASS_BOW, 0));
 					shanok.getItem(UniqueItem.createItemByClass(Item.CLASS_BOW, 0));
 					shanok.getItem(UniqueItem.createItemByClass(Item.CLASS_SWORD, 0));
 					shanok.getItem(ItemPile.createPileFromClass(Item.CLASS_AMMO, 0, 1000));
-					Accounts.account(data.l).addCharacter(shanok);
+					Accounts.account(accountRegsterData.l).addCharacter(shanok);
 					conn.send("{\"a\":"+LOGIN+","+account.jsonPartGetCharactersAuthInfo()+"}");
 				}
 				break;
@@ -226,16 +235,17 @@ public class MainHandler extends WebSocketServer {
 				break;
 			case OPEN_CONTAINER:
 				ClientMessageCoordinate containerCoord = gson.fromJson(message, ClientMessageCoordinate.class);
-				conn.send("[{\"e\":\"openContainer\",\"items\":"+
-						conn.character.location.jsonGetContainerContents(containerCoord.x, containerCoord.y)+"}]");
+//				Main.console(conn.character.location.jsonGetContainerContents(containerCoord.x, containerCoord.y));
+				conn.send("[{\"e\":\"openContainer\",\"items\":["+
+						conn.character.location.jsonGetContainerContents(containerCoord.x, containerCoord.y)+"]}]");
 				break;
 			case TAKE_FROM_CONTAINER:
 				ClientMessageTakeFromContainer take = gson.fromJson(message, ClientMessageTakeFromContainer.class);
-				conn.character.takeFromContainer(take.itemId, take.amount, take.x, take.y);
+				conn.character.takeFromContainer(take.typeId, take.param, take.x, take.y);
 				break;
 			case PUT_TO_CONTAINER:
 				ClientMessageTakeFromContainer put = gson.fromJson(message, ClientMessageTakeFromContainer.class);
-				conn.character.putToContainer(put.itemId, put.amount, put.x, put.y);
+				conn.character.putToContainer(put.typeId, put.param, put.x, put.y);
 				break;
 			case CAST_SPELL:
 				ClientMessageCastSpell messageSpell = gson.fromJson(message, ClientMessageCastSpell.class);

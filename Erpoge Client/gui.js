@@ -7,12 +7,6 @@
 	gameField.style.top = "0px";
 	gameField.style.left = "0px";
 	floorCanvas = document.getElementById("gameFieldFloor");
-	// Отмена горячих клавиш, когда фокус передан одному из input'ов
-	var nlInputs=document.getElementsByTagName("input");
-	for (var i=0;i<nlInputs.length;i++) {
-		nlInputs[i].onfocus=handlers['input'].focus;
-		nlInputs[i].onblur=handlers['input'].blur;
-	}
 	document.onkeydown=handlers.document.keydown;
 	document.oncontextmenu=handlers.document.contextmenu;
 	
@@ -57,28 +51,8 @@
 	}
 	*/
 	
-	// Слоты амуниции
-	var invSlotNames=[
-		"invWeaponImg", 
-		"invShieldImg", 
-		"invHeadgearImg", 
-		"invBodyImg", 
-		"invGlovesImg", 
-		"invBootsImg", 
-		"invCloakImg", 
-		"invRing1Img", 
-		"invRing2Img", 
-		"invAmuletImg"
-	];
-	
 	// Курсоры выбора клетки
-	CellCursor.prototype.cursors.push(new CellCursor("cellCursorPri"));
-	CellCursor.prototype.cursors.push(new CellCursor("cellCursorSec"));
-	cellCursorPri=CellCursor.prototype.cursors[0];
-	cellCursorSec=CellCursor.prototype.cursors[1];
-	
-	// Игровые окна
-	windowContainer = new GameWindow("Container");
+	CellCursor.init();
 	
 	// Build interface
 	new UIElement(
@@ -88,61 +62,82 @@
 		[UI.notifiers.inventoryChange, UI.notifiers.locationLoad, UI.notifiers.worldLoad],
 		UI.ALWAYS
 	);
-//	new UIElement(
-//		"minimap", 
-//		UI.ALIGN_LEFT, 
-//		UI.ALIGN_TOP, 
-//		[UI.notifiers.environmentChange, UI.notifiers.locationLoad],
-//		UI.IN_LOCATION
-//	);
+	new UIElement(
+		"minimap", 
+		UI.ALIGN_LEFT, 
+		UI.ALIGN_TOP, 
+		[UI.notifiers.environmentChange, UI.notifiers.locationLoad],
+		UI.IN_LOCATION
+	);
 	new UIWindow(
 		"windowGameAlert", 
 		UI.ALIGN_LEFT, 
 		UI.ALIGN_TOP, 
 		UI.ALWAYS,
-		Keys.MODE_ALWAYS
+		UI.MODE_ALWAYS
 	);
 	new UIWindow(
 		"windowLogin", 
 		UI.ALIGN_CENTER, 
 		UI.ALIGN_CENTER, 
 		UI.ALWAYS,
-		Keys.MODE_ALWAYS
+		UI.MODE_ALWAYS
 	);
 	new UIWindow(
 		"windowAccountCharacters", 
 		UI.ALIGN_CENTER, 
 		UI.ALIGN_CENTER,
 		UI.ALWAYS,
-		Keys.MODE_ALWAYS
+		UI.MODE_ALWAYS
 	);
 	new UIWindow(
 		"windowSkills",
 		UI.ALIGN_CENTER, 
 		UI.ALIGN_CENTER,
 		UI.ALWAYS,
-		Keys.MODE_ALWAYS
+		UI.MODE_ALWAYS
 	);
 	new UIWindow(
 		"windowDeath", 
 		UI.ALIGN_CENTER, 
 		UI.ALIGN_CENTER,
 		UI.ALWAYS,
-		Keys.MODE_ALWAYS
+		UI.MODE_ALWAYS
 	);
 	new UIWindow(
 		"windowSettings", 
 		UI.ALIGN_CENTER, 
 		UI.ALIGN_CENTER,
 		UI.ALWAYS,
-		Keys.MODE_ALWAYS
+		UI.MODE_ALWAYS
 	);
 	new UIWindow(
 		"windowDialogue", 
 		UI.ALIGN_CENTER, 
 		UI.ALIGN_CENTER,
 		UI.ALWAYS,
-		Keys.MODE_ALWAYS
+		UI.MODE_ALWAYS
+	);
+	new UIWindow(
+		"windowContainer", 
+		UI.ALIGN_CENTER, 
+		UI.ALIGN_CENTER,
+		UI.ALWAYS,
+		UI.MODE_ALWAYS
+	);
+	new UIWindow(
+		"windowAccountCreate", 
+		UI.ALIGN_CENTER, 
+		UI.ALIGN_CENTER,
+		UI.ALWAYS,
+		UI.MODE_ALWAYS
+	);
+	new UIWindow(
+		"windowPlayerCreate", 
+		UI.ALIGN_CENTER, 
+		UI.ALIGN_CENTER,
+		UI.ALWAYS,
+		UI.MODE_ALWAYS
 	);
 	new UIElement(
 		"chat", 
@@ -179,250 +174,62 @@
 		UI.ALIGN_RIGHT, 
 		UI.ALIGN_BOTTOM,
 		UI.IN_LOCATION
-	);	
+	);
 };
 // Классы интерфейса
-function CellCursor(id) {
+var CellCursor = {
 // Класс контролирует отображение различных курсоров - квадратных прямоугольников, которыми выделяется активная клетка
 // Всего в игре два курсора: стандартный и для дальних атак/заклинаний
 // Все объекты курсоров хранятся в прототипе класса курсоров в массиве cursors
-	this.x=-1;
-	this.y=-1;
-	this.id=id;
-	this.character=false;
-	this.init(id);
-}
-CellCursor.prototype.cursors=[];
-CellCursor.prototype.move=function(x,y) {
-	mapCursorX=x;
-	mapCursorY=y;
-	this.elem.style.left=x*32+"px";
-	this.elem.style.top=y*32+"px";
-	this.x=x;
-	this.y=y;
-};
-CellCursor.prototype.hide=function() {
-	this.elem.style.display="none";
-};
-CellCursor.prototype.show=function() {
-	this.elem.style.display="block";
-};
-CellCursor.prototype.init=function(id) {
-	this.elem=document.createElement("div");
-	this.elem.className="wrap";
-	this.elem.style.zIndex="2";
-	var nBg=document.createElement("div");
-	this.elem.appendChild(nBg);
-	this.elem.id=id;
-	gameField.appendChild(this.elem);
-	this.character=false;
-	this.move(-1,-1); // Убираем курсор за границы видимости, чтобы не висел в углу изначально
-};
-CellCursor.prototype.invoke=function(x,y) {
-	if (x==undefined) {
-		if (this.character) {
-			x=this.character.x;
-			y=this.character.y;
-		} else {
-			x=mapCursorX || player.x;
-			y=mapCursorY || player.y;
-		}
-	}
-	Keys.setMode(Keys.MODE_CURSOR_ACTION);
-	this.move(x,y);
-	this.show();
-};
-CellCursor.prototype.withdraw=function() {
-	this.hide();
-	Keys.setMode(Keys.MODE_DEFAULT);
-};
-CellCursor.prototype.useCursor=function(cursorObjName) {
-	for (var i in CellCursor.prototype.cursors) {
-		if (CellCursor.prototype.cursors[i].id!=cursorObjName) {
-			CellCursor.prototype.cursors[i].hide();
-		} else {
-			CellCursor.prototype.cursors[i].show();
-			CellCursor.prototype.cursors[i].move(mapCursorX,mapCursorY);
-		}
-	}
-};
-CellCursor.prototype.hideAllCursors=function() {
-	for (var i in CellCursor.prototype.cursors) {
-		CellCursor.prototype.cursors[i].hide();
-	}
-};
-function GameWindow(type) {
-// Класс окна.
-// styleObject - объект-аргумент для метода jQuery.css
-// Конструктор класса вызывает метод, определяемый аргументом type, который создаёт содержимое окна.
-// Затем конструктор оборачивает созданное окно в div.wrap, после чего окно отображается
-// В вызываемом методе, формирующем окно, обязательно должен создаваться элемент this.nCloseButton
-/*
-	События:
-		onHide - при скрытии окна
-		onSHow - при показе окна
-		onClose - при нажатии на кнопку закрытия окна (при этом окно не обязательно должно скрываться)
-*/
-	this.windowId = gameWindows.length;
-	this.type = type;
-	var wind = this; // Эта переменная замыкается на обработчик клика по кнопке закрытия
-	gameWindows[this.windowId]=this;
-	this.element = document.createElement("div");
-	this.element.className = "gameWindow";
-	this.element.id = "window"+this.windowId;
-	this.centered = false;
-	this.wrap = document.createElement("div");
-	this.wrap.className = "wrap";
-	this.wrap.style.display = "none"; // Изначально окно создаётся не развёрнутым
-	this.wrap.appendChild(this.element);
-	this.visible = false;
-	this["window"+type](); // Создать содержимое окна
-	// Создать обёртку и поместить в неё элемент окна, а саму обёртку - в главное игровое окно
-	var nLeftSide=document.getElementById("intfLeftSide");
-	nLeftSide.insertBefore(this.wrap, nLeftSide.children[0]);
-	// Кнопка закрытия окна
-	if (this.nCloseButton) {
-		this.nCloseButton.onclick=function() {
-			wind.hide();
-			wind.close();
-		};
-	}
-	if (this.element.style.length==0) {
-	// Если вид окна не задан, задать вид по умолчанию и отцентрировать
-		this.applyStyle({
-			backgroundColor:"#333",
-			width:"400px",
-			height:"300px",
-			border:"2px solid #888"
-		});
-		this.center();
-	}
-}
-GameWindow.prototype.center = function() {
-// Выровнять окно по центру экрана (горизонтально и вертикально)
-	this.element.style.left = (UI.width/2-parseInt(this.element.style.width)/2)+"px";
-	this.element.style.top = (UI.height/2-parseInt(this.element.style.height)/2)+"px";
-	this.centered = true;
-};
-GameWindow.prototype.applyStyle=function(style) {
-// Задать вид окна
-// style - объект, из ключей и значений которого формируется CSS-стиль элемента this.element
-	this.style=style;
-	for (var property in style) {
-		this.element.style[property]=style[property];
-	}
-};
-GameWindow.prototype.hide=function() {
-	this.visible = false;
-	this.onHide && this.onHide();
-	this.wrap.style.display="none";
-};
-GameWindow.prototype.show=function() {
-	this.visible = true;
-	this.onShow && this.onShow();
-	this.wrap.style.display="block";
-};
-GameWindow.prototype.remove=function() {
-	this.wrap.parentNode.removeChild(this.wrap);
-	delete gameWindows[this.windowId];
-};
-GameWindow.prototype.close=function() {
-	this.onClose && this.onClose();	
-};
-
-GameWindow.prototype.windowContainer=function() {
-// Контейнер (содержимое сундука)
-	this.items = [];
-	this.x = -1;
-	this.y = -1;
-	this.showItems=function(itms) {
-	// Show items in container's window
-	// Format: [itemId, amount, itemId, amount ...]
-		
-		if (itms!==undefined) {
-			this.items = [];
-			for (var i=0;i<itms.length/2;i++) {
-				this.items[itms[i*2]]=itms[i*2+1];
+	x:-1,
+	y:-1,
+	move: function _(x,y) {
+		mapCursorX=x;
+		mapCursorY=y;
+		this.elem.style.left=x*32+"px";
+		this.elem.style.top=y*32+"px";
+		this.x=x;
+		this.y=y;
+	},
+	hide: function _() {
+		this.elem.style.display="none";
+	},
+	show: function _() {
+		this.elem.style.display="block";
+	},
+	init: function _() {
+		this.elem = document.createElement("div");
+		this.elem.addClass("wrap");
+		this.elem.style.zIndex = "2";
+		this.bg = document.createElement("div");
+		this.elem.appendChild(this.bg);
+		gameField.appendChild(this.elem);
+		this.changeStyle("Main");
+		this.move(-1,-1); // Убираем курсор за границы видимости, чтобы не висел в углу изначально
+	},
+	invoke: function _(x,y) {
+		if (x==undefined) {
+			if (this.character) {
+				x=this.character.x;
+				y=this.character.y;
+			} else {
+				x=mapCursorX || player.x;
+				y=mapCursorY || player.y;
 			}
 		}
-		var nlItems=this.element.getElementsByClassName("containerItem");
-		while (nlItems.length>0) {
-			nlItems[0].parentNode.removeChild(nlItems[0]);
-		}
-		for (var itemId in this.items) {
-		// Создать обёртку
-			var nSlot=document.createElement("div");
-			nSlot.className="containerItem";
-			nSlot.setAttribute("typeId",itemId);
-			nSlot.setAttribute("itemNum",this.items[itemId]);
-			nSlot.onclick=handlers.containerItem.click;
-			if (this.items[itemId]>1) { 
-				// Количество предметов ещё в одной обёртке и изображение
-				var nWrap=document.createElement("div");
-				nWrap.className="wrap";
-				var nNum=document.createElement("div");
-				nNum.className="containerItemNum";
-				nNum.innerHTML=this.items[itemId];
-			}
-			var nImg=document.createElement("img");
-			nImg.setAttribute("src","./images/items/"+itemId+".png");
-			if (this.items[itemId]>1) { 
-				nWrap.appendChild(nNum);
-				nSlot.appendChild(nWrap);
-			}
-			nSlot.appendChild(nImg);
-			this.nItems.appendChild(nSlot);
-		}
-	};
-	this.removeItem = function(itemId, amount) {
-		if (!this.items[itemId]) {
-			throw new Error("An attempt to remove items from container that this container haven't");
-		}
-		if ((this.items[itemId] -= amount) == 0) {
-			delete this.items[itemId];
-		}		
-	};
-	this.addItem = function(itemId, amount) {
-		if (this.items[itemId]) {
-			this.items[itemId] += amount;
-		} else {
-			this.items[itemId] = amount;
-		}
-	};
-	this.onClose = function() {
-		this.x = -1;
-		this.y = -1;
-	};
-	this.nItems=document.createElement("div");
-	this.nItems.className="containerItems";
-	this.element.appendChild(this.nItems);
-	
-	this.showItems();
-	
-	// Кнопка закрытия
-	this.nCloseButton=document.createElement("div");
-	this.nCloseButton.className="containerClose";
-	this.nCloseButton.innerHTML="Закрыть";
-	this.nCloseButton.setAttribute("window",this.windowId);
-	this.element.appendChild(this.nCloseButton);
-	this.center();
-}; 
-
-// Various UI functions
-
-function hideMenu() {
-	document.getElementById("startHelpWrapper").style.display="none";
-}
-function showMenu() {
-	document.getElementById("startHelpWrapper").style.display="block";
-}
-function showStChooseServer() {
-	var nlStartScreenMenus=document.getElementById("startScreen").children;
-	for (var i=0;i<nlStartScreenMenus.length;i++) {
-		nlStartScreenMenus[i].style.display="none";
+		UI.setMode(UI.MODE_CURSOR_ACTION);
+		this.move(x,y);
+		this.show();
+	},
+	withdraw: function _() {
+		this.hide();
+		UI.setMode(UI.MODE_DEFAULT);
+	},
+	changeStyle: function _(className) {
+		this.bg.className = "cellCursor"+className;
 	}
-	document.getElementById("stScrMenu").style.display="inline-block";
-}
+};
+
 function showStConnection() {
 	var nlStartScreenMenus=document.getElementById("startScreen").children;
 	for (var i=0;i<nlStartScreenMenus.length;i++) {
@@ -432,15 +239,11 @@ function showStConnection() {
 	document.getElementById("stServerLogin").focus();
 }
 
-function showStLoad() {
-	if (!inMenu) {
-		showMenu();
-	}
-	var nlStartScreenMenus=document.getElementById("startScreen").children;
-	for (var i=0;i<nlStartScreenMenus.length;i++) {
-		nlStartScreenMenus[i].style.display="none";
-	}
-	document.getElementById("stLoad").style.display="inline-block";
+function showLoadingScreen() {
+	document.getElementById("stLoad").style.display="block";
+}
+function hideLoadingScreen() {
+	document.getElementById("stLoad").style.display="none";
 }
 
 function addLearnedSkill(skill) {
@@ -601,6 +404,7 @@ function gAlert(text,autoCloseOff,callback) {
 // Отобразить сообщение в углу игрового поля
 // autoCloseOff: если true, то окно не закроется само
 // callback: функция. Вызывается после закрытия окна, если autoCloseOff==true
+	throw new Error("GALERT "+text);
 	if (windowGAlert.timeout!==null) {
 		clearTimeout(windowGAlert.timeout);
 	}
@@ -682,11 +486,7 @@ function restorePlayerCreationScreen() {
 	}
 }
 // Доступ к интерфейсу с клавиатуры
-function useNormalKeysMode() {
-// Выйти из текущего режима работы клавиш, убрать все дополнительные обозначения.
-	hideRightPanelKeys();
-	keysMode=0;
-}
+
 function showRightPanelKeys(mode) {
 // Показать горячие клавиши для предметов и заклинаний на правой панели
 /* То, к чему показываются клавиши, определяется аргументом-модификатором:

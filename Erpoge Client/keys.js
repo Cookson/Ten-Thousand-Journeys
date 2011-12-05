@@ -6,41 +6,61 @@ onLoadEvents['keys'] = function _() {
 			"leaveLocation", 
 			"Shift", 
 			",", 
-			Keys.MODE_IN_LOCATION);
+			UI.MODE_IN_LOCATION);
 	Keys.assign(
 			"enterLocation", 
 			"Shift", 
 			".", 
-			Keys.MODE_ON_GLOBAL_MAP);
+			UI.MODE_ON_GLOBAL_MAP);
 	Keys.assign(
 			"quickRefresh", 
 			"R", 
-			Keys.MODE_ALWAYS);
+			UI.MODE_ALWAYS);
 	Keys.assign(
 			"focusOnChat", 
 			"T", 
-			Keys.MODE_ALWAYS);
+			UI.MODE_ALWAYS);
 	Keys.assign(
 			"sendToChat", 
 			"Enter", 
-			Keys.MODE_CHAT);
+			UI.MODE_CHAT);
 	Keys.assign(
 			"closeChat", 
 			"Esc", 
-			Keys.MODE_CHAT);
+			UI.MODE_CHAT);
 	Keys.assign(
 			"toggleUI", 
 			"Ctrl", 
 			"F1", 
-			Keys.MODE_ALWAYS);
+			UI.MODE_ALWAYS);
 	Keys.assign(
 			"toggleSkillsWindow", 
 			"N",
-			Keys.MODE_ALWAYS);
+			UI.MODE_ALWAYS);
 	Keys.assign(
 			"toggleSettingsWindow", 
 			"F4",
-			Keys.MODE_ALWAYS);
+			UI.MODE_ALWAYS);
+	Keys.assign(
+			"unselectSpell", 
+			"Esc",
+			UI.MODE_CURSOR_ACTION);
+	Keys.assign(
+			"selectMissile", 
+			"F",
+			UI.MODE_ALWAYS);
+	Keys.assign(
+			"shootMissile", 
+			"Space",
+			UI.MODE_CURSOR_ACTION);
+	Keys.assign(
+			"closeContainer", 
+			"Esc",
+			UI.MODE_CONTAINER);
+	Keys.assign(
+			"takeAllFromContainer", 
+			"A",
+			UI.MODE_CONTAINER);
 };
 //leaveParty: function _() {
 //	if (player.partyId==0) {

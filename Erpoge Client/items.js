@@ -108,17 +108,31 @@ function ItemMap() {
 	this.uniqueItems = {};
 	this.itemPiles = {};
 }
-ItemMap.prototype.addItem = function(item) {
-	if (item.isUnique) {
-		this.uniqueItems[item.itemId] = item;
-	} else {
-		if (this.itemPiles[item.typeId] !== undefined) {
-			this.itemPiles[item.typeId].amount += item.amount;
+ItemMap.prototype.addItem = function(item, param) {
+/* If function has 1 argument:
+ * 		item: ItemPile/Unique item
+ * else if function has 2 arguments:
+ * 		item: typeId
+ * 		param: amount/itemId
+ */	
+	if (param === undefined) {
+		if (item.isUnique) {
+			this.uniqueItems[item.itemId] = item;
 		} else {
-			this.itemPiles[item.typeId] = item;
+			if (this.itemPiles[item.typeId] !== undefined) {
+				this.itemPiles[item.typeId].amount += item.amount;
+			} else {
+				this.itemPiles[item.typeId] = item;
+			}
+		}
+		return item;
+	} else {
+		if (isUnique(item)) {
+			this.addItem(new UniqueItem(item, param));
+		} else {
+			this.addItem(new ItemPile(item, param));
 		}
 	}
-	return item;
 };
 ItemMap.prototype.removeUnique = function(itemId) {
 	delete this.uniqueItems[itemId];
@@ -180,9 +194,13 @@ ItemMap.prototype.getValues = function() {
 	}
 	return answer;
 };
+ItemMap.prototype.empty = function _() {
+	this.itemPiles = {};
+	this.uniqueItems = {};
+};
+
 function Ammunition() {
 	this.items = {};
-	
 }
 Ammunition.prototype.putOn = function(item) {
 	this.items[getSlotFromClass(items[item.typeId][1])] = item;
@@ -222,9 +240,9 @@ Ammunition.prototype.takeOffFromSlot = function(slot) {
 Ammunition.prototype.NUMBER_OF_SLOTS = 10;
 function createInventoryItem(typeId, param) {
 	if (isUnique(typeId)) {
-		return UniqueItem(typeId, param);
+		return new UniqueItem(typeId, param);
 	} else {
-		return ItemPile(typeId, param);
+		return new ItemPile(typeId, param);
 	}
 }
 function UniqueItem(typeId, itemId) {

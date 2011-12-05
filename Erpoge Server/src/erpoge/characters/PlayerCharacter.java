@@ -15,6 +15,7 @@ import erpoge.MainHandler;
 import erpoge.clientmessages.ServerMessageCharacterAuthInfo;
 import erpoge.inventory.Item;
 import erpoge.inventory.ItemPile;
+import erpoge.inventory.ItemsTypology;
 import erpoge.inventory.UniqueItem;
 import erpoge.serverevents.*;
 import erpoge.terrain.Container;
@@ -196,20 +197,30 @@ public class PlayerCharacter extends Character {
 		}
 	}
 
-	public void takeFromContainer(int typeId, int amount, int x, int y) {
+	public void takeFromContainer(int typeId, int param, int x, int y) {
 		if (this.isOnGlobalMap()) {
 			throw new Error("Take from contaier on global map");
 		} else {
-			super.takeFromContainer(inventory.getPile(typeId).separatePile(amount), x, y);
+			Container container = location.getContainer(x, y);
+			if (ItemsTypology.item(typeId).isUnique()) {
+				super.takeFromContainer(container.getUnique(param), container);
+			} else {
+				super.takeFromContainer(container.getPile(typeId).separatePile(param), container);
+			}			
 			location.flushEvents(Location.TO_LOCATION, this);
 		}
 	}
 
-	public void putToContainer(int typeId, int amount, int x, int y) {
+	public void putToContainer(int typeId, int param, int x, int y) {
 		if (this.isOnGlobalMap()) {
 			throw new Error("Put to contaier on global map");
 		} else {
-			super.putToContainer(inventory.getPile(typeId).separatePile(amount), x, y);
+			Container container = location.getContainer(x, y);
+			if (ItemsTypology.item(typeId).isUnique()) {
+				super.putToContainer(inventory.getUnique(param), container);
+			} else {
+				super.putToContainer(inventory.getPile(typeId).separatePile(param), container);
+			}
 			location.flushEvents(Location.TO_LOCATION, this);
 		}
 	}

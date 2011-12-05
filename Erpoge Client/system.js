@@ -40,9 +40,7 @@ function recountWindowSize() {
 	var nGameZone = document.getElementById("intfGameZone");
 	var nWindowWrap = document.getElementById("intfWindowWrap");
 	var nIntfInfo = document.getElementById("intfInfo");
-	
-	// Центрировать стартовый экран по вертикали
-	document.getElementById("startScreen").style.lineHeight=document.body.clientHeight+"px";
+	document.getElementById("stLoad").style.lineHeight = document.body.clientHeight+"px";
 	
 	// Центрировать игровое окно по вертикали
 	nWindowWrap.style.marginTop=(document.body.clientHeight-nWindowWrap.clientHeight)/2+"px";

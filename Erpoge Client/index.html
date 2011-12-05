@@ -6,6 +6,7 @@
 <title>Ten Thousand Journeys</title>
 <link rel="stylesheet" href="style.css" />
 <link rel="icon" type="image/png" href="./images/favicon.png" />
+<script type="text/javascript" src="./items.js"></script>
 <script type="text/javascript" src="./variables.js"></script>
 <script type="text/javascript" src="./environmentProperties.js"></script>
 <script type="text/javascript" src="./serverAnswers.js"></script>
@@ -16,7 +17,6 @@
 <script type="text/javascript" src="./gui.js"></script>
 <script type="text/javascript" src="./game.js"></script>
 <script type="text/javascript" src="./objects.js"></script>
-<script type="text/javascript" src="./items.js"></script>
 <script type="text/javascript" src="./spells.js"></script>
 <script type="text/javascript" src="./characters.js"></script>
 <script type="text/javascript" src="./graphicEffects.js"></script>
@@ -32,10 +32,9 @@
 <script type="text/javascript" src="./variables2.js"></script>
 </head>
 <body>
-<div id="startHelpWrapper">
-<div id="startScreen"><!-- Главное меню -->
 <div id="stLoad"><!-- Меню загрузки уровня --> Загрузка</div>
-<div id="stScrMenu" class="stWindow">
+
+<!--  <div id="stScrMenu" class="stWindow">
 <table id="stScrMenuTable" class='stTable'>
 	<tr>
 		<td>
@@ -55,194 +54,8 @@
 		</td>
 	</tr>
 </table>
-</div>
-<!-- 
-<div id="stServer" class="stWindow">
-<table id="stServerTable" class='stTable'>
-	<tr>
-		<td>
-		<div id='stServerName'>Server</div>
-		<div id='stServerAddress'></div>
-		<div id='stServerOnline'>Онлайн: <span></span></div>
-		<form class="stForm" method="" id="stLoginForm" action=""
-			onSubmit="return false;"><input type="text" name="login"
-			id="stServerLogin" /><br />
-		<input type="password" name="password" id="stServerPassword"><br />
-		<input type="submit" value="Войти" id="stServerSubmit"
-			class="stSubmit" /> <input type="button" id="stServerRegisger"
-			class='stSubmit' value="Создать аккаунт" /></form>
-		<div id="stLoginError"></div>
-		</td>
-	</tr>
-	<tr>
-		<td class="stFooter">
-		<div class='stGoToChooseServerScreen'>Выбрать сервер</div>
-		<div class='stGoToSettingsScreen'>Настройки</div>
-		</td>
-	</tr>
-</table>
-</div>
-
-<div id="stAccount" class="stWindow">
-<table id="stAccountTable" class='stTable'>
-	<tr>
-		<td>
-		<form class="stForm" method="" id="stAccountForm" action=""
-			onSubmit="return false;">
-		<div>Логин:</div>
-		<input type="text" name="login" id="stAccountLogin" /><br />
-		<div>Пароль:</div>
-		<input type="password" name="password" id="stAccountPassword"><br />
-		<div>Пароль ещё раз:</div>
-		<input type="password" name="passwordConfirm"
-			id="stAccountPasswordConfirm"><br />
-		<input type="submit" value="Создать аккаунт" id="stAccountSubmit"
-			class="stSubmit" /></form>
-		<div id="stAccountAlert"></div>
-		</td>
-	</tr>
-	<tr>
-		<td class="stFooter">
-		<div class='stGoToConnectionScreen'>Подключение</div>
-		<div class='stGoToSettingsScreen'>Настройки</div>
-		</td>
-	</tr>
-</table>
-</div>
-
-<div id="stPlayers" class="stWindow">
-<table id="stAccountTable" class='stTable'>
-	<tr>
-		<td></td>
-	</tr>
-	<tr>
-		<td class="stFooter">
-		<div class='stGoToConnectionScreen'>Подключение</div>
-		<div class='stGoToCreatePlayer'>Создать нового</div>
-		</td>
-	</tr>
-</table>
-</div>
-
-<div id="stSettings" class="stWindow">
- <table id="stSettingsTable" class='stTable'>
-	<tr>
-		<td>
-		<form name="stSettingsForm" id="stSettingsForm" method="" action=""
-			onSubmit="return false;">
-		<div id="stSettingsAttrWrap">
-		<div class="stAttr">Анимация поля при движении</div>
-		<div class="stVal"><input type="checkbox"
-			id="settingsAnimateMoving"></div>
-		<div class="stAttr">Отображение сетки</div>
-		<div class="stVal"><input type="checkbox" id="settingsGrid"></div>
-		<div class="stAttr">Размер игровой области</div>
-		<div class="stVal"><input type="text" id="settingsSizeX">x<input
-			type="text" id="settingsSizeY"></div>
-		</div>
-		<br />
-		<input type="button" value="Принять" id="stSettingsAccept"
-			class="stSubmit"></form>
-		</td>
-	</tr>
-	<tr>
-		<td class="stFooter">
-		<div class='stGoToChooseServerScreen'>Выбрать сервер</div>
-		<div class='stGoToConnectionScreen'>Подключение</div>
-		</td>
-	</tr>
-</table> 
-</div>
- -->
-<div id="stNewPlayer" class="stWindow">
-<table id="stSettingsTable" class='stTable'>
-	<tr>
-		<td valign="top">
-		<div id="stNewPlayerLeftColumn">
-		<div class="stNewPlayerSection">Имя:</div>
-		<input type="text" id="stNewPlayerName">
-		<div class="stNewPlayerSection">Раса:</div>
-		<div id="stNewPlayerRaces">
-		<div class="stNewPlayerRace">Человек</div>
-		<div class="stNewPlayerRace">Эльф</div>
-		<div class="stNewPlayerRace">Дварф</div>
-		<div class="stNewPlayerRace">Орк</div>
-		</div>
-		<div class="stNewPlayerSection">Атрибуты:</div>
-		<div id="stNewPlayerAttributes">
-		<div class="stNewPlayerAttributeName">Сила</div>
-		<div class="stNewPlayerAttributeValue"></div>
-		<div class="stNewPlayerAttributeName">Ловкость</div>
-		<div class="stNewPlayerAttributeValue"></div>
-		<div class="stNewPlayerAttributeName">Мудрость</div>
-		<div class="stNewPlayerAttributeValue"></div>
-		<div class="stNewPlayerAttributeName">Интеллект</div>
-		<div class="stNewPlayerAttributeValue"></div>
-		</div>
-		<div class="stNewPlayerSection">Класс:</div>
-		<div id="stNewPlayerClasses"></div>
-		</div>
-		<div id="stNewPlayerRightColumn">
-		<div class="stNewPlayerRightColumnHeader, stNewPlayerSection">Навыки:</div>
-
-		<div class="stNewPlayerSkillColumn">
-		<div class="stNewPlayerSkillAttribute">Сила</div>
-		<div class="stNewPlayerSkill">Булавы</div>
-		<div class="stNewPlayerSkill">Топоры</div>
-		<div class="stNewPlayerSkill">Щиты</div>
-		<div class="stNewPlayerSkill">Мечи</div>
-		<div class="stNewPlayerSkill">Древковое оружие</div>
-		</div>
-		<div class="stNewPlayerSkillColumn">
-		<div class="stNewPlayerSkillAttribute">Ловкость</div>
-		<div class="stNewPlayerSkill">Скрытность</div>
-		<div class="stNewPlayerSkill">Реакция</div>
-		<div class="stNewPlayerSkill">Луки</div>
-		<div class="stNewPlayerSkill">Кинжалы</div>
-		<div class="stNewPlayerSkill">Рукопашный бой</div>
-		<div class="stNewPlayerSkill">Посохи</div>
-		</div>
-		<div class="stNewPlayerSkillColumn">
-		<div class="stNewPlayerSkillAttribute">Мудрость</div>
-		<div class="stNewPlayerSkill">Кинезис</div>
-		<div class="stNewPlayerSkill">Огонь</div>
-		<div class="stNewPlayerSkill">Холод</div>
-		<div class="stNewPlayerSkill">Некрос</div>
-		<div class="stNewPlayerSkill">Демонология</div>
-		<div class="stNewPlayerSkill">Ментал</div>
-		</div>
-		<div class="stNewPlayerSkillColumn">
-		<div class="stNewPlayerSkillAttribute">Интеллект</div>
-		<div class="stNewPlayerSkill">Магические предметы</div>
-		<div class="stNewPlayerSkill">Ремесло</div>
-		<div class="stNewPlayerSkill">Ловушки</div>
-		<div class="stNewPlayerSkill">Взлом</div>
-		<div class="stNewPlayerSkill">Механика</div>
-		<div class="stNewPlayerSkill">Алхимия</div>
-		</div>
-		<div id="stNewPlayerSkillPointLeft"></div>
-		<div class="stNewPlayerRightColumnHeader, stNewPlayerSection">Изученные
-		навыки:</div>
-		<div id="stNewPlayerLearnedSkills"></div>
-		</div>
-
-		</td>
-	</tr>
-	<tr>
-		<td>
-		<div id="stNewPlayerError"></div>
-		</td>
-	</tr>
-	<tr>
-		<td class="stFooter">
-		<div class='stGoToConnectionScreen'>Назад</div>
-		<div id='stNewPlayerComplete'>Готово</div>
-		</td>
-	</tr>
-</table>
-</div>
-</div>
-</div>
+</div> 
+-->
 
 <div id="intfWindowWrap"><!-- Основное окно -->
 <div id="intfLeftSide"><!-- #intfTable -->

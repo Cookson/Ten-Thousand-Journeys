@@ -9,9 +9,12 @@ import erpoge.characters.*;
 import erpoge.characters.Character;
 import erpoge.graphs.CustomRectangleSystem;
 import erpoge.graphs.RectangleSystem;
+import erpoge.inventory.ItemPile;
+import erpoge.inventory.UniqueItem;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.Cell;
 import erpoge.terrain.CellCollection;
+import erpoge.terrain.Container;
 import erpoge.terrain.Location;
 import erpoge.terrain.LocationGenerator;
 import erpoge.terrain.TerrainGenerator;
@@ -24,11 +27,17 @@ public class Empty extends LocationGenerator {
 		super(location);
 		fillWithCells(1, 0);
 		setStartArea(5, 10, 5, 6);
-		CustomRectangleSystem crs = new CustomRectangleSystem(this, 5, 9, 16, 14, 0);
-		crs.cutRectangleFromSide(0, SIDE_W, 3);
-		
-		RectangleSystem mainRS = getGraph(crs);
-		mainRS.drawBorders(ELEMENT_OBJECT, GameObjects.OBJ_WALL_GREY_STONE, false);
+//		CustomRectangleSystem crs = new CustomRectangleSystem(this, 5, 9, 16, 14, 0);
+//		crs.cutRectangleFromSide(0, SIDE_W, 3);
+//		
+//		RectangleSystem mainRS = getGraph(crs);
+//		mainRS.drawBorders(ELEMENT_OBJECT, GameObjects.OBJ_WALL_GREY_STONE, false);
+		makePeaceful();
+		setObject(5,10,GameObjects.OBJ_CHEST_1);
+		Container c = createContainer(5,10);
+		c.add(new ItemPile(900000, 235));
+		c.add(new ItemPile(2300, 467));
+		c.add(new UniqueItem(100));
 	}
 	public void uuu() {
 		// Chance ch50 = new Chance(50);

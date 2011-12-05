@@ -33,6 +33,8 @@ Net = {
 	DROP_UNIQUE				: 25,
 	PICK_UP_UNIQUE			: 26,
 	LOAD_PASSIVE_CONTENTS	: 27,
+	ACCOUNT_REGISTER		: 28,
+	PLAYER_CREATE			: 29,
 	serverAddress : "ws://"+window.location.host+":8787",
 	websocket : null,
 	send : function _(data, onmessage, callback) {
@@ -44,20 +46,19 @@ Net = {
 		
 	},
 	init : function _() {
-		this.websocket = new WebSocket(this.serverAddress);
+		this.websocket = window.MozWebSocket ? new MozWebSocket(this.serverAddress) : new WebSocket(this.serverAddress);
 		this.websocket.onopen = function() {
 //			document.getElementById("stChooseServerForm").onsubmit = handlers.stChooseServerForm.submit;
 			Net.send({a:Net.SERVER_INFO}, function(data) {
 				Net.serverName = data.serverName;
 				Net.online = data.online;
-				Net.serverAddress = data.serverAddress;
 				UI.notify("serverInfoRecieve");
 				Net.send({a:Net.LOAD_PASSIVE_CONTENTS},handlers.net.loadPassiveContents);  
 			});
 			if (!localStorage.getItem(101)) {
 				// Автовыбор сервера из URL
-				document.getElementById("stChooseServer").value = window.location.href
-						.replace(/http:\/\/|\/$/g, "");
+//				document.getElementById("stChooseServer").value = window.location.href
+//						.replace(/http:\/\/|\/$/g, "");
 			} else if (localStorage.getItem(101) && localStorage.getItem(101) !== "0") {
 				// Если страница загрузилась в результате "быстрой перезагрузки",
 				// залогиниться под прошлым персонажем
@@ -98,11 +99,6 @@ Net = {
 				Net.onmessage(parsedData);
 			}
 		};
-	},
-	sendErrorHandler : function _() {
-		if (serverAnswered == false) {
-			serverAnswered = true;
-		}
 	},
 	readStorageToServers : function _() {
 		// Read servers' cookies to servers array
@@ -156,7 +152,7 @@ Net = {
 		return false;
 	},
 	quickRefresh: function _() {
-		localStorage.setItem(101,player.characterId+","+playerLogin+","+playerPassword);
+		localStorage.setItem(101,player.characterId+","+Global.playerLogin+","+Global.playerPassword);
 		window.location.href=window.location.href;
 	},
 	logInForCharacter: function _(characterId, login, password) {
@@ -167,8 +163,8 @@ Net = {
 				password:password,
 				characterId:characterId
 			},handlers.net.loadContents);
-			playerLogin = login;
-			playerPassword = password;
+			Global.playerLogin = login;
+			Global.playerPassword = password;
 			inMenu = false;
 			UI.notify("login");
 		});

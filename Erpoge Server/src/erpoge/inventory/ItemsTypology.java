@@ -15,18 +15,18 @@ import erpoge.itemtypes.Weapon;
 public final class ItemsTypology extends ItemSystemMetaInfo {
 	
 	/* type: 
-	0-10 - оружие
-	11 - щит
-	12 - шлем
-	13 - доспех
-	14 - перчатки
-	15 - ботинки
-	16 - плащ
-	17 - ! зарезервировано
-	18 - ! зарезервировано
-	19 - кольцо
-	20 - ! зарезервировано для второго кольца
-	21 - амулет */
+	0-10 - РѕСЂСѓР¶РёРµ
+	11 - С‰РёС‚
+	12 - С€Р»РµРј
+	13 - РґРѕСЃРїРµС…
+	14 - РїРµСЂС‡Р°С‚РєРё
+	15 - Р±РѕС‚РёРЅРєРё
+	16 - РїР»Р°С‰
+	17 - ! Р·Р°СЂРµР·РµСЂРІРёСЂРѕРІР°РЅРѕ
+	18 - ! Р·Р°СЂРµР·РµСЂРІРёСЂРѕРІР°РЅРѕ
+	19 - РєРѕР»СЊС†Рѕ
+	20 - ! Р·Р°СЂРµР·РµСЂРІРёСЂРѕРІР°РЅРѕ РґР»СЏ РІС‚РѕСЂРѕРіРѕ РєРѕР»СЊС†Р°
+	21 - Р°РјСѓР»РµС‚ */
 	
 	public static final ItemType ABSTRACT_TYPE = new Abstract("Abstract Item");
 	private static final HashMap<Integer, ItemType> items = new HashMap<Integer, ItemType>();
@@ -94,108 +94,108 @@ public final class ItemsTypology extends ItemSystemMetaInfo {
 	}
 	public static void init() {
 		/**
-		 * Предметы Формат: [ 0:name, 1:type, 2:weight, 3:price ( Для оружия:
-		 * [,4:weaponDamage [,5:weaponAccuracy [,6:weaponSpeed ]]] ) || ( Для
-		 * доспехов: [,4:AC [,5:EV ]] ) ] type: 0-10 - оружие 11 - щит 12 - шлем
-		 * 13 - доспех 14 - перчатки 15 - ботинки 16 - плащ 17 - !
-		 * зарезервировано 18 - ! зарезервировано 19 - кольцо 20 - !
-		 * зарезервировано для второго кольца 21 - амулет, 22 - книга Классы
-		 * оружия: 1 - меч 2 - топор 3 - дробящее 4 - древковое 5 - посох 6 -
-		 * кинжал 7 - лук
+		 * РџСЂРµРґРјРµС‚С‹ Р¤РѕСЂРјР°С‚: [ 0:name, 1:type, 2:weight, 3:price ( Р”Р»СЏ РѕСЂСѓР¶РёСЏ:
+		 * [,4:weaponDamage [,5:weaponAccuracy [,6:weaponSpeed ]]] ) || ( Р”Р»СЏ
+		 * РґРѕСЃРїРµС…РѕРІ: [,4:AC [,5:EV ]] ) ] type: 0-10 - РѕСЂСѓР¶РёРµ 11 - С‰РёС‚ 12 - С€Р»РµРј
+		 * 13 - РґРѕСЃРїРµС… 14 - РїРµСЂС‡Р°С‚РєРё 15 - Р±РѕС‚РёРЅРєРё 16 - РїР»Р°С‰ 17 - !
+		 * Р·Р°СЂРµР·РµСЂРІРёСЂРѕРІР°РЅРѕ 18 - ! Р·Р°СЂРµР·РµСЂРІРёСЂРѕРІР°РЅРѕ 19 - РєРѕР»СЊС†Рѕ 20 - !
+		 * Р·Р°СЂРµР·РµСЂРІРёСЂРѕРІР°РЅРѕ РґР»СЏ РІС‚РѕСЂРѕРіРѕ РєРѕР»СЊС†Р° 21 - Р°РјСѓР»РµС‚, 22 - РєРЅРёРіР° РљР»Р°СЃСЃС‹
+		 * РѕСЂСѓР¶РёСЏ: 1 - РјРµС‡ 2 - С‚РѕРїРѕСЂ 3 - РґСЂРѕР±СЏС‰РµРµ 4 - РґСЂРµРІРєРѕРІРѕРµ 5 - РїРѕСЃРѕС… 6 -
+		 * РєРёРЅР¶Р°Р» 7 - Р»СѓРє
 		 */
-		// Мечи
+		// РњРµС‡Рё
 		put("SYSTEM_ITEM", CLASS_ABSTRACT, 0, 0, 0, 0, 0, MISSING);
-		put("Короткий меч", CLASS_SWORD, 34, 100, MATERIAL_BRONZE, 6, 4, 11);
-		put("Меч", CLASS_SWORD, 12, 100, MATERIAL_BRONZE, 7, 4, 13);
-		put("Сабля", CLASS_SWORD, 10, 130, MATERIAL_BRONZE, 7, 4, 12);
-		put("Гладиус", CLASS_SWORD, 14, 140, MATERIAL_BRONZE, 8, 4, 14);
-		put("Сабля", CLASS_SWORD, 10, 130, MATERIAL_BRONZE, 7, 4, 13);
+		put("РљРѕСЂРѕС‚РєРёР№ РјРµС‡", CLASS_SWORD, 34, 100, MATERIAL_BRONZE, 6, 4, 11);
+		put("РњРµС‡", CLASS_SWORD, 12, 100, MATERIAL_BRONZE, 7, 4, 13);
+		put("РЎР°Р±Р»СЏ", CLASS_SWORD, 10, 130, MATERIAL_BRONZE, 7, 4, 12);
+		put("Р“Р»Р°РґРёСѓСЃ", CLASS_SWORD, 14, 140, MATERIAL_BRONZE, 8, 4, 14);
+		put("РЎР°Р±Р»СЏ", CLASS_SWORD, 10, 130, MATERIAL_BRONZE, 7, 4, 13);
 
-		// Топоры
-		put("Топор", CLASS_AXE, 18, 100, MATERIAL_BRONZE, 7, 3, 13);
-		put("Секира", CLASS_AXE, 22, 160, MATERIAL_BRONZE, 14, -2, 17);
-		put("Боевой топор", CLASS_AXE, 28, 200, MATERIAL_BRONZE, 26, 13, 13);
+		// РўРѕРїРѕСЂС‹
+		put("РўРѕРїРѕСЂ", CLASS_AXE, 18, 100, MATERIAL_BRONZE, 7, 3, 13);
+		put("РЎРµРєРёСЂР°", CLASS_AXE, 22, 160, MATERIAL_BRONZE, 14, -2, 17);
+		put("Р‘РѕРµРІРѕР№ С‚РѕРїРѕСЂ", CLASS_AXE, 28, 200, MATERIAL_BRONZE, 26, 13, 13);
 
-		// Дробящее
-		put("Булава", CLASS_BLUNT, 100, 100, MATERIAL_BRONZE, 8, 3, 14);
-		put("Моргенштерн", CLASS_BLUNT, 100, 100, MATERIAL_BRONZE, 10, -1, 15);
-		put("Моргенштерн", CLASS_BLUNT, 100, 100, MATERIAL_BRONZE, 10, -1, 15);
-		put("Моргенштерн", CLASS_BLUNT, 100, 100, MATERIAL_BRONZE, 10, -1, 15);
-		put("Цеп", CLASS_BLUNT, 100, 100, MATERIAL_BRONZE, 9, 2, 15);
-		put("Золотая булава", CLASS_BLUNT, 100, 100, MATERIAL_BRONZE, 9, 2, 15);
+		// Р”СЂРѕР±СЏС‰РµРµ
+		put("Р‘СѓР»Р°РІР°", CLASS_BLUNT, 100, 100, MATERIAL_BRONZE, 8, 3, 14);
+		put("РњРѕСЂРіРµРЅС€С‚РµСЂРЅ", CLASS_BLUNT, 100, 100, MATERIAL_BRONZE, 10, -1, 15);
+		put("РњРѕСЂРіРµРЅС€С‚РµСЂРЅ", CLASS_BLUNT, 100, 100, MATERIAL_BRONZE, 10, -1, 15);
+		put("РњРѕСЂРіРµРЅС€С‚РµСЂРЅ", CLASS_BLUNT, 100, 100, MATERIAL_BRONZE, 10, -1, 15);
+		put("Р¦РµРї", CLASS_BLUNT, 100, 100, MATERIAL_BRONZE, 9, 2, 15);
+		put("Р—РѕР»РѕС‚Р°СЏ Р±СѓР»Р°РІР°", CLASS_BLUNT, 100, 100, MATERIAL_BRONZE, 9, 2, 15);
 
-		// Древковое
-		put("Копьё", CLASS_POLEARM, 10, 100, MATERIAL_BRONZE, 6, 3, 120);
-		put("Копьё", CLASS_POLEARM, 10, 100, MATERIAL_BRONZE, 6, 3, 120);
-		put("Алебарда", CLASS_POLEARM, 10, 100, MATERIAL_BRONZE, 13, 3, 16);
-		put("Коса", CLASS_POLEARM, 10, 100, MATERIAL_BRONZE, 16, 6, 3);
-		put("Коса", CLASS_POLEARM, 10, 100, MATERIAL_BRONZE, 16, 6, 3);
+		// Р”СЂРµРІРєРѕРІРѕРµ
+		put("РљРѕРїСЊС‘", CLASS_POLEARM, 10, 100, MATERIAL_BRONZE, 6, 3, 120);
+		put("РљРѕРїСЊС‘", CLASS_POLEARM, 10, 100, MATERIAL_BRONZE, 6, 3, 120);
+		put("РђР»РµР±Р°СЂРґР°", CLASS_POLEARM, 10, 100, MATERIAL_BRONZE, 13, 3, 16);
+		put("РљРѕСЃР°", CLASS_POLEARM, 10, 100, MATERIAL_BRONZE, 16, 6, 3);
+		put("РљРѕСЃР°", CLASS_POLEARM, 10, 100, MATERIAL_BRONZE, 16, 6, 3);
 
-		// Посохи
-		put("Посох", CLASS_STAFF, 5, 10, MATERIAL_BRONZE, 100, 7, 6);
-		put("Посох", CLASS_STAFF, 5, 10, MATERIAL_BRONZE, 100, 7, 6);
-		put("Посох", CLASS_STAFF, 5, 10, MATERIAL_BRONZE, 100, 7, 6);
-		put("Посох", CLASS_STAFF, 5, 10, MATERIAL_BRONZE, 100, 7, 6);
-		put("Посох", CLASS_STAFF, 5, 10, MATERIAL_BRONZE, 100, 7, 6);
+		// РџРѕСЃРѕС…Рё
+		put("РџРѕСЃРѕС…", CLASS_STAFF, 5, 10, MATERIAL_BRONZE, 100, 7, 6);
+		put("РџРѕСЃРѕС…", CLASS_STAFF, 5, 10, MATERIAL_BRONZE, 100, 7, 6);
+		put("РџРѕСЃРѕС…", CLASS_STAFF, 5, 10, MATERIAL_BRONZE, 100, 7, 6);
+		put("РџРѕСЃРѕС…", CLASS_STAFF, 5, 10, MATERIAL_BRONZE, 100, 7, 6);
+		put("РџРѕСЃРѕС…", CLASS_STAFF, 5, 10, MATERIAL_BRONZE, 100, 7, 6);
 
-		// Кинжалы
-		put("Нож", CLASS_DAGGER, 10, 100, MATERIAL_BRONZE, 5, 3, 10);
-		put("Кинжал", CLASS_DAGGER, 10, 100, MATERIAL_BRONZE, 6, 4, 10);
+		// РљРёРЅР¶Р°Р»С‹
+		put("РќРѕР¶", CLASS_DAGGER, 10, 100, MATERIAL_BRONZE, 5, 3, 10);
+		put("РљРёРЅР¶Р°Р»", CLASS_DAGGER, 10, 100, MATERIAL_BRONZE, 6, 4, 10);
 
-		// Луки
-		put("Короткий лук", CLASS_BOW, 1, 100, MATERIAL_BRONZE, 7, 1, 11);
+		// Р›СѓРєРё
+		put("РљРѕСЂРѕС‚РєРёР№ Р»СѓРє", CLASS_BOW, 1, 100, MATERIAL_BRONZE, 7, 1, 11);
 
-		// Щиты
-		put("Круглый щит", CLASS_SHIELD, 1, 100, MATERIAL_BRONZE, 7, 1, 11);
-		put("Круглый щит", CLASS_SHIELD, 1, 100, MATERIAL_BRONZE, 7, 1, 11);
-		put("Круглый щит", CLASS_SHIELD, 1, 100, MATERIAL_BRONZE, 7, 1, 11);
+		// Р©РёС‚С‹
+		put("РљСЂСѓРіР»С‹Р№ С‰РёС‚", CLASS_SHIELD, 1, 100, MATERIAL_BRONZE, 7, 1, 11);
+		put("РљСЂСѓРіР»С‹Р№ С‰РёС‚", CLASS_SHIELD, 1, 100, MATERIAL_BRONZE, 7, 1, 11);
+		put("РљСЂСѓРіР»С‹Р№ С‰РёС‚", CLASS_SHIELD, 1, 100, MATERIAL_BRONZE, 7, 1, 11);
 
-		// Плащи
-		put("Серый плащ", CLASS_CLOAK, 10, 100, ItemType.MATERIAL_BRONZE, 1, 0, MISSING);
-		put("Красный плащ", CLASS_CLOAK, 10, 100, ItemType.MATERIAL_BRONZE, 1, 0, MISSING);
-		put("Зелёный плащ", CLASS_CLOAK, 10, 100, ItemType.MATERIAL_BRONZE, 1, 0, MISSING);
+		// РџР»Р°С‰Рё
+		put("РЎРµСЂС‹Р№ РїР»Р°С‰", CLASS_CLOAK, 10, 100, ItemType.MATERIAL_BRONZE, 1, 0, MISSING);
+		put("РљСЂР°СЃРЅС‹Р№ РїР»Р°С‰", CLASS_CLOAK, 10, 100, ItemType.MATERIAL_BRONZE, 1, 0, MISSING);
+		put("Р—РµР»С‘РЅС‹Р№ РїР»Р°С‰", CLASS_CLOAK, 10, 100, ItemType.MATERIAL_BRONZE, 1, 0, MISSING);
 
-		// Кольца
-		put("Кольцо мудрости", CLASS_RING, 10, 100, MATERIAL_BRONZE, 0, 0, MISSING);
-		put("Кольцо силы", CLASS_RING, 10, 100, MATERIAL_BRONZE, 0, 0, MISSING);
-		put("Кольцо смерти", CLASS_RING, 10, 100, MATERIAL_BRONZE, 0, 0, MISSING);
-		put("Обручальное кольцо", CLASS_RING, 10, 100, MATERIAL_BRONZE, 0, 0, MISSING);
-		put("Кольцо кольца", CLASS_RING, 10, 100, MATERIAL_BRONZE, 0, 0, MISSING);
+		// РљРѕР»СЊС†Р°
+		put("РљРѕР»СЊС†Рѕ РјСѓРґСЂРѕСЃС‚Рё", CLASS_RING, 10, 100, MATERIAL_BRONZE, 0, 0, MISSING);
+		put("РљРѕР»СЊС†Рѕ СЃРёР»С‹", CLASS_RING, 10, 100, MATERIAL_BRONZE, 0, 0, MISSING);
+		put("РљРѕР»СЊС†Рѕ СЃРјРµСЂС‚Рё", CLASS_RING, 10, 100, MATERIAL_BRONZE, 0, 0, MISSING);
+		put("РћР±СЂСѓС‡Р°Р»СЊРЅРѕРµ РєРѕР»СЊС†Рѕ", CLASS_RING, 10, 100, MATERIAL_BRONZE, 0, 0, MISSING);
+		put("РљРѕР»СЊС†Рѕ РєРѕР»СЊС†Р°", CLASS_RING, 10, 100, MATERIAL_BRONZE, 0, 0, MISSING);
 
-		// Броня
-		// Марунарх
-		put("Шлем марунарх", CLASS_HEADGEAR, 1, 100, MATERIAL_BRONZE, 2, -1, MISSING);
-		put("Доспех марунарх", CLASS_BODY, 1, 100, MATERIAL_BRONZE, 7, -5, MISSING);
-		put("Перчатки марунарх", CLASS_GLOVES, 1, 100, MATERIAL_BRONZE, 2, 0, MISSING);
-		put("Ботинки марунарх", CLASS_BOOTS, 1, 100, MATERIAL_BRONZE, 2, -1, MISSING);
+		// Р‘СЂРѕРЅСЏ
+		// РњР°СЂСѓРЅР°СЂС…
+		put("РЁР»РµРј РјР°СЂСѓРЅР°СЂС…", CLASS_HEADGEAR, 1, 100, MATERIAL_BRONZE, 2, -1, MISSING);
+		put("Р”РѕСЃРїРµС… РјР°СЂСѓРЅР°СЂС…", CLASS_BODY, 1, 100, MATERIAL_BRONZE, 7, -5, MISSING);
+		put("РџРµСЂС‡Р°С‚РєРё РјР°СЂСѓРЅР°СЂС…", CLASS_GLOVES, 1, 100, MATERIAL_BRONZE, 2, 0, MISSING);
+		put("Р‘РѕС‚РёРЅРєРё РјР°СЂСѓРЅР°СЂС…", CLASS_BOOTS, 1, 100, MATERIAL_BRONZE, 2, -1, MISSING);
 
-		// Железный доспех
-		put("Железный шлем", CLASS_HEADGEAR, 1, 100, MATERIAL_BRONZE, 2, -1, MISSING);
-		put("Кольчуга", CLASS_BODY, 1, 100, MATERIAL_BRONZE, 6, -4, MISSING);
-		put("Железные перчатки", CLASS_GLOVES, 1, 100, MATERIAL_BRONZE, 1, 0, MISSING);
-		put("Железные ботинки", CLASS_BOOTS, 1, 100, MATERIAL_BRONZE, 1, -1, MISSING);
+		// Р–РµР»РµР·РЅС‹Р№ РґРѕСЃРїРµС…
+		put("Р–РµР»РµР·РЅС‹Р№ С€Р»РµРј", CLASS_HEADGEAR, 1, 100, MATERIAL_BRONZE, 2, -1, MISSING);
+		put("РљРѕР»СЊС‡СѓРіР°", CLASS_BODY, 1, 100, MATERIAL_BRONZE, 6, -4, MISSING);
+		put("Р–РµР»РµР·РЅС‹Рµ РїРµСЂС‡Р°С‚РєРё", CLASS_GLOVES, 1, 100, MATERIAL_BRONZE, 1, 0, MISSING);
+		put("Р–РµР»РµР·РЅС‹Рµ Р±РѕС‚РёРЅРєРё", CLASS_BOOTS, 1, 100, MATERIAL_BRONZE, 1, -1, MISSING);
 
-		// Робы
-		put("Льняная роба", CLASS_BODY, 1, 100, MATERIAL_BRONZE, 1, 0, MISSING);
-		put("Огненная роба", CLASS_BODY, 1, 100, MATERIAL_BRONZE, 3, 0, MISSING);
+		// Р РѕР±С‹
+		put("Р›СЊРЅСЏРЅР°СЏ СЂРѕР±Р°", CLASS_BODY, 1, 100, MATERIAL_BRONZE, 1, 0, MISSING);
+		put("РћРіРЅРµРЅРЅР°СЏ СЂРѕР±Р°", CLASS_BODY, 1, 100, MATERIAL_BRONZE, 3, 0, MISSING);
 
-		// Кожанка
-		put("Кожаный шлем", CLASS_HEADGEAR, 1, 100, MATERIAL_BRONZE, 1, 0, MISSING);
-		put("Кожаный доспех", CLASS_BODY, 1, 100, MATERIAL_BRONZE, 4, -2, MISSING);
-		put("Кожаные перчатки", CLASS_GLOVES, 1, 100, MATERIAL_BRONZE, 1, 0, MISSING);
-		put("Кожаные сапоги", CLASS_BOOTS, 1, 100, MATERIAL_BRONZE, 1, 0, MISSING);
+		// РљРѕР¶Р°РЅРєР°
+		put("РљРѕР¶Р°РЅС‹Р№ С€Р»РµРј", CLASS_HEADGEAR, 1, 100, MATERIAL_BRONZE, 1, 0, MISSING);
+		put("РљРѕР¶Р°РЅС‹Р№ РґРѕСЃРїРµС…", CLASS_BODY, 1, 100, MATERIAL_BRONZE, 4, -2, MISSING);
+		put("РљРѕР¶Р°РЅС‹Рµ РїРµСЂС‡Р°С‚РєРё", CLASS_GLOVES, 1, 100, MATERIAL_BRONZE, 1, 0, MISSING);
+		put("РљРѕР¶Р°РЅС‹Рµ СЃР°РїРѕРіРё", CLASS_BOOTS, 1, 100, MATERIAL_BRONZE, 1, 0, MISSING);
 
-		// Стартовая одежда
-		put("Рубашка из грубой ткани", CLASS_BODY, 1, 10, MATERIAL_BRONZE, 1, -1, MISSING);
-		put("Ботинки из грубой ткани", CLASS_BOOTS, 1, 10, MATERIAL_BRONZE, 1, 0, MISSING);
+		// РЎС‚Р°СЂС‚РѕРІР°СЏ РѕРґРµР¶РґР°
+		put("Р СѓР±Р°С€РєР° РёР· РіСЂСѓР±РѕР№ С‚РєР°РЅРё", CLASS_BODY, 1, 10, MATERIAL_BRONZE, 1, -1, MISSING);
+		put("Р‘РѕС‚РёРЅРєРё РёР· РіСЂСѓР±РѕР№ С‚РєР°РЅРё", CLASS_BOOTS, 1, 10, MATERIAL_BRONZE, 1, 0, MISSING);
 
-		// Книги
-		put("Книга заклинания \"Огненный шар\"", CLASS_BOOK, 1, 1000, MATERIAL_BRONZE, 0, 0, MISSING);
+		// РљРЅРёРіРё
+		put("РљРЅРёРіР° Р·Р°РєР»РёРЅР°РЅРёСЏ \"РћРіРЅРµРЅРЅС‹Р№ С€Р°СЂ\"", CLASS_BOOK, 1, 1000, MATERIAL_BRONZE, 0, 0, MISSING);
 
-		// Стрелы
-		put("Стрела", CLASS_AMMO, 1, 1000, MATERIAL_BRONZE, 0, 0, MISSING);
+		// РЎС‚СЂРµР»С‹
+		put("РЎС‚СЂРµР»Р°", CLASS_AMMO, 1, 1000, MATERIAL_BRONZE, 0, 0, MISSING);
 
-		put("Золото", 9000, 0, 1, 0, MATERIAL_BRONZE, 0, MISSING);
+		put("Р—РѕР»РѕС‚Рѕ", 9000, 0, 1, 0, MATERIAL_BRONZE, 0, MISSING);
 		items.put(-1, ABSTRACT_TYPE);
 	}
 	public static int getMissileType(UniqueItem weapon) {

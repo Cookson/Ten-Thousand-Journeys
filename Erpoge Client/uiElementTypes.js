@@ -86,12 +86,26 @@ UIElementTypes.windowAccountCharacters = {
 	onInit: function _() {		
 		var nHeaderDiv = document.createElement("div");
 		var nPlayersList = document.createElement("div");
-				
-		this.addCustomClass(nHeaderDiv, "Header");
+		var nButtonNewCharacter = document.createElement("div");
+		var nButtonBack = document.createElement("div");
 		
+		this.addCustomClass(nHeaderDiv, "Header");
+		nButtonBack.addClass("buttonBlack");
+		nButtonBack.style.float = "right";
+		nButtonNewCharacter.addClass("buttonBlack");
+		nButtonNewCharacter.style.float = "left";
+		this.addCustomClass(nPlayersList, "PlayersList");
+		
+		this.bindHandlerToUIElementContext(nButtonBack, "click", "backClick");
+		this.bindHandlerToUIElementContext(nButtonNewCharacter, "click", "newPlayerClick");
+		
+		nButtonBack.appendChild(document.createTextNode("Назад"));
+		nButtonNewCharacter.appendChild(document.createTextNode("Создать нового"));
 		nHeaderDiv.appendChild(document.createTextNode("Персонажи на вашем аккаунте"));
 		this.rootElement.appendChild(nHeaderDiv);
 		this.rootElement.appendChild(nPlayersList);
+		this.rootElement.appendChild(nButtonNewCharacter);
+		this.rootElement.appendChild(nButtonBack);
 		
 		this.setData("playersListNode", nPlayersList);
 	},
@@ -99,9 +113,10 @@ UIElementTypes.windowAccountCharacters = {
 		accountPlayersRecieve: function _(data) {
 			// Clear players list
 			// data: [[characterId, name, class, race, level, ammunition]xN]
+			
 			var nPlayersList = this.getData("playersListNode");
 			while (nPlayersList.children.length>0) {
-				nlPlayers.children[0].parentNode.removeChild(nlPlayers.children[0]);
+				nPlayersList.children[0].parentNode.removeChild(nPlayersList.children[0]);
 			}
 			// Формируем новый список игроков
 			var nDivPrototype = document.createElement("div");
@@ -111,7 +126,7 @@ UIElementTypes.windowAccountCharacters = {
 				this.addEventListener(nDiv, "click", "playerClick");
 				
 				nDiv.appendChild(document.createTextNode(
-					data[i][1]+" - "+races[data[i][3]]+" " +
+					data[i][1]+" - "+Global.races[data[i][3]]+" " +
 					data[i][2]+" "+data[i][4]+" уровня"
 				));
 				nPlayersList.appendChild(nDiv);
@@ -120,15 +135,26 @@ UIElementTypes.windowAccountCharacters = {
 				nDiv.setData("uiElement", this);
 			}
 			this.show();
+		},
+		accountPlayersListCall: function _() {
+			this.show();
 		}
 	},
 	keysActions: {},
 	handlers: {
 		playerClick: function _() {
-			Net.logInForCharacter(this.getData("characterId"), playerLogin, playerPassword);
+			Net.logInForCharacter(this.getData("characterId"), Global.playerLogin, Global.playerPassword);
 			UI.showAlwaysShownElements();
 			this.getData("uiElement").hide();
-			showStLoad();
+			showLoadingScreen();
+		},
+		backClick: function _() {
+			this.hide();
+			UI.notify("serverInfoRecieve");
+		},
+		newPlayerClick: function _() {
+			this.hide();
+			UI.notify("playerCreateStart");
 		}
 	},
 	cssRules: function _() {
@@ -140,6 +166,9 @@ UIElementTypes.windowAccountCharacters = {
 			box-sizing: border-box;		\
 			border-radius: 20px;		\
 		}								\
+		div.$type$PlayersList {			\
+			height: 182px;				\
+		}								\
 		div.$type$Player {				\
 			font-size: 18px;			\
 			color: #fff;				\
@@ -149,7 +178,6 @@ UIElementTypes.windowAccountCharacters = {
 			padding: 10px 0px 10px 0px;	\
 			cursor: pointer;			\
 			border-radius: 5px;			\
-			-moz-border-radius: 5px;	\
 			margin: 0px 0px 4px 0px;	\
 		}								\
 		div.$type$Player:hover {		\
@@ -170,9 +198,7 @@ UIElementTypes.windowLogin = {
 		var nServerAddress = document.createElement("div");
 		var nServerOnline = document.createElement("div");
 		
-		var nForm = document.createElement("form");
-		nForm.setAttribute("method", "");
-		nForm.setAttribute("action", "");		
+		var nForm = document.createElement("div");	
 		
 		var nInputLogin = document.createElement("input");
 		nInputLogin.setAttribute("type", "text");
@@ -181,20 +207,19 @@ UIElementTypes.windowLogin = {
 		nInputPassword.setAttribute("type", "text");
 		nInputPassword.setAttribute("name", "password");
 		
-		var nInputSubmit = document.createElement("input");
-		nInputSubmit.setAttribute("type", "submit");
-		nInputSubmit.setAttribute("value", "Войти");
+		var nInputSubmit = document.createElement("div");
+		nInputSubmit.appendChild(document.createTextNode("Войти"));
 	
-		var nInputRegister = document.createElement("input");
-		nInputRegister.setAttribute("value", "Создать аккаунт");
-		nInputRegister.setAttribute("type", "button");
+		var nInputRegister = document.createElement("div");
+		nInputRegister.appendChild(document.createTextNode("Создать аккаунт"));
 		
 		var nLoginError = document.createElement("div");
 		
-		nInputSubmit.addClass("stSubmit");
-		nInputRegister.addClass("stSubmit");
+		nInputSubmit.addClass("buttonBlack");
+		nInputRegister.addClass("buttonBlack");
 		this.addCustomClass(nForm, "Form");
 		
+		nServerName.addClass("windowHeader");
 		this.addCustomClass(nServerAddress, "ServerAddress");
 		this.addCustomClass(nServerName, "ServerName");
 		this.addCustomClass(nServerOnline, "ServerOnline");
@@ -209,25 +234,26 @@ UIElementTypes.windowLogin = {
 		
 		nForm.addEventListener("submit", function(e){e.preventDefault();}, false);
 		this.bindHandlerToUIElementContext(nInputSubmit, "click", "loginClick");
+		this.bindHandlerToUIElementContext(nInputRegister, "click", "createAccountClick");
 		
+		nForm.appendChild(nServerName);
+		nForm.appendChild(nServerAddress);
+		nForm.appendChild(nServerOnline);
 		nForm.appendChild(nInputLogin);
 		nForm.appendChild(document.createElement("br"));
 		nForm.appendChild(nInputPassword);
 		nForm.appendChild(document.createElement("br"));
-		nForm.appendChild(nInputSubmit);
-		nForm.appendChild(nInputRegister);
-				
-		this.rootElement.appendChild(nServerName);
-		this.rootElement.appendChild(nServerAddress);
-		this.rootElement.appendChild(nServerOnline);
+		nForm.appendChild(nLoginError);
 		this.rootElement.appendChild(nForm);
-		this.rootElement.appendChild(nLoginError);
+		this.rootElement.appendChild(nInputRegister);
+		this.rootElement.appendChild(nInputSubmit);		
 		
 		this.setData("loginInputNode", nInputLogin);
 		this.setData("passwordInputNode", nInputPassword);
 		this.setData("serverNameNode", nServerName);
 		this.setData("serverAddressNode", nServerAddress);
 		this.setData("serverOnlineNode", nServerOnline);
+		this.setData("loginErrorNode", nLoginError);
 	},
 	listeners: {
 		serverInfoRecieve: function _(notifier) {
@@ -239,12 +265,25 @@ UIElementTypes.windowLogin = {
 				this.getData("passwordInputNode").value = currentServer[2];
 			}
 			this.getData("serverNameNode").innerText = Net.serverName;
-			this.getData("serverAddressNode").innerText = "http://"+Net.serverAddress;
+			this.getData("serverAddressNode").innerText = "http://"+window.location.host;
 			this.getData("serverOnlineNode").children[0].innerText = Net.online;
 			this.show();
 		},
-		login: function _() {
+		accountPlayersRecieve: function _() {
 			this.hide();
+		},
+		loginError: function _(data) {
+			if (data === 0) {
+				winkElement(this.getData("loginErrorNode"),"Сервер переполнен");
+			} else if (data == 1) {
+				winkElement(this.getData("loginErrorNode"),"Пустой логин!");
+			} else if (data == 2) {
+				winkElement(this.getData("loginErrorNode"),"Пустой пароль!");
+			} else if (data == 3) {
+				winkElement(this.getData("loginErrorNode"),"Введён неверный пароль или такого аккаунта не существует");
+			} else {
+				winkElement(this.getData("loginErrorNode"),"Неизвестная ошибка при заходе в игру");
+			}
 		}
 	},
 	keysActions: {},
@@ -255,11 +294,18 @@ UIElementTypes.windowLogin = {
 		// это требуется для реализации "быстрой перезагрузки".
 			var login=this.getData("loginInputNode").value;
 			var password=this.getData("passwordInputNode").value;
-			window.playerLogin = login;
-			window.playerPassword = password;
+			if (login == "") {
+				winkElement(this.getData("loginErrorNode"), "Пустой логин!");
+				return;
+			}
+			Global.playerLogin = login;
+			Global.playerPassword = password;
 			Net.send({a:Net.LOGIN,l:login,p:password}, handlers.net.login);
-			UI.notify("login");
 			e.preventDefault();
+		},
+		createAccountClick: function _() {
+			this.hide();
+			UI.notify("accountCreateStart");
 		}
 	},
 	cssRules: function _() {
@@ -268,21 +314,23 @@ UIElementTypes.windowLogin = {
 			width: 400px;				\
 			height: 300px;				\
 			border-radius: 20px;		\
+			padding: 20px 20px 58px 20px;	\
+			box-sizing: border-box;		\
 		}								\
-		form.$type$Form {				\
+		div.$type$Form {				\
 			text-align: center;			\
+			height: 100%;				\
 		}								\
 		div.$type$ServerName {			\
-			font-family: sans-serif;	\
-			font-size: 20px;			\
-			padding-top: 50px;			\
-			color: #fff;				\
-			text-align: center;			\
+			font-variant: small-caps;	\
 		}								\
 		div.$type$ServerAddress {		\
 			font-family: sans-serif;	\
 			font-size: 12px;			\
+			-moz-user-select: -moz-text;\
+			-webkit-user-select: text;	\
 			user-select: text;			\
+			text-decoration: underline;	\
 			color: #889 !important;		\
 			padding: 4px;				\
 			text-align: center;			\
@@ -291,18 +339,22 @@ UIElementTypes.windowLogin = {
 			font-sze: 16px;				\
 			color: #fff;				\
 			text-align: center;			\
+			margin-bottom: 20px;		\
 		}								\
 		div.$type$Register {			\
-			display: inline-block;		\
+			display: block;				\
+			float: left;				\
 		}								\
 		div.$type$Submit {				\
-			display: inline-block;		\
+			display: block;				\
+			float: right;				\
 		}								\
 		div.$type$LoginError {			\
 			height: 20px;				\
 			line-height: 20px;			\
 			color: #f55;				\
-			font-size: 11px;			\
+			text-align: center;			\
+			font-size: 13px;			\
 		}								\
 		input.$type$Login, input.$type$Password	{	\
 			margin: 2px;				\
@@ -399,9 +451,9 @@ UIElementTypes.iconsInventory = {
 				} else {
 					player.sendTakeOff(player.ammunition.getItemInSlot(slot));
 				}
-			} else if (windowContainer.visible) {
+			} else if (UI.mode == UI.MODE_CONTAINER) {
 			// Положить в контейнер
-				player.sendPutToContainer(typeId, (e.shiftKey ? 1 : param), windowContainer.x, windowContainer.y);
+				player.sendPutToContainer(typeId, (e.shiftKey ? 1 : param));
 			} else if (!onGlobalMap && e.shiftKey) {
 			// Выкинуть предмет (шифт-клик)
 				if (isUnique(typeId)) {
@@ -474,6 +526,7 @@ UIElementTypes.iconsInventory = {
 		return "						\
 		div.$type$ {					\
 			cursor: pointer;			\
+			max-width: 240px;			\
 		}								\
 		div.$type$DivWrap {				\
 			display: inline-block;		\
@@ -495,33 +548,35 @@ UIElementTypes.iconsInventory = {
 UIElementTypes.minimap = {
 	onInit: function _() {
 		 var nMap = document.createElement("canvas");
+		 var minimap = new Minimap(nMap);
+		 
+		 this.bindHandlerToUIElementContext(minimap.elem, "mousemove", "mousemove");
+		 this.bindHandlerToUIElementContext(minimap.elem, "click", "click");
+		 
 		 this.rootElement.appendChild(nMap);
-		 var minimap = this.minimap = new Minimap(nMap);
-		 this.addEventListener(this.minimap.elem, "mousemove", "mousemove");
-		 this.addEventListener(this.minimap.elem, "click", "click");
+		 
+		 this.setData("minimap", minimap);
 	 },
 	listeners: {
-		 environmentChange: function _(notifier) {
-			 if (notifier == UI.notifiers.environment) {
-				 this.minimap.draw();
-			 } else if (notifier == UI.notifiers.locationLoad || notifier == UI.notifiers.worldLoad) {
-				 this.minimap.changeDimensions(width, height);
-			 }		 
+		environmentChange: function _(notifier) {
+		 	this.getData("minimap").draw();
 	 	},
-	 	locationLoad: "environmentChange"
+	 	locationLoad: function _() {
+	 		this.getData("minimap").changeDimensions(width, height);
+	 	},
+	 	worldLoad: "locationLoad"
 	},
 	keysActions: {},
  	handlers: {
 		click: function _(e) {
+			var minimap = this.getData("minimap");
 			var rect=getOffsetRect(minimap.elem);
 			playerClick(Math.floor((e.clientX-rect.left)/minimap.scale),Math.floor((e.clientY-rect.top)/minimap.scale));
 		},
 		mousemove: function _(e) {
-			if (keysMode!=0) {
-				return;
-			}
+			var minimap = this.getData("minimap");
 			var rect=getOffsetRect(minimap.elem);
-			cellCursorPri.move(Math.floor((e.clientX-rect.left)/minimap.scale),Math.floor((e.clientY-rect.top)/minimap.scale));
+			CellCursor.move(Math.floor((e.clientX-rect.left)/minimap.scale),Math.floor((e.clientY-rect.top)/minimap.scale));
 		}
 	}
 };
@@ -597,13 +652,16 @@ UIElementTypes.chat = {
 			this.getData("inputNode").blur();
 		},
 		sendToChat: function _() {
+			if (this.getData("inputNode").value == "") {
+				return;
+			}
 			Net.send({a:Net.CHAT_MESSAGE,text:this.getData("inputNode").value},function() {});
 			this.getData("inputNode").value="";
 		}
 	},
  	handlers: {
 		inputOnFocus: function _() {
-			Keys.setMode(Keys.MODE_CHAT);
+			UI.setMode(UI.MODE_CHAT);
 			var nlWraps=this.parentNode.children;
 			// First two children are wraps with background and text area
 			for (var i=0;i<2;i++) {
@@ -615,7 +673,7 @@ UIElementTypes.chat = {
 			});
 		},
 		inputOnBlur: function _() {
-			Keys.setMode(Keys.MODE_DEFAULT);
+			UI.setMode(UI.MODE_DEFAULT);
 			var nlWraps=this.parentNode.children;
 			// First two children are wraps with background and text area
 			for (var i=0;i<2;i++) {
@@ -816,7 +874,7 @@ UIElementTypes.iconsLoot = {
 	onInit: function _() {
 		
 	},
-	listener: {
+	listeners: {
 		lootChange: function _() {
 			var lootSlotsNum = 0;
 			while (this.rootElement.children.length>0) {
@@ -872,7 +930,7 @@ UIElementTypes.iconsLoot = {
 				lootSlotsNum++;
 			}
 		},
-		locationChange: "lootChange"
+		locationLoad: "lootChange"
 	},
 	keysActions: {},
  	handlers: {
@@ -959,15 +1017,18 @@ UIElementTypes.iconsSpells = {
     	
     },
     listeners: {
-    	spellCast: function _(notifier) {
+    	spellUnselect: function _(notifier) {
     	// Refresh highlighted spell icon
-    		var nlSpells = this.rootElement.getElementsByTagName("img");
-        	for (var i=0;i<nlSpells.length;i++) {
-        		if (nlSpells[i].getData("spellId") == player.spellId) {
-        			nlSpells[i].style.opacity = "1";
-        			break;
-        		}
-        	}
+	    	var nlSpells = this.rootElement.getElementsByTagName("img");
+	    	for (var i=0;i<nlSpells.length;i++) {
+	    		if (nlSpells[i].getData("spellId") == player.spellId) {
+	    			nlSpells[i].style.opacity = "1";
+	    			break;
+	    		} else if (i == nlSpells.length-1) {
+	    			throw new Error("Highlighted spell icon not found!");
+	    		}
+	    	}
+    		
 		},
 		locationLoad: function _() {
     	// Build UIElement's contents from scratch
@@ -988,42 +1049,48 @@ UIElementTypes.iconsSpells = {
         		nSpellWrap.appendChild(nSpellImg);
         		this.rootElement.appendChild(nSpellWrap);
         	}
+    	},
+    	spellSelect: function _() {
+//    		this.UIElementType.keysActions.unselectSpell.apply(this);
     	}
     },
-    keysActions: {},
+    keysActions: {
+    	unselectSpell: function _() {
+    		player.unselectSpell();
+    	}
+    },
  	handlers: {
     	spellClick:function _() {
 			document.getElementById("itemInfo").style.display="none";
+			
 			var spellId = this.getData("spellId");
+			
 			if (player.spellId == spellId) {
 			// If this spell is already chosen, unchoose it
-				player.spellId = -1;
-				cellCursorSec.hide();
-				cellCursorPri.show();
+				player.unselectSpell();
 				this.applyStyle({
 					opacity: "1"
 				});
-				Keys.setMode(Keys.MODE_DEFAULT);
 			} else {
+				player.selectSpell(spellId);
 				if (spells[spellId].onlyOnSelf) {
 					player.sendCastSpell(player.spellId, player.x, player.y);
 				} else {
 					this.applyStyle({
 						opacity: "0.5"
 					});
-					player.spellId = spellId;
-					CellCursor.prototype.useCursor("cellCursorSec");
+					player.selectSpell(spellId);
+					
 					// Spell cursor positioning
 					var spell = spells[player.spellId];
 					var aimcharacter;
 					if (spell.onlyOnSelf) {
-						cellCursorSec.move(player.x,player.y);
+						CellCursor.move(player.x,player.y);
 					} else if (spell.onCharacter && (aimcharacter = player.findEnemy())) {
-						cellCursorSec.move(aimcharacter.x, aimcharacter.y);
+						CellCursor.move(aimcharacter.x, aimcharacter.y);
 					} else {
-						cellCursorSec.move(player.x, player.y);
+						CellCursor.move(player.x, player.y);
 					}
-					Keys.setMode(Keys.MODE_CURSOR_ACTION);
 				}
 			}
 		},
@@ -1091,8 +1158,8 @@ UIElementTypes.textTitle = {
 	onInit: function _() {
     	var nName = document.createElement("div");
     	var nTitle = document.createElement("div");
-    	var nNameTextNode = document.createTextNode();
-    	var nTitleTextNode = document.createTextNode();
+    	var nNameTextNode = document.createTextNode("");
+    	var nTitleTextNode = document.createTextNode("");
     	
     	this.addCustomClass(nName, "Name");
     	this.addCustomClass(nTitle, "Title");
@@ -1108,7 +1175,7 @@ UIElementTypes.textTitle = {
     listeners: {
     	titleChange: function _() {
 	    	this.getData("nameTextNode").nodeValue = player.name;
-	    	this.getData("titleTextNode").nodeValue = races[player.race]+" "+player.cls+" "+player.level+" уровня";
+	    	this.getData("titleTextNode").nodeValue = Global.races[player.race]+" "+player.cls+" "+player.level+" уровня";
     	},
     	locationLoad: "titleChange",
     	worldLoad: "titleChange"
@@ -1145,7 +1212,7 @@ UIElementTypes.hpBar = {
     	var nBg = document.createElement("div");
     	var nStrip = document.createElement("div");
     	var nValue = document.createElement("div");
-    	var nValueTextNode = document.createTextNode();
+    	var nValueTextNode = document.createTextNode("");
     	
     
     	this.addCustomClass(nBg, "Bg");
@@ -1241,7 +1308,7 @@ UIElementTypes.windowSkills = {
 				this.addCustomClass(nSkillName, "Name");
 				this.addCustomClass(nSkillValue, "Value");
 				
-				nSkillName.appendChild(document.createTextNode(skillNamesUserLanguage[player.skills[i]]));
+				nSkillName.appendChild(document.createTextNode(Global.skillNames[player.skills[i]]));
 				nSkillValue.appendChild(document.createTextNode(player.skills[i+1]));
 				nWrap.appendChild(nSkillName);
 				nWrap.appendChild(nSkillValue);
@@ -1289,7 +1356,7 @@ UIElementTypes.windowDeath = {
 		var nDiv = document.createElement("div");
 		var nClose = document.createElement("div");
 		this.onClose=function() {
-			showStLoad();
+			showLoadingScreen();
 			setTimeout(leaveLocation,100);
 		};
 		
@@ -1345,36 +1412,36 @@ UIElementTypes.windowSettings = {
 		nOk.setAttribute("type","button");
 		nOk.setAttribute("value","Принять");
 		
-		nOk.addClass("stSubmit");
+		nOk.addClass("buttonBlack");
 		this.addCustomClass(nForm, "Form");
 		this.addCustomClass(nAttrNameProto, "AttrName");
 		this.addCustomClass(nAttrValueProto, "AttrValue");
 		this.addCustomClass(nInputProto, "InputSize");
 		
 		// Field animation on move
-		nAttr = nAttrNameProto.cloneNode();
-		nValue = nAttrValueProto.cloneNode();
-		nCheckBox = nCheckBoxProto.cloneNode();
+		nAttr = nAttrNameProto.cloneNode(true);
+		nValue = nAttrValueProto.cloneNode(true);
+		nCheckBox = nCheckBoxProto.cloneNode(true);
 		this.setData("animateMovingNode",nCheckBox);
 		nAttr.appendChild(document.createTextNode("Анимация поля при движении"));
 		nValue.appendChild(nCheckBox);
 		nlAttrsAndValues.push(nAttr, nValue);
 		
 		// Show grid
-		nAttr = nAttrNameProto.cloneNode();
-		nValue = nAttrValueProto.cloneNode();
-		nCheckBox = nCheckBoxProto.cloneNode();
+		nAttr = nAttrNameProto.cloneNode(true);
+		nValue = nAttrValueProto.cloneNode(true);
+		nCheckBox = nCheckBoxProto.cloneNode(true);
 		this.setData("showGridNode",nCheckBox);
 		nAttr.appendChild(document.createTextNode("Отображение сетки"));
 		nValue.appendChild(nCheckBox);
 		nlAttrsAndValues.push(nAttr, nValue);
 		
 		// Game field size
-		nAttr = nAttrNameProto.cloneNode();
-		nValue = nAttrValueProto.cloneNode();
-		nInput1 = nInputProto.cloneNode();
+		nAttr = nAttrNameProto.cloneNode(true);
+		nValue = nAttrValueProto.cloneNode(true);
+		nInput1 = nInputProto.cloneNode(true);
 		this.setData("gameFieldSizeXNode",nInput1);
-		nInput2 = nInputProto.cloneNode();
+		nInput2 = nInputProto.cloneNode(true);
 		this.setData("gameFieldSizeYNode",nInput2);
 		nAttr.appendChild(document.createTextNode("Размер игровой области"));
 		nValue.appendChild(nInput1);
@@ -1391,7 +1458,6 @@ UIElementTypes.windowSettings = {
 		
 		// По загрузке клиента установить всем input'ам в форме настроек значения, соответствующие значениям в localStorage
 		// Внимание! Значенния true/false следует хранить как 1/0, т.к. в localStorage могут сохраняться только строки, а Boolean("false")==true
-		console.log(localStorage.getItem(1), localStorage.getItem(2))
 		this.getData("animateMovingNode").checked = +localStorage.getItem(1);
 		this.getData("showGridNode").checked = +localStorage.getItem(2);
 		
@@ -1471,7 +1537,7 @@ UIElementTypes.windowSettings = {
 UIElementTypes.windowDialogue = {
 	onInit: function _() {
 		var nPhrase = document.createElement("div");
-		var nPhraseTextNode = document.createTextNode();
+		var nPhraseTextNode = document.createTextNode("");
 		var nAnswers = document.createElement("div");
 		var nClose = document.createElement("div");
 		
@@ -1484,7 +1550,7 @@ UIElementTypes.windowDialogue = {
 			var nAnswer = document.createElement("div");
 			this.addEventListener(nAnswer, "click", "answerClick");
 			nAnswer.setData("answerId", i);
-			nAnswer.appendChild(document.createTextNode());
+			nAnswer.appendChild(document.createTextNode(""));
 			nAnswers.appendChild(nAnswer);
 		}
 		
@@ -1506,13 +1572,15 @@ UIElementTypes.windowDialogue = {
 			var i=0;
 			for (; i<point.answers.length; i++) {
 				nAnswers.children[i].style.display = "block";
-				console.log(nAnswers.children[i])
 				nAnswers.children[i].firstChild.nodeValue = point.answers[i];
 			}
 			for (; i<10; i++) {
 				nAnswers.children[i].style.display = "none";
 			}
 			this.show();
+		},
+		dialogueEnd: function _() {
+			this.hide();
 		}
 	},
 	keysActions: {},
@@ -1523,6 +1591,13 @@ UIElementTypes.windowDialogue = {
 	},
 	cssRules: function _() {
 		return "					\
+		div.$type$ {				\
+			border-radius: 20px;	\
+			padding: 20px;			\
+			width: 300px;			\
+			height: 200px;			\
+			box-sizing: border-box;	\
+		}							\
 		div.$type$Phrase {			\
 			display: block;			\
 			color: #ff8;			\
@@ -1542,6 +1617,562 @@ UIElementTypes.windowDialogue = {
 		}							\
 		div.$type$Answers > div:hover {	\
 			color:#f00;				\
+		}							\
+		";
+	}
+};
+UIElementTypes.windowContainer = {
+	onInit: function _() {
+		var nItems = document.createElement("div");
+		var nClose = document.createElement("div");
+		
+		nItems.addClass("containerItems");
+		nClose.addClass("containerClose");
+		this.rootElement.appendChild(nItems);		
+		
+		this.chooseElementAsCloseButton(nClose);
+		this.addEventListener(nClose, "click", "containerClose");
+		
+		nClose.appendChild(document.createTextNode("Закрыть"));
+		this.rootElement.appendChild(nClose);
+		
+		this.setData("itemsNode", nItems);
+	},
+	listeners: {
+		containerChange: function _(data) {
+			var nItems = this.getData("itemsNode");
+			while (nItems.children.length>0) {
+				nItems.removeChild(nItems.children[0]);
+			}
+			var itemValues = Global.container.items.getValues();
+			for (var i in itemValues) {
+				var nSlot = document.createElement("div");
+				var nImg=document.createElement("img");
+				nImg.setAttribute("src","./images/items/"+itemValues[i].typeId+".png");
+				nSlot.addClass("containerItem");
+				
+				if (itemValues[i].isUnique) {
+					nSlot.setAttribute("typeId",itemValues[i].typeId);
+					nSlot.setAttribute("param",itemValues[i].itemId);
+				} else {
+					nSlot.setAttribute("typeId",itemValues[i].typeId);
+					nSlot.setAttribute("param",itemValues[i].amount);
+					if (itemValues[i].amount>1) { 
+					// Количество предметов ещё в одной обёртке и изображение
+						var nWrap=document.createElement("div");
+						var nNum=document.createElement("div");
+						nWrap.addClass("wrap");
+						nNum.addClass("itemAmount");
+						nNum.appendChild(document.createTextNode(itemValues[i].amount));
+						nWrap.appendChild(nNum);
+						nSlot.appendChild(nWrap);
+					}
+				}
+				
+				this.addEventListener(nSlot, "click", "itemClick");
+				
+				nSlot.appendChild(nImg);
+				nItems.appendChild(nSlot);
+			}
+		},
+		containerOpen: function _() {
+			this.UIElementType.listeners.containerChange.apply(this);
+			this.show();
+		}
+	},
+	keysActions: {
+		closeContainer: function _() {
+			this.hide();
+			UI.setMode(UI.MODE_DEFAULT);
+		}
+	},
+	handlers: {
+		itemClick: function _(e) {
+			player.sendTakeFromContainer(
+				+this.getAttribute("typeId"), 
+				(e.shiftKey ? 1 : +this.getAttribute("param")),
+				Global.container.x,
+				Global.container.y
+			);
+		},
+		containerClose: function _() {
+			UI.setMode(UI.MODE_DEFAULT);
+		}
+	},
+	cssRules: function _() {
+		return "					\
+		div.$type$ {				\
+			text-align: center;		\
+			width: 400px;			\
+			height: 300px;			\
+			padding: 20px;			\
+			box-sizing: border-box;	\
+			border-radius: 20px;	\
+		}							\
+		";
+	}
+};
+UIElementTypes.windowPlayerCreate = {
+	onInit: function _() {
+		var nLeftSide = document.createElement("div");
+		var nRightSide = document.createElement("div");
+		
+		var nSection1 = document.createElement("div");
+		var nInputName = document.createElement("input");
+		var nSection2 = document.createElement("div");
+		var nRaceProto = document.createElement("div");
+		var nRaces = document.createElement("div");
+		var nSection3 = document.createElement("div");
+		var nAttributes = document.createElement("div");
+		var nAttrNameProto = document.createElement("div");
+		var nAttrValueProto = document.createElement("div");
+		var nSection4 = document.createElement("div");
+		var nClasses = document.createElement("div");
+		var nClassProto = document.createElement("div");
+		var nSkillsHeader = document.createElement("div");
+		var nSkillProto = document.createElement("div");
+		var nColumnProto = document.createElement("div");
+		var nColumnHeaderProto = document.createElement("div");
+		var nLearnedSkills = document.createElement("div");
+		var nLearnedSkillProto = document.createElement("div");
+		var nBack = document.createElement("div");
+		var nComplete = document.createElement("div");
+		
+		this.addCustomClass(nLeftSide, "LeftSide");
+		this.addCustomClass(nRightSide, "RightSide");
+		this.addCustomClass(nSection1, "Section");
+		this.addCustomClass(nSection2, "Section");
+		this.addCustomClass(nSection3, "Section");
+		this.addCustomClass(nSection4, "Section");
+		this.addCustomClass(nInputName, "Input");
+		this.addCustomClass(nRaceProto, "Race");
+		this.addCustomClass(nAttrNameProto, "AttrName");
+		this.addCustomClass(nAttrValueProto, "AttrValue");
+		this.addCustomClass(nClasses, "Classes");
+		this.addCustomClass(nClassProto, "Class");
+		this.addCustomClass(nSkillProto, "Skill");
+		this.addCustomClass(nSkillsHeader, "SkillsHeader");
+		this.addCustomClass(nColumnProto, "Column");
+		this.addCustomClass(nColumnHeaderProto, "ColumnHeader");
+		this.addCustomClass(nLearnedSkills, "LearnedSkills");
+		nBack.addClass("buttonBlack");
+		nComplete.addClass("buttonBlack");
+		nBack.style.float = "left";
+		nComplete.style.float = "right";
+		
+		this.bindHandlerToUIElementContext(nBack, "click", "backClick");
+		this.bindHandlerToUIElementContext(nComplete, "click", "completeClick");
+		
+		// Left side
+		for (var i=0; i<Global.races.length; i++) {
+			var nRace = nRaceProto.cloneNode(true);
+			nRace.appendChild(document.createTextNode(Global.races[i]));
+			nRaces.appendChild(nRace);
+			nRace.setData("uiElement", this);
+			this.addEventListener(nRace, "click", "raceClick");
+			nRace.setData("race", i);
+		}
+		for (var i in Global.attributes) {
+			var nAttr = nAttrNameProto.cloneNode(true);
+			var nVal = nAttrValueProto.cloneNode(true);
+			nAttr.appendChild(document.createTextNode(Global.attributes[i]));
+			nAttributes.appendChild(nAttr);
+			nVal.appendChild(document.createTextNode(""));
+			nAttributes.appendChild(nVal);
+		}
+		nSection1.appendChild(document.createTextNode("Имя"));
+		nSection2.appendChild(document.createTextNode("Раса"));
+		nSection3.appendChild(document.createTextNode("Атрибуты"));
+		nSection4.appendChild(document.createTextNode("Класс"));
+		nSkillsHeader.appendChild(document.createTextNode("Навыки"));
+		nLeftSide.appendChild(nSection1);
+		nLeftSide.appendChild(nInputName);
+		nLeftSide.appendChild(nSection2);
+		nLeftSide.appendChild(nRaces);
+		nLeftSide.appendChild(nSection3);
+		nLeftSide.appendChild(nAttributes);
+		nLeftSide.appendChild(nSection4);
+		nLeftSide.appendChild(nClasses);
+		
+		// Right side
+		nRightSide.appendChild(nSkillsHeader);
+		var skillLists = [Global.skillsStr, Global.skillsDex, Global.skillsWis, Global.skillsItl];
+		var skill = 0;
+		for (var i=0; i<4; i++) {
+			var nColumn = nColumnProto.cloneNode(true);
+			var nColumnHeader = nColumnHeaderProto.cloneNode(true);
+			nColumnHeader.appendChild(document.createTextNode(Global.attributes[i]));
+			nColumn.appendChild(nColumnHeader);
+			for (var j=0; j< skillLists[i].length; j++) {
+				var nSkill = nSkillProto.cloneNode();
+				nSkill.appendChild(document.createTextNode(skillLists[i][j]));
+				nColumn.appendChild(nSkill);
+				nSkill.setData("uiElement",this);
+				nSkill.setData("skill",skill);
+				this.addEventListener(nSkill, "click", "skillClick");
+				skill++;
+			}
+			nRightSide.appendChild(nColumn);
+		}
+		nRightSide.appendChild(nLearnedSkills);
+		
+		this.rootElement.appendChild(nLeftSide);
+		this.rootElement.appendChild(nRightSide);
+		nBack.appendChild(document.createTextNode("Назад"));
+		nComplete.appendChild(document.createTextNode("Готово"));
+		this.rootElement.appendChild(nBack);
+		this.rootElement.appendChild(nComplete);
+		
+		this.setData("attributesNode",nAttributes);
+		this.setData("learnedSkillProtoNode",nLearnedSkillProto);
+		this.setData("learnedSkillsNode",nLearnedSkills);
+		this.setData("learnedSkills",{});
+		this.setData("learnedSkillsNodes",{});	
+				
+		this.UIElementType.handlers.raceClick.apply(nRaces.children[0]);
+	},
+	listeners:{
+		playerCreateStart: function _() {
+			this.show();
+		}
+	},
+	keysActions: {},
+	handlers: {
+		raceClick: function _() {
+			var nlRaces = this.parentNode.children;
+			var uiElement = this.getData("uiElement");
+			var nAttributes = uiElement.getData("attributesNode");
+			var race = this.getData("race");
+			
+			// Highlight selected race
+			for (var i in nlRaces) {
+				uiElement.setCustomClass(nlRaces[i],"Race");
+			}
+			uiElement.addCustomClass(this, "SelectedRace");
+			
+			// Show racial attributes
+			for (var i=0; i<Global.racialAttributes[race].length; i++) {
+				nAttributes.children[i*2+1].firstChild.nodeValue = Global.racialAttributes[race][i];
+			}
+		},
+		skillClick: function _() {
+			var uiElement = this.getData("uiElement");
+			var nLearnedSkills = uiElement.getData("learnedSkillsNode");
+			var learnedSkills = uiElement.getData("learnedSkills");
+			var learnedSkillsNodes = uiElement.getData("learnedSkillsNodes");
+			var skill = this.getData("skill");
+			
+			if (learnedSkills[skill]) {
+				learnedSkills[skill]++;
+				learnedSkillsNodes[skill].firstChild.nodeValue = Global.skillNames[skill]+" "+learnedSkills[skill];
+			} else {
+				learnedSkills[skill] = 1;
+				var nLearnedSkill = uiElement.getData("learnedSkillProtoNode").cloneNode(true);
+				uiElement.addCustomClass(nLearnedSkill,"LearnedSkill");
+				nLearnedSkill.appendChild(document.createTextNode(Global.skillNames[skill]+" 1"));
+				nLearnedSkill.setData("skill", skill);
+				nLearnedSkill.setData("uiElement", uiElement);
+				learnedSkillsNodes[skill] = nLearnedSkill;
+				nLearnedSkills.appendChild(nLearnedSkill);
+				uiElement.addEventListener(nLearnedSkill, "click", "learnedSkillClick");
+			}
+		},
+		learnedSkillClick: function _() {
+			var uiElement = this.getData("uiElement");
+			var learnedSkills = uiElement.getData("learnedSkills");
+			var skill = this.getData("skill");
+			
+			learnedSkills[skill]--;
+			if (learnedSkills[skill] == 0) {
+				this.parentNode.removeChild(this);
+			} else {
+				this.firstChild.nodeValue = Global.skillNames[skill]+" "+learnedSkills[skill];
+			}			
+		},
+		backClick: function _() {
+			this.hide();
+			UI.notify("accountPlayersListCall");
+		},
+		completeClick: function _() {
+			this.hide();
+			UI.notify("accountPlayersListCall");
+		}
+	},
+	cssRules: function _() {
+		return " 					\
+		div.$type$ {				\
+			width: 600px;			\
+			height: 500px;			\
+			border-radius: 20px;	\
+			padding: 20px 20px 62px 20px;	\
+			box-sizing: border-box;	\
+		}							\
+		div.$type$LeftSide {		\
+			width: 140px;			\
+			height: 100%;			\
+			border: 1px solid #777;	\
+			float: left;			\
+			text-align: left;		\
+		}							\
+		div.$type$RightSide {		\
+			border: 1px solid #777;	\
+			height: 100%;			\
+			float: right;			\
+			width: 400px;			\
+		}							\
+		div.$type$LeftSide * {		\
+			text-align: left;		\
+			font-size: 13px;		\
+		}							\
+		input.$type$Input {			\
+			width: 100%;			\
+			border-radius: 6px;		\
+			box-sizing: border-box;	\
+		}							\
+		div.$type$Race {			\
+			color: #add;			\
+			font-size: 14px;		\
+			cursor: pointer;		\
+		}							\
+		div.$type$Race:hover {		\
+			color: #9aa;			\
+		}							\
+		div.$type$SelectedRace {	\
+			color: #699;			\
+		}							\
+		div.$type$SelectedRace {	\
+			padding-left: 10px !important;	\
+			color: #377 !important;	\
+		}							\
+		div.$type$Class {			\
+			color: #add;			\
+			padding: 4px;			\
+			font-size: 14px;		\
+			cursor: pointer;		\
+		}							\
+		div.$type$Class:hover {		\
+			color: #9aa;			\
+		}							\
+		div.$type$SelectedClass {	\
+			padding: 4px 4px 4px 10px;	\
+			color: #377;			\
+			font-size: 14px;		\
+			cursor: pointer;		\
+		}							\
+		div.$type$Error {			\
+			color: #f55;			\
+			height: 20px;			\
+		}							\
+		div.$type$Column {			\
+			display: inline-block;	\
+			width: 100px;			\
+			height: 200px;			\
+			vertical-align: top;	\
+			margin: 4px 0px 0px 0px;\
+		}							\
+		div.$type$ColumnHeader {	\
+			width: 100px;			\
+			font-size: 16px;		\
+			color: #ccc;			\
+			text-align: center;		\
+		}							\
+		div.$type$Skill {			\
+			color: #add;			\
+			font-size: 14px;		\
+			text-align: left;		\
+			padding: 4px 4px 4px 4px;	\
+			cursor: pointer;		\
+		}							\
+		div.$type$Skill:hover {		\
+			color: #9aa;			\
+		}							\
+		div.$type$SkillAttribute {	\
+			color: #fff !important;	\
+			font-size: 16px !important;	\
+			-webkit-box-sizing: border-box;	\
+			text-align: center !important;	\
+			font-variant: small-caps;	\
+			width: 100%;			\
+		}							\
+		div.$type$SkillAttribute:hover {	\
+			color: #fff !important;	\
+		}							\
+		div.$type$SkillsHeader {	\
+			font-size: 22px;		\
+			text-align: center;		\
+			color: #fff;			\
+			font-variant: smallcaps;\
+		}							\
+		div.$type$LearnedSkill {	\
+			display: inline-block;	\
+			cursor: pointer;		\
+			background-color: #377;	\
+			padding: 6px;			\
+			border-radius: 6px;		\
+			margin: 6px 6px 0px 0px;\
+		}							\
+		div.$type$LearnedSkills {	\
+			display: inline-block;	\
+			max-width: 432px;		\
+		}							\
+		div.$type$LearnedSkill:hover {	\
+			color: #9aa;			\
+		}							\
+		div.$type$Attributes {		\
+			max-width: 110px;		\
+			padding: 4px;			\
+			height: 70px;			\
+		}							\
+		div.$type$AttrName {		\
+			display: inline-block;	\
+			width: 80px;			\
+			padding: 4px 0px 0px 4px;	\
+			height: 16px;			\
+			color: #fff;			\
+			box-sizing: border-box;	\
+		}							\
+		div.$type$AttrValue {		\
+			display: inline-block;	\
+			padding: 4px 0px 0px 0px;	\
+			text-align: center;		\
+			color: #377;			\
+			width: 40px;			\
+			height: 16px;			\
+			box-sizing: border-box;	\
+		}							\
+		div.$type$Section {			\
+			font-size: 18px;		\
+			color: #986;			\
+			font-variant: small-caps;	\
+			margin-top: 10px;		\
+		}							\
+		";
+	}
+};
+UIElementTypes.windowAccountCreate = {
+	onInit: function _() {
+		var nLogin = document.createElement("input");
+		var nPassword = document.createElement("input");
+		var nPasswordAgain = document.createElement("input");
+		var nComplete = document.createElement("div");
+		var nBack = document.createElement("div");
+		var nWrap = document.createElement("div");
+		var nHeader = document.createElement("div");
+		var nError = document.createElement("div");
+		
+		var nDiv1 = document.createElement("div");
+		nDiv1.appendChild(document.createTextNode("Логин"));
+		
+		var nDiv2 = nDiv1.cloneNode(true);
+		nDiv2.firstChild.nodeValue = "Пароль";
+		
+		var nDiv3 = nDiv1.cloneNode(true);
+		nDiv3.firstChild.nodeValue = "Пароль ещё раз";
+		
+		this.addCustomClass(nDiv1, "Label");
+		this.addCustomClass(nDiv2, "Label");
+		this.addCustomClass(nDiv3, "Label");
+		this.addCustomClass(nWrap, "Wrap");
+		this.addCustomClass(nError, "Error");
+		nComplete.addClass("buttonBlack");
+		nHeader.addClass("windowHeader");
+		nBack.addClass("buttonBlack");
+		nComplete.style.float = "left";
+		nBack.style.float = "right";
+		
+		nComplete.appendChild(document.createTextNode("Создать"));
+		nBack.appendChild(document.createTextNode("Назад"));
+		
+		this.bindHandlerToUIElementContext(nBack, "click", "backClick");
+		this.bindHandlerToUIElementContext(nComplete, "click", "completeClick");
+		
+		nHeader.appendChild(document.createTextNode("Новый аккаунт"));
+		nWrap.appendChild(nHeader);
+		nWrap.appendChild(nDiv1);
+		nWrap.appendChild(nLogin);
+		nWrap.appendChild(nDiv2);
+		nWrap.appendChild(nPassword);
+		nWrap.appendChild(nDiv3);
+		nWrap.appendChild(nPasswordAgain);
+		nWrap.appendChild(nError);
+		this.rootElement.appendChild(nWrap);
+		this.rootElement.appendChild(nComplete);
+		this.rootElement.appendChild(nBack);
+		
+		this.setData("errorNode", nError);
+		this.setData("loginNode", nLogin);
+		this.setData("passwordNode", nPassword);
+		this.setData("passwordAgainNode", nPasswordAgain);
+	},
+	listeners: {
+		accountCreateStart: function _() {
+			this.show();
+		}
+	},
+	keysActions: {},
+	handlers: {
+		backClick: function _() {
+			this.hide();
+			UI.notify("serverInfoRecieve");
+		},
+		completeClick: function _() {
+			var nError = this.getData("errorNode");
+			var nLogin = this.getData("loginNode");
+			var nPassword = this.getData("passwordNode");
+			var nPasswordAgain = this.getData("passwordAgainNode");
+			if (nLogin.value == "") {
+				winkElement(nError, "Заполните логин!");
+			} else if (nPassword.value == "" || nPasswordAgain.value == "") {
+				winkElement(nError, "Заполните пароль и подтверждение!");
+			} else if (nPassword.value != nPasswordAgain.value) {
+				winkElement(nError, "Пароль и подтверждение пароля не совпадают!");
+			} else {
+				Net.send({a:Net.ACCOUNT_REGISTER,l:nLogin.value,p:nPassword.value}, function (data) {
+					if (data.error !== undefined) {
+						winkElement(nError, "Логин уже занят!");
+					} else {
+						Global.playerLogin = nLogin.value;
+						Global.playerPassword = nPassword.value;
+						UI.notify("accountPlayersRecieve", data.players);
+					}
+				});
+			}
+		}
+	},
+	cssRules: function _() {
+		return "					\
+		div.$type$ {				\
+			width: 400px;			\
+			height: 300px;			\
+			border-radius: 20px;	\
+			padding: 20px 20px 58px 20px;	\
+			box-sizing: border-box;	\
+			text-align: center;		\
+		}							\
+		div.$type$Wrap {			\
+			height: 100%;			\
+		}							\
+		div.$type$Wrap > input {	\
+			margin: 4px 50px 4px 4px;	\
+			border-radius: 5px;		\
+		}							\
+		div.$type$Label {			\
+			display: inline-block;	\
+			margin-left:20px;		\
+			width: 95px;			\
+			text-align: right;		\
+			color: #fff;			\
+			padding-right: 5px;		\
+			font-size: 14px;		\
+			height: 30px;			\
+			line-height: 30px;		\
+		}							\
+		div.$type$Error {			\
+			height: 20px;			\
+			line-height: 20px;		\
+			color: #f55;			\
+			text-align: center;		\
+			font-size: 13px;		\
 		}							\
 		";
 	}

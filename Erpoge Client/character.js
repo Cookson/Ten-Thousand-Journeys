@@ -129,6 +129,7 @@
 	
 	this.skills=[];
 	this.actionQueue = [];
+	this.actionQueueParams = [];
 }
 Character.prototype.sendAttack = function(aimId, ranged) {
 	Net.send({a:Net.ATTACK, aimId:aimId, ranged:ranged});
@@ -352,7 +353,7 @@ Character.prototype.rays = function(startX,startY,endX,endY) {
 Character.prototype.showCastSpell = function(spellId, x, y) {
 	console["log"](this.name+" casts spell "+spellId+" to "+x+","+y);
 	UI.notify("spellCast");
-	player.spellId=-1;
+	this.unselectSpell();
 	player.spellAimId=-1;
 	player.spellX=-1;
 	player.spellY=-1;
@@ -380,7 +381,6 @@ Character.prototype.showDeath = function() {
 	vertex[this.x][this.y]=-1;
 	if (this === player) {
 		UI.notify("death");
-		checkStopped=true;
 		var nlEffects=document.getElementById("effectsList").children;
 		while (nlEffects.length>0) {
 			nlEffects[0].parentNode.removeChild(nlEffects[0]);
@@ -752,7 +752,6 @@ Character.prototype.isNear = function(x,y) {
 	return false;
 };
 Character.prototype.leaveLocation=function() {
-	checkStopped=true;
 	Net.send({leaveLocation:1},function(data) {
 		onGlobalMap=true;
 		leaveLocation();
@@ -760,21 +759,15 @@ Character.prototype.leaveLocation=function() {
 	this.leavesArea=false;
 };
 Character.prototype.loseItem = function(typeId, param) {
-// Удалить предмет из инвентаря. number - номер предмета в иневентаре, num - количество удаляемых предметов
 	if(isUnique(typeId)) {
 		this.items.removeUnique(param);
 	} else {
 		this.items.removePile(typeId, param);
 	}
 	UI.notify("inventoryChange");
-	return true;
 };
 Character.prototype.getItem = function(typeId, param) {
-	if(isUnique(typeId)) {
-		this.items.addItem(new UniqueItem(typeId, param));
-	} else {
-		this.items.addItem(new ItemPile(typeId, param));
-	}
+	this.items.addItem(typeId, param);
 	UI.notify("inventoryChange");
 };
 Character.prototype.meleeAttack=function(x,y) {
@@ -1114,32 +1107,38 @@ Character.prototype.showDrop = function(typeId, param) {
 Character.prototype.sendShootMissile = function(x, y, missile) {
 	Net.send({a:Net.SHOOT_MISSILE,x:x,y:y,missile:missile});
 };
-Character.prototype.sendOpenContainer = function(x, y) {
-	Net.send({a:Net.OPEN_CONTAINER,x:x,y:y});
+Character.prototype.sendOpenContainer = function() {
+	Net.send({a:Net.OPEN_CONTAINER,x:Global.container.x,y:Global.container.y});
 };
-Character.prototype.sendTakeFromContainer = function(itemId, amount, x, y) {
-	Net.send({a:Net.TAKE_FROM_CONTAINER,itemId:itemId,amount:amount,x:x,y:y});
+Character.prototype.sendTakeFromContainer = function(typeId, param) {
+	Net.send({
+		a:Net.TAKE_FROM_CONTAINER,
+		typeId:typeId,
+		param:param,
+		x:Global.container.x,
+		y:Global.container.y
+	});
 };
-Character.prototype.showTakeFromContainer = function(itemId, amount, x, y) {
+Character.prototype.showTakeFromContainer = function(typeId, param) {
 	if (this.isClientPlayer) {
-		this.getItem(itemId, amount);
-		UI.notify("inventoryChange");
-		if (windowContainer.visible) {
-			windowContainer.removeItem(itemId, amount);
-			windowContainer.showItems();
-		}
+		Global.container.items.remove(typeId, param);
+		UI.notify("containerChange");
 	}
 	handleNextEvent();
 };
-Character.prototype.sendPutToContainer = function(itemId, amount, x ,y) {
-	Net.send({a:Net.PUT_TO_CONTAINER,itemId:itemId,amount:amount,x:x,y:y});
+Character.prototype.sendPutToContainer = function(typeId, param) {
+	Net.send({
+		a:Net.PUT_TO_CONTAINER,
+		typeId:typeId,
+		param:param,
+		x:Global.container.x,
+		y:Global.container.y
+	});
 };
-Character.prototype.showPutToContainer = function(itemId, amount) {
+Character.prototype.showPutToContainer = function(typeId, param) {
 	if (this.isClientPlayer) {
-		if (windowContainer.visible) {
-			windowContainer.addItem(itemId, amount);
-			windowContainer.showItems();
-		}
+		Global.container.items.addItem(typeId, param);
+		UI.notify("containerChange");
 	}
 	handleNextEvent();
 };
@@ -1301,7 +1300,7 @@ Character.prototype.removeEffect=function(effectId) {
 Character.prototype.showLoot=function() {
 	// if (this.characterId!=0) {
 		// return false;
-	// }
+	// }	
 	UI.notify("lootChange");
 };
 Character.prototype.findCharacterByCoords=function(x,y) {
@@ -1314,8 +1313,8 @@ Character.prototype.findCharacterByCoords=function(x,y) {
 };
 Character.prototype.cellChooseAction = function() {
 // Совершить действие на координате под курсором
-	var x=cellCursorSec.x;
-	var y=cellCursorSec.y;
+	var x=CellCursor.x;
+	var y=CellCursor.y;
 	if (!player.canSee(x,y)) {
 		gAlert("Игрок не видит целевой клетки!");
 	} else {
@@ -1333,12 +1332,12 @@ Character.prototype.cellChooseAction = function() {
 				player.sendShootMissile(x, y, 2300);
 			}
 		}
-		cellCursorSec.character=Character.prototype.findCharacterByCoords(x,y);
-		CellCursor.prototype.useCursor("cellCursorPri");
-		keysMode=0;
+		CellCursor.character=Character.prototype.findCharacterByCoords(x,y);
+		UI.setMode(UI.MODE_DEFAULT);
 	}
 };
 Character.prototype.showMissileFlight = function(fromX, fromY, toX, toY, missile) {
+	this.unselectMissile();
 	animationsLeft++;
 	animationsLeft++; // Так надо: второй раз - для анимации снаряда
 	var character=this;
@@ -1403,14 +1402,24 @@ Character.prototype.showMissileFlight = function(fromX, fromY, toX, toY, missile
 		handleNextEvent();
 	});
 };
-Character.prototype.addActionToQueue=function(func) {
+Character.prototype.addActionToQueue=function(func, params) {
 // Add a function to the queue. When the client is informed by server that it is client's turn,
 // the client will do the first queued action, if it has any.
+// params: array of arguments
+	if (!(params instanceof Array)) {
+		if (params === undefined) {
+			params = [];
+		} else {
+			throw new Error("Incorrect params for queued action: "+params+" , queued action:",func);
+		}
+	}
 	this.actionQueue.push(func);
+	this.actionQueueParams.push(params);
 };
 Character.prototype.doActionFromQueue = function() {
-	this.actionQueue[0].apply(player);
+	this.actionQueue[0].apply(player, this.actionQueueParams[0]);
 	this.actionQueue.splice(0, 1);
+	this.actionQueueParams.splice(0, 1);
 };
 Character.prototype.showVisibleCells = function() {
 //	for (var i=0;i<width;i++) {
@@ -1518,4 +1527,36 @@ Character.prototype.showEffectStart = function(effectId) {
 Character.prototype.showEffectEnd = function(effectId) {
 	this.effects[effectId].markForDestruction();
 	delete this.effects[effectId];
+};
+Character.prototype.selectSpell = function(spellId) {
+	this.spellId = spellId;
+	UI.setMode(UI.MODE_CURSOR_ACTION);
+	UI.notify("spellSelect");
+	CellCursor.changeStyle("CellAction");
+};
+Character.prototype.unselectSpell = function() {
+	UI.notify("spellUnselect");
+	this.spellId = -1;
+	UI.setMode(UI.MODE_DEFAULT);
+	CellCursor.changeStyle("Main");
+};
+Character.prototype.selectMissile = function() {
+	if (player.ammunition.getItemInSlot(0) && isRanged(player.ammunition.getItemInSlot(0).typeId)) {
+		var aimcharacter;
+		if (aimcharacter=player.findEnemy()) {
+			CellCursor.move(aimcharacter.x,aimcharacter.y);
+		} else {
+			CellCursor.move(player.x,player.y);
+		}
+		UI.setMode(UI.MODE_CURSOR_ACTION);
+		UI.notify("missileSelect");
+		CellCursor.changeStyle("CellAction");
+	} else {
+		UI.notify("alert","Игрок не держит в руках оружия дальнего боя!");
+	}
+};
+Character.prototype.unselectMissile = function() {
+	UI.notify("missileUnselect");
+	UI.setMode(UI.MODE_DEFAULT);
+	CellCursor.changeStyle("Main");
 };

@@ -71,16 +71,15 @@ function centerWorldCamera(x,y,initiate) {
 function prepareArea(isWorld) {
 // Подготавливает область для загрузки в неё данных с сервера
 // Если isWorld - загружется мир, иначе - область
-	while (gameField.children.length>3) {
+	while (gameField.children.length>2) {
 	// Удаляем всех детей #gameField, кроме div'ов c gameFieldFloor,
 	// cellCursorPri и cellCursorSec
-		gameField.removeChild(gameField.children[3]);
+		gameField.removeChild(gameField.children[2]);
 	}
 	rendCX=-1;
 	rendCY=-1;
 	prevRendCX=-1;
 	prevRendCY=-1;
-	keyPressActive=false;
 	matrix = blank2dArray();
 	vertex = blank2dArray();
 	for (var i=0;i<width;i++) { 
@@ -96,12 +95,7 @@ function prepareArea(isWorld) {
 	// Игровое поле
 	gameField.style.display="inline-block";
 	gameField.style.width=(32*width)+"px";
-	gameField.style.height=(32*height)+"px";
-	
-	setTimeout(function() {
-		keyPressActive=true;
-	}, 500);
-	
+	gameField.style.height=(32*height)+"px";	
 }
 function playerClick(x, y, shiftKey) {
 // Функция обработки клика игрока
@@ -138,8 +132,7 @@ function playerClick(x, y, shiftKey) {
 		} else if (spells[player.spellId].onCell) {
 			player.spellX=x;
 			player.spellY=y;
-			player.spellAimId=-1;
-			
+			player.spellAimId=-1;			
 		}
 	} else if ((aim = matrix[x][y].character) && !player.isEnemy(aim)) {
 		player.sendStartConversation(aim.characterId);
@@ -152,9 +145,9 @@ function playerClick(x, y, shiftKey) {
 		player.sendUseObject(x,y);
 	} else if (matrix[x][y].object && player.isNear(x,y) && isContainer(matrix[x][y].object.type)) {
 	// Открыть контейнер
-		windowContainer.x = x;
-		windowContainer.y = y;
-		player.sendOpenContainer(x,y);
+		Global.container.x = x;
+		Global.container.y = y;
+		player.sendOpenContainer();
 	} else if (vertex[x][y]==1 || vertex[x][y]==3) {
 	// Если игрок идёт к объекту или мобу
 		player.aimcharacter=-1; // Нужно, если игрок идёт
@@ -164,7 +157,7 @@ function playerClick(x, y, shiftKey) {
 		if (player.comeTo(x,y)) {
 			player.sendMove();
 		}
-	} else if (keysMode==6) {
+	} else if (UI.mode == UI.MODE_CURSOR_ACTION) {
 		player.cellChooseAction();
 	} else {
 	// Если игрок идёт к клетке
@@ -398,8 +391,6 @@ in : [[
 			setTimeout(function() { 
 				readAttacks(attackers, index+1); 
 			},700);
-		} else {
-			checkStopped=false;
 		}
 		// Обработка смерти происходит в другом месте. Не помню, где. Но
 		// происходит :3
@@ -705,7 +696,6 @@ function readWorld(data) {
 	rendCY=Math.floor(height/2);
 	worldMapRenderView();
 	document.getElementById("intfQueue").style.display="none";
-	hideMenu();
 }
 function readLocation(data) {
 // Reads location contents got from server
@@ -850,7 +840,7 @@ function test(x,y) {
 function enterArea(callback) {
 // Войти в область [player.worldX,player.worldY] и загрузить информацию о
 // персонаже
-	showStLoad();
+	showLoadingScreen();
 	Net.send({
 		a:Net.ENTER_LOCATION,
 		x:worldPlayers[player.characterId].x,
@@ -866,7 +856,7 @@ function worldTravel(x,y) {
 function leaveLocation(callback) {
 // Выйти из области или загрузить мир при загрузке игры, в т. ч. загрузить
 // информацию об игроке
-	showStLoad();
+	showLoadingScreen();
 	Net.send({a:Net.LEAVE_LOCATION},handlers.net.loadContents);
 }
 function readOnlinePlayers(data) {

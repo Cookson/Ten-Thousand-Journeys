@@ -244,32 +244,28 @@ public abstract class Character extends Seer {
 		moveTime(500);
 	}
 	
-	public void takeFromContainer(ItemPile pile, int x, int y) {
-		Container container = location.getContainer(x, y);
+	public void takeFromContainer(ItemPile pile, Container container) {
 		getItem(pile);
 		container.removePile(pile);
 		location.addEvent(new EventTakeFromContainer(characterId, pile.getTypeId(), pile.getAmount(), x, y));
 		moveTime(500);
 	}
 	
-	public void takeFromContainer(UniqueItem item, int x, int y) {
-		Container container = location.getContainer(x, y);
+	public void takeFromContainer(UniqueItem item, Container container) {
 		getItem(item);
 		container.removeUnique(item);
 		location.addEvent(new EventTakeFromContainer(characterId, item.getTypeId(), item.getItemId(), x, y));
 		moveTime(500);
 	}
 
-	public void putToContainer(ItemPile pile, int x, int y) {
-		Container container = location.getContainer(x, y);
+	public void putToContainer(ItemPile pile, Container container) {
 		loseItem(pile);
 		container.add(pile);
 		location.addEvent(new EventPutToContainer(characterId, pile.getTypeId(), pile.getAmount(), x, y));
 		moveTime(500);
 	}
 	
-	public void putToContainer(UniqueItem item, int x, int y) {
-		Container container = location.getContainer(x, y);
+	public void putToContainer(UniqueItem item, Container container) {
 		loseItem(item);
 		container.add(item);
 		location.addEvent(new EventPutToContainer(characterId, item.getTypeId(), item.getItemId(), x, y));

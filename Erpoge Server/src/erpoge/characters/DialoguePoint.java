@@ -46,7 +46,7 @@ public class DialoguePoint {
 		return nextPoint;
 	}
 	public boolean isAnswerEnding(int answerIndex) {
-	// Checks wheter answer ends dialoge or not
+	// Checks whether answer node has any children nodes or not
 		return ends.get(answerIndex);
 	}
 }

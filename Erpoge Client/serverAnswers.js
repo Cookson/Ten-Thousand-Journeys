@@ -53,7 +53,7 @@ function handleNextEvent() {
 		// ������� ������ ���� ����� showMove - � showMove ���������� check out (��������, ��� ���������� ���������)
 			player.addActionToQueue(player.sendMove);
 		} else {
-			cellCursorPri.show();
+			CellCursor.show();
 		}
 		characters[value.characterId].showMove(value.x, value.y);	
 		UI.notify("environmentChange");
@@ -96,8 +96,12 @@ function handleNextEvent() {
 		}
 		break;
 	case "openContainer":
-		windowContainer.show();
-		windowContainer.showItems(value.items);
+		UI.setMode(UI.MODE_CONTAINER);
+		Global.container.items.empty();
+		for (var i in value.items) {
+			Global.container.items.addItem(value.items[i][0], value.items[i][1]);
+		}
+		UI.notify("containerOpen");
 		handleNextEvent();
 		break;
 	case "takeFromContainer":
@@ -235,7 +239,7 @@ function handleNextEvent() {
 		handleNextEvent();
 		break;
 	case "dialogueEnd":
-		if (value.playerId == player.characterId) {
+		if (value.characterId == player.characterId) {
 			UI.notify("dialogueEnd");
 		}
 		handleNextEvent();

@@ -6,7 +6,6 @@
 	cursor: default;
 	font-family: Garamond !important, Calibri, sans-serif, arial;
 	font-size: 13px;
-	cursor: default;
 	margin: 0px;
 	padding: 0px;
 	border: 0px solid black;
@@ -15,7 +14,7 @@
 input {
 	padding: 4px;
 	-moz-user-select: text !important;
-	-khtml-user-select: text;
+	-webkit-user-select: text;
 	user-select: text;
 }
 
@@ -327,10 +326,10 @@ div.stMenuAction:hover {
 }
 
 #stLoad {
-	display: inline-block;
 	position:absolute;
 	z-index:9000;
 	width:100%;
+	height: 100%;
 	vertical-align: middle;
 	text-align: center;
 	font-size: 28px;
@@ -338,22 +337,6 @@ div.stMenuAction:hover {
 	font-variant: small-caps;
 }
 
-/* ����������� � ������� */
-.stWindow {
-	color: #fff;
-	display: inline-block;
-	vertical-align: middle;
-	border: 3px solid #222;
-	border-radius: 20px;
-	-moz-border-radius: 20px;
-	width: 400px;
-	height: 300px;
-	line-height: 1;
-	background-color: #111;
-	padding: 10px;
-	text-align:center;
-	position:absolute;
-}
 
 #stServer div {
 	text-align: center;
@@ -374,11 +357,11 @@ div.stMenuAction:hover {
 	vertical-align: middle !important;
 }
 
-.stSubmit {
+.buttonBlack {
+	display: inline-block;
 	line-height: 20px;
 	vertical-align: middle;
 	font-size: 20px;
-	height: 35px;
 	color: #fff;
 	background-color: #050505;
 	font-family: Garamond;
@@ -386,24 +369,27 @@ div.stMenuAction:hover {
 	border-radius: 5px;
 	-moz-border-radius: 5px;
 	-webkit-border-radius: 5px;
-	margin: 8px 0px 0px 0px;
 	cursor: pointer;
-	border: 1px solid #333;
+	border: 1px solid #777;
 }
 
-.stSubmit:hover {
+.buttonBlack:hover {
 	border: 1px solid #377;
 }
 
+.inputRounded {
+	border-radius: 6px;
+}
+
+.windowHeader {
+	color: #fff;
+	font-size: 22px;
+	text-align: center;
+	margin: 0px 0px 10px 0px;	
+}
 .stForm {
 	text-align: center;
 	padding: 20px 0px 0px 0px;
-}
-
-.stWindow input {
-	margin: 4px;
-	border-radius: 5px;
-	-moz-border-radius: 5px;
 }
 
 
@@ -419,64 +405,7 @@ div.stMenuAction:hover {
 	height: 20px;
 }
 
-#stNewPlayer {
-	height: 500px;
-	width: 600px;
-	vertical-align: middle;
-}
 
-#stNewPlayerLeftColumn {
-	float: left;
-	text-align: left;
-}
-
-#stNewPlayerLeftColumn * {
-	text-align: left;
-	font-size: 13px;
-}
-
-#stNewPlayerRightColumn {
-	float: right;
-}
-
-#stNewPlayerRaces>div {
-	color: #add;
-	padding: 4px;
-	font-size: 14px;
-	cursor: pointer;
-}
-
-#stNewPlayerRaces>div:hover {
-	color: #9aa;
-}
-
-div.stNewPlayerSelectedRace {
-	padding-left: 10px !important;
-	color: #377 !important;
-}
-
-div.stNewPlayerClass {
-	color: #add;
-	padding: 4px;
-	font-size: 14px;
-	cursor: pointer;
-}
-
-div.stNewPlayerClass:hover {
-	color: #9aa;
-}
-
-div.stNewPlayerSelectedClass {
-	padding: 4px 4px 4px 10px;
-	color: #377;
-	font-size: 14px;
-	cursor: pointer;
-}
-
-#stNewPlayerError {
-	color: #f55;
-	height: 20px;
-}
 
 
 
@@ -495,96 +424,7 @@ div.stNewPlayerSelectedClass {
 	vertical-align: top;
 }
 
-div.stNewPlayerSkillColumn {
-	display: inline-block;
-	width: 100px;
-	height: 200px;
-	vertical-align: top;
-	margin: 4px 0px 0px 0px;
-}
 
-#stNewPlayerRightColumn .stNewPlayerSkillColumn div {
-	color: #add;
-	font-size: 14px;
-	text-align: left;
-	padding: 4px 4px 4px 4px;
-	cursor: pointer;
-}
-
-#stNewPlayerRightColumn .stNewPlayerSkillColumn div:hover {
-	color: #9aa;
-}
-
-div.stNewPlayerSkillAttribute {
-	color: #fff !important;
-	font-size: 16px !important;
-	-webkit-box-sizing: border-box;
-	text-align: center !important;
-	font-variant: small-caps;
-	width: 100%;
-}
-
-div.stNewPlayerSkillAttribute:hover {
-	color: #fff !important;
-}
-
-div.stNewPlayerRightColumnHeader {
-	font-size: 16px;
-}
-
-div.stNewPlayerLearnedSkill {
-	display: inline-block;
-	cursor: pointer;
-	background-color: #377;
-	padding: 6px;
-	border-radius: 6px;
-	-moz-border-radius: 6px;
-	margin: 6px 6px 0px 0px
-}
-
-#stNewPlayerLearnedSkills {
-	display: inline-block;
-	max-width: 432px;
-}
-
-#stNewPlayerLearnedSkills>div {
-	cursor: pointer;
-	font-size: 16px;
-	color: #add;
-	margin: 10px 0px 0px 0px;
-}
-
-#stNewPlayerLearnedSkills>div:hover {
-	color: #9aa;
-}
-
-#stNewPlayerSkillPointLeft {
-	
-}
-
-#stNewPlayerAttributes {
-	max-width: 110px;
-	padding: 4px;
-	height: 70px;
-}
-
-div.stNewPlayerAttributeName {
-	float: left;
-	width: 80px;
-	margin: 4px 0px 0px 0px;
-}
-
-div.stNewPlayerAttributeValue {
-	float: right;
-	margin: 4px 0px 0px 0px;
-}
-
-div.stNewPlayerSection {
-	font-size: 18px;
-	color: #986;
-	font-variant: small-caps;
-	margin-top: 10px;
-}
 
 #stNewPlayerComplete {
 	cursor: pointer;
@@ -835,14 +675,14 @@ span.benchmarkVeryGood {
 }
 
 /* ��������� ������ �� ������; cellCursorSec  */
-#cellCursorSec div {
+div.cellCursorCellAction {
 	width: 32px;
 	height: 32px;
 	background-color: yellow;
 	opacity: 0.3;
 }
 
-#cellCursorPri div {
+div.cellCursorMain {
 	border: 1px dotted yellow;
 	outline: 1px dotted #000;
 	width: 30px;

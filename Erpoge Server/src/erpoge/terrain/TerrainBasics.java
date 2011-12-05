@@ -153,7 +153,7 @@ public abstract class TerrainBasics {
 		if (containers.containsKey(num)) {
 			return containers.get(num);
 		} else {
-			throw new Error("��������� " + x + ":" + y + "�� ������");
+			throw new Error("Контейнера на " + x + ":" + y + "не существует");
 		}
 	}
 	public void addItem(UniqueItem item, int x, int y) {

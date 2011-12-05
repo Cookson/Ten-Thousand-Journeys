@@ -57,31 +57,39 @@ handlers={
 				}
 			},
 			context: window
+		},
+		selectMissile: {
+			action: function _() {
+				player.selectMissile();
+			},
+			context: window
+		},
+		shootMissile: {
+			action: function _() {
+				if (player.ammunition.getItemInSlot(0) && isRanged(player.ammunition.getItemInSlot(0).typeId)) {
+					player.cellChooseAction();
+				} else {
+					gAlert("Игрок не держит в руках оружия дальнего боя!");
+				}
+			},
+			context: window
+		},
+		takeAllFromContainer: {
+			action: function _() {
+				var itemValues = Global.container.items.getValues();
+				for (var i in itemValues) {
+					player.addActionToQueue(
+						player.sendTakeFromContainer, 
+						[
+						 	itemValues[i].typeId, 
+						 	itemValues[i][itemValues[i].amount ? "amount" : "itemId"]
+						]
+					);
+				}
+				player.doActionFromQueue();
+			},
+			context: window
 		}
-	},
-	stPlayersPlayer: {
-		
-	},
-	cellWrap: {
-		click : function _() {
-
-		}
-	},
-	loot: {
-		
-	},
-	containerItem: {
-		click: function _(e) {
-			player.sendTakeFromContainer(
-					+this.getAttribute("itemId"), 
-					(e.shiftKey ? 1 : +this.getAttribute("itemNum")),
-					windowContainer.x,
-					windowContainer.y
-			);
-		}
-	},
-	spell: {
-		
 	},
 	onlinePlayer: {
 		click:function _() {
@@ -124,17 +132,6 @@ handlers={
 			}
 		}
 	},
-	input: {
-		focus:function _() {
-			keysMode=5;
-		},
-		blur:function _() {
-			useNormalKeysMode();
-		},
-		contextmenu:function _(e){
-			return false;
-		}
-	},
 	document: {
 		keydown: Keys.universalKeyDownHandler,
 		contextmenu: function _() {
@@ -161,7 +158,7 @@ handlers={
 			} else {
 			// На карте области
 				var shiftKey=e.shiftKey;
-				if (keysMode == 6) {
+				if (player.spellId != -1) {
 					player.cellChooseAction();
 				} else {
 					playerClick(x, y, shiftKey);
@@ -205,20 +202,21 @@ handlers={
 			}
 			mapCursorX=x;
 			mapCursorY=y;
-			if (keysMode==6) {
-				cellCursorSec.move(x,y);
-			} else {
-				cellCursorPri.move(x,y);
-				this.cellInfo.style.display="none";
-				// var nCurrentCell=document.getElementById("cellCursorPri");
-				// nCurrentCell.style.top=y*32+"px";
-				// nCurrentCell.style.left=x*32+"px";
-				// if (onGlobalMap || player.seenCells[x][y]) {
-					// nCurrentCell.style.borderColor="#ff0";
-				// } else {
-					// nCurrentCell.style.borderColor="#f00";
-				// }
-			}
+			CellCursor.move(x,y);
+//			if (player.spellId != -1) {
+//				cellCursorSec.move(x,y);
+//			} else {
+//				cellCursorPri.move(x,y);
+////				this.cellInfo.style.display="none";
+//				// var nCurrentCell=document.getElementById("cellCursorPri");
+//				// nCurrentCell.style.top=y*32+"px";
+//				// nCurrentCell.style.left=x*32+"px";
+//				// if (onGlobalMap || player.seenCells[x][y]) {
+//					// nCurrentCell.style.borderColor="#ff0";
+//				// } else {
+//					// nCurrentCell.style.borderColor="#f00";
+//				// }
+//			}
 			// Запрозрачивание горизонтального ряда объектов, закрывающих обзор
 			var objUnderCursor=getObject(x,y);
 			for (var dy=1;!getObject(x,y+dy-1) && matrix[x][y+dy];dy++) {
@@ -357,7 +355,7 @@ handlers={
 			var obj = {
 					a:		Net.CREATE_CHARACTER,
 					name: 	document.getElementById("stNewPlayerName").value,
-					login: 	playerLogin,
+					login: 	Global.playerLogin,
 					race:	playerCreation.race,
 					cls:	playerCreation.cls,
 					skills:	(function() {
@@ -529,20 +527,10 @@ handlers={
 			*/
 			if (data.error !== undefined) {
 			// If there is an error
-				if (data===0) {
-					winkElement(nLoginError,"Сервер переполнен");
-				} else if (data==1) {
-					winkElement(nLoginError,"Пустой логин!");
-				} else if (data==2) {
-					winkElement(nLoginError,"Пустой пароль!");
-				} else if (data==3) {
-					winkElement(nLoginError,"Введён неверный пароль или такого аккаунта не существует");
-				} else {
-					winkElement(nLoginError,"Неизвестная ошибка при заходе в игру");
-				}
+				UI.notify("loginError", data.error)
 			} else {
 				UI.notify("accountPlayersRecieve", data.players);
-				Net.setServerAdressesStorage(serverAddress, playerLogin, playerPassword);
+				Net.setServerAdressesStorage(serverAddress, Global.playerLogin, Global.playerPassword);
 			}
 		},
 		loadContents : function _(data) {
@@ -598,8 +586,7 @@ handlers={
 			};	// Создадим неполный объект игрока 
 				// (чтобы не создавать новую переменную для сохранения имени 
 				// и брать её из естественного источника - объекта player)
-			showMenu();
-			showStLoad();
+			showLoadingScreen();
 			if (data.onGlobalMap) {
 			// World loading
 				isLocationPeaceful = false;
@@ -623,7 +610,7 @@ handlers={
 				document.getElementById("intfEnterAreaBg").style.display="block";
 				UI.enterGlobalMapMode();
 				UI.notify("worldLoad");
-				Keys.setMode(Keys.MODE_ON_GLOBAL_MAP);
+				UI.setMode(UI.MODE_ON_GLOBAL_MAP);
 			} else {
 			// Area loading
 				if (characters[1]) {
@@ -632,8 +619,7 @@ handlers={
 				}
 				characters = {};
 				onGlobalMap=false;
-				showStLoad();
-				showMenu();
+				showLoadingScreen();
 				
 				document.getElementById("intfEnterArea").style.display="none";
 				document.getElementById("intfEnterAreaBg").style.display="none";
@@ -658,14 +644,12 @@ handlers={
 				}
 				readCharacters(data.online);
 //				minimap=new Minimap(document.getElementById("minimap"));
-				fitIntfInfo();
-				hideMenu();
 				UI.enterLocationMode();
 				UI.notify("locationLoad");
-				Keys.setMode(Keys.MODE_IN_LOCATION);
+				UI.setMode(UI.MODE_IN_LOCATION);
 			}
-			fitIntfInfo();
 			recountWindowSize();
+			hideLoadingScreen();
 		},
 		loadPassiveContents : function _(data) {
 			onGlobalMap = true;
@@ -673,12 +657,10 @@ handlers={
 			document.getElementById("intfInfo").style.display = "none";
 			document.getElementById("intfActions").style.display = "none";
 			
-			fitIntfInfo();
 			recountWindowSize();
 			
 			centerWorldCamera(width/2, height/2, true);
-			hideMenu();
-			inMenu = true;
+			hideLoadingScreen();
 		},
 		authComplete : function _() {
 		// Tell the server that content loading after authentification is complete
