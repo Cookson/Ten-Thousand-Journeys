@@ -13,6 +13,7 @@ import erpoge.objects.GameObjects;
 import erpoge.terrain.CellCollection;
 import erpoge.terrain.TerrainBasics;
 import erpoge.terrain.TerrainGenerator;
+import erpoge.terrain.settlements.Building.BasisBuildingSetup;
 
 public class Crypt extends Building {
 	public Coordinate stairsCoord;
@@ -20,7 +21,7 @@ public class Crypt extends Building {
 			int height) {
 		super(settlement, x, y, width, height, 5);
 		
-		buildBasis(GameObjects.OBJ_WALL_GREY_STONE, false);
+		buildBasis(GameObjects.OBJ_WALL_GREY_STONE, BasisBuildingSetup.CONVERT_TO_DIRECTED_TREE);
 		settlement.square(x, y, width, height, TerrainBasics.ELEMENT_FLOOR,
 				GameObjects.FLOOR_STONE, true);
 		ArrayList<Rectangle> roomsValues = new ArrayList<Rectangle>(

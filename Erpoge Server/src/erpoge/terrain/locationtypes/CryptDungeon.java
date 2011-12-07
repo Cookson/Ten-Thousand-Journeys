@@ -13,6 +13,7 @@ import erpoge.objects.GameObjects;
 import erpoge.terrain.Location;
 import erpoge.terrain.LocationGenerator;
 import erpoge.terrain.settlements.Building;
+import erpoge.terrain.settlements.Building.BasisBuildingSetup;
 
 public class CryptDungeon extends LocationGenerator {
 	public CryptDungeon(Location location) {
@@ -52,7 +53,7 @@ public class CryptDungeon extends LocationGenerator {
 			} while (!sideRooms.rectangleSystem.isConnected());
 			
 			// Draw rooms
-			sideRooms.buildBasis(GameObjects.OBJ_WALL_GREY_STONE, false);
+			sideRooms.buildBasis(GameObjects.OBJ_WALL_GREY_STONE, BasisBuildingSetup.CONVERT_TO_DIRECTED_TREE);
 			sideRooms.clearBasisInside();
 			for (int side = RectangleSystem.SIDE_N; side < RectangleSystem.SIDE_W; side++) {
 			// Find inner side of this rectangle (this is a one-iteration cycle where we find approptiate side)

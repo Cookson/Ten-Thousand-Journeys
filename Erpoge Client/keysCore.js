@@ -162,7 +162,7 @@ Keys.assign = function _(action) {
 			shift = 1;
 		}
 	}
-//	console.log("assign ", action, "to ",keyMode, ctrl, alt, shift, key);
+//	console["log"]("assign ", action, "to ",keyMode, ctrl, alt, shift, key);
 	Keys.keyActions[keyMode][ctrl][alt][shift][key] = handlers.keysActions[action];
 };
 Keys.universalKeyDownHandler = function _(e) {
@@ -176,7 +176,7 @@ Keys.universalKeyDownHandler = function _(e) {
 	var shift = e.shiftKey ? 1 : 0;
 	var key = e.keyCode;
 	var keyMode = UI.mode;
-//	console.log(keyMode, ctrl, alt, shift, key);
+//	console["log"](keyMode, ctrl, alt, shift, key);
 	var registeredAction;
 	if (
 		(keyMode == UI.MODE_ON_GLOBAL_MAP || 
@@ -204,7 +204,7 @@ Keys.registerKeyAction = function _(action, name, context) {
  * Context determines which object function $action applies to
  * (by default it is window)
  */
-//	console.log("register key action ",name," in ",context);
+//	console["log"]("register key action ",name," in ",context);
 	if (handlers.keysActions[name]) {
 		throw new Error("Another action under name "+name+" is already registred");
 	}

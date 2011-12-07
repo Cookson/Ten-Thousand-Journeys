@@ -1,8 +1,13 @@
 package erpoge;
 import erpoge.characters.CharacterTypes;
+import erpoge.characters.PlayerCharacter;
 import erpoge.gui.Window;
+import erpoge.inventory.ItemPile;
 import erpoge.inventory.ItemsTypology;
+import erpoge.inventory.UniqueItem;
+import erpoge.itemtypes.ItemType;
 import erpoge.objects.GameObjects;
+import erpoge.terrain.Location;
 import erpoge.terrain.World;
 
 public class Main {
@@ -10,7 +15,7 @@ public class Main {
 	public static final int DEFAULT_PORT = 8787;
 	public static int[][] arr;
 	public final static boolean DEBUG = true;
-	public static final String TEST_LOCATION_TYPE = "Village";
+	public static final String TEST_LOCATION_TYPE = "Empty";
 	public static <T> void out(T string) {
 		System.out.print(string);
 	}
@@ -44,23 +49,23 @@ public class Main {
 //		CharacterTypes.jsonTypes();
 //		ItemsTypology.showTypology();
 //		Main.console(GameObjects.jsonGetObjectProperties());
-		World world = new World(40,40,"Continent", "Erpoge World");
+		World world = new World(40,40,"TestWorld", "Erpoge World");
 		
-		world.showWorld();
+//		world.showWorld();
 		
-//		Location loc = world.createLocation(0, 0, 70, 70, TEST_LOCATION_TYPE, "New Location");
-//		loc.showLocation();
+		Location loc = world.createLocation(0, 0, 40, 40, TEST_LOCATION_TYPE, "New Location");
+		loc.showLocation();
 				
-//		PlayerCharacter burok = world.createCharacter("palyer", "Alvoi", 2, "Warrior", 13, 26);
-//		burok.getItem(new UniqueItem(ItemType.CLASS_SWORD * ItemsTypology.CLASS_LENGTH));
-//		burok.getItem(new ItemPile(ItemType.CLASS_AMMO * ItemsTypology.CLASS_LENGTH,200));
-//		burok.getItem(new UniqueItem(ItemType.CLASS_BLUNT * ItemsTypology.CLASS_LENGTH));
-//		burok.getItem(new UniqueItem(ItemType.CLASS_BOW * ItemsTypology.CLASS_LENGTH));
-//		burok.learnSpell(9);
-//		
-//		Accounts.addAccount(new Account("Dummy","1"));
-//		Accounts.addAccount(new Account("Billy","1"));
-//		Accounts.account("Dummy").addCharacter(burok);
+		PlayerCharacter burok = world.createCharacter("palyer", "Alvoi", 2, "Warrior", 13, 26);
+		burok.getItem(new UniqueItem(ItemType.CLASS_SWORD * ItemsTypology.CLASS_LENGTH));
+		burok.getItem(new ItemPile(ItemType.CLASS_AMMO * ItemsTypology.CLASS_LENGTH,200));
+		burok.getItem(new UniqueItem(ItemType.CLASS_BLUNT * ItemsTypology.CLASS_LENGTH));
+		burok.getItem(new UniqueItem(ItemType.CLASS_BOW * ItemsTypology.CLASS_LENGTH));
+		burok.learnSpell(9);
+		
+		Accounts.addAccount(new Account("1","1"));
+		Accounts.addAccount(new Account("Billy","1"));
+		Accounts.account("1").addCharacter(burok);
 		
 		MainHandler.assignWorld(world);
 		MainHandler.startServer();

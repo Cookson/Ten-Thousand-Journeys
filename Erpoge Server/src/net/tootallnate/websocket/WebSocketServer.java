@@ -6,10 +6,9 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -20,7 +19,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * functionality/purpose to the server.
  * @author Nathan Rajlich
  */
-public abstract class WebSocketServer implements Runnable, WebSocketListener {
+public abstract class WebSocketServer extends WebSocketAdapter implements Runnable {
 
 
   // CONSTANTS ///////////////////////////////////////////////////////////////
@@ -36,7 +35,7 @@ public abstract class WebSocketServer implements Runnable, WebSocketListener {
    * Holds the list of active WebSocket connections. "Active" means WebSocket
    * handshake is complete and socket can be written to, or read from.
    */
-  protected final CopyOnWriteArraySet<WebSocket> connections;
+  public final CopyOnWriteArraySet<WebSocket> connections;
   /**
    * The port number that this WebSocket server should listen on. Default is
    * WebSocket.DEFAULT_PORT.
@@ -53,7 +52,7 @@ public abstract class WebSocketServer implements Runnable, WebSocketListener {
   /**
    * The Draft of the WebSocket protocol the Server is adhering to.
    */
-  private WebSocketDraft draft;
+  private Draft draft;
 
 
   // CONSTRUCTORS ////////////////////////////////////////////////////////////
@@ -62,7 +61,7 @@ public abstract class WebSocketServer implements Runnable, WebSocketListener {
    * listen on port WebSocket.DEFAULT_PORT.
    */
   public WebSocketServer() {
-    this(WebSocket.DEFAULT_PORT, WebSocketDraft.AUTO);
+    this(WebSocket.DEFAULT_PORT, null );
   }
   
   /**
@@ -71,17 +70,17 @@ public abstract class WebSocketServer implements Runnable, WebSocketListener {
    * @param port The port number this server should listen on.
    */
   public WebSocketServer(int port) {
-    this(port, WebSocketDraft.AUTO);
+    this(port, null );
   }
 
   /**
    * Creates a WebSocketServer that will attempt to listen on port <var>port</var>,
-   * and comply with <tt>WebSocketDraft</tt> version <var>draft</var>.
+   * and comply with <tt>Draft</tt> version <var>draft</var>.
    * @param port The port number this server should listen on.
    * @param draft The version of the WebSocket protocol that this server
    *              instance should comply to.
    */
-  public WebSocketServer(int port, WebSocketDraft draft) {
+  public WebSocketServer(int port, Draft draft) {
     this.connections = new CopyOnWriteArraySet<WebSocket>();
     this.draft = draft;
     setPort(port);
@@ -181,7 +180,7 @@ public abstract class WebSocketServer implements Runnable, WebSocketListener {
     return this.port;
   }
 
-  public WebSocketDraft getDraft() {
+  public Draft getDraft() {
     return this.draft;
   }
 
@@ -196,18 +195,19 @@ public abstract class WebSocketServer implements Runnable, WebSocketListener {
       selector = Selector.open();
       server.register(selector, server.validOps());
     } catch (IOException ex) {
-      ex.printStackTrace();
+    	onError(ex);
       return;
     }
 
     while(true) {
+      SelectionKey key = null;
       try {
         selector.select();
         Set<SelectionKey> keys = selector.selectedKeys();
         Iterator<SelectionKey> i = keys.iterator();
 
         while(i.hasNext()) {
-          SelectionKey key = i.next();
+          key = i.next();
 
           // Remove the current key
           i.remove();
@@ -217,7 +217,7 @@ public abstract class WebSocketServer implements Runnable, WebSocketListener {
           if (key.isAcceptable()) {
             SocketChannel client = server.accept();
             client.configureBlocking(false);
-            WebSocket c = new WebSocket(client, new LinkedBlockingQueue<ByteBuffer>(), this);
+            WebSocket c = new WebSocket(client, new LinkedBlockingQueue<ByteBuffer>(), this, Collections.singletonList ( draft ) , Integer.MAX_VALUE );
             client.register(selector, SelectionKey.OP_READ, c);
           }
 
@@ -250,7 +250,9 @@ public abstract class WebSocketServer implements Runnable, WebSocketListener {
           }
         }
       } catch (IOException ex) {
-        ex.printStackTrace();
+          if( key != null )
+              key.cancel();
+          onError(ex);
       } catch (RuntimeException ex) {
         ex.printStackTrace();
       } catch (NoSuchAlgorithmException ex) {
@@ -280,7 +282,7 @@ public abstract class WebSocketServer implements Runnable, WebSocketListener {
   }
 
 
-  // WebSocketListener IMPLEMENTATION ////////////////////////////////////////
+ // WebSocketListener IMPLEMENTATION ////////////////////////////////////////
   /**
    * Called by a {@link WebSocket} instance when a client connection has
    * finished sending a handshake. This method verifies that the handshake is
@@ -293,13 +295,12 @@ public abstract class WebSocketServer implements Runnable, WebSocketListener {
    * @throws IOException When socket related I/O errors occur.
    * @throws NoSuchAlgorithmException 
    */
-  public boolean onHandshakeRecieved(WebSocket conn, String handshake, byte[] key3) throws IOException, NoSuchAlgorithmException {
-	//System.out.println("onHandshakeRecieved");
-    //System.out.println(handshake);
+/*  public boolean onHandshakeRecieved(WebSocket conn, String handshake, byte[] key3) throws IOException {
+    
     // If a Flash client requested the Policy File...
     if (FLASH_POLICY_REQUEST.equals(handshake)) {
       String policy = getFlashSecurityPolicy() + "\0";
-      conn.socketChannel().write(ByteBuffer.wrap(policy.getBytes(WebSocket.UTF8_CHARSET)));
+      conn.channelWrite(ByteBuffer.wrap(policy.getBytes(WebSocket.UTF8_CHARSET)));
       return false;
     }
     
@@ -331,43 +332,6 @@ public abstract class WebSocketServer implements Runnable, WebSocketListener {
     if (prop == null || !prop.equals("Upgrade")) {
       isWebSocketRequest = false;
     }
-    
-    // start draft-ietf-hybi-thewebsocketprotocol-07 support
-    
-    String websocketVersion = p.getProperty("Sec-WebSocket-Version");
-    //System.out.println("WebSocket version = "+websocketVersion);
-    //System.out.println("Server Draft: "+this.draft);
-	if (this.draft == WebSocketDraft.AUTO || this.draft == WebSocketDraft.VERSION_07 || this.draft == WebSocketDraft.VERSION_08) {
-	  if(websocketVersion != null && (websocketVersion.equals("7")||websocketVersion.equals("8"))) {
-		//System.out.println("Processing version 7 websocket");
-        String base64EncodedKey = p.getProperty("Sec-WebSocket-Key");
-        if(base64EncodedKey != null && !base64EncodedKey.equals("")) {
-          final String hashConstant = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-        
-          MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
-          String acceptHeader = new String(Base64Coder.encode(sha1.digest(base64EncodedKey.concat(hashConstant).getBytes())));
-          
-          String responseHandshake = "HTTP/1.1 101 Web Socket Protocol Handshake\r\n" +
-              "Upgrade: WebSocket\r\n" +
-              "Connection: Upgrade\r\n" +
-              "Sec-WebSocket-Accept: " + acceptHeader + "\r\n";
-
-          responseHandshake += "\r\n"; // Signifies end of handshake
-            
-          // Can not use UTF-8 here because we might lose bytes in response during conversion
-          conn.socketChannel().write(ByteBuffer.wrap(responseHandshake.getBytes()));
-          //System.out.println("ok, return true");
-          conn.setWebSocketDraft(websocketVersion.equals("7")?WebSocketDraft.VERSION_07:websocketVersion.equals("8")?WebSocketDraft.VERSION_08:WebSocketDraft.AUTO);
-          return true;        
-        }
-        //System.out.println("Invalid WebSocket-Version 7 request");
-        // Sec-WebSocket-Version: 7 requested, but invalid.
-        return false;
-      }
-    }
-    
-    // end draft-ietf-hybi-thewebsocketprotocol-07 support
-    
     String key1 = p.getProperty("Sec-WebSocket-Key1");
     String key2 = p.getProperty("Sec-WebSocket-Key2");
     String headerPrefix = "";
@@ -406,7 +370,12 @@ public abstract class WebSocketServer implements Runnable, WebSocketListener {
         challenge[13] = key3[5];
         challenge[14] = key3[6];
         challenge[15] = key3[7];
-        MessageDigest md5 = MessageDigest.getInstance("MD5");
+        MessageDigest md5;
+		try {
+			md5 = MessageDigest.getInstance( "MD5" );
+		} catch ( NoSuchAlgorithmException e ) {
+			throw new RuntimeException ( e );//Will never occur on a valid jre.
+		}
         responseChallenge = md5.digest(challenge);
       }
 
@@ -424,15 +393,10 @@ public abstract class WebSocketServer implements Runnable, WebSocketListener {
       }
       responseHandshake += "\r\n"; // Signifies end of handshake
       //Can not use UTF-8 here because we might lose bytes in response during conversion
-      conn.socketChannel().write(ByteBuffer.wrap(responseHandshake.getBytes()));
+      conn.channelWrite( ByteBuffer.wrap( responseHandshake.getBytes() ) );
       //Only set when Draft 76
       if(responseChallenge!=null){
-    	conn.setWebSocketDraft(WebSocketDraft.DRAFT76);
-    	//System.out.println("Draft-76 websocket");
-        conn.socketChannel().write(ByteBuffer.wrap(responseChallenge));
-      }else{
-      	//System.out.println("Draft-75 websocket");
-    	conn.setWebSocketDraft(WebSocketDraft.DRAFT75);
+		conn.channelWrite ( ByteBuffer.wrap ( responseChallenge ) );
       }
       return true;
     }
@@ -440,10 +404,9 @@ public abstract class WebSocketServer implements Runnable, WebSocketListener {
     // If we got to here, then the client sent an invalid handshake, and we
     // return false to make the WebSocket object close the connection.
     return false;
-  }
+  }*/
 
   public void onMessage(WebSocket conn, String message) {
-	//System.out.println("onMessage: "+message);
     onClientMessage(conn, message);
   }
 
@@ -475,4 +438,6 @@ public abstract class WebSocketServer implements Runnable, WebSocketListener {
   public abstract void onClientOpen(WebSocket conn);
   public abstract void onClientClose(WebSocket conn);
   public abstract void onClientMessage(WebSocket conn, String message);
+  public abstract void onError( Throwable ex);
+
 }

@@ -43,7 +43,6 @@ Net = {
 		onmessage && (this.onmessage = onmessage);
 		callback && (this.callback = callback);
 		this.websocket.send(JSON.stringify(data));
-		
 	},
 	init : function _() {
 		this.websocket = window.MozWebSocket ? new MozWebSocket(this.serverAddress) : new WebSocket(this.serverAddress);

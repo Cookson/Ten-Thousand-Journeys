@@ -156,6 +156,9 @@ function playerClick(x, y, shiftKey) {
 		player.getPathTable();
 		if (player.comeTo(x,y)) {
 			player.sendMove();
+		} else {
+			console.log("NOES");
+			return;
 		}
 	} else if (UI.mode == UI.MODE_CURSOR_ACTION) {
 		player.cellChooseAction();
@@ -459,7 +462,6 @@ function readItems(data) {
 		}
 	}
 	UI.notify("inventoryChange");
-	fitIntfInfo();
 }
 function readAmmunition(data, currentCharacterId) {
 // Обрабатывает принятые данные об амуниции
@@ -695,7 +697,6 @@ function readWorld(data) {
 	rendCX=Math.floor(width/2);
 	rendCY=Math.floor(height/2);
 	worldMapRenderView();
-	document.getElementById("intfQueue").style.display="none";
 }
 function readLocation(data) {
 // Reads location contents got from server

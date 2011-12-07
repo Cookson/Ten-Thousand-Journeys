@@ -664,7 +664,6 @@ Character.prototype.comeTo=function(x,y) {
 		}
 		var allPathsAreAvailable=true;
 //		this.getPathTable();
-		
 		for (var j=0;j<8;j++) {
 			if (!this.pathTable[dists[i*2]][dists[i*2+1]]) {
 				allPathsAreAvailable=false;
@@ -679,7 +678,6 @@ Character.prototype.comeTo=function(x,y) {
 		var steps = this.pathTable[dists[i*2]][dists[i*2+1]];
 		if (steps && steps<dist && steps>0 && !(dists[i*2]==this.x && dists[i*2+1]==this.y)) {
 			atLeastOnePath = true;
-			
 			dist = steps;
 			destX = dists[i*2];
 			destY = dists[i*2+1];
@@ -688,19 +686,11 @@ Character.prototype.comeTo=function(x,y) {
 	if (atLeastOnePath) {
 		this.destX = destX;		
 		this.destY = destY;
+	} else {
+		this.destX = this.x;
+		this.destY = this.y;
 	}
 	return atLeastOnePath;
-};
-Character.prototype.goToCell=function(x,y) {
-// Устанавливает персонажу поведение "идти к такой-то клетке"
-	if (this.characterId!=0) {
-		this.behavior="goToCell";
-		this.aimCoordX=x;
-		this.aimCoordY=y;
-	} else {
-		this.destX=x;
-		this.destY=y;
-	}
 };
 Character.prototype.hasItem=function(typeId, param) {
 // Имеет пресонаж предмет или заданное кол-во предметов
@@ -836,6 +826,11 @@ Character.prototype.sendMove=function() {
 //			} catch(e) {
 //				console("Get path error: "+this.characterId);
 //			}
+			if (path.length == 0) {
+				this.destX = this.x;
+				this.destY = this.y;
+				return false;
+			}
 			var nextCellX=path[0].x; 
 			var nextCellY=path[0].y;
 			if (vertex[nextCellX][nextCellY]==1 && matrix[nextCellX][nextCellY].object && isDoor(matrix[nextCellX][nextCellY].object.type)) {

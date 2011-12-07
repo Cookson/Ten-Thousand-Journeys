@@ -9,6 +9,7 @@ import erpoge.Chance;
 import erpoge.Main;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.CellCollection;
+import erpoge.terrain.Location;
 import erpoge.terrain.TerrainBasics;
 import erpoge.terrain.TerrainGenerator;
 import erpoge.terrain.locationtypes.Settlement;
@@ -85,7 +86,7 @@ public class Monastery extends Building {
 				GameObjects.OBJ_WALL_WOODEN, false);
 
 		// Connect inner space and rooms with doors
-		// usedRooms — to connect rooms with only one inner space rectangle
+		// usedRooms - to connect rooms with only one inner space rectangle
 		ArrayList<Rectangle> usedRooms = new ArrayList<Rectangle>();
 		for (int i : innerSpace) {
 			Rectangle r1 = mainRS.excluded.get(i);
@@ -107,6 +108,7 @@ public class Monastery extends Building {
 			for (int j : mainRS.edges.get(i)) {
 				Rectangle r2 = mainRS.rectangles.get(j);
 				connectRoomsWithDoor(r1, r2, GameObjects.OBJ_DOOR_BLUE);
+				break;
 			}
 		}
 
@@ -117,7 +119,7 @@ public class Monastery extends Building {
 			cellsNearWalls.setObjects(GameObjects.OBJ_BED, 1);
 			cellsNearWalls.setObjects(GameObjects.OBJ_BARREL, 1);
 			cellsNearWalls.setObjects(GameObjects.OBJ_CHEST_1, 1);
-			cellsNearWalls.setCharacter("dwarvenHooker", "Дварфийка-проститутка").setFraction(Character.FRACTION_NEUTRAL);
+			cellsNearWalls.setCharacter("dwarvenHooker", "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ-пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ").setFraction(Character.FRACTION_NEUTRAL);
 		}
 		
 		// Set start area

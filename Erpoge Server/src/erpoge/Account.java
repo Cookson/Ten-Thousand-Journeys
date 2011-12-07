@@ -22,6 +22,13 @@ public class Account {
 	public void removeCharacter(PlayerCharacter character) {
 		characters.remove(character);
 	}
+	
+	public void accountStatistic() {
+		Main.console("Characters on account "+login+" "+this);
+		for (PlayerCharacter ch : characters) {
+			Main.console(ch.name+" "+ch.cls());
+		}
+	}
 
 	public PlayerCharacter character(int id) {
 		Iterator<PlayerCharacter> it = characters.iterator();
@@ -82,7 +89,7 @@ public class Account {
 				answer += ammunition[k]+",";
 			}
 			answer += ammunition[k]+"]";
-			answer += (i == iterations) ? "]" : ",";
+			answer += (i == iterations) ? "]" : "],";
 		}
 		answer += "]";
 		return answer;

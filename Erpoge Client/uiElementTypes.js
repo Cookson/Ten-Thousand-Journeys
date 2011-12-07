@@ -27,13 +27,14 @@ UIElementTypes.windowGameAlert = {
 		var nText = document.createElement("div");
 		var nOkWrap = document.createElement("div");
 		var nOk = document.createElement("div");
+		var nTextText = document.createTextNode("");
 		
 		this.addCustomClass(nText, "Text");
 		this.addCustomClass(nOkWrap, "OkWrap");
 		this.addCustomClass(nOk, "Ok");
 				
 		this.chooseElementAsCloseButton(nOk);
-		
+		nText.appendChild(nTextText);
 		nOk.appendChild(document.createTextNode("Ok"));
 		nOkWrap.appendChild(nOk);
 		this.rootElement.appendChild(nText);
@@ -41,9 +42,14 @@ UIElementTypes.windowGameAlert = {
 		this.rootElement.appendChild(nOk);
 		this.rootElement.appendChild(document.createElement("br"));
 		
-		this.setData("textNode", nText);
+		this.setData("textNodeText", nTextText);
 	},
-	listeners: {},
+	listeners: {
+		alert: function _(data) {
+			this.show();
+			this.getData("textNodeText").nodeValue = data;
+		}
+	},
 	keysActions: {},
 	handlers: {},
 	cssRules: function _() {
@@ -53,6 +59,9 @@ UIElementTypes.windowGameAlert = {
 			top: 5px;					\
 			left: 5px;					\
 			text-align: left;			\
+			padding: 20px;				\
+			border-radius: 20px;		\
+			margin: 10px;				\
 		}								\
 		div.$type$Text {				\
 			display: table-row;			\
@@ -113,7 +122,6 @@ UIElementTypes.windowAccountCharacters = {
 		accountPlayersRecieve: function _(data) {
 			// Clear players list
 			// data: [[characterId, name, class, race, level, ammunition]xN]
-			
 			var nPlayersList = this.getData("playersListNode");
 			while (nPlayersList.children.length>0) {
 				nPlayersList.children[0].parentNode.removeChild(nPlayersList.children[0]);
@@ -196,9 +204,11 @@ UIElementTypes.windowLogin = {
 	onInit: function _() {
 		var nServerName = document.createElement("div");
 		var nServerAddress = document.createElement("div");
-		var nServerOnline = document.createElement("div");
-		
+		var nServerOnline = document.createElement("div");		
 		var nForm = document.createElement("div");	
+		var nServerNameText = document.createTextNode("");
+		var nServerAddressText = document.createTextNode("");
+		var nServerOnlineText = document.createTextNode("");
 		
 		var nInputLogin = document.createElement("input");
 		nInputLogin.setAttribute("type", "text");
@@ -236,6 +246,9 @@ UIElementTypes.windowLogin = {
 		this.bindHandlerToUIElementContext(nInputSubmit, "click", "loginClick");
 		this.bindHandlerToUIElementContext(nInputRegister, "click", "createAccountClick");
 		
+		nServerAddress.appendChild(nServerAddressText);
+		nServerName.appendChild(nServerNameText);
+		nServerOnline.appendChild(nServerOnlineText);
 		nForm.appendChild(nServerName);
 		nForm.appendChild(nServerAddress);
 		nForm.appendChild(nServerOnline);
@@ -250,9 +263,9 @@ UIElementTypes.windowLogin = {
 		
 		this.setData("loginInputNode", nInputLogin);
 		this.setData("passwordInputNode", nInputPassword);
-		this.setData("serverNameNode", nServerName);
-		this.setData("serverAddressNode", nServerAddress);
-		this.setData("serverOnlineNode", nServerOnline);
+		this.setData("serverNameTextNode", nServerNameText);
+		this.setData("serverAddressTextNode", nServerAddressText);
+		this.setData("serverOnlineTextNode", nServerOnlineText);
 		this.setData("loginErrorNode", nLoginError);
 	},
 	listeners: {
@@ -264,9 +277,9 @@ UIElementTypes.windowLogin = {
 				this.getData("loginInputNode").value = currentServer[1];
 				this.getData("passwordInputNode").value = currentServer[2];
 			}
-			this.getData("serverNameNode").innerText = Net.serverName;
-			this.getData("serverAddressNode").innerText = "http://"+window.location.host;
-			this.getData("serverOnlineNode").children[0].innerText = Net.online;
+			this.getData("serverNameTextNode").nodeValue = Net.serverName;
+			this.getData("serverAddressTextNode").nodeValue = "http://"+window.location.host;
+			this.getData("serverOnlineTextNode").nodeValue = Net.online;
 			this.show();
 		},
 		accountPlayersRecieve: function _() {
@@ -284,6 +297,9 @@ UIElementTypes.windowLogin = {
 			} else {
 				winkElement(this.getData("loginErrorNode"),"Неизвестная ошибка при заходе в игру");
 			}
+		},
+		login: function _() {
+			this.hide();
 		}
 	},
 	keysActions: {},
@@ -473,7 +489,6 @@ UIElementTypes.iconsInventory = {
 					player.sendTakeOff(player.ammunition.getItemInSlot(slot));
 				}
 			}
-			document.getElementById("itemInfo").style.display="none";
 		},
 		itemContextmenu: function _(e) {
 			var itemId = this.getData("typeId");
@@ -797,7 +812,6 @@ UIElementTypes.ammunition = {
 			if (itemId != -1) {
 			// If a piece of armor is put on, take if off.
 				player.sendTakeOff(player.ammunition.getItemById(itemId));
-				this.onmouseout();
 			}
 		},
 		contextmenu: function _(e) {
@@ -1737,6 +1751,8 @@ UIElementTypes.windowPlayerCreate = {
 		var nLearnedSkillProto = document.createElement("div");
 		var nBack = document.createElement("div");
 		var nComplete = document.createElement("div");
+		var nClass = document.createElement("div");
+		
 		
 		this.addCustomClass(nLeftSide, "LeftSide");
 		this.addCustomClass(nRightSide, "RightSide");
@@ -1746,6 +1762,7 @@ UIElementTypes.windowPlayerCreate = {
 		this.addCustomClass(nSection4, "Section");
 		this.addCustomClass(nInputName, "Input");
 		this.addCustomClass(nRaceProto, "Race");
+		this.addCustomClass(nClass, "Class");
 		this.addCustomClass(nAttrNameProto, "AttrName");
 		this.addCustomClass(nAttrValueProto, "AttrValue");
 		this.addCustomClass(nClasses, "Classes");
@@ -1765,6 +1782,7 @@ UIElementTypes.windowPlayerCreate = {
 		
 		// Left side
 		for (var i=0; i<Global.races.length; i++) {
+		// Races
 			var nRace = nRaceProto.cloneNode(true);
 			nRace.appendChild(document.createTextNode(Global.races[i]));
 			nRaces.appendChild(nRace);
@@ -1773,6 +1791,7 @@ UIElementTypes.windowPlayerCreate = {
 			nRace.setData("race", i);
 		}
 		for (var i in Global.attributes) {
+		// Race attributes
 			var nAttr = nAttrNameProto.cloneNode(true);
 			var nVal = nAttrValueProto.cloneNode(true);
 			nAttr.appendChild(document.createTextNode(Global.attributes[i]));
@@ -1780,6 +1799,15 @@ UIElementTypes.windowPlayerCreate = {
 			nVal.appendChild(document.createTextNode(""));
 			nAttributes.appendChild(nVal);
 		}
+		for (var i=0;i<Global.classNames.length;i++) {
+		// Classes
+			var nClass = nClassProto.cloneNode(true);
+			this.addEventListener(nClass, "click", "classClick");
+			nClass.appendChild(document.createTextNode(Global.classNames[i]));
+			nClasses.appendChild(nClass);
+			nClass.setData("uiElement",this);
+		}
+		
 		nSection1.appendChild(document.createTextNode("Имя"));
 		nSection2.appendChild(document.createTextNode("Раса"));
 		nSection3.appendChild(document.createTextNode("Атрибуты"));
@@ -1804,7 +1832,7 @@ UIElementTypes.windowPlayerCreate = {
 			nColumnHeader.appendChild(document.createTextNode(Global.attributes[i]));
 			nColumn.appendChild(nColumnHeader);
 			for (var j=0; j< skillLists[i].length; j++) {
-				var nSkill = nSkillProto.cloneNode();
+				var nSkill = nSkillProto.cloneNode(true);
 				nSkill.appendChild(document.createTextNode(skillLists[i][j]));
 				nColumn.appendChild(nSkill);
 				nSkill.setData("uiElement",this);
@@ -1824,10 +1852,14 @@ UIElementTypes.windowPlayerCreate = {
 		this.rootElement.appendChild(nComplete);
 		
 		this.setData("attributesNode",nAttributes);
+		this.setData("nameNode",nInputName);
 		this.setData("learnedSkillProtoNode",nLearnedSkillProto);
 		this.setData("learnedSkillsNode",nLearnedSkills);
 		this.setData("learnedSkills",{});
 		this.setData("learnedSkillsNodes",{});	
+		this.setData("cls",null);	
+		
+		fleXenv.fleXcrollMain(nClasses);
 				
 		this.UIElementType.handlers.raceClick.apply(nRaces.children[0]);
 	},
@@ -1843,7 +1875,7 @@ UIElementTypes.windowPlayerCreate = {
 			var uiElement = this.getData("uiElement");
 			var nAttributes = uiElement.getData("attributesNode");
 			var race = this.getData("race");
-			
+			uiElement.setData("chosenRace", race);
 			// Highlight selected race
 			for (var i in nlRaces) {
 				uiElement.setCustomClass(nlRaces[i],"Race");
@@ -1853,7 +1885,18 @@ UIElementTypes.windowPlayerCreate = {
 			// Show racial attributes
 			for (var i=0; i<Global.racialAttributes[race].length; i++) {
 				nAttributes.children[i*2+1].firstChild.nodeValue = Global.racialAttributes[race][i];
+			}			
+		},
+		classClick: function _() {
+			var nlClasses = this.parentNode.children;
+			var uiElement = this.getData("uiElement");
+			uiElement.setData("chosenClass",this.firstChild.nodeValue);
+			
+			// Highlight selected race
+			for (var i in nlClasses) {
+				uiElement.setCustomClass(nlClasses[i],"Class");
 			}
+			uiElement.setCustomClass(this, "SelectedClass");
 		},
 		skillClick: function _() {
 			var uiElement = this.getData("uiElement");
@@ -1894,8 +1937,23 @@ UIElementTypes.windowPlayerCreate = {
 			UI.notify("accountPlayersListCall");
 		},
 		completeClick: function _() {
-			this.hide();
-			UI.notify("accountPlayersListCall");
+			var formattedSkills = [];
+			var storedSkills = this.getData("learnedSkills");
+			var thisWindow = this;
+			for (var i in storedSkills) {
+				formattedSkills.push(+i, storedSkills[i]);
+			}
+			Net.send({
+				a: Net.PLAYER_CREATE,
+				account: Global.playerLogin,
+				name: this.getData("nameNode").value, 
+				race: this.getData("chosenRace"),
+				cls: this.getData("chosenClass"),
+				skills: formattedSkills
+			}, function (data) {
+				thisWindow.hide();
+				UI.notify("accountPlayersRecieve", data.players);
+			});
 		}
 	},
 	cssRules: function _() {
@@ -1910,15 +1968,15 @@ UIElementTypes.windowPlayerCreate = {
 		div.$type$LeftSide {		\
 			width: 140px;			\
 			height: 100%;			\
-			border: 1px solid #777;	\
 			float: left;			\
 			text-align: left;		\
+			margin: 0px 0px 6px 0px;\
 		}							\
 		div.$type$RightSide {		\
-			border: 1px solid #777;	\
 			height: 100%;			\
 			float: right;			\
 			width: 400px;			\
+			margin: 0px 0px 6px 0px;\
 		}							\
 		div.$type$LeftSide * {		\
 			text-align: left;		\
@@ -1952,6 +2010,14 @@ UIElementTypes.windowPlayerCreate = {
 		}							\
 		div.$type$Class:hover {		\
 			color: #9aa;			\
+		}							\
+		div.$type$SelectedClass {	\
+			color: #799;			\
+		}							\
+		div.$type$Classes {			\
+			overflow-y: scroll;		\
+			height: 126px;			\
+			background-color: #222;	\
 		}							\
 		div.$type$SelectedClass {	\
 			padding: 4px 4px 4px 10px;	\
@@ -2127,6 +2193,7 @@ UIElementTypes.windowAccountCreate = {
 			} else if (nPassword.value != nPasswordAgain.value) {
 				winkElement(nError, "Пароль и подтверждение пароля не совпадают!");
 			} else {
+				var thisWindow = this;
 				Net.send({a:Net.ACCOUNT_REGISTER,l:nLogin.value,p:nPassword.value}, function (data) {
 					if (data.error !== undefined) {
 						winkElement(nError, "Логин уже занят!");
@@ -2134,6 +2201,7 @@ UIElementTypes.windowAccountCreate = {
 						Global.playerLogin = nLogin.value;
 						Global.playerPassword = nPassword.value;
 						UI.notify("accountPlayersRecieve", data.players);
+						thisWindow.hide();
 					}
 				});
 			}

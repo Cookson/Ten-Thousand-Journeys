@@ -14,6 +14,10 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import net.tootallnate.websocket.WebSocket.Role;
+import net.tootallnate.websocket.drafts.*;
+import net.tootallnate.websocket.exeptions.InvalidHandshakeException;
+
 /**
  * The <tt>WebSocketClient</tt> is an abstract class that expects a valid
  * "ws://" URI to connect to. When connected, an instance recieves important
@@ -23,34 +27,34 @@ import java.util.concurrent.LinkedBlockingQueue;
  * <var>send</var> method.
  * @author Nathan Rajlich
  */
-public abstract class WebSocketClient implements Runnable, WebSocketListener {
+public abstract class WebSocketClient extends WebSocketAdapter implements Runnable {
 
 
   // INSTANCE PROPERTIES /////////////////////////////////////////////////////
   /**
    * The URI this client is supposed to connect to.
    */
-  private URI uri;
+  private URI uri = null;
   /**
    * The WebSocket instance this client object wraps.
    */
-  private WebSocket conn;
+  private WebSocket conn = null;
   /**
    * The SocketChannel instance this client uses.
    */
-  private SocketChannel client;
+  private SocketChannel client = null;
   /**
    * The 'Selector' used to get event keys from the underlying socket.
    */
-  private Selector selector;
+  private Selector selector = null;
   /**
    * Keeps track of whether or not the client thread should continue running.
    */
-  private boolean running;
+  private boolean running = false;
   /**
    * The Draft of the WebSocket protocol the Client is adhering to.
    */
-  private WebSocketDraft draft;
+  private Draft draft = null;
   /**
    * Number 1 used in handshake 
    */
@@ -66,7 +70,7 @@ public abstract class WebSocketClient implements Runnable, WebSocketListener {
 
   // CONSTRUCTORS ////////////////////////////////////////////////////////////
   public WebSocketClient(URI serverURI) {
-    this(serverURI, WebSocketDraft.DRAFT76);
+    this(serverURI, new Draft_10() );
   }
 
   /**
@@ -75,12 +79,12 @@ public abstract class WebSocketClient implements Runnable, WebSocketListener {
    * must call <var>connect</var> first to initiate the socket connection.
    * @param serverUri The <tt>URI</tt> of the WebSocket server to connect to.
    * @throws IllegalArgumentException If <var>draft</var>
-   * is <code>WebSocketDraft.AUTO</code>
+   * is <code>Draft.AUTO</code>
    */
-  public WebSocketClient(URI serverUri, WebSocketDraft draft) {
+  public WebSocketClient(URI serverUri, Draft draft) {
     this.uri = serverUri;
-    if (draft == WebSocketDraft.AUTO) {
-      throw new IllegalArgumentException(draft + " is meant for `WebSocketServer` only!");
+    if (draft == null) {
+      throw new IllegalArgumentException("null is permitted for `WebSocketServer` only!");
     }
     this.draft = draft;
   }
@@ -94,7 +98,7 @@ public abstract class WebSocketClient implements Runnable, WebSocketListener {
     return uri;
   }
   
-  public WebSocketDraft getDraft() {
+  public Draft getDraft() {
     return draft;
   }
 
@@ -115,12 +119,27 @@ public abstract class WebSocketClient implements Runnable, WebSocketListener {
    * closes the socket connection, and ends the client socket thread.
    * @throws IOException When socket related I/O errors occur.
    */
-  public void close() throws IOException {
-    if (running) {
-      this.running = false;
-      selector.wakeup();
-      conn.close();
-    }
+  public void close() throws IOException 
+  {    
+	  if (running)
+	  {
+		  // must be called to stop do loop
+		  running = false;  
+		  
+		  // call this inside IF because it can be null if the connection has't started
+		  // but user is calling close()
+		  if (selector != null && conn != null)
+		  {
+			  selector.wakeup();
+			  conn.close();
+			  // close() is synchronously calling onClose(conn) so we don't have to
+		  }
+		  else
+		  {
+			  // connection has't started but the onClose events should be triggered
+			  onClose(conn);
+		  }
+	  }
   }
 
   /**
@@ -129,9 +148,26 @@ public abstract class WebSocketClient implements Runnable, WebSocketListener {
    * @throws IOException When socket related I/O errors occur.
    */
   public void send(String text) throws IOException {
-    if (conn != null) {
+    if (conn != null) 
+    {
       conn.send(text);
     }
+  }
+  
+  /**
+   * Reinitializes and prepares the class to be used for reconnect.
+   * @return
+   */
+  public void releaseAndInitialize()
+  {
+	  conn = null;
+	  client = null;
+	  selector = null;
+	  running = false;
+	  draft = null;
+	  number1 = 0;
+	  number2 = 0;
+	  key3 = null;
   }
   
   private boolean tryToConnect(InetSocketAddress remote) {
@@ -144,12 +180,17 @@ public abstract class WebSocketClient implements Runnable, WebSocketListener {
 
       selector = Selector.open();
 
-      this.conn = new WebSocket(client, new LinkedBlockingQueue<ByteBuffer>(), this);
-      // At first, we're only interested in the 'CONNECT' keys.
-      client.register(selector, SelectionKey.OP_CONNECT);
+      this.conn = new WebSocket( client , new LinkedBlockingQueue<ByteBuffer>() , this , draft , Integer.MAX_VALUE );
+      // the client/selector can be null when closing the connection before its start
+      // so we have to call this part inside IF
+      if (client != null)
+      {
+          // At first, we're only interested in the 'CONNECT' keys.
+          client.register(selector, SelectionKey.OP_CONNECT);
+      }
 
     } catch (IOException ex) {
-      ex.printStackTrace();
+    	onIOError(conn, ex);
       return false;
     }
     
@@ -161,13 +202,14 @@ public abstract class WebSocketClient implements Runnable, WebSocketListener {
     running = tryToConnect(new InetSocketAddress(uri.getHost(), getPort()));
 
     while (this.running) {
+      SelectionKey key = null;
       try {
         selector.select();
         Set<SelectionKey> keys = selector.selectedKeys();
         Iterator<SelectionKey> i = keys.iterator();
 
         while (i.hasNext()) {
-          SelectionKey key = i.next();
+          key = i.next();
           i.remove();
 
           if (key.isConnectable()) {
@@ -179,9 +221,11 @@ public abstract class WebSocketClient implements Runnable, WebSocketListener {
           }
         }
       } catch (IOException ex) {
-        ex.printStackTrace();
-      } catch (NoSuchAlgorithmException ex) {
-        ex.printStackTrace();
+          if( key != null )
+              key.cancel();
+    	  onIOError(conn, ex);
+      } catch (Exception ex) {
+        onError( ex );
       }
     }
     
@@ -193,7 +237,7 @@ public abstract class WebSocketClient implements Runnable, WebSocketListener {
     return port == -1 ? WebSocket.DEFAULT_PORT : port;
   }
   
-  private void finishConnect() throws IOException {
+  private void finishConnect() throws IOException, InvalidHandshakeException {
     if (client.isConnectionPending()) {
       client.finishConnect();
     }
@@ -204,136 +248,20 @@ public abstract class WebSocketClient implements Runnable, WebSocketListener {
     sendHandshake();
   }
   
-  private void sendHandshake() throws IOException {
+  private void sendHandshake() throws IOException, InvalidHandshakeException {
     String path = uri.getPath();
     if (path.indexOf("/") != 0) {
       path = "/" + path;
     }
     int port = getPort();
     String host = uri.getHost() + (port != WebSocket.DEFAULT_PORT ? ":" + port : "");
-    String origin = null; // TODO: Make 'origin' configurable
-    String request = "GET " + path + " HTTP/1.1\r\n" +
-                      "Upgrade: WebSocket\r\n" +
-                      "Connection: Upgrade\r\n" +
-                      "Host: " + host + "\r\n";
-    
-    if (this.draft == WebSocketDraft.VERSION_07||this.draft == WebSocketDraft.VERSION_08) {
-      request += "Sec-WebSocket-Origin: " + origin + "\r\n";
-    }
-    else {
-      request += "Origin: " + origin + "\r\n";
-    }
-    
-    if (this.draft == WebSocketDraft.DRAFT76) {
-      request += "Sec-WebSocket-Key1: " + this.generateKey() + "\r\n";
-      request += "Sec-WebSocket-Key2: " + this.generateKey() + "\r\n";
-      this.key3 = new byte[8];
-      (new Random()).nextBytes(this.key3);
-    }
-    else if(this.draft == WebSocketDraft.VERSION_07||this.draft == WebSocketDraft.VERSION_08) {
-      byte[] randomBytes = new byte[16];
-      
-      Random randomGenerator = new Random();
-      randomGenerator.nextBytes(randomBytes);
-      
-      request += "Sec-WebSocket-Version: 7\r\n";
-      request += "Sec-WebSocket-Key: " + new String(Base64Coder.encode(randomBytes)) + "\r\n";
-    }
-    
-    request += "\r\n";
-    
-    if (this.key3 != null) {
-      conn.socketChannel().write(new ByteBuffer[] {
-        ByteBuffer.wrap(request.getBytes(WebSocket.UTF8_CHARSET)),
-        ByteBuffer.wrap(this.key3)
-      });
-    }
-    else
-    {
-      conn.socketChannel().write(ByteBuffer.wrap(request.getBytes(WebSocket.UTF8_CHARSET)));
-    }
-  }
+    String origin = "x"; // TODO: Make 'origin' configurable
 
-  private String generateKey() {
-    Random r = new Random();
-    long maxNumber = 4294967295L;
-    long spaces = r.nextInt(12) + 1;
-    int max = new Long(maxNumber / spaces).intValue();
-    max = Math.abs(max);
-    int number = r.nextInt(max) + 1;
-    if (this.number1 == 0) {
-      this.number1 = number;
-    }
-    else {
-      this.number2 = number;
-    }
-    long product = number * spaces;
-    String key = Long.toString(product);
-    int numChars = r.nextInt(12);
-    for (int i=0; i < numChars; i++){
-      int position = r.nextInt(key.length());
-      position = Math.abs(position);
-      char randChar = (char)(r.nextInt(95) + 33);
-      //exclude numbers here
-      if(randChar >= 48 && randChar <= 57){
-        randChar -= 15;
-      }
-      key = new StringBuilder(key).insert(position, randChar).toString();
-    }
-    for (int i = 0; i < spaces; i++){
-      int position = r.nextInt(key.length() - 1) + 1;
-      position = Math.abs(position);
-      key = new StringBuilder(key).insert(position,"\u0020").toString();
-    }
-    return key;
-  }
-
-  // WebSocketListener IMPLEMENTATION ////////////////////////////////////////
-  /**
-   * Parses the server's handshake to verify that it's a valid WebSocket
-   * handshake.
-   * @param conn The {@link WebSocket} instance who's handshake has been recieved.
-   *             In the case of <tt>WebSocketClient</tt>, this.conn == conn.
-   * @param handshake The entire UTF-8 decoded handshake from the connection.
-   * @return <var>true</var> if <var>handshake</var> is a valid WebSocket server
-   *         handshake, <var>false</var> otherwise.
-   * @throws IOException When socket related I/O errors occur.
-   * @throws NoSuchAlgorithmException 
-   */
-  public boolean onHandshakeRecieved(WebSocket conn, String handshake, byte[] reply) throws IOException, NoSuchAlgorithmException {
-    // TODO: Do some parsing of the returned handshake, and close connection
-    // (return false) if we recieved anything unexpected.
-    if(this.draft == WebSocketDraft.DRAFT76) {
-      if (reply == null) {
-        return false;
-      }
-      byte[] challenge = new byte[] {
-        (byte)( this.number1 >> 24 ),
-        (byte)( (this.number1 << 8) >> 24 ),
-        (byte)( (this.number1 << 16) >> 24 ),
-        (byte)( (this.number1 << 24) >> 24 ),
-        (byte)(  this.number2 >> 24 ),
-        (byte)( (this.number2 << 8) >> 24 ),
-        (byte)( (this.number2 << 16) >> 24 ),
-        (byte)( (this.number2 << 24) >> 24 ),
-        this.key3[0],
-        this.key3[1],
-        this.key3[2],
-        this.key3[3],
-        this.key3[4],
-        this.key3[5],
-        this.key3[6],
-        this.key3[7]
-      };
-      MessageDigest md5 = MessageDigest.getInstance("MD5");
-      byte[] expected = md5.digest(challenge);
-      for (int i = 0; i < reply.length; i++) {
-        if (expected[i] != reply[i]) {
-          return false;
-        }
-      } 
-    }
-    return true;
+    HandshakedataImpl1 handshake = new HandshakedataImpl1();
+    handshake.setResourceDescriptor ( path );
+    handshake.put ( "Host" , host );
+    handshake.put ( "Origin" , origin );
+    conn.startHandshake ( handshake );
   }
 
   /**
@@ -357,12 +285,25 @@ public abstract class WebSocketClient implements Runnable, WebSocketListener {
    * Calls subclass' implementation of <var>onClose</var>.
    * @param conn
    */
-  public void onClose(WebSocket conn) {
-    onClose();
+  public void onClose(WebSocket conn) 
+  {
+	  onClose();
+	  releaseAndInitialize();
+  }
+
+  /**
+   * Calls subclass' implementation of <var>onIOError</var>.
+   * @param conn
+   */
+  public void onIOError(WebSocket conn, IOException ex) 
+  {
+	  releaseAndInitialize();
+	  onIOError(ex);
   }
 
   // ABTRACT METHODS /////////////////////////////////////////////////////////
   public abstract void onMessage(String message);
   public abstract void onOpen();
   public abstract void onClose();
+  public abstract void onIOError(IOException ex);
 }

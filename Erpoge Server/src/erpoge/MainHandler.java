@@ -20,7 +20,6 @@ import erpoge.itemtypes.ItemType;
 import erpoge.terrain.Location;
 import erpoge.terrain.World;
 import net.tootallnate.websocket.WebSocket;
-import net.tootallnate.websocket.WebSocketDraft;
 import net.tootallnate.websocket.WebSocketServer;
 
 
@@ -65,7 +64,7 @@ public class MainHandler extends WebSocketServer {
 	public static World world;
 
 	public MainHandler(int port) {
-		super(port, WebSocketDraft.VERSION_08);
+		super(port);
 		Main.outln("Start listening on port " + port);
 	}
 	public static void assignWorld(World world) {
@@ -129,15 +128,29 @@ public class MainHandler extends WebSocketServer {
 				} else {
 					Accounts.addAccount(new Account(accountRegsterData.l, accountRegsterData.p));
 					Account account = Accounts.account(accountRegsterData.l);
-					PlayerCharacter shanok = world.createCharacter("player", "Bliot", 3, "Эльфоцап", 13, 26);
-					shanok.getItem(UniqueItem.createItemByClass(Item.CLASS_BOW, 0));
-					shanok.getItem(UniqueItem.createItemByClass(Item.CLASS_BOW, 0));
-					shanok.getItem(UniqueItem.createItemByClass(Item.CLASS_BOW, 0));
-					shanok.getItem(UniqueItem.createItemByClass(Item.CLASS_SWORD, 0));
-					shanok.getItem(ItemPile.createPileFromClass(Item.CLASS_AMMO, 0, 1000));
-					Accounts.account(accountRegsterData.l).addCharacter(shanok);
+//					PlayerCharacter shanok = world.createCharacter("player", "Bliot", 3, "Эльфоцап", 13, 26);
+//					shanok.getItem(UniqueItem.createItemByClass(Item.CLASS_BOW, 0));
+//					shanok.getItem(UniqueItem.createItemByClass(Item.CLASS_BOW, 0));
+//					shanok.getItem(UniqueItem.createItemByClass(Item.CLASS_BOW, 0));
+//					shanok.getItem(UniqueItem.createItemByClass(Item.CLASS_SWORD, 0));
+//					shanok.getItem(ItemPile.createPileFromClass(Item.CLASS_AMMO, 0, 1000));
+//					Accounts.account(accountRegsterData.l).addCharacter(shanok);
 					conn.send("{\"a\":"+LOGIN+","+account.jsonPartGetCharactersAuthInfo()+"}");
 				}
+				break;
+			case PLAYER_CREATE:
+				ClientMessagePlayerCreate playerCreateData = gson.fromJson(message, ClientMessagePlayerCreate.class);
+				Account accountPlayerCreate = Accounts.account(playerCreateData.account);
+				PlayerCharacter newPlayer = world.createCharacter(
+						"player", 
+						playerCreateData.name, 
+						playerCreateData.race, 
+						playerCreateData.cls, 
+						13, 26);
+				accountPlayerCreate.addCharacter(newPlayer);
+				Main.console("New character "+newPlayer.name);
+				accountPlayerCreate.accountStatistic();
+				conn.send("{\"a\":"+LOGIN+","+accountPlayerCreate.jsonPartGetCharactersAuthInfo()+"}");
 				break;
 			case LOAD_CONTENTS:
 			// Almost the same as LOAD_LOCATON_CONTENTS
@@ -304,6 +317,11 @@ public class MainHandler extends WebSocketServer {
 		}
 	}
 	public void onIOError(IOException ex) {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	public void onError(Throwable ex) {
 		// TODO Auto-generated method stub
 		
 	}

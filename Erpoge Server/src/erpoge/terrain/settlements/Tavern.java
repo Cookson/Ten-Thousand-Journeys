@@ -9,6 +9,7 @@ import erpoge.terrain.CellCollection;
 import erpoge.terrain.TerrainBasics;
 import erpoge.terrain.TerrainGenerator;
 import erpoge.terrain.locationtypes.Settlement;
+import erpoge.terrain.settlements.Building.BasisBuildingSetup;
 import erpoge.characters.Character;
 import erpoge.characters.CharacterCondition;
 import erpoge.characters.CustomCharacterAction;
@@ -20,7 +21,7 @@ import erpoge.characters.PlayerCharacter;
 public class Tavern extends Building {
 	public Tavern(TerrainGenerator settlement, int x, int y, int width, int height) {
 		super(settlement, x, y, width, height, 4);
-		buildBasis(4, false);
+		buildBasis(4, BasisBuildingSetup.CONVERT_TO_DIRECTED_TREE);
 		placeFrontDoor(-1);
 		Rectangle lobbyRec = rectangleSystem.rectangles.get(lobby);
 		for (int sx=lobbyRec.x; sx<lobbyRec.x+lobbyRec.width; sx++) {

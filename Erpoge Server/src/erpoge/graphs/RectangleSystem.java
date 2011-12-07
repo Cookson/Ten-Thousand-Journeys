@@ -20,11 +20,11 @@ import erpoge.terrain.Cell;
 import erpoge.terrain.TerrainBasics;
 
 public class RectangleSystem extends Graph<Rectangle> {
-	// ����� ��� ��������� ����������� ������������� ������� ������� �� �������
-	// ��������������
-	// � ������������� ���� ������� � ���� �����,
-	// ��� ������� - ��������������, � ���� - ������� �������������� � ���
-	// �������
+	// Класс для разбиения определённой прямоугольной области локации на меньшие
+	// прямоугольники
+	// и представления этой области в виде графа,
+	// где вершины - прямоугольники, а рёбра - границы прямоугольника и его
+	// соседей
 	
 	public int width;
 	public int height;
@@ -37,8 +37,8 @@ public class RectangleSystem extends Graph<Rectangle> {
 	private HashMap<Integer, Rectangle> outerRectangles = new HashMap<Integer, Rectangle>();
 
 	/*
-	 * ��������������, ������� ��������� ������� ��� ������������� ������ ���
-	 * ����� �� ���������������, ��. ������� getGraph
+	 * Многоугольники, которые покрывают уровень при представлении уровня как
+	 * графа из многоугольников, см. функцию getGraph
 	 */
 	public HashMap<Integer, Rectangle> rectangles;
 
@@ -50,11 +50,11 @@ public class RectangleSystem extends Graph<Rectangle> {
 	public RectangleSystem(TerrainBasics loc, int sx, int sy, int w, int h,
 			int minrw, int bw) {
 		/*
-		 * location - ������ �������, �� ������� �������� ����;
-		 * startX,startY,width,height - �������, � ������� ��������� ����;
-		 * minRectangleWidth - ����������� ������/������ ���������������, ��
-		 * ������� ���������� ����; borderWidth - ������ (� �������) �������
-		 * ����� ����������������;
+		 * location - объект локации, на которой строится граф;
+		 * startX,startY,width,height - квардат, в который вмещается граф;
+		 * minRectangleWidth - минимальная ширина/высота прямоугольников, на
+		 * которые разделется граф; borderWidth - ширина (в клетках) границы
+		 * между прямоугольниками;
 		 */
 		width = w;
 		height = h;
@@ -101,10 +101,10 @@ public class RectangleSystem extends Graph<Rectangle> {
 		this.width = crs.width;
 		this.height = crs.height;
 		this.location = crs.location;
-		this.edges = new HashMap<Integer, ArrayList<Integer>>();
+		this.edges = crs.edges;
 		this.excluded = new HashMap<Integer, Rectangle>();
 		this.outerSides = new HashMap<Integer, ArrayList<Integer>>();
-		buildEdges();
+//		buildEdges();
 		findOuterSidesOfComplexForm();
 	}
 
@@ -113,14 +113,14 @@ public class RectangleSystem extends Graph<Rectangle> {
 	}
 
 	public void splitRectangle(int i, boolean dir) {
-		// ��������� ������������� �� ���, ������ �� ������� �� ������ � ��
-		// ������ ������ minRectangleWidth*2
-		// i - ������ �������������� � ������� rectangles
-		// dir - ����������� ����������� ����� - ������������ (true) ���
-		// �������������� (false)
+		// Разделить прямоугольник на два, каждый из которых по ширине и по
+		// высоте больше minRectangleWidth*2
+		// i - индекс прямоугольника в массиве rectangles
+		// dir - направление разделяющей стены - вертикальное (true) или
+		// горизонтальное (false)
 		Rectangle r = rectangles.get(i);
 		if (dir) {
-			// ������������
+			// Вертикальное
 			int x = Chance.rand(r.x + minRectangleWidth, r.x + r.width
 					- minRectangleWidth - 1 - borderWidth + 1);
 			rectangles.put(i, new Rectangle(r.x, r.y, x - r.x, r.height));
@@ -128,7 +128,7 @@ public class RectangleSystem extends Graph<Rectangle> {
 					new Rectangle(x + 1 + borderWidth - 1, r.y, r.x + r.width
 							- x - 1 - borderWidth + 1, r.height));
 		} else {
-			// ��������������
+			// Горизонтальное
 			int y = Chance.rand(r.y + minRectangleWidth, r.y + r.height
 					- minRectangleWidth - 1 - borderWidth + 1);
 			rectangles.put(i, new Rectangle(r.x, r.y, r.width, y - r.y));
@@ -139,7 +139,7 @@ public class RectangleSystem extends Graph<Rectangle> {
 	}
 
 	public void buildEdges() {
-		// ��������� ���� � �����
+		// Построить рёбра в графе
 		int len = rectangles.size();
 		edges = new HashMap<Integer, ArrayList<Integer>>();
 		for (int i = 0; i < len; i++) {
@@ -156,13 +156,23 @@ public class RectangleSystem extends Graph<Rectangle> {
 			}
 		}
 	}
-
-	public boolean areRectanglesNear(Rectangle rec1, Rectangle rec2) {
-		// ������������� �� �������������� ��������������� ��� �������������
-		// ��������� � ������ borderWidth
+	
+	public void unbuildEdges() {
+	/**
+	 * Reset all edges
+	 */
+		edges = new HashMap<Integer, ArrayList<Integer>>();
+		int len = rectangles.size();
+		for (int i = 0; i < len; i++) {
+			edges.put(i, new ArrayList<Integer>());
+		}
+	}
+	
+	public boolean areRectanglesNear(Rectangle r1, Rectangle r2) {
+		// Соприкасаются ли прямоугольники горизонтальными или вертикальными
+		// сторонами с учётом borderWidth
 		// if (rec1.x > rec2.x) {
-		// // � rec1 ������ ��������� �������������, ����������� �����
-		// Rectangle buf = rec1;
+		// В rec1 должен храниться прямоугольник, находящийся левее
 		// rec1 = rec2;
 		// rec2 = buf;
 		// }
@@ -177,30 +187,59 @@ public class RectangleSystem extends Graph<Rectangle> {
 		// && rec1.x + rec1.width + borderWidth == rec2.x) {
 		// return true;
 		// }
-		int x2 = rec1.x + rec1.width + borderWidth;
-		int y2 = rec1.y + rec1.height + borderWidth;
-		int x4 = rec2.x + rec2.width + borderWidth;
-		int y4 = rec2.y + rec2.height + borderWidth;
-		// (x1<=x4)&(x2>=x3) (y1<=y4)&(y2>=y3)
-		if (rec1.x <= x4 && x2 >= rec2.x && rec1.y <= y4 && y2 >= rec2.y) {
-			return true;
+		
+//		int x2 = rec1.x + rec1.width + borderWidth - 1;
+//		int y2 = rec1.y + rec1.height + borderWidth - 1;
+//		int x4 = rec2.x + rec2.width + borderWidth - 1;
+//		int y4 = rec2.y + rec2.height + borderWidth - 1;
+//		// (x1<=x4)&(x2>=x3) (y1<=y4)&(y2>=y3)
+//		if (rec1.x == x4 && x2 == rec2.x && rec1.y == y4 && y2 == rec2.y) {
+//			return true;
+//		}
+//		return false;
+		if (r1.x + r1.width + borderWidth == r2.x || r2.x + r2.width + borderWidth == r1.x) {
+			// Rectangles share vertical line
+			int a1 = r1.y;
+			int a2 = r1.y+r1.height-1;
+			int b1 = r2.y;
+			int b2 = r2.y+r2.height-1;
+			int intersection = Utils.integersRangeIntersection(a1, a2, b1, b2);
+			if (intersection >= 1) {
+				return true;
+			} else {
+				return false;
+			}
+		} else if (r1.y + r1.height + borderWidth == r2.y || r2.y + r2.height + borderWidth == r1.y) {
+			// Rectangles share horizontal line
+			int a1 = r1.x;
+			int a2 = r1.x+r1.width-1;
+			int b1 = r2.x;
+			int b2 = r2.x+r2.width-1;
+			int intersection = Utils.integersRangeIntersection(a1, a2, b1, b2);
+			if (intersection >= 1) {
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+		// Rectangles dont' share horizontal or vertical lines
+			return false;
 		}
-		return false;
 	}
 
 	public void drawBorders(int type, int name, boolean onlyInner) {
-		// ��������� ������� ����� ��������� type ���� name
-		// ���� onlyInner=true, �� ����������� ��� ���������� �������
-		// ��������������, ������������� ������� ���������������,
-		// ����� ���������� ������� ����� ���������������, ������������
-		// ��������.
-		// �����, ���� onlyInner=false, �� ������ ������������� �������
-		// ������������ ��������� �� ��������� type,name
-		// � ���� ���� ������� ������������ ������ ��������� � ������
-		// ������������������� (onlyInner=false �������)
-		// ������� ���������, ��� ��� onlyInner=true ���������� � ����������
-		// ������� ���������������,
-		// ������� ���� ��������� �� ������� � �������
+		// Заполнить границы графа объектами type вида name
+		// Если onlyInner=true, то заполняется вся внутренняя область
+		// прямоугольника, очерчивающего систему прямоугольников,
+		// кроме внутренней области самих прямоугольников, составляющих
+		// системму.
+		// Иначе, если onlyInner=false, то каждый прямоугольник системы
+		// очерчивается квадратом из элементов type,name
+		// В этих двух случаях используются разные алгоритмы с разной
+		// производительностью (onlyInner=false быстрее)
+		// Следует учитывать, что при onlyInner=true заполнится и внутренняя
+		// область прямоугольников,
+		// которые были исключены из системы с помощью
 		// RectangleSystem::excludeRectangle.
 
 		if (onlyInner) {
@@ -208,28 +247,27 @@ public class RectangleSystem extends Graph<Rectangle> {
 				throw new Error(
 						"An attempt to draw inner borders of a rectangleSystem with borderWidth = 0");
 			}
-			// // ����������� ������ ���������� ������
-			// // ���������� ���������� �������, ������� ��������� ����
-			// Cell[][] bufContents = new Cell[width][height];
+			// Очерчивание только внутренних границ
+//			// Буферизуем содержимое области, которую покрывает граф
+//			// Cell[][] bufContents = new Cell[width][height];
 			//
 			// int endX = startX + width - 1;
 			// int endY = startY + height - 1;
 			// for (int x = startX; x <= endX; x++) {
 			// for (int y = startY; y <= endY; y++) {
-			// // �������� ���������� ������ ������, ��������� �������
-			// // ����� ������� � �������� ��������� ������
-			// bufContents[x - startX][y - startY] = new Cell(
+			// Копируем содержимое каждой ячейки, передавая будущим
+//			// новым ячейкам в качестве параметра старые
+//			// bufContents[x - startX][y - startY] = new Cell(
 			// location.cells[x][y]);
 			//
 			// }
 			// }
-			// // ��������� ��� ������� ����� ��������� type,name
-			// // ������ ����� type - � TerrainBasics
-			//
+			// Заполняем всю площадь графа объектами type,name
+//			// Список типов type - в TerrainBasics
 			// location.square(startX, startY, width, height, type, name, true);
 			//
-			// // ������ ������� ������� ������ ��������������� ����� - �����
-			// // �������, ��������� ������ ��������� ����� ������ �������
+			// Ставим обратно объекты внутри прямоугольников графа - таким
+//			// образом, заполнены новыми объектами будут только границы
 			// for (Map.Entry<Integer, Rectangle> e : rectangles.entrySet()) {
 			// Rectangle r = e.getValue();
 			// endX = r.x + r.width - 1;
@@ -259,7 +297,7 @@ public class RectangleSystem extends Graph<Rectangle> {
 				}
 			}
 		} else {
-			// ����������� ������ ���� ���������������
+			// Очерчивание границ всех прямоугольников
 			for (Map.Entry<Integer, Rectangle> e : rectangles.entrySet()) {
 				Rectangle r = e.getValue();
 				location.square(r.x - 1, r.y - 1, r.width + 2, r.height + 2,
@@ -277,14 +315,14 @@ public class RectangleSystem extends Graph<Rectangle> {
 	}
 
 	public void addVertexToTree(int vertex, int previousVertex) {
-		// ������������ ��� ���������� ����������������� ������
-		// ��� �������������� ���� ���� ������� �������� �� ������������ ��
-		// ������� (��� ��, ��� isolateVertex),
-		// ��, � ������� �� isolateVertex, ������ �� ������ � ������������� �
-		// ���� ������� ������.
+		// Используется при построении ориентрированного дерева
+		// Все ненаправленные рёбра этой вершины заменяет на направленные от
+		// вершины (так же, как isolateVertex),
+		// но, в отличие от isolateVertex, ничего не делает с направленными к
+		// этой вершине рёбрами.
 		for (int v : edges.get(vertex)) {
-			// ����� ���� ������ ���� �������, ���������� � nextVertex,
-			// � ������� �� ��� nextVertex
+			// Среди всех вершин ищем вершины, соединённые с nextVertex,
+			// и удаляем из них nextVertex
 			if (v == previousVertex) {
 				continue;
 			}
@@ -294,16 +332,16 @@ public class RectangleSystem extends Graph<Rectangle> {
 	}
 
 	public ArrayList<Integer> convertGraphToDirectedTree(int currVertex) {
-		// ������������� �������������� ������� ���� � ��������������� ������,
-		// ������� �������� �������� ������� currVertex
-		// (���� currVertex �� ������ - ��� ���������� ��������)
-		// ���������� ������ �� ��������� ������-�������,
-		// ��� ������� ������� - currVertex
-
+		// Преобразовать ненаправленный связный граф в ориентированное дерево,
+		// началом которого является вершина currVertex
+		// (если currVertex не задана - она выбирается случайно)
+		// Возвращает список из координат вершин-тупиков, 
+		// где нулевой элемент - currVertex
+		
 		Set<Integer> keys = new HashSet<Integer>(edges.keySet());
 		ArrayList<Integer> deadEnds = new ArrayList<Integer>();
 		if (keys.size() == 1) {
-			// ����� �� ������� ��� ������� �� ������ ��������������
+			// Выйти из функции для системы из одного прямоугольника
 			return null;
 		}
 		if (currVertex == -1) {
@@ -317,94 +355,62 @@ public class RectangleSystem extends Graph<Rectangle> {
 			currVertex = indexes.get(Chance.rand(0, size - 1));
 		}
 		int startVertex = currVertex;
-		// ������������� ������ �������
+		// Устанавливаем первую вершину
 		addVertexToTree(currVertex);
 		ArrayList<ArrayList<Integer>> chainBranches = new ArrayList<ArrayList<Integer>>();
 		chainBranches.add(new ArrayList<Integer>());
 		chainBranches.get(0).add(currVertex);
-		// �������� ������ ���������
-		// �������� ��� ������������������ ������, ���������� ����� ����
-		// [0] ���������� �� startVertex
-		// ����������� ����� ���������� � �������, ������� ��� ������������ �
-		// �����
-		// (����, �� ���� �������� � �������� - � ����������) ������
-		int currBranch = 0; // ������ ������� �����
+		// Ключевой массив алгоритма
+		// Содержит все последовательности вершин, образующие ветви цепи
+		// [0] начинается со startVertex
+		// последующие ветки начинаются с вершины, которая уже присутствует в
+		// одной
+		// (реже, но тоже возможно и работает - в нескольких) ветках
+		int currBranch = 0; // Индекс текущей ветви
 		boolean nextVertexFound = true;
-		// num=0; // �����
+		// num=0; // Дебаг
 		ArrayList<Integer> usedVertexes = new ArrayList<Integer>();
 		usedVertexes.add(startVertex);
 		Chance ch20 = new Chance(20);
 		chooseRand: while (nextVertexFound) {
-			// �� ���� ������� �������� ��������� �� ���������� � ��� � �������
-			// ��� ��������� ������� ��� ���� edges, �������� ��������� �
-			// �������,
-			// ����� ���� ��������� (nextCell) ���������� �������
+			// От этой вершины выбираем случайную из соединённых с ней и удаляем
+			// эту случайную вершину изо всех edges, соединяя случайную с
+			// текущей,
+			// после чего случайная (nextCell) становится текущей
 			if (edges.get(currVertex).size() == 0 || ch20.roll()
-					&& edges.get(currVertex).size() > 1 && currBranch > 1 /*
-																		 * ������
-																		 * �
-																		 * ����
-																		 * ��� ,
-																		 * �����
-																		 * �
-																		 * �����
-																		 * �
-																		 * �����
-																		 * �
-																		 * �����
-																		 * � .
-																		 * currBranch
-																		 * >1
-																		 * �����
-																		 * ,
-																		 * �����
-																		 * �
-																		 * �����
-																		 * ���
-																		 * �����
-																		 * �����
-																		 * (��
-																		 * ch20)
-																		 * ��
-																		 * ���
-																		 * ���
-																		 * ����
-																		 * ��
-																		 * ���
-																		 * ���
-																		 * ��
-																		 * �����
-																		 */) {
-				// ���� � ������� �������� �� ��������� ������ ������, �������
-				// ���� �� ���������� ������
+					&& edges.get(currVertex).size() > 1 && currBranch > 1 /* Дебажил полночи, 
+					чтобы прийти к этому условию. currBranch>1 нужно, чтобы 
+					случайная новая ветка (из ch20) не начиналась на первой вершине */) {
+				// Если с текущей вершиной не соединено других вершин, выбрать
+				// одну из предыдущих вершин
 				currBranch++;
 				nextVertexFound = false;
 				for (int i = 0; i < currBranch; i++) {
-					// ������� ���������� �����
+					// Смотрим предыдущие ветви
 					for (int j = 0; j < chainBranches.get(i).size(); j++) {
-						// ������� ��� ������� �����
+						// Смотрим все вершины ветви
 						int vertexFromBranch = chainBranches.get(i).get(j);
 						if (edges.get(vertexFromBranch).size() > 0) {
-							// ���� � ���� �������� �� ���������� �����
-							// ��������� �����-�� ���� ��� ��������� �������,
-							// �������� �� ���� �������
+							// Если с этой вершиной из предыдущей ветви
+							// соединены какие-то пока что свободные вершины,
+							// начинать от этой вершины
 							Collections.sort(edges.get(vertexFromBranch),
 									Collections.reverseOrder());
-							// ������� ������� �������� ��������� �������, �
-							// ������� ������� (� ��� �������) ��������� �������
-							// �� ���������� �����
+							// Выбрать текущей вершиной случайную вершину, с
+							// которой обоюдно (в обе стороны) соединена вершина
+							// из предыдущей ветви
 
-							// ���� ��������� ������ ������, � ��������
-							// vertexFromBranch ����� �������� �����
+							// Сюда сохраняем номера вершин, с которыми
+							// vertexFromBranch имеет обоюдную связь
 							ArrayList<Integer> links = new ArrayList<Integer>();
 
 							for (int vertex : edges.get(vertexFromBranch)) {
-								// ���� ��� �������
+								// Ищем эти вершины
 								if (!usedVertexes.contains(vertex)) {
 									links.add(vertex);
 								}
 							}
-							// � �������� ��������� ��������� �� ���
+							// И выбираем следующей случайную из них
 							if (links.size() == 0) {
 								continue;
 							}
@@ -429,9 +435,9 @@ public class RectangleSystem extends Graph<Rectangle> {
 
 			if (nextVertexFound) {
 				// Collections.sort(edges.get(currVertex),
-				// Collections.reverseOrder()); // ���������� null-��������
-				// � ������� ������� �
-				// ����� �������
+				// Collections.reverseOrder()); // Перемещаем null-значения
+				// в текущей вершине в
+				// конец массива
 				int nextVertex = edges.get(currVertex).get(
 						Chance.rand(0, edges.get(currVertex).size() - 1));
 				chainBranches.get(currBranch).add(nextVertex);
@@ -440,17 +446,17 @@ public class RectangleSystem extends Graph<Rectangle> {
 				currVertex = nextVertex;
 			}
 		}
-		// ������� ���� ���������� �������� ���� ���������� �������
-		// chainBranches ��������� ����� ������
+		// Смыслом всех предыдущих действий было заполнение массива
+		// chainBranches массивами веток вершин
 		Set<Integer> c = edges.keySet();
 		Iterator<Integer> it = c.iterator();
 		while (it.hasNext()) {
-			// ���� ������� ������ chainBranches, �� �������� �������...
+			// Имея готовый массив chainBranches, мы обнуляем вершины...
 			edges.put(it.next(), new ArrayList<Integer>());
 		}
 		int size1 = chainBranches.size();
 		for (int i = 0; i < size1; i++) {
-			// ...� ��������������� ��������� ������� � ������ �����
+			// ...и последовательно соединяем вершины в каждой ветке
 			currVertex = 0;
 			int nextVertex = 0;
 			int size2 = 0;
@@ -487,11 +493,13 @@ public class RectangleSystem extends Graph<Rectangle> {
 
 	public void initialFindOuterSides() {
 		/*
-		 * ��������� ��� ������� ��������������, � ������ �� ������ ������
-		 * ��������������, ������������ ������� �����, ��� ��������. ����������
-		 * ������������ � ������ Graph::outerSides, ��� ������ - �����
-		 * ��������������, �������� - ������ ������� ������, � ��������
-		 * ������������� ��������.
+		 * Прописать для каждого прямоугольника, с какими из четырёх сторон
+		 * прямоугольника, описывающего область графа, они граничат. Результаты
+		 * записываются в массив Graph::outerSides, где индекс - номер
+		 * прямоугольника, значение - массив номеров сторон, с которыми
+		 * прямоугольник граничит. Номера сторон: 1 4 2 3 Для следующего графа
+		 * результат работы метода будет:
+		 * Graph::outerSides=array(array(1,4),array(1,2),array(2,3),array(3,4))
 		 */
 		outerSides = new HashMap<Integer, ArrayList<Integer>>();
 		int size = 0;
@@ -504,19 +512,19 @@ public class RectangleSystem extends Graph<Rectangle> {
 			outerSides.put(key, new ArrayList<Integer>());
 			try {
 				if (r.y == startY) {
-					// ������� �������
+					// Верхняя сторона
 					outerSides.get(key).add(1);
 				}
 				if (r.x + r.width == startX + width) {
-					// ������
+					// Правая
 					outerSides.get(key).add(2);
 				}
 				if (r.y + r.height == startY + height) {
-					// ������
+					// Нижняя
 					outerSides.get(key).add(3);
 				}
 				if (r.x == startX) {
-					// �����
+					// Левая
 					outerSides.get(key).add(4);
 				}
 			} catch (Exception e) {
@@ -531,6 +539,7 @@ public class RectangleSystem extends Graph<Rectangle> {
 		for (int i : rectangles.keySet()) {
 			outerSides.put(i, new ArrayList<Integer>());
 			Rectangle r = rectangles.get(i);
+			Main.console(i);
 			ArrayList<Integer> thisEdges = edges.get(i);
 			HashMap<Integer, Integer> sides = new HashMap<Integer, Integer>();
 			sides.put(SIDE_N, r.width);
@@ -557,12 +566,12 @@ public class RectangleSystem extends Graph<Rectangle> {
 	}
 
 	public void excludeRectangle(int num) {
-		// ��������� ������������� �� �������, ������ ���, ��� ���� � ������ �
-		// ���������� � ��� ��������
-		// ����� ���������, ��� ����� ����� ��� �������� ���������
-		// ��������������� �� ����� ��������������,
-		// ��� ���������� ����� ��������� ��� �������� ������� ��������������� �
-		// ����� � ����������
+		// Исключить прямоугольник из системы, удалив его, его рёбра и записи о
+		// граничащих с ним сторонах
+		// Стоит учитывать, что после этого под индексом удалённого
+		// приямоугольника не будет прямоугольника,
+		// что необходимо будет учитывать при переборе массива прямоугольников в
+		// цикле с итератором.
 		if (!rectangles.containsKey(num)) {
 			throw new Error("The rectangle system already has no �" + num
 					+ " rectangle");
@@ -597,15 +606,15 @@ public class RectangleSystem extends Graph<Rectangle> {
 		}
 		outerSides.remove(num);
 
-		rectangles.remove(num); // ������� �������������...
+		rectangles.remove(num); // Удаляем прямоугольник...
 		if (outerRectangles.containsKey(num)) {
 			outerRectangles.remove(num);
 		}
-		edges.remove(num); // ��� ����...
+		edges.remove(num); // его рёбра...
 		Set<Integer> keys = edges.keySet();
 		Iterator<Integer> it = keys.iterator();
 		while (it.hasNext()) {
-			// ������� ���������� ����� �������������� � ����������...
+			// удаляем соединения этого прямоугольника с остальными...
 			int k = it.next();
 			ArrayList<Integer> e = edges.get(k);
 			int pos = e.indexOf(num);
@@ -616,23 +625,23 @@ public class RectangleSystem extends Graph<Rectangle> {
 	}
 
 	public boolean isVertexExclusible(int vertex) {
-		// ���������, ��������� �� ���� �������, ���� ��������� ������� vertex
-		// � ���� ��������� � vertexes ����������� �������� ��� ������ �������
-		// (������ - ����� �������, �������� - ��������)
-		// �������� 0 ������, ��� ������� �� �������� ����������
-		// �������� 1 ������, ��� ������� ����� ���� ���������� �� ����� ��
-		// ������ �� ��������� 2
-		// �������� 2 ������, ��� ������� ��� �� ����� ���������
-		// �������� �����������, ���� �� �������� ������� �� ��������� 0 ��� ��
-		// �������� ������� �� ��������� 1
-		// � ������ ������ ��� ����� �������, ��� ���� �������, �� ������ - ���
-		// �� �������
+		// Проверяет, останется ли граф связным, если исключить вершину vertex
+		// В ходе алгоритма в vertexes сохраняются значения для каждой вершины
+		// (индекс - номер вершины, значение - значение)
+		// Значение 0 значит, что вершина не посещена алгоритмом
+		// Значение 1 значит, что вершина может быть достигнута из одной из
+		// вершин со значением 2
+		// Значение 2 значит, что вершину уже не нужно проверять
+		// Алгоритм выполняется, пока не кончатся вершины со значением 0 или не
+		// кончатся вершины со значением 1
+		// В первом случае это будет значить, что граф связный, во втором - что
+		// не связный
 		HashMap<Integer, Integer> vertexes = new HashMap<Integer, Integer>();
-		int v0 = -1; // ���������� ������ �� ��������� 0 (����������� �� ����
-		// ���������) (-1, �.�. ���� �� ������ ����� ����� ��
-		// ��������� 1)
-		int v1 = 1; // ���������� ������ �� ��������� 1 (������������� �� ����
-		// ���������)
+		int v0 = -1; // Количество вершин со значением 0 (уменьшается по ходу
+		// алгоритма) (-1, т.к. одна из вершин сразу будет со
+		// значением 1)
+		int v1 = 1; // Количество вершин со значением 1 (увеличивается по ходу
+		// алгоритма)
 		Set<Integer> keys = edges.keySet();
 		Iterator<Integer> it = keys.iterator();
 		while (it.hasNext()) {
@@ -646,8 +655,8 @@ public class RectangleSystem extends Graph<Rectangle> {
 		it = keys.iterator();
 		while (it.hasNext()) {
 			int k = it.next();
-			// ���� ��������� ������� (�����, �� ��� ����������, ������� �
-			// ������ ��������� ���� � �����)
+			// Берём начальную вершину (любую, но нам неизвестно, вершины с
+			// какими индексами есть в графе)
 			if (k == vertex) {
 				continue;
 			}
@@ -658,15 +667,15 @@ public class RectangleSystem extends Graph<Rectangle> {
 			keys = vertexes.keySet();
 			it = keys.iterator();
 			while (it.hasNext()) {
-				// ���� ����� ������� �� ��������� 1
+				// Ищем любую вершину со значением 1
 				int k = it.next();
 				int v = vertexes.get(k);
 				if (v != 1 || k == vertex) {
 					continue;
 				}
 				for (int ve : edges.get(k)) {
-					// ����������� ���� � �������� �������� �� ��������� 0
-					// �������� 1
+					// Проставляем всем её соседним вершинам со значением 0
+					// значение 1
 					if (ve == vertex) {
 						continue;
 					}
@@ -688,18 +697,18 @@ public class RectangleSystem extends Graph<Rectangle> {
 	}
 
 	public int findRectangleByCell(int x, int y) {
-		// ����� � ������� ������������� �� ������ ����������� ������������� ���
-		// ������
-		// ���������� ������ �������������� � rectangles.
-		// ���� ������ �� ��������� �� � ������ ��������������, ����������
+		// Найти в системе прямоугольник по данным координатам принадлежащей ему
+		// ячейки
+		// Возвращает индекс прямоугольника в rectangles.
+		// Если клетка не относится ни к одному прямоугольнику, возвращает
 		// false.
-		// ��������: ������������� � rectangles ����� ����� ������ 0,
-		// ������� ���������� ��������� � false ����� �� ���������� �����
+		// Внимание: прямоугольник в rectangles может иметь индекс 0,
+		// поэтому сравнивать результат с false нужно со сравнением типов
 		// (===/!==)
 		Set<Integer> keys = rectangles.keySet();
 		Iterator<Integer> it = keys.iterator();
 		while (it.hasNext()) {
-			// ���� ����� ������� �� ��������� 1
+			// Ищем любую вершину со значением 1
 			int k = it.next();
 			Rectangle r = rectangles.get(k);
 			if (rectangleHasCell(r, x, y)) {
@@ -710,7 +719,7 @@ public class RectangleSystem extends Graph<Rectangle> {
 	}
 
 	public static boolean rectangleHasCell(Rectangle r, int cellX, int cellY) {
-		// ����������� �� �������������� ����� [cellX;cellY]
+		// Принадлежит ли прямоугольнику точка [cellX;cellY]
 		return cellX <= r.x + r.width - 1 && cellX >= r.x
 				&& cellY <= r.y + r.height - 1 && cellY >= r.y;
 	}

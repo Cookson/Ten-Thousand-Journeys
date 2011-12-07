@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import erpoge.Chance;
+import erpoge.Main;
 import erpoge.terrain.Location;
 import erpoge.terrain.TerrainBasics;
 
@@ -21,48 +22,62 @@ public class CustomRectangleSystem extends Graph<Rectangle> {
 		this.borderWidth = borderWidth;
 		this.rectangles = new HashMap<Integer, Rectangle>();
 		this.rectangles.put(0, new Rectangle(startX, startY, width, height));
+		this.edges.put(0, new ArrayList<Integer>());
 		this.location = location;
 	}
 	public CustomRectangleSystem(TerrainBasics location) {
 		this.borderWidth = 0;
 		this.rectangles = new HashMap<Integer, Rectangle>();
+		this.edges.put(0, new ArrayList<Integer>());
 		this.location = location;
 	}
+	/**
+	 * Splits rectangle into two rectangles. Rectangle under current number
+	 * is the left one (if dir == true) or the top one (if dir == false).
+	 * If width < 0, then a rectangle width width/height = -width 
+	 * from right side/bottom will be cut off, but under current number still stays
+	 * left/top rectangle.
+	 * 
+	 * @param i Number of rectangle in this.rectangleSystem.rectangles
+	 * @param dir true - vertically, false - horizontally
+	 * @param width How much to cut
+	 */
 	public Rectangle splitRectangle(int i, boolean dir, int width) {
-		// ��������� ������������� �� ���, ������ �� ������� �� ������ � ��
-		// ������ ������ minRectangleWidth*2
-		// i - ������ �������������� � ������� rectangles
-		// dir - ����������� ����������� ����� - ������������ (true) ���
-		// �������������� (false)
-		// ����� ������������� ������������ �������, ������ ������� ��� �������� i
 		Rectangle r = rectangles.get(i);
 		Rectangle newRec;
 		if (dir) {
-			// ������������
+			// Vertically
+			if (width < 0) {
+				width = r.width+width-1;
+			}
 			if (width > r.width-2) {
 				throw new Error("Width "+width+" in vertical splitting is too big");
 			}
 			int x = r.x + width;
-			newRec = new Rectangle(x + 1 + borderWidth - 1, r.y, r.x + r.width
-					- x - 1 - borderWidth + 1, r.height);
+			newRec = new Rectangle(x+1+borderWidth-1, r.y, r.x + r.width-x-1-borderWidth+1, r.height);
 			rectangles.put(i, new Rectangle(r.x, r.y, x - r.x, r.height));
 			rectangles.put(rectangles.size(), newRec);
 		} else {
-			// ��������������
+			// Horizontally
+			if (width < 0) {
+				width = r.height+width-1;
+			}
 			if (width > r.height-2) {
 				throw new Error("Width "+width+" in horizontal splitting is too big");
 			}
 			int y = r.y + width;
-			newRec = new Rectangle(r.x, y + 1
-					+ borderWidth - 1, r.width, r.y + r.height - y - 1
-					- borderWidth + 1);
+			newRec = new Rectangle(r.x, y+1+borderWidth-1, r.width, r.y+r.height-y-1-borderWidth+1);
 			rectangles.put(i, new Rectangle(r.x, r.y, r.width, y - r.y));
 			rectangles.put(rectangles.size(), newRec);
 		}
+		// Add empty edges array for new rectangle
+		edges.put(size()-1, new ArrayList<Integer>());
 		return newRec;
 	}
 	public void buildEdges() {
-		// ��������� ���� � �����
+	/*
+	 * Build edges between rectangles
+	 */
 		int len = rectangles.size();
 		edges = new HashMap<Integer, ArrayList<Integer>>();
 		for (int i = 0; i < len; i++) {

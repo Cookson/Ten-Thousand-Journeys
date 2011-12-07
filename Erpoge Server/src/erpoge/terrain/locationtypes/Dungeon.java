@@ -15,6 +15,7 @@ import erpoge.terrain.Container;
 import erpoge.terrain.Location;
 import erpoge.terrain.TerrainGenerator;
 import erpoge.terrain.settlements.Building;
+import erpoge.terrain.settlements.Building.BasisBuildingSetup;
 
 public class Dungeon extends TerrainGenerator {
 	public Dungeon (Location location) {
@@ -36,7 +37,7 @@ public class Dungeon extends TerrainGenerator {
 		}
 		location.startArea=rooms.get(Chance.rand(0,rooms.size()-1));
 		for (Rectangle room : rooms) {
-		// Заполняем комнаты содержимым
+		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 			if (room.x==this.startArea.x && room.y==this.startArea.y) {
 				continue;
 			}
@@ -50,15 +51,15 @@ public class Dungeon extends TerrainGenerator {
 //				continue;
 //				RectangleSystem house=house(room.x,room.y,room.width,room.height,4,4);
 				Building b = new Building(this, room.x, room.y, room.width, room.height, 4);
-				b.buildBasis(GameObjects.OBJ_WALL_GREY_STONE,false);
+				b.buildBasis(GameObjects.OBJ_WALL_GREY_STONE, BasisBuildingSetup.CONVERT_TO_DIRECTED_TREE);
 				RectangleSystem house = b.rectangleSystem;
 				for (Rectangle hroom : house.rectangles.values()) {
 					CellCollection roomCollection=newCellCollection(closeCells(hroom.x+1,hroom.y+1,7, PASSABILITY_FREE, true));
 					if (Chance.roll(70)) {
 						ArrayList<GeneratorCharacterGroup> hroomCharacters = new ArrayList<GeneratorCharacterGroup>();
-						hroomCharacters.add(new GeneratorCharacterGroup("goblin","Гоблин",Chance.rand(1,3),0));
-						hroomCharacters.add(new GeneratorCharacterGroup("goblinMage","Гоблин-маг",Chance.rand(0,1)*Chance.rand(0,2),0));
-						hroomCharacters.add(new GeneratorCharacterGroup("ogre","Огр",Chance.rand(0,1)*Chance.rand(0,1),0));
+						hroomCharacters.add(new GeneratorCharacterGroup("goblin","пїЅпїЅпїЅпїЅпїЅпїЅ",Chance.rand(1,3),0));
+						hroomCharacters.add(new GeneratorCharacterGroup("goblinMage","пїЅпїЅпїЅпїЅпїЅпїЅ-пїЅпїЅпїЅ",Chance.rand(0,1)*Chance.rand(0,2),0));
+						hroomCharacters.add(new GeneratorCharacterGroup("ogre","пїЅпїЅпїЅ",Chance.rand(0,1)*Chance.rand(0,1),0));
 						roomCollection.placeCharacters(hroomCharacters);
 					} else {
 //						Coordinate cell = roomCollection.cells.get(Chance.rand(0,roomCollection.cells.size()-1));
@@ -89,10 +90,10 @@ public class Dungeon extends TerrainGenerator {
 					(graph.rectangles.get(k).x+graph.rectangles.get(k).width+graph.borderWidth==graph.rectangles.get(edge).x 
 					|| graph.rectangles.get(edge).x+graph.rectangles.get(edge).width+graph.borderWidth==graph.rectangles.get(k).x)
 				) {
-				// Если граничат вертикальными сторонами, и если можно соединить жирной линией, не пересекая границы комнаты вдоль
+				// пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 					Rectangle r1 = ri1;
 					if (r1.x>r2.x) {
-					// Сделать первой комнатой ту, которая левее
+					// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 						Rectangle buf = r1;
 						r1 = r2;
 						r2 = buf;
@@ -102,7 +103,7 @@ public class Dungeon extends TerrainGenerator {
 					int xEnd=r2.x;
 					int yEnd=(int)(r2.y+Math.floor(r2.height/2));
 					if (xEnd-xStart<7) {
-					// Если проход с перегибом не помещается, сделать просто линию
+					// пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 						boldLine(xStart, yStart, xEnd, yEnd, ELEMENT_REMOVE, 0);
 					} else {
 						int xBend=Chance.rand(xStart+3, xEnd-3);
@@ -110,13 +111,13 @@ public class Dungeon extends TerrainGenerator {
 						boldLine(xBend, yStart, xBend, yEnd, ELEMENT_REMOVE, 0);
 						boldLine(xBend, yEnd, xEnd, yEnd, ELEMENT_REMOVE, 0);
 						if (Chance.roll(50)) {
-						// Дверь на конце
+						// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 							setObject(xStart+1,yStart+1,GameObjects.OBJ_WALL_GREY_STONE);
 							setObject(xStart+1,yStart-1,GameObjects.OBJ_WALL_GREY_STONE);
 							setObject(xStart+1,yStart,GameObjects.OBJ_DOOR_BLUE);
 						}
 						if (Chance.roll(50)) {
-						// Дверь на другом конце
+						// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 							setObject(xEnd-1,yEnd+1,GameObjects.OBJ_WALL_GREY_STONE);
 							setObject(xEnd-1,yEnd-1,GameObjects.OBJ_WALL_GREY_STONE);
 							setObject(xEnd-1,yEnd,GameObjects.OBJ_DOOR_BLUE);
@@ -129,10 +130,10 @@ public class Dungeon extends TerrainGenerator {
 					setObject(xStart,yStart-1,GameObjects.OBJ_VOID);
 					setObject(xStart,yStart,GameObjects.OBJ_VOID);
 				} else {
-				// Если граничат горизонтальными
+				// пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 					Rectangle r1 = ri1;
 					if (r1.y>r2.y) {
-					// Сделать первой комнатой ту, которая выше
+					// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 						Rectangle buf=r1;
 						r1=r2;
 						r2=buf;
@@ -142,7 +143,7 @@ public class Dungeon extends TerrainGenerator {
 					int xEnd=(int)(r2.x+Math.floor(r2.width/2));
 					int yEnd=r2.y;
 					if (yEnd-yStart<7) {
-					// Если проход с перегибом не помещается, сделать просто линию
+					// пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 						boldLine(xStart, yStart, xEnd, yEnd, ELEMENT_REMOVE, 0);
 					} else {
 						int yBend=Chance.rand(yStart+3, yEnd-3);
@@ -150,14 +151,14 @@ public class Dungeon extends TerrainGenerator {
 						boldLine(xStart, yBend, xEnd, yBend, ELEMENT_REMOVE, 0);
 						boldLine(xEnd, yBend, xEnd, yEnd, ELEMENT_REMOVE, 0);
 						if (Chance.roll(50)) {
-						// Дверь на конце
+						// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 							setObject(xStart-1,yStart+1,GameObjects.OBJ_WALL_GREY_STONE);
 							setObject(xStart+1,yStart+1,GameObjects.OBJ_WALL_GREY_STONE);
 							setObject(xStart,yStart+1,GameObjects.OBJ_DOOR_BLUE);
 							setObject(xEnd,yEnd,GameObjects.OBJ_VOID);
 						}
 						if (Chance.roll(50)) {
-						// Дверь на другом конце
+						// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 							setObject(xEnd-1,yEnd-1,GameObjects.OBJ_WALL_GREY_STONE);
 							setObject(xEnd+1,yEnd-1,GameObjects.OBJ_WALL_GREY_STONE);
 							setObject(xEnd,yEnd-1,GameObjects.OBJ_DOOR_BLUE);

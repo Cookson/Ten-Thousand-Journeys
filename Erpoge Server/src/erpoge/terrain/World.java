@@ -56,6 +56,8 @@ public class World extends Location {
 //		}
 		if (type.equals("Continent")) {
 			new Continent(this);
+		} else if (type.equals("TestWorld")) {
+			new TestWorld(this);
 		}
 	}
 	

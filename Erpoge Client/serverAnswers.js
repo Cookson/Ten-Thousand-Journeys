@@ -6,7 +6,7 @@ function handleNextEvent() {
 		return;
 	}
 	var value = serverAnswer[serverAnswerIterator++];
-//	console.log(serverAnswer);
+//	console["log"](serverAnswer);
 	switch (value.e) {
 	case "wt":
 		// Character travels in the world

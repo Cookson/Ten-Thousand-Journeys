@@ -69,7 +69,12 @@ public class PlayerCharacter extends Character {
 	public int level() {
 		return level;
 	}
-
+	public String toString() {
+		return "Player character "+name+" the "+cls;
+	}
+	public int hashCode() {
+		return characterId;
+	}
 	public String cls() {
 		return cls;
 	}

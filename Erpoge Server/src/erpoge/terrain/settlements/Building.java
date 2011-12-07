@@ -38,6 +38,7 @@ public class Building {
 	public int keyInQuarter;
 	public Coordinate frontDoor;
 	private boolean hasSettlement;
+	private ArrayList<Integer> hallways = new ArrayList<Integer>();
 	public Building(TerrainGenerator settlement, int x, int y, int width,
 			int height, int minRoomSize) {
 		this.x = x;
@@ -51,7 +52,6 @@ public class Building {
 			this.settlement = s;
 			s.buildings.add(this);
 			if (s.quarters != null) {
-				// Определить, в каком квартале находится это здание
 				for (RectangleSystem q : s.quarters.values()) {
 					if (RectangleSystem.rectangleHasCell(new Rectangle(
 							q.startX, q.startY, q.width, q.height), x, y)) {
@@ -64,31 +64,34 @@ public class Building {
 		rectangleSystem = location.getGraph(x + 1, y + 1, width - 2,
 				height - 2, minRoomSize, 1);
 	}
-	// function buildingTavern() { // Таверна
-	// graph=buildBasis(x,y,w,h,4,5,true);
-	// graph.findOuterSides();
-	// // foreach (graph.rectangles as r) {
-	// // location.placeSeveralObjects(array(73,74),Chance.Chance.rand(1,5),r);
-	// // }
-	// lobbyNum=lobby;
-	// location.placeSeveralObjects(array(73,74),Chance.Chance.rand(1,5),rectangleSystem.rectangles[lobbyNum]);
-	// return graph;
-	// }
+	public Building(TerrainGenerator settlement, int x, int y, int width,
+			int height) {
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+		this.location = settlement;
+		hasSettlement = false;
+		if (settlement instanceof Settlement) {
+			Settlement s = (Settlement) settlement;
+			this.settlement = s;
+			s.buildings.add(this);
+			if (s.quarters != null) {
+				// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+				for (RectangleSystem q : s.quarters.values()) {
+					if (RectangleSystem.rectangleHasCell(new Rectangle(
+							q.startX, q.startY, q.width, q.height), x, y)) {
+						quarter = q;
+					}
+				}
+			}
+			hasSettlement = true;
+		}
+	}
 
 	public Coordinate placeFrontDoor(int side) {
-		// Разместить входную дверь и определить, какая их комнат является
-		// входной (Building::lobby)
-		// Входная дверь размещается на случайной клетке с указанной стороны
-		// дома.
-		// Дверь размещается естественно: так, чтобы внутри дома сразу же за
-		// дверью не было стены.
-		// in: side - сторона. Если не указана - сторона определится на основе
-		// информации о Settlement здания и квартале, в котором оно находится.
-		// Если Settlement нет - просто будет выбрана случайно
-		// out: [x,y] - координаты двери
 		if (side == -1) {
 			if (hasSettlement() && quarter != null) {
-				// Если известно, в каком квартале находится здание
 				keyInQuarter = quarter.findRectangleByCell(x, y);
 				ArrayList<Integer> probableSides = quarter.outerSides
 						.get(keyInQuarter);
@@ -111,7 +114,6 @@ public class Building {
 				side = probableSides.get(Chance.rand(0,
 						probableSides.size() - 1));
 			} else {
-				// Иначе выбрать случайную сторону
 				side = Chance.rand(1, 4);
 			}
 		}
@@ -150,30 +152,53 @@ public class Building {
 		frontDoor = new Coordinate(dx, dy);
 		return frontDoor;
 	}
+	public Coordinate placeFrontDoor(int rectangleId, int side) {
+		Rectangle r = rectangleSystem.rectangles.get(rectangleId);
+		if (side == -1) {
+			side = rectangleSystem.outerSides.get(rectangleId).get(0);
+		}
+		HashMap<Integer, Integer> cells = findDoorAppropriateCells(r,side);
+		if (cells.size() == 0) {
+			throw new Error("Nowhere to place the door from side " + side);
+		}
+		int dx, dy;
+		if (side == TerrainBasics.SIDE_N || side == TerrainBasics.SIDE_S) {
+			ArrayList<Integer> xes = new ArrayList<Integer>(cells.keySet());
+			dx = xes.get(Chance.rand(0, xes.size() - 1));
+			dy = cells.get(dx);
+			location.setObject(dx, dy, GameObjects.OBJ_DOOR_BLUE);
+		} else {
+			ArrayList<Integer> yes = new ArrayList<Integer>(cells.keySet());
+			dy = yes.get(Chance.rand(0, yes.size() - 1));
+			dx = cells.get(dy);
+			location.setObject(dx, dy, GameObjects.OBJ_DOOR_BLUE);
+		}
+		if (side == TerrainBasics.SIDE_N) {
+			lobby = rectangleSystem.findRectangleByCell(dx, dy + 1);
+		} else if (side == TerrainBasics.SIDE_E) {
+			lobby = rectangleSystem.findRectangleByCell(dx - 1, dy);
+		} else if (side == TerrainBasics.SIDE_S) {
+			lobby = rectangleSystem.findRectangleByCell(dx, dy - 1);
+		} else if (side == TerrainBasics.SIDE_W) {
+			lobby = rectangleSystem.findRectangleByCell(dx + 1, dy);
+		} else {
+			throw new Error("Unappropriate side");
+		}
+		if (lobby == -1) {
+			throw new Error(
+					"Can't determine the lobby room because desired cell is not in this rectangle system");
+		}
+		doorSide = side;
+		frontDoor = new Coordinate(dx, dy);
+		return frontDoor;
+	}
 	public boolean hasSettlement() {
 		return hasSettlement;
 	}
 	public HashMap<Integer, Integer> findDoorAppropriateCells(int side) {
-		/*
-		 * Находит в произвольной системе прямоугольников rooms клетки со
-		 * стороны side, на которых можно разместить двери.
-		 */
-		// outerSides=array();
-		// size=sizeof(rooms);
-		// for (i=0;i<size;i++) {
-		// for (j=i+1;j<size;j++) {
-
-		// }
-		
-		// }
-		// Сначала получаем стороны, на которых располагаются искомые клетки
-		// Если мы ищем клетки с горизонтальных сторон (1 или 3),
-		// то в sides индекс - x-координата, значение - y-координата, иначе
-		// наоборот.
 		HashMap<Integer, Integer> cells = new HashMap<Integer, Integer>();
 		Set<Integer> keys;
 		if (side == SIDE_N) {
-			// Верхняя сторона
 			for (Rectangle r : rooms.values()) {
 				int y = r.y - 1;
 				for (int i = r.x; i < r.x + r.width; i++) {
@@ -190,7 +215,6 @@ public class Building {
 				}
 			}
 		} else if (side == SIDE_E) {
-			// Правая сторона
 			for (Rectangle r : rooms.values()) {
 				int x = r.x + r.width;
 				for (int i = r.y; i < r.y + r.height; i++) {
@@ -206,23 +230,7 @@ public class Building {
 					cells.remove(y);
 				}
 			}
-
-			// foreach (rooms as r) {
-			// x=r[0]+r[2];
-			// for (i=r[1];i<r[1]+r[3];i++) {
-			// if (!isset(cells[i]) || cells[i]<x) {
-			// cells[i]=x;
-			// }
-			// }
-			// }
-			// foreach (cells as y=>x) {
-			// if (location.contents[x+1][y]['object'] ||
-			// location.contents[x-1][y]['object']) {
-			// unset(cells[y]);
-			// }
-			// }
 		} else if (side == SIDE_S) {
-			// Нижняя сторона
 			for (Rectangle r : rooms.values()) {
 				int y = r.y + r.height;
 				for (int i = r.x; i < r.x + r.width; i++) {
@@ -238,23 +246,7 @@ public class Building {
 					cells.remove(x);
 				}
 			}
-
-			// foreach (rooms as r) {
-			// y=r[1]+r[3];
-			// for (i=r[0];i<r[0]+r[2];i++) {
-			// if (!isset(cells[i]) || cells[i]<y) {
-			// cells[i]=y;
-			// }
-			// }
-			// }
-			// foreach (cells as x=>y) {
-			// if (location.contents[x][y+1]['object'] ||
-			// location.contents[x][y-1]['object']) {
-			// unset(cells[x]);
-			// }
-			// }
 		} else if (side == SIDE_W) {
-			// Левая сторона
 			for (Rectangle r : rooms.values()) {
 				int x = r.x - 1;
 				for (int i = r.y; i < r.y + r.height; i++) {
@@ -270,81 +262,116 @@ public class Building {
 					cells.remove(y);
 				}
 			}
-
-			// foreach (rooms as r) {
-			// x=r[0]-1;
-			// for (i=r[1];i<r[1]+r[3];i++) {
-			// if (!isset(cells[i]) || cells[i]>x) {
-			// cells[i]=x;
-			// }
-			// }
-			// }
-			// foreach (cells as y=>x) {
-			// if (location.contents[x+1][y]['object'] ||
-			// location.contents[x-1][y]['object']) {
-			// unset(cells[y]);
-			// }
-			// }
+		}
+		return cells;
+	}
+	public HashMap<Integer, Integer> findDoorAppropriateCells(Rectangle r, int side) {
+		HashMap<Integer, Integer> cells = new HashMap<Integer, Integer>();
+		Set<Integer> keys;
+		if (side == SIDE_N) {
+			int y = r.y - 1;
+			for (int i = r.x; i < r.x + r.width; i++) {
+				if (!cells.containsKey(i) || cells.get(i) > y) {
+					cells.put(i, y);
+				}
+			}
+			keys = new HashSet<Integer>(cells.keySet());
+			for (int x : keys) {
+				y = cells.get(x);
+				if (location.cells[x][y + 1].object() != 0) {
+					cells.remove(x);
+				}
+			}
+		} else if (side == SIDE_E) {
+			int x = r.x + r.width;
+			for (int i = r.y; i < r.y + r.height; i++) {
+				if (!cells.containsKey(i) || cells.get(i) < x) {
+					cells.put(i, x);
+				}
+			}
+			keys = new HashSet<Integer>(cells.keySet());
+			for (int y : keys) {
+				x = cells.get(y);
+				if (location.cells[x - 1][y].object() != 0) {
+					cells.remove(y);
+				}
+			}
+		} else if (side == SIDE_S) {
+			int y = r.y + r.height;
+			for (int i = r.x; i < r.x + r.width; i++) {
+				if (!cells.containsKey(i) || cells.get(i) < y) {
+					cells.put(i, y);
+				}
+			}
+			keys = new HashSet<Integer>(cells.keySet());
+			for (int x : keys) {
+				y = cells.get(x);
+				if (location.cells[x][y - 1].object() != 0) {
+					cells.remove(x);
+				}
+			}
+		} else if (side == SIDE_W) {
+			int x = r.x - 1;
+			for (int i = r.y; i < r.y + r.height; i++) {
+				if (!cells.containsKey(i) || cells.get(i) > x) {
+					cells.put(i, x);
+				}
+			}
+			keys = new HashSet<Integer>(cells.keySet());
+			for (int y : keys) {
+				x = cells.get(y);
+				if (location.cells[x + 1][y].object() != 0) {
+					cells.remove(y);
+				}
+			}
 		}
 		return cells;
 	}
 	public RectangleSystem buildBasis(int wallType /* =4 */,
-			boolean notSimpleForm/* =false */) {
-		// Рисует основу дома - вписанные в квадрат (x,y,w,h) комнаты,
-		// соединённые в виде дерева без циклов
-		// in: notSimpleForm - если true, то некоторые крайние прямоугольники
-		// системы дома будут исключены, что придаст дому более сложную форму
-		// out: RectangleSystem - комнаты дома.
-		// После вызова этой функции из Building::rooms можно достать
-		// RectangleSystem::rectangles комнаты
-		// x++; // Уменьшаем квадрат, так как комнаты будут обведены квадратами
-		// // шириной в одну клетку
-		// y++;
-		// width -= 2;
-		// height -= 2;
+			 BasisBuildingSetup setup/* =false */) {
 		RectangleSystem graph = rectangleSystem;
-		if (notSimpleForm) {
-			if (graph.rectangles.size() > 3) {
-				// Если дом состоит из более чем одного прямоугольника, то
-				// изменить его форму
-				// graph.initialFindOuterSides();
-				boolean formChanged = false;
-				Set<Integer> keys = graph.outerSides.keySet();
-				for (int k : keys) {
-					ArrayList<Integer> sides = graph.outerSides.get(k);
-					if (sides.size() == 0 || Chance.roll(70)) {
-						continue;
-					}
-					if (!graph.isVertexExclusible(k)) {
-						continue;
-					} else {
-						formChanged = true;
-						graph.excludeRectangle(k);
-					}
-				}
-				if (!formChanged) {
-					graph.excludeRectangle(0);
-				}
-			}
+//		if (notSimpleForm) {
+//			if (graph.rectangles.size() > 3) {
+//				// graph.initialFindOuterSides();
+//				boolean formChanged = false;
+//				Set<Integer> keys = graph.outerSides.keySet();
+//				for (int k : keys) {
+//					ArrayList<Integer> sides = graph.outerSides.get(k);
+//					if (sides.size() == 0 || Chance.roll(70)) {
+//						continue;
+//					}
+//					if (!graph.isVertexExclusible(k)) {
+//						continue;
+//					} else {
+//						formChanged = true;
+//						graph.excludeRectangle(k);
+//					}
+//				}
+//				if (!formChanged) {
+//					graph.excludeRectangle(0);
+//				}
+//			}
+//		}
+		if (setup == BasisBuildingSetup.CONVERT_TO_DIRECTED_TREE) {
+			graph.convertGraphToDirectedTree();
+		} else if (setup == BasisBuildingSetup.KEYPOINTS_BASED) {
+			
+		} else if (setup == BasisBuildingSetup.NOT_BUILD_EDGES) {
+			
 		}
-		rectangleSystem = graph;
-		graph.convertGraphToDirectedTree();
-		graph.drawBorders(1, wallType, false); // Стены дома
+		
+		graph.drawBorders(1, wallType, false);
 		int floorType = GameObjects.FLOOR_STONE;
 		for (Rectangle r : graph.rectangles.values()) {
-			// Пол
 			fillFloor(r, floorType);
 		}
 
 		Set<Integer> keys = graph.edges.keySet();
 		for (int k : keys) {
-			// Соединяем комнаты дверьми
 			ArrayList<Integer> edge = graph.edges.get(k);
 			Rectangle r1 = graph.rectangles.get(k);
 			for (int vertex : edge) {
 				Rectangle r2 = graph.rectangles.get(vertex);
-				// Соединяем только там, где есть свободное место с обеих сторон
-				// от потенциального местоположения двери
 				Coordinate c = connectRoomsWithDoor(r1, r2,
 						GameObjects.OBJ_DOOR_BLUE);
 				location.setFloor(c.x, c.y, floorType);
@@ -363,7 +390,7 @@ public class Building {
 					Math.min(r1.y + r1.height - 1, r2.y + r2.height - 1));
 		} else {
 			// Horizontal
-			y = Math.max(r1.y - 1, r2.y - 1); // Да, там x берётся max, а здесь
+			y = Math.max(r1.y - 1, r2.y - 1); // пїЅпїЅ, пїЅпїЅпїЅ x пїЅпїЅпїЅпїЅпїЅпїЅ max, пїЅ пїЅпїЅпїЅпїЅпїЅ
 												// y - min.
 			x = Chance.rand(Math.max(r1.x, r2.x),
 					Math.min(r1.x + r1.width - 1, r2.x + r2.width - 1));
@@ -446,11 +473,23 @@ public class Building {
 		}
 		return answer;
 	}
-
+	public void markAsHallway(int rectangleId) {
+	/**
+	 * Mark room as hallway so other rooms will prefer to connect to this room
+	 * when buildBasis is called
+	 */
+		hallways.add(rectangleId);
+	}
 	public void clearBasisInside() {
 		for (Rectangle r : rectangleSystem.rectangles.values()) {
 			location.square(r.x, r.y, r.width, r.height,
 					TerrainBasics.ELEMENT_OBJECT, GameObjects.OBJ_VOID, true);
 		}
+	}
+	public enum BasisBuildingSetup {
+	/**
+	 * Describes which methods should buildBasis use to build edges of graph
+	 */
+		NOT_BUILD_EDGES, CONVERT_TO_DIRECTED_TREE, KEYPOINTS_BASED
 	}
 }

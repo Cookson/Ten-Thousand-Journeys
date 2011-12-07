@@ -91,54 +91,12 @@ handlers={
 			context: window
 		}
 	},
-	onlinePlayer: {
-		click:function _() {
-		// Приглашение кликом по игроку в списке
-			var name=this.getAttribute("name");
-			if (name==player.name) {
-			// Приглашение самого себя
-				gAlert("Нельзя пригласить в группу самого себя<span style='display:none;'>, омич ж ты полуёбок!</span>");
-				return;
-			}
-			for (var i in onlinePlayers) {
-				for (var j=0;j<onlinePlayers[i].length;j++) {
-					if (onlinePlayers[i][j][0]==name) {
-						if (i!=0) {
-						// Если приглашаемый игрок уже в группе
-							gAlert("Этот игрок уже в группе!");
-							return false;
-						} else if (onlinePlayers[i][j][3]!=player.worldX || onlinePlayers[i][j][4]!=player.worldY) {
-						// Если вы и приглашаемый игрок не на одной клетке на глобальной карте
-							gAlert("Вы должны быть на одной клетке с приглашаемым игроком!");
-							return false;
-						} else {
-						// Приглашение
-							Net.send({invite:name},function(data) {
-								if (data==0) {
-								// Игрок уже в группе
-									gAlert("Игрок уже в группе");
-								} else if (data==1) {
-								// Пригласить
-									gAlert("Приглашение отправлено");
-								} else if (data==2) {
-								// Игрока сейчас кто-то приглашает
-									gAlert("Игрока уже кто-то приглашает, подождите");
-								}
-							});
-						}
-						break;
-					}
-				}
-			}
-		}
-	},
 	document: {
 		keydown: Keys.universalKeyDownHandler,
 		contextmenu: function _() {
 			return false;
 		}
 	},
-	
 	gameField: {
 		click:function _(e) {
 			var elementCoord=getOffsetRect(gameField);
@@ -335,189 +293,7 @@ handlers={
 			return false;
 		}
 	},
-	stGoToChooseServerScreen: {
-		click: function _() {
-			showStChooseServer();
-		}
-	},
-	stGoToConnectionScreen: {
-		click: function _() {
-			showStConnection();
-		}
-	},
-	stServerRegisger: {
-		click: function _() {
-			
-		}
-	},
-	stNewPlayerComplete: {
-		click: function _() {
-			var obj = {
-					a:		Net.CREATE_CHARACTER,
-					name: 	document.getElementById("stNewPlayerName").value,
-					login: 	Global.playerLogin,
-					race:	playerCreation.race,
-					cls:	playerCreation.cls,
-					skills:	(function() {
-						var a = [];
-						for (var i in playerCreation.skills) {
-							a.push(i);
-							a.push(playerCreation.skills[i]);
-						}
-						return a;
-					})()
-				};
-			return;
-			Net.send(obj,function(data) {
-				var nError=document.getElementById("stNewPlayerError");
-				if (data===0) {
-					winkElement(nError,"Игрок с таким именем уже существует!");
-				} else if (data===1) {
-					winkElement(nError,"Введите имя персонажа");
-				} else if (data===2) {
-					winkElement(nError,"Выберите расу персонажа");
-				} else if (data===3) {
-					winkElement(nError,"Выберите хотя бы один навык");
-				} else if (data===4) {
-					winkElement(nError,"Выберите класс персонажа");
-				} else if (data===5) {
-					winkElement(nError,"Имя должно состоять только из русских или только из английских букв, содержать первую заглавную и остальные строчные буквы и быть длиннее одного символа");
-				} else {
-				// Эмуляция ввода в форму логина и пароля и их отправки
-					addLoginPlayerDescription([
-						0,
-						document.getElementById("stNewPlayerName").value,
-						playerCreation.race,
-						playerCreation.cls,
-						1
-					]);
-					windowAccountCharacters.show();
-				}
-			});
-		}
-	},
-	stAccountInputs: {
-		focus: function _() {
-			document.getElemenyById("stAccountAlert").innerHTML="";
-		}
-	},
-	stAccountForm: {
-		submit: function _() {
-			var login=document.getElementById("stAccountLogin").value;
-			var password=document.getElementById("stAccountPassword").value;
-			var passwordConfirm=document.getElementById("stAccountPasswordConfirm").value;
-			if (password!==passwordConfirm) {
-			// Проверка пароля
-				winkElement(document.getElementById("stAccountAlert"),"Пароль и подтверждение пароля не совпадают");
-				return false;
-			}
-			Net.send({cra:[login,password]},function(data) {
-				var nError=document.getElementById("stAccountAlert");
-				if (data===1) {
-					winkElement(nError,"Поля не могут быть пустыми");
-				} else if (data===2) {
-					winkElement(nError, "Логин может содержать только английские или только русские буквы, а также цифры, подчёркивания и дефисы");
-				} else if (data===3) {
-					winkElement(nError,"Аккаунт с таким именем уже существует");
-				} else {
-					document.getElementById("stServerLogin").value=login;
-					document.getElementById("stServerPassword").value=password;
-					document.getElementById("stLoginForm").onsubmit();
-				}
-			});
-			return false;
-		}
-	},
-	stGoToCreatePlayer: {
-		click: function _() {
-			
-		}
-	},
-	stNewPlayerRace: {
-		click: function _() {
-		// Выбор расы игрока
-			playerCreation.race = +this.getAttribute("race");
-			// Ресет стиля всех дивов с расами на дефолтный
-			var nlRaces=document
-				.getElementById("stNewPlayerRaces")
-				.children;
-			for (var i=0;i<nlRaces.length;i++) {
-				nlRaces[i].className="";
-			}
-			this.className="stNewPlayerSelectedRace";
-			// Отображение атрибутов для этой расы
-			var nlAttributes=document
-				.getElementById("stNewPlayerAttributes")
-				.getElementsByClassName("stNewPlayerAttributeValue");
-			for (var i=0;i<nlAttributes.length;i++) {
-				nlAttributes[i].innerHTML=racialAttributes[playerCreation.race][i];
-			}
-		}
-	},
-	stNewPlayerSkill: {
-		click: function _() {
-		// Изучить навык
-			var skill = +this.getAttribute("skill");
-			var usedSkillPoints = getUsedSkillPoints()+baseSkillPoints+(newPlayerLearnedSkills[skill] ? newPlayerLearnedSkills[skill]*deltaSkillPoints : 0);
-			if (usedSkillPoints <= maxSkillPoints) {
-				addLearnedSkill(skill);
-				showClasses();
-				showSkillPointsLeft();
-			}
-		}
-	},
-	stNewPlayerClass: {
-		click: function _() {
-			var nlClasses=document.getElementById("stNewPlayerClasses").getElementsByTagName("*");
-			for (var i=0;i<nlClasses.length;i++) {
-				nlClasses[i].className="stNewPlayerClass";
-			}
-			this.className="stNewPlayerSelectedClass";
-			playerCreation.cls = this.innerHTML;
-			
-		}
-	},
-	stNewPlayerLearnedSkill: {
-		click: function _() {
-			removeLearnedSkill(this.getAttribute("skill"));
-			showClasses();
-			showSkillPointsLeft();
-		}
-	},
-	
-	intfLeaveLocation: {
-		click: function _() {
-			
-		}
-	},
-	
-	// Ajax
-	stChooseServerForm: {
-		submit: function _() {
-			serverAddress=document.getElementById("stChooseServer").value;
-			// Добавляем сервер в список серверов
-			var i=0;
-			for (i=0;i<servers.length;i++) {
-				if (servers[i][0]==serverAddress) {
-					break;
-				}
-			}
-			if (i!=servers.length) {
-				servers.push([serverAddress]);
-			}
-			localStorage.setItem("serverAddress",serverAddress);
-			Net.send({a:Net.SERVER_INFO}, handlers.net.serverInfo);
-			return false;
-		}
-	},
-	stLoginForm: {
-		
-	},
 	net: {
-		serverInfo: function _(data) {
-			// in: {serverName:string, online:integer]
-			
-		},
 		login: function _(data) {
 			/* 	in: {
 					l: String login,
@@ -603,11 +379,6 @@ handlers={
 				if (Net.callback) {
 					Net.callback();
 				}
-				fitIntfInfo();
-				document.getElementById("intfleaveLocation").style.display="none";
-				document.getElementById("intfleaveLocationBg").style.display="none";
-				document.getElementById("intfEnterArea").style.display="block";
-				document.getElementById("intfEnterAreaBg").style.display="block";
 				UI.enterGlobalMapMode();
 				UI.notify("worldLoad");
 				UI.setMode(UI.MODE_ON_GLOBAL_MAP);
@@ -620,11 +391,6 @@ handlers={
 				characters = {};
 				onGlobalMap=false;
 				showLoadingScreen();
-				
-				document.getElementById("intfEnterArea").style.display="none";
-				document.getElementById("intfEnterAreaBg").style.display="none";
-				document.getElementById("intfleaveLocation").style.display="block";
-				document.getElementById("intfleaveLocationBg").style.display="block";
 				onlinePlayers=[];
 				width=data.l.w;
 				height=data.l.h;
@@ -654,11 +420,7 @@ handlers={
 		loadPassiveContents : function _(data) {
 			onGlobalMap = true;
 			readWorld(data);
-			document.getElementById("intfInfo").style.display = "none";
-			document.getElementById("intfActions").style.display = "none";
-			
 			recountWindowSize();
-			
 			centerWorldCamera(width/2, height/2, true);
 			hideLoadingScreen();
 		},

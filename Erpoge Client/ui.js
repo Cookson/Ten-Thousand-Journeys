@@ -62,6 +62,7 @@ var UI = {
 		accountCreateStart: {},
 		accountPlayersListCall: {},
 		playerCreateStart: {},
+		alert: {},
 		/* Game loading */
 		locationLoad: {},
 		worldLoad: {},

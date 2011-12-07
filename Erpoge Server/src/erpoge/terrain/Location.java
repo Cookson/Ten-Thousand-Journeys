@@ -85,7 +85,6 @@ public class Location extends TerrainBasics {
 	}
 	public void flushEvents(int toWho, Character character) {
 		ArrayList<WebSocket> targetConnections = new ArrayList<WebSocket>();
-		Main.console("FLUSH LOCATION EVENTS");
 		// Get the list of target players
 		if (toWho == TO_LOCATION) {
 			// Send to those in location who are close enough to get these events

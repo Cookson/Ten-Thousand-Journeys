@@ -300,105 +300,10 @@ function getUsedSkillPoints() {
 	}
 	return usedSkillPoints;
 }
-function showSkillPointsLeft() {
-	document.getElementById("stNewPlayerSkillPointLeft").innerHTML="Очки навыков: "+(maxSkillPoints-getUsedSkillPoints());
-}
 function winkElement(elem,text) {
 	elem.style.opacity="0";
 	elem.innerHTML=text || elem.innerHTML;
 	qoanimate(elem,1,300);
-}
-
-function getAvailableClassNames() {
-	skillNamesUserLanguage=["Булавы", "Топоры", "Щиты", "Мечи", "Древковое оружие", "Скрытность", "Реакция", "Луки", "Кинжалы", "Рукопашный бой", "Посох", "Кинезис", "Огонь", "Холод", "Некрос", "Демонология", "Ментал", "Магические предметы", "Ремесло", "Ловушки", "Взлом", "Механика", "Алхимия"];
-	var names=["Путешественник"];
-	var hasSkill=function(skill) {
-		return playerCreation.skills[skill]!==undefined;
-	};
-	if (hasSkill(0) || hasSkill(1) || hasSkill(3) || hasSkill(4)) {
-		names.push("Воин");
-		names.push("Воитель");
-		names.push("Рыцарь");
-	}
-	if ((hasSkill(0) || hasSkill(1) || hasSkill(3) || hasSkill(4)) && hasSkill(17)) {
-		names.push("Паладин");
-	}
-	if (hasSkill(3)) {
-		names.push("Мечник");
-	}
-	if (hasSkill(7)) {
-		names.push("Лучник");
-	}
-	if (hasSkill(5) || hasSkill(20)) {
-		names.push("Вор");
-	}
-	if (hasSkill(5) && hasSkill(6)) {
-		names.push("Шпион");
-	}
-	if (hasSkill(21)) {
-		names.push("Механик");
-	}
-	if (hasSkill(22)) {
-		names.push("Алхимик");
-	}
-	if (hasSkill(9) || hasSkill(10)) {
-		names.push("Монах");
-	}
-	if (hasSkill(11) || hasSkill(12) || hasSkill(13) || hasSkill(14) || hasSkill(15) || hasSkill(16)) {
-		names.push("Маг");
-		names.push("Волшебник");
-		names.push("Чародей");
-	}
-	if (hasSkill(12)) {
-		names.push("Маг огня");
-	}
-	if (hasSkill(13)) {
-		names.push("Маг холода");
-	}
-	if (hasSkill(14)) {
-		names.push("Некромант");
-	}
-	if (hasSkill(15)) {
-		names.push("Демонолог");
-	}
-	if (hasSkill(16)) {
-		names.push("Псионик");
-	}
-	if (hasSkill(14) || hasSkill(15)) {
-		names.push("Тёмный маг");
-	}
-	if (hasSkill(14) && (hasSkill(0) || hasSkill(1) || hasSkill(3) || hasSkill(4))) {
-		names.push("Рыцарь смерти");
-	}
-	return names;
-}
-function showClasses() {
-// Отобразить названия доступных классов
-	var classNames=getAvailableClassNames();
-	// Очистить список классов
-	var nStNewPlayerClasses=document.getElementById("stNewPlayerClasses");
-	while (nStNewPlayerClasses.children.length>0) {
-		nStNewPlayerClasses.removeChild(nStNewPlayerClasses.children[0]);
-	}
-	for (var i=0;i<classNames.length;i++) {
-	// Заполнить новый список классов
-		var nClass=document.createElement("div");
-		nClass.className="stNewPlayerClass";
-		nClass.innerHTML=classNames[i];
-		nClass.onclick=handlers.stNewPlayerClass.click;
-		document.getElementById("stNewPlayerClasses").appendChild(nClass);
-	}
-	if (classNames.indexOf(newPlayerClass)!=-1) {
-	// Если названия классов заново отобразились, и среди них есть текущее название класса, то имитировать выбор этого класса
-		var nlClassNames=document
-			.getElementById("stNewPlayerClasses")
-			.getElementsByClassName("stNewPlayerClass");
-		for (var i=0;i<nlClassNames.length;i++) {
-			if (nlClassNames[i].innerHTML==newPlayerClass) {
-				nlClassNames[i].onclick();
-			}
-		}
-	}
 }
 function gAlert(text,autoCloseOff,callback) {
 // Отобразить сообщение в углу игрового поля
@@ -426,66 +331,6 @@ function gAlert(text,autoCloseOff,callback) {
 		};
 	}
 }
-function fitIntfInfo() {
-//	var a=document.getElementById("infoTitle").clientHeight;
-//	var b=document.getElementById("infoBars").clientHeight;
-//	var c=document.getElementById("infoAttributes").clientHeight;
-//	var d=document.getElementById("infoInventory").clientHeight;
-//	var e=document.getElementById("infoSpells").clientHeight;
-//	var f=document.getElementById("infoChat").clientHeight;
-//	var g=document.getElementById("infoInvite").clientHeight;
-//	var h=document.getElementById("infoEffects").clientHeight;
-//	var i=document.getElementById("minimap").clientHeight;
-//	if (onGlobalMap) {
-//		var invHeight=0;
-//		var nInfoInventory=document.getElementById("infoInventory");
-//		for (var i=0;i<nInfoInventory.children.length;i++) {
-//		// Формируем высоту #infoInventory (т.к. его высота динамическая)
-//			invHeight+=nInfoInventory.children[i].clientHeight;
-//		}
-//		nInfoInventory.style.height=invHeight+"px";
-//		document.getElementById("infoOnline").style.height=(localStorage.getItem(4)-a-b-c-d-e-f-g-h)+"px";
-//	} else {
-//		document.getElementById("infoInventory").style.height=(localStorage.getItem(4)-a-b-c-e-f-g-h-i)+"px";
-//	}	
-}
-function restorePlayerCreationScreen() {
-// Восстановить окно создания персонажа к первоначальному состоянию, если оно изменено
-	// Имя
-	document.getElementById("stNewPlayerName").value="";
-	// Раса
-	delete playerCreation.race;
-	delete playerCreation.cls;
-	delete playerCreation.name;
-	for (var i in playerCreation.skills) {
-		delete playerCreation.skills[i];
-	}
-	var nlRaces=document
-				.getElementById("stNewPlayerRaces")
-				.children;
-			for (var i=0;i<nlRaces.length;i++) {
-				nlRaces[i].className="";
-			}
-	// Атрибуты
-	var nlAttributes=document
-		.getElementById("stNewPlayerAttributes")
-		.getElementsByClassName("stNewPlayerAttributeValue");
-	for (var i=0;i<nlAttributes.length;i++) {
-		nlAttributes[i].innerHTML="";
-	}
-	// Класс
-	newPlayerClass="";
-	var nlClasses=document.getElementById("stNewPlayerClasses").getElementsByTagName("*");
-	while (nlClasses.length>0) {
-		nlClasses[0].parentNode.removeChild(nlClasses[0]);
-	}
-	// Навыки
-	var nStNewPlayerLearnedSkills=document.getElementById("stNewPlayerLearnedSkills");
-	while (nStNewPlayerLearnedSkills.children.length>0) {
-		nStNewPlayerLearnedSkills.removeChild(nStNewPlayerLearnedSkills.children[0]);
-	}
-}
-// Доступ к интерфейсу с клавиатуры
 
 function showRightPanelKeys(mode) {
 // Показать горячие клавиши для предметов и заклинаний на правой панели
@@ -527,12 +372,4 @@ function showRightPanelKeys(mode) {
 		keysCharElements.push(nWrap);
 		nlItems[i].insertBefore(nWrap,nlItems[i].children[0]);
 	}
-}
-function hideRightPanelKeys() {
-// Убрать все дополнительные обозначения для клавиш на правой панели
-	var len=keysCharElements.length;
-	for (var i=0;i<len;i++) {
-		keysCharElements[i].parentNode.removeChild(keysCharElements[i]);
-	}
-	keysCharElements=[];
 }
