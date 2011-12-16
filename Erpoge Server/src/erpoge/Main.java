@@ -1,4 +1,6 @@
 package erpoge;
+import java.awt.Rectangle;
+
 import erpoge.characters.CharacterTypes;
 import erpoge.characters.PlayerCharacter;
 import erpoge.gui.Window;
@@ -8,6 +10,7 @@ import erpoge.inventory.UniqueItem;
 import erpoge.itemtypes.ItemType;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.Location;
+import erpoge.terrain.TerrainGenerator;
 import erpoge.terrain.World;
 
 public class Main {
@@ -15,7 +18,7 @@ public class Main {
 	public static final int DEFAULT_PORT = 8787;
 	public static int[][] arr;
 	public final static boolean DEBUG = true;
-	public static final String TEST_LOCATION_TYPE = "Empty";
+	public static final String TEST_LOCATION_TYPE = "Village";
 	public static <T> void out(T string) {
 		System.out.print(string);
 	}
@@ -52,8 +55,7 @@ public class Main {
 		World world = new World(40,40,"TestWorld", "Erpoge World");
 		
 //		world.showWorld();
-		
-		Location loc = world.createLocation(0, 0, 40, 40, TEST_LOCATION_TYPE, "New Location");
+		Location loc = world.createLocation(0, 0, 60, 60, TEST_LOCATION_TYPE, "New Location");
 		loc.showLocation();
 				
 		PlayerCharacter burok = world.createCharacter("palyer", "Alvoi", 2, "Warrior", 13, 26);

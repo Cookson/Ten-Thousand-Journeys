@@ -175,7 +175,7 @@ public class Location extends TerrainBasics {
 	public Coordinate getStartCoord() {
 		for (int i=startArea.x;i<startArea.x+startArea.width;i++) {
 			for (int j=startArea.y;j<startArea.y+startArea.height;j++) {
-				if (passability[i][j] == 0) {
+				if (passability[i][j] == PASSABILITY_FREE) {
 					return new Coordinate(i,j);
 				}
 			}

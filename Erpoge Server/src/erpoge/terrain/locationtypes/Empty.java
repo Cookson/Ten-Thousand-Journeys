@@ -29,6 +29,6 @@ public class Empty extends LocationGenerator {
 		fillWithCells(1, 0);
 		setStartArea(5, 10, 5, 6);
 		makePeaceful();
-		new Inn(this, 6,6,14,28);
+//		new Inn(this, 6,6,14,28);
 	}
 }

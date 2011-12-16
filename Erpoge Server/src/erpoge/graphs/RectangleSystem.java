@@ -513,19 +513,19 @@ public class RectangleSystem extends Graph<Rectangle> {
 			try {
 				if (r.y == startY) {
 					// Верхняя сторона
-					outerSides.get(key).add(1);
+					outerSides.get(key).add(SIDE_N);
 				}
 				if (r.x + r.width == startX + width) {
 					// Правая
-					outerSides.get(key).add(2);
+					outerSides.get(key).add(SIDE_E);
 				}
 				if (r.y + r.height == startY + height) {
 					// Нижняя
-					outerSides.get(key).add(3);
+					outerSides.get(key).add(SIDE_S);
 				}
 				if (r.x == startX) {
 					// Левая
-					outerSides.get(key).add(4);
+					outerSides.get(key).add(SIDE_W);
 				}
 			} catch (Exception e) {
 			}
@@ -539,7 +539,6 @@ public class RectangleSystem extends Graph<Rectangle> {
 		for (int i : rectangles.keySet()) {
 			outerSides.put(i, new ArrayList<Integer>());
 			Rectangle r = rectangles.get(i);
-			Main.console(i);
 			ArrayList<Integer> thisEdges = edges.get(i);
 			HashMap<Integer, Integer> sides = new HashMap<Integer, Integer>();
 			sides.put(SIDE_N, r.width);
@@ -1088,5 +1087,9 @@ public class RectangleSystem extends Graph<Rectangle> {
 
 	public Coordinate getCenter() {
 		return new Coordinate(startX + width / 2, startY + height / 2);
+	}
+
+	public boolean isRectangleOuter(int k) {
+		return outerSides.get(k).size() > 0;
 	}
 }

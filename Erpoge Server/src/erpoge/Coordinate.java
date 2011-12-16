@@ -10,6 +10,10 @@ public class Coordinate {
 		this.x = x;
 		this.y = y;
 	}
+	public Coordinate(Coordinate c) {
+		this.x = c.x;
+		this.y = c.y;
+	}
 	public int hashCode() {
 		return x*10000+y;
 	}
@@ -40,11 +44,11 @@ public class Coordinate {
 		return false;
 	}
 	public int distance(int x, int y) {
-	// Расстояние между двумя точками
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		return (int)Math.sqrt(Math.pow(this.x-x, 2)+Math.pow(this.y-y, 2));
 	}
 	public int distance(Coordinate e) {
-	// Расстояние между двумя точками
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		return (int)Math.sqrt(Math.pow(this.x-e.x, 2)+Math.pow(this.y-e.y, 2));
 	}
 	public void moveToSide(int side) {

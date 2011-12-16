@@ -3,6 +3,8 @@ package erpoge.graphs;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Set;
 
 import erpoge.Chance;
 import erpoge.Main;
@@ -134,6 +136,32 @@ public class CustomRectangleSystem extends Graph<Rectangle> {
 	}
 	public void setHeight(int height) {
 		this.height = height;
+	}
+	public int findRectangleByCell(int x, int y) {
+		// Найти в системе прямоугольник по данным координатам принадлежащей ему
+		// ячейки
+		// Возвращает индекс прямоугольника в rectangles.
+		// Если клетка не относится ни к одному прямоугольнику, возвращает
+		// false.
+		// Внимание: прямоугольник в rectangles может иметь индекс 0,
+		// поэтому сравнивать результат с false нужно со сравнением типов
+		// (===/!==)
+		Set<Integer> keys = rectangles.keySet();
+		Iterator<Integer> it = keys.iterator();
+		while (it.hasNext()) {
+			// Ищем любую вершину со значением 1
+			int k = it.next();
+			Rectangle r = rectangles.get(k);
+			if (rectangleHasCell(r, x, y)) {
+				return k;
+			}
+		}
+		return -1;
+	}
+	public static boolean rectangleHasCell(Rectangle r, int cellX, int cellY) {
+		// Принадлежит ли прямоугольнику точка [cellX;cellY]
+		return cellX <= r.x + r.width - 1 && cellX >= r.x
+				&& cellY <= r.y + r.height - 1 && cellY >= r.y;
 	}
 	public void cutRectangleFromSide(int recNum, int side, int depth) {
 		if (side == SIDE_N) {

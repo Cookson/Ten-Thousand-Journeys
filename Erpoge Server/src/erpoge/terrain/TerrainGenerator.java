@@ -784,5 +784,27 @@ public class TerrainGenerator extends TerrainBasics {
 	public boolean isCellOnRectangleBorder(int x, int y, Rectangle r) {
 		return x == r.x || y == r.y || x == r.x+r.width-1 || y == r.y+r.height-1;
 	}
-	                                          
+	public static int distanceFromRectangleToLine(Rectangle r, Coordinate start, Coordinate end) {
+	/**
+	 * Finds distance from line to rectangle's nearest border parallel to that line
+	 */
+		boolean dir;
+		if (start.x == end.x) {
+			dir = true;
+		} else if (start.y == end.y) {
+			dir = false;
+		} else {
+			throw new Error(start+" and "+end+" are not on the same line");
+		}
+		if (dir && start.x >= r.x && start.x <= r.x+r.width-1) {
+			throw new Error("Vertical line inside rectangle");
+		} else if (!dir && start.y >= r.y && start.y <= r.y+r.height-1) {
+			throw new Error("Horizontal line inside rectangle");
+		}
+		if (dir) {
+			return start.x > r.x ? start.x-r.x-r.width+1 : r.x - start.x;
+		} else {
+			return start.y > r.y ? start.y-r.y-r.height+1 : r.y - start.y;
+		}
+	}
 }

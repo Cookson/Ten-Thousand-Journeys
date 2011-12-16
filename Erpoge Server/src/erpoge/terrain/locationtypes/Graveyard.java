@@ -27,7 +27,7 @@ public class Graveyard extends LocationGenerator {
 		Crypt crypt = new Crypt(this, cryptRec.x, cryptRec.y, cryptRec.width,
 				cryptRec.height);
 		Location cryptDungeon = new Location(width, height, type, name, world);
-		new CryptDungeon(cryptDungeon);
+//		new CryptDungeon(cryptDungeon);
 		createPortal(crypt.stairsCoord.x, crypt.stairsCoord.y, cryptDungeon);
 //		makePeaceful();
 		mainRS.drawBorders(ELEMENT_FLOOR, GameObjects.FLOOR_GROUND, true);

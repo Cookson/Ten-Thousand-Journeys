@@ -8,13 +8,14 @@ import erpoge.characters.NonPlayerCharacter;
 import erpoge.graphs.CustomRectangleSystem;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.TerrainGenerator;
+import erpoge.terrain.locationtypes.Settlement.QuarterSystem.BuildingPlace;
 
 public class Inn extends Building {
 	public Inn(TerrainGenerator settlement, int x, int y, int width,
-			int height) {
-		super(settlement, x, y, width, height);
+			int height, BuildingPlace place) {
+		super(settlement, x, y, width, height, place);
 		CustomRectangleSystem crs = new CustomRectangleSystem(settlement.location,x,y,width,height,1);
-		
+		Main.console("HELLO");
 		/* BASIS */
 		// Lobby
 		boolean dir;

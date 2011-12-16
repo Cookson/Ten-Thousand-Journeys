@@ -16,8 +16,10 @@ import erpoge.terrain.Location;
 import erpoge.terrain.TerrainBasics;
 import erpoge.terrain.TerrainGenerator;
 import erpoge.terrain.locationtypes.Settlement;
+import erpoge.terrain.locationtypes.Settlement.QuarterSystem.BuildingPlace;
+import erpoge.terrain.locationtypes.Settlement.RoadSystem.Road;
 
-public class Building {
+public class Building extends Rectangle {
 	public static final int
 		SIDE_N = 1,		
 		SIDE_E = 2,
@@ -26,21 +28,21 @@ public class Building {
 	public TerrainGenerator location;
 	public Settlement settlement;
 	public int type;
-	public int x;
-	public int y;
-	public int width;
-	public int height;
 	public HashMap<Integer, Rectangle> rooms;
 	public RectangleSystem rectangleSystem;
 	public int lobby = -1;
+	public HashSet<Integer> doorSides = new HashSet<Integer>();
 	public int doorSide;
 	public RectangleSystem quarter;
 	public int keyInQuarter;
 	public Coordinate frontDoor;
+	public ArrayList<Road> closeRoads;
 	private boolean hasSettlement;
 	private ArrayList<Integer> hallways = new ArrayList<Integer>();
+	
 	public Building(TerrainGenerator settlement, int x, int y, int width,
 			int height, int minRoomSize) {
+		/* */ // Deprecated constructor for buildings not in settlements
 		this.x = x;
 		this.y = y;
 		this.width = width;
@@ -65,12 +67,13 @@ public class Building {
 				height - 2, minRoomSize, 1);
 	}
 	public Building(TerrainGenerator settlement, int x, int y, int width,
-			int height) {
+			int height, BuildingPlace place) {
 		this.x = x;
 		this.y = y;
 		this.width = width;
 		this.height = height;
 		this.location = settlement;
+		this.closeRoads = place.closeRoads;
 		hasSettlement = false;
 		if (settlement instanceof Settlement) {
 			Settlement s = (Settlement) settlement;
@@ -87,36 +90,45 @@ public class Building {
 			}
 			hasSettlement = true;
 		}
+		getDoorSides();
 	}
-
-	public Coordinate placeFrontDoor(int side) {
-		if (side == -1) {
-			if (hasSettlement() && quarter != null) {
-				keyInQuarter = quarter.findRectangleByCell(x, y);
-				ArrayList<Integer> probableSides = quarter.outerSides
-						.get(keyInQuarter);
-				int keyInSettlement = settlement.rectangleSystem
-						.findRectangleByCell(x, y);
-				int sidesSize = probableSides.size();
-				for (int sSide : settlement.rectangleSystem.outerSides
-						.get(keyInSettlement)) {
-					for (int i = 0; i < sidesSize; i++) {
-						if (sSide == probableSides.get(i)) {
-							probableSides.remove(i);
-							i--;
-							sidesSize--;
-						}
-					}
-				}
-				if (probableSides.size() == 0) {
-					throw new Error("Building has no available door sides");
-				}
-				side = probableSides.get(Chance.rand(0,
-						probableSides.size() - 1));
-			} else {
-				side = Chance.rand(1, 4);
+	
+	private void getDoorSides() {
+		for (Road road : closeRoads) {
+			int side = road.getSideOfRectangle(this);
+			if (!doorSides.contains(side)) {
+				doorSides.add(side);
 			}
 		}
+	}
+	public Coordinate placeFrontDoor(int side) {
+//		if (side == -1) {
+//			if (hasSettlement() && quarter != null) {
+//				keyInQuarter = quarter.findRectangleByCell(x, y);
+//				ArrayList<Integer> probableSides = quarter.outerSides
+//						.get(keyInQuarter);
+//				int keyInSettlement = settlement.rectangleSystem
+//						.findRectangleByCell(x, y);
+//				int sidesSize = probableSides.size();
+//				for (int sSide : settlement.rectangleSystem.outerSides
+//						.get(keyInSettlement)) {
+//					for (int i = 0; i < sidesSize; i++) {
+//						if (sSide == probableSides.get(i)) {
+//							probableSides.remove(i);
+//							i--;
+//							sidesSize--;
+//						}
+//					}
+//				}
+//				if (probableSides.size() == 0) {
+//					throw new Error("Building has no available door sides");
+//				}
+//				side = probableSides.get(Chance.rand(0,
+//						probableSides.size() - 1));
+//			} else {
+//				side = Chance.rand(1, 4);
+//			}
+//		}
 		HashMap<Integer, Integer> cells = findDoorAppropriateCells(side);
 		if (cells.size() == 0) {
 			throw new Error("Nowhere to place the door from side " + side);
@@ -327,8 +339,7 @@ public class Building {
 		}
 		return cells;
 	}
-	public RectangleSystem buildBasis(int wallType /* =4 */,
-			 BasisBuildingSetup setup/* =false */) {
+	public RectangleSystem buildBasis(int wallType, BasisBuildingSetup setup) {
 		RectangleSystem graph = rectangleSystem;
 //		if (notSimpleForm) {
 //			if (graph.rectangles.size() > 3) {
@@ -379,6 +390,10 @@ public class Building {
 		}
 		rooms = graph.rectangles;
 		return graph;
+	}
+	public RectangleSystem getRectangleSystem(int minRoomSize) {
+		rectangleSystem = settlement.getGraph(x+1, y+1, width-2, height-2, minRoomSize, 1);
+		return rectangleSystem;
 	}
 	public Coordinate connectRoomsWithDoor(Rectangle r1, Rectangle r2,
 			int doorObjectId) {
