@@ -55,7 +55,7 @@ public class Main {
 		World world = new World(40,40,"TestWorld", "Erpoge World");
 		
 //		world.showWorld();
-		Location loc = world.createLocation(0, 0, 60, 60, TEST_LOCATION_TYPE, "New Location");
+		Location loc = world.createLocation(0, 0, 60, 70, TEST_LOCATION_TYPE, "New Location");
 		loc.showLocation();
 				
 		PlayerCharacter burok = world.createCharacter("palyer", "Alvoi", 2, "Warrior", 13, 26);

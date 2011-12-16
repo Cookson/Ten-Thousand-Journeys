@@ -36,10 +36,14 @@ public class Settlement extends LocationGenerator {
 		quarterSystem = new QuarterSystem(this);
 	}
 	public void placeBuilding(BuildingPlace place, BuildingType type) {
+		int x = place.x+1;
+		int y = place.y+1;
+		int width = place.width-2;
+		int height= place.height-2;
 		if (type == BuildingType.TEST) {
-			buildings.add(new TestBuilding(this, place.x, place.y, place.width, place.height, place));
+			buildings.add(new TestBuilding(this, x, y, width, height, place));
 		} else if (type == BuildingType.INN) {
-			buildings.add(new Inn(this, place.x, place.y, place.width, place.height, place));
+			buildings.add(new Inn(this, x, y, width, height, place));
 		}
 	}
 	public void createRandomRoadSystem() {
@@ -365,7 +369,7 @@ public class Settlement extends LocationGenerator {
 				findQuarter(point, -1, -1);
 			}
 			for (Quarter quarter : quarters) {
-				for (BuildingPlace place : quarter.getBuildingPlaces(20)) {
+				for (BuildingPlace place : quarter.getBuildingPlaces(25)) {
 					buildingPlaces.add(place);
 				}
 			}
@@ -392,7 +396,6 @@ public class Settlement extends LocationGenerator {
 					int x = cornerPoint.x+dx*quarterWidth;
 					if (x >= 0 && x < settlement.width) {
 					// If x is inside location
-						
 						for (int y=cornerPoint.y; y!=cornerPoint.y+dy*quarterHeight; y+=dy) {
 							if (grid[x][y] != EMPTY) {
 								xStop = true;

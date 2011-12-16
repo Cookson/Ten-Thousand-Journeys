@@ -23,12 +23,12 @@ public class Village extends Settlement {
 		makePeaceful();
 		fillWithCells(GameObjects.FLOOR_GRASS,GameObjects.OBJ_VOID);
 //		createRandomRoadSystem();
-		roadSystem.createRoad(0,20,width-1,20);
+		roadSystem.createRoad(30,0,30,height-1);
 		roadSystem.drawRoads();
 		quarterSystem.build(roadSystem.getReferencePoints());
 		for (BuildingPlace place : quarterSystem.buildingPlaces) {
 			placeBuilding(place, BuildingType.INN);
 		}
-		setStartArea(0,0,10,10);
+		setStartArea(10,10,10,10);
 	}
 }

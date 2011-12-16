@@ -37,19 +37,22 @@ public class CustomRectangleSystem extends Graph<Rectangle> {
 	 * Splits rectangle into two rectangles. Rectangle under current number
 	 * is the left one (if dir == true) or the top one (if dir == false).
 	 * If width < 0, then a rectangle width width/height = -width 
-	 * from right side/bottom will be cut off, but under current number still stays
-	 * left/top rectangle.
+	 * from right side/bottom will be cut off, and under current number still stay
+	 * right/bottom rectangle.
 	 * 
 	 * @param i Number of rectangle in this.rectangleSystem.rectangles
 	 * @param dir true - vertically, false - horizontally
 	 * @param width How much to cut
 	 */
-	public Rectangle splitRectangle(int i, boolean dir, int width) {
+	public int splitRectangle(int i, boolean dir, int width) {
+	/* */ // Optimize size() calls
 		Rectangle r = rectangles.get(i);
 		Rectangle newRec;
+		boolean negativeWidth = width < 0;
+		int newRecId;
 		if (dir) {
 			// Vertically
-			if (width < 0) {
+			if (negativeWidth) {
 				width = r.width+width-1;
 			}
 			if (width > r.width-2) {
@@ -59,9 +62,10 @@ public class CustomRectangleSystem extends Graph<Rectangle> {
 			newRec = new Rectangle(x+1+borderWidth-1, r.y, r.x + r.width-x-1-borderWidth+1, r.height);
 			rectangles.put(i, new Rectangle(r.x, r.y, x - r.x, r.height));
 			rectangles.put(rectangles.size(), newRec);
+			newRecId = rectangles.size()-1;
 		} else {
 			// Horizontally
-			if (width < 0) {
+			if (negativeWidth) {
 				width = r.height+width-1;
 			}
 			if (width > r.height-2) {
@@ -71,10 +75,22 @@ public class CustomRectangleSystem extends Graph<Rectangle> {
 			newRec = new Rectangle(r.x, y+1+borderWidth-1, r.width, r.y+r.height-y-1-borderWidth+1);
 			rectangles.put(i, new Rectangle(r.x, r.y, r.width, y - r.y));
 			rectangles.put(rectangles.size(), newRec);
+			newRecId = rectangles.size()-1;
 		}
 		// Add empty edges array for new rectangle
 		edges.put(size()-1, new ArrayList<Integer>());
-		return newRec;
+		if (negativeWidth) {
+		// If width was negative, then swap rectnagles and their edges
+		// so the right/bottom one will be the new one
+			Rectangle buf = rectangles.get(i);
+			rectangles.put(i, rectangles.get(size()-1));
+			rectangles.put(size()-1, buf);
+			ArrayList<Integer> bufEdge = edges.get(i);
+			edges.put(i, edges.get(size()-1));
+			edges.put(size()-1, bufEdge);
+			newRecId = i;
+		}
+		return newRecId;
 	}
 	public void buildEdges() {
 	/*

@@ -15,58 +15,64 @@ public class Inn extends Building {
 			int height, BuildingPlace place) {
 		super(settlement, x, y, width, height, place);
 		CustomRectangleSystem crs = new CustomRectangleSystem(settlement.location,x,y,width,height,1);
-		Main.console("HELLO");
 		/* BASIS */
 		// Lobby
 		boolean dir;
+		int side = doorSides.get(0);
 		int lobbyWidth = 6;
-		if (width > height) {
-			dir = true;
-		} else if (height < width) {
+		if (side == SIDE_N || side == SIDE_S) {
 			dir = false;
 		} else {
-			dir = Chance.roll(50);
+			dir = true;
 		}
-		crs.splitRectangle(0, dir, (((dir)?width:height)-lobbyWidth)/2-1);
+		
+		// For two of four sides we should revert width of cut rectangle
+		int sideMod = (side == SIDE_N || side == SIDE_W) ? -1 : 1;
+		
+		crs.splitRectangle(0, !dir, ((((!dir)?width:height)-lobbyWidth)/2-1)*sideMod);
 		// Separate middle rectangle (lobby) and right rectangle
-		crs.splitRectangle(1, dir, lobbyWidth);
+		crs.splitRectangle(1, !dir, lobbyWidth*sideMod);
 		// Separate rectangle above lobby
-		crs.splitRectangle(1, !dir, 4);		
+		crs.splitRectangle(1, dir, 4*sideMod);		
 		// Left rooms
-		crs.splitRectangle(0, dir, -4);
+		crs.splitRectangle(0, !dir, -4*sideMod);
 		// Right rooms
-		crs.splitRectangle(2, dir, 4);
-		// 0 - left rooms, 4 - left, 1 - above middle, 3 - middle, 2 - right, 5 - right rooms
+		crs.splitRectangle(2, !dir, 4*sideMod);
+		// 4 - left rooms, 0 - left, 1 - above middle, 3 - middle, 2 - right, 5 - right rooms
 		// Place left rooms
-		while(dir && crs.rectangles.get(0).height > 4*2 || 
-				!dir && crs.rectangles.get(0).width > 4*2) {
-			crs.splitRectangle(0, !dir, -4);
-			crs.link(4, crs.rectangles.size()-1);
+		settlement.createCharacter("innkeeper", "Christian", crs.rectangles.get(0).x, crs.rectangles.get(0).y);
+		int newRecId = 4;
+		while(!dir && crs.rectangles.get(newRecId).height > 4*2 || 
+				dir && crs.rectangles.get(newRecId).width > 4*2) {
+			crs.splitRectangle(newRecId, dir, -4*sideMod);
+			crs.link(0, crs.rectangles.size()-1);
+			newRecId = crs.rectangles.size()-1;
 		}
 		// Link them with hall
 		crs.link(4, 0);
 		// Place right rooms
-		while(dir && crs.rectangles.get(5).height > 4*2 || 
-				!dir && crs.rectangles.get(5).width > 4*2) {
-			crs.splitRectangle(5, !dir, -4);
+		newRecId = 5;
+		while(!dir && crs.rectangles.get(newRecId).height > 4*2 || 
+				dir && crs.rectangles.get(newRecId).width > 4*2) {
+			crs.splitRectangle(newRecId, dir, -4*sideMod);
 			crs.link(2, crs.rectangles.size()-1);
+			newRecId = crs.rectangles.size()-1;
 		}
 		// Link them with hall
 		crs.link(5, 2);
 		
-		crs.link(3, 4);
+		crs.link(3, 0);
 		crs.link(3, 1);
 		crs.link(3, 2);
 		
 		rectangleSystem = settlement.getGraph(crs);
 		rectangleSystem.initialFindOuterSides();
 		buildBasis(GameObjects.OBJ_WALL_GREY_STONE, BasisBuildingSetup.NOT_BUILD_EDGES);
-		
-		placeFrontDoor(3, -1);
+		Main.console(place);
+		placeFrontDoor(3, side);
 		
 		/* CONTENTS */
 		Rectangle lobbyRec = rectangleSystem.rectangles.get(3);
-		NonPlayerCharacter innkeeper = settlement.createCharacter("innkeeper", "Christian", lobbyRec.x, lobbyRec.y+1);
-		
+//		NonPlayerCharacter innkeeper = 
 	}
 }

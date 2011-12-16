@@ -10,6 +10,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
+import erpoge.Main;
+
 import net.tootallnate.websocket.Base64;
 import net.tootallnate.websocket.Draft;
 import net.tootallnate.websocket.FrameBuilder;
@@ -165,6 +167,7 @@ public class Draft_10 extends Draft {
 		buf.put ( one );
 		byte[] payloadlengthbytes = toByteArray ( mes.length , sizebytes );
 		assert( payloadlengthbytes.length == sizebytes );
+		Main.console(">  "+sizebytes);
 		if( sizebytes == 0){
 			//controllframe
 		}

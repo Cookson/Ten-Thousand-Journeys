@@ -552,7 +552,7 @@ public class RectangleSystem extends Graph<Rectangle> {
 					sides.put(side, sides.get(side)
 							- lengthOfAdjacenctZone(r, r2));
 				} else {
-					throw new Error(":   |");
+					throw new Error("Rectangles are not close to each other! Error in logic of rectangles' splitting!");
 				}
 			}
 			ArrayList<Integer> thisOuterSides = outerSides.get(i);

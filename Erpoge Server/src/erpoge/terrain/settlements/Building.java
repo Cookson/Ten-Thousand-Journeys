@@ -27,17 +27,16 @@ public class Building extends Rectangle {
 		SIDE_W = 4;
 	public TerrainGenerator location;
 	public Settlement settlement;
-	public int type;
 	public HashMap<Integer, Rectangle> rooms;
 	public RectangleSystem rectangleSystem;
 	public int lobby = -1;
-	public HashSet<Integer> doorSides = new HashSet<Integer>();
-	public int doorSide;
-	public RectangleSystem quarter;
-	public int keyInQuarter;
+	public ArrayList<Integer> doorSides = new ArrayList<Integer>();
 	public Coordinate frontDoor;
 	public ArrayList<Road> closeRoads;
 	private boolean hasSettlement;
+	/**
+	 * ArrayList of rectangleIds
+	 */
 	private ArrayList<Integer> hallways = new ArrayList<Integer>();
 	
 	public Building(TerrainGenerator settlement, int x, int y, int width,
@@ -52,15 +51,6 @@ public class Building extends Rectangle {
 		if (settlement instanceof Settlement) {
 			Settlement s = (Settlement) settlement;
 			this.settlement = s;
-			s.buildings.add(this);
-			if (s.quarters != null) {
-				for (RectangleSystem q : s.quarters.values()) {
-					if (RectangleSystem.rectangleHasCell(new Rectangle(
-							q.startX, q.startY, q.width, q.height), x, y)) {
-						quarter = q;
-					}
-				}
-			}
 			hasSettlement = true;
 		}
 		rectangleSystem = location.getGraph(x + 1, y + 1, width - 2,
@@ -78,16 +68,6 @@ public class Building extends Rectangle {
 		if (settlement instanceof Settlement) {
 			Settlement s = (Settlement) settlement;
 			this.settlement = s;
-			s.buildings.add(this);
-			if (s.quarters != null) {
-				// ����������, � ����� �������� ��������� ��� ������
-				for (RectangleSystem q : s.quarters.values()) {
-					if (RectangleSystem.rectangleHasCell(new Rectangle(
-							q.startX, q.startY, q.width, q.height), x, y)) {
-						quarter = q;
-					}
-				}
-			}
 			hasSettlement = true;
 		}
 		getDoorSides();
@@ -102,33 +82,6 @@ public class Building extends Rectangle {
 		}
 	}
 	public Coordinate placeFrontDoor(int side) {
-//		if (side == -1) {
-//			if (hasSettlement() && quarter != null) {
-//				keyInQuarter = quarter.findRectangleByCell(x, y);
-//				ArrayList<Integer> probableSides = quarter.outerSides
-//						.get(keyInQuarter);
-//				int keyInSettlement = settlement.rectangleSystem
-//						.findRectangleByCell(x, y);
-//				int sidesSize = probableSides.size();
-//				for (int sSide : settlement.rectangleSystem.outerSides
-//						.get(keyInSettlement)) {
-//					for (int i = 0; i < sidesSize; i++) {
-//						if (sSide == probableSides.get(i)) {
-//							probableSides.remove(i);
-//							i--;
-//							sidesSize--;
-//						}
-//					}
-//				}
-//				if (probableSides.size() == 0) {
-//					throw new Error("Building has no available door sides");
-//				}
-//				side = probableSides.get(Chance.rand(0,
-//						probableSides.size() - 1));
-//			} else {
-//				side = Chance.rand(1, 4);
-//			}
-//		}
 		HashMap<Integer, Integer> cells = findDoorAppropriateCells(side);
 		if (cells.size() == 0) {
 			throw new Error("Nowhere to place the door from side " + side);
@@ -160,7 +113,6 @@ public class Building extends Rectangle {
 			throw new Error(
 					"Can't determine the lobby room because desired cell is not in this rectangle system");
 		}
-		doorSide = side;
 		frontDoor = new Coordinate(dx, dy);
 		return frontDoor;
 	}
@@ -170,8 +122,12 @@ public class Building extends Rectangle {
 			side = rectangleSystem.outerSides.get(rectangleId).get(0);
 		}
 		HashMap<Integer, Integer> cells = findDoorAppropriateCells(r,side);
-		if (cells.size() == 0) {
-			throw new Error("Nowhere to place the door from side " + side);
+		try {
+			if (cells.size() == 0) {
+				throw new Error("Nowhere to place the door from side " + side);
+			}
+		} catch (Error e) {
+			return null;
 		}
 		int dx, dy;
 		if (side == TerrainBasics.SIDE_N || side == TerrainBasics.SIDE_S) {
@@ -200,7 +156,6 @@ public class Building extends Rectangle {
 			throw new Error(
 					"Can't determine the lobby room because desired cell is not in this rectangle system");
 		}
-		doorSide = side;
 		frontDoor = new Coordinate(dx, dy);
 		return frontDoor;
 	}
@@ -392,7 +347,7 @@ public class Building extends Rectangle {
 		return graph;
 	}
 	public RectangleSystem getRectangleSystem(int minRoomSize) {
-		rectangleSystem = settlement.getGraph(x+1, y+1, width-2, height-2, minRoomSize, 1);
+		rectangleSystem = settlement.getGraph(x, y, width, height, minRoomSize, 1);
 		return rectangleSystem;
 	}
 	public Coordinate connectRoomsWithDoor(Rectangle r1, Rectangle r2,
