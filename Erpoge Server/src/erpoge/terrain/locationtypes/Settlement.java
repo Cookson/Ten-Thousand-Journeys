@@ -18,10 +18,11 @@ import erpoge.terrain.*;
 import erpoge.terrain.locationtypes.Settlement.QuarterSystem.BuildingPlace;
 import erpoge.terrain.locationtypes.Settlement.RoadSystem.Road;
 import erpoge.terrain.settlements.Building;
-import erpoge.terrain.settlements.BuildingType;
-import erpoge.terrain.settlements.Inn;
 import erpoge.terrain.settlements.Service;
-import erpoge.terrain.settlements.TestBuilding;
+import erpoge.terrain.settlements.buildings.BuildingType;
+import erpoge.terrain.settlements.buildings.Inn;
+import erpoge.terrain.settlements.buildings.OneRoomHouse;
+import erpoge.terrain.settlements.buildings.TestBuilding;
 public class Settlement extends LocationGenerator {
 	public CustomRectangleSystem rectangleSystem;
 	protected RoadSystem roadSystem = new RoadSystem();
@@ -44,6 +45,8 @@ public class Settlement extends LocationGenerator {
 			buildings.add(new TestBuilding(this, x, y, width, height, place));
 		} else if (type == BuildingType.INN) {
 			buildings.add(new Inn(this, x, y, width, height, place));
+		} else if (type == BuildingType.ONE_ROOM_HOUSE) {
+			buildings.add(new OneRoomHouse(this, x, y, width, height, place));
 		}
 	}
 	public void createRandomRoadSystem() {
@@ -71,7 +74,6 @@ public class Settlement extends LocationGenerator {
 		private HashMap<Road, ArrayList<Intersection>> intersections = new HashMap<Road, ArrayList<Intersection>>();
 		private HashMap<Road, ArrayList<Intersection>> branches = new HashMap<Road, ArrayList<Intersection>>();
 		public RoadSystem() {
-			// TODO Auto-generated constructor stub
 			
 		}
 		public Road createRoad(int startX, int startY, int endX, int endY) {

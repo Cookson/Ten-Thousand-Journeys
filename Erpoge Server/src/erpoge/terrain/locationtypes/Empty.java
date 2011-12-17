@@ -19,7 +19,7 @@ import erpoge.terrain.Location;
 import erpoge.terrain.LocationGenerator;
 import erpoge.terrain.TerrainGenerator;
 import erpoge.terrain.World;
-import erpoge.terrain.settlements.Inn;
+import erpoge.terrain.settlements.buildings.Inn;
 
 import java.util.ArrayList;
 

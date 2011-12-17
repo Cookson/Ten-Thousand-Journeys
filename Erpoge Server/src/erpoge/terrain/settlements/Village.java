@@ -14,6 +14,7 @@ import erpoge.terrain.locationtypes.Settlement;
 import erpoge.terrain.locationtypes.Settlement.QuarterSystem.BuildingPlace;
 import erpoge.terrain.locationtypes.Settlement.QuarterSystem.Quarter;
 import erpoge.terrain.locationtypes.Settlement.RoadSystem.Road;
+import erpoge.terrain.settlements.buildings.BuildingType;
 import erpoge.characters.Character;
 import erpoge.graphs.RectangleSystem;
 
@@ -23,11 +24,11 @@ public class Village extends Settlement {
 		makePeaceful();
 		fillWithCells(GameObjects.FLOOR_GRASS,GameObjects.OBJ_VOID);
 //		createRandomRoadSystem();
-		roadSystem.createRoad(30,0,30,height-1);
+		roadSystem.createRoad(width/2,0,width/2,height-1);
 		roadSystem.drawRoads();
 		quarterSystem.build(roadSystem.getReferencePoints());
 		for (BuildingPlace place : quarterSystem.buildingPlaces) {
-			placeBuilding(place, BuildingType.INN);
+			placeBuilding(place, BuildingType.ONE_ROOM_HOUSE);
 		}
 		setStartArea(10,10,10,10);
 	}

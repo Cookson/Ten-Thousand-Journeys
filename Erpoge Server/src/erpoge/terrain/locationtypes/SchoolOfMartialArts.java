@@ -10,7 +10,7 @@ import erpoge.objects.GameObjects;
 import erpoge.terrain.Location;
 import erpoge.terrain.LocationGenerator;
 import erpoge.terrain.settlements.Building;
-import erpoge.terrain.settlements.Monastery;
+import erpoge.terrain.settlements.buildings.Monastery;
 
 public class SchoolOfMartialArts extends LocationGenerator {
 	public SchoolOfMartialArts(Location location) {

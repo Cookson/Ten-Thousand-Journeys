@@ -226,6 +226,7 @@ public class Location extends TerrainBasics {
 	
 	public void setFloor(int x, int y, int type) {
 //		throw new Error("BAKA");
+		Main.console(type);
 		super.setFloor(x, y, type);
 		addEvent(new EventFloorChange(type, x ,y));
 	}

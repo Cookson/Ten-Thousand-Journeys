@@ -53,6 +53,7 @@ public class GameObjects {
 		OBJ_FURNACE = 80,
 		OBJ_ANVIL = 81,
 		OBJ_ARMOR_RACK = 82,
+		OBJ_WARDROBE = 83,
 		OBJ_ROCK_1 = 90,
 		OBJ_SKELETON = 120,
 		OBJ_TENT = 200,
@@ -99,6 +100,7 @@ public class GameObjects {
 		setPassability(OBJ_VINESHELF, 0);
 		setPassability(OBJ_TORCH, 0);
 		setPassability(OBJ_BED, 3);
+		setPassability(OBJ_WARDROBE, 0);
 		setPassability(OBJ_WALL_RED_STONE, 1);
 		setPassability(OBJ_WALL_BUSH, 1);
 		setPassability(OBJ_WALL_GREY_STONE, 1);
@@ -169,6 +171,7 @@ public class GameObjects {
 		setSpriteSize(OBJ_TABLE_CHAIR_1, 32, 32);
 		setSpriteSize(OBJ_TABLE_CHAIR_2, 32, 32);
 		setSpriteSize(OBJ_BED, 42, 32);
+		setSpriteSize(OBJ_WARDROBE, 32, 58);
 		setSpriteSize(OBJ_TORCH, 32, 58);
 		setSpriteSize(OBJ_VINESHELF, 32, 58);
 		setSpriteSize(OBJ_BARREL, 32, 32);
@@ -221,6 +224,7 @@ public class GameObjects {
 		setUsability(OBJ_TABLE_CHAIR_1, 0);
 		setUsability(OBJ_TABLE_CHAIR_2, 0);
 		setUsability(OBJ_BED, 0);
+		setUsability(OBJ_WARDROBE, 0);
 		setUsability(OBJ_TORCH, 0);
 		setUsability(OBJ_VINESHELF, 0);
 		setUsability(OBJ_BARREL, 0);

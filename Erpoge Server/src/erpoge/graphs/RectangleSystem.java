@@ -990,8 +990,6 @@ public class RectangleSystem extends Graph<Rectangle> {
 	public int lengthOfAdjacenctZone(Rectangle r1, Rectangle r2) {
 		// Returns length (in cells) of zone of contact between two adjactent
 		// rectangles
-		location.setFloor(r1.x + 1, r1.y + 1, GameObjects.FLOOR_WATER);
-		location.setFloor(r2.x + 1, r2.y + 1, GameObjects.FLOOR_WATER);
 		if (!areRectanglesNear(r1, r2)) {
 			return -1;
 		}

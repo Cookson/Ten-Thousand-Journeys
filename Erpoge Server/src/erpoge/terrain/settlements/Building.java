@@ -81,6 +81,16 @@ public class Building extends Rectangle {
 			}
 		}
 	}
+	public int getDoorSide() {
+	/**
+	 * Returns first available door side
+	 */
+		if (doorSides.size() > 0) {
+			return doorSides.get(0);
+		} else {
+			throw new Error("No available door sides");
+		}
+	}
 	public Coordinate placeFrontDoor(int side) {
 		HashMap<Integer, Integer> cells = findDoorAppropriateCells(side);
 		if (cells.size() == 0) {

@@ -6,6 +6,7 @@ import erpoge.Chance;
 import erpoge.terrain.Cell;
 import erpoge.terrain.Location;
 import erpoge.terrain.locationtypes.Settlement;
+import erpoge.terrain.settlements.buildings.Tavern;
 
 public class SingleHouse extends Settlement {
 	public SingleHouse(Location location) {

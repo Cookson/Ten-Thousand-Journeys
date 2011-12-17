@@ -283,7 +283,7 @@ public class MainHandler extends WebSocketServer {
 				if (world.locations.containsKey(new Coordinate(messageEnter.x, messageEnter.y))) {
 					location = world.locations.get(new Coordinate(messageEnter.x, messageEnter.y));
 				} else {
-					location = world.createLocation(messageEnter.x, messageEnter.y, 60,60, Main.TEST_LOCATION_TYPE, "����� �������");
+					location = world.createLocation(messageEnter.x, messageEnter.y, 30,30, Main.TEST_LOCATION_TYPE, "����� �������");
 				}
 				location.addCharacter(conn.character);
 				conn.send(conn.character.jsonGetEnteringData(conn.character.isOnGlobalMap()));
