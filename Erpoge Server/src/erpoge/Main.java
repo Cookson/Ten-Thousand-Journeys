@@ -12,13 +12,16 @@ import erpoge.objects.GameObjects;
 import erpoge.terrain.Location;
 import erpoge.terrain.TerrainGenerator;
 import erpoge.terrain.World;
+import erpoge.terrain.settlements.Building;
 
 public class Main {
 	public static Window window;
 	public static final int DEFAULT_PORT = 8787;
 	public static int[][] arr;
 	public final static boolean DEBUG = true;
-	public static final String TEST_LOCATION_TYPE = "Village";
+	public static final String TEST_LOCATION_TYPE = "BuildingTest";
+	public static final int DEFAULT_LOCATION_WIDTH = 50;
+	public static final int DEFAULT_LOCATION_HEIGHT = 50;
 	public static <T> void out(T string) {
 		System.out.print(string);
 	}
@@ -42,10 +45,7 @@ public class Main {
 	}
 	public static void main(String args[]) {
 		Main.window = new Window();
-//		WebSocketServer w = new MainHandler(8787);
-//		w.start();
-//		WebSocketServer w2 = new MainHandler(8787);
-//		w2.start();
+		
 		GameObjects.init();
 		ItemsTypology.init();
 		CharacterTypes.init();
@@ -56,9 +56,9 @@ public class Main {
 		World world = new World(40,40,"TestWorld", "Erpoge World");
 		
 //		world.showWorld();
-		Location loc = world.createLocation(0, 0, 30, 30, TEST_LOCATION_TYPE, "New Location");
-		loc.showLocation();
-				
+		Location loc = world.createLocation(0, 0, 60, 40, TEST_LOCATION_TYPE, "New Location");
+		loc.showLocation();	
+		
 		PlayerCharacter burok = world.createCharacter("palyer", "Alvoi", 2, "Warrior", 13, 26);
 		burok.getItem(new UniqueItem(ItemType.CLASS_SWORD * ItemsTypology.CLASS_LENGTH));
 		burok.getItem(new ItemPile(ItemType.CLASS_AMMO * ItemsTypology.CLASS_LENGTH,200));

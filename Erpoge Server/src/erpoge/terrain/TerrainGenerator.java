@@ -11,7 +11,9 @@ import java.util.Set;
 
 import erpoge.Chance;
 import erpoge.Coordinate;
+import erpoge.Direction;
 import erpoge.Main;
+import erpoge.Side;
 import erpoge.characters.Character;
 import erpoge.characters.CharacterSet;
 import erpoge.characters.NonPlayerCharacter;
@@ -659,95 +661,7 @@ public class TerrainGenerator extends TerrainBasics {
 		} while (newFront.size()>0 && t<2000);
 		return newCellCollection(cells);
 	}
-	public RectangleSystem house(int x, int y, int w, int h, int minRoomSize,
-			int wallType) {
-		return house(x, y, w, h, minRoomSize, wallType, false);
-	}
-	public RectangleSystem house(int x, int y, int w, int h, int minRoomSize) {
-		return house(x, y, w, h, minRoomSize, 4, false);
-	}
-	public RectangleSystem house(int x, int y, int w, int h, int minRoomSize,
-			int wallType, boolean notSimpleForm) {
-		// ������ "���" - ��������� � ������� (x,y,w,h) �������, ���������� �
-		// ���� ������ ��� ������
-		// notSimpleForm - ���� true, �� ��������� ������� ��������������
-		// ������� ���� ����� ���������, ��� ������� ���� ����� ������� �����
-		x++; // ��������� �������, ��� ��� ������� ����� �������� ����������
-				// ������� � ���� ������
-		y++;
-		w -= 2;
-		h -= 2;
-		RectangleSystem graph = getGraph(x, y, w, h, minRoomSize, 1);
-		if (notSimpleForm) {
-			if (graph.size() > 3) {
-				// ���� ��� ������� �� ����� ��� ������ ��������������, ��
-				// �������� ��� �����
-				// graph.initialFindOuterSides();
-				boolean formChanged = false;
-				Set<Integer> graphOuterSidesKeys = graph.outerSides.keySet();
-				for (int k : graphOuterSidesKeys) {
-					ArrayList<Integer> sides = graph.outerSides.get(k);
-					if (sides.size() == 0 || Chance.roll(70)) {
-						continue;
-					}
-					// print_r(graph->edges);
-					if (!graph.isVertexExclusible(k)) {
-						continue;
-					} else {
-						formChanged = true;
-						graph.excludeRectangle(k);
-					}
-				}
-				if (!formChanged) {
-					graph.excludeRectangle(0);
-				}
-			}
-		}
-		graph.convertGraphToDirectedTree();
-		graph.drawBorders(1, wallType, false); // ����� ����
-		int floorType = 2;
-		for (Rectangle r : graph.rectangles.values()) {
-			// ���
-			square(r.x, r.y, r.width, r.height, 0, floorType, true);
-		}
-		Set<Integer> graphEdgesKeys = graph.edges.keySet();
-		for (Integer k : graphEdgesKeys) {
-			// ��������� ������� �������
-			ArrayList<Integer> edge = graph.edges.get(k);
-			Rectangle r1 = graph.rectangles.get(k);
-			for (int vertex : edge) {
-				Rectangle r2 = graph.rectangles.get(vertex);
-				// ��������� ������ ���, ��� ���� ��������� ����� � ����� ������
-				// �� �������������� �������������� �����
-				int cx;
-				int cy;
-				if (r1.x + r1.width + 1 == r2.x || r2.x + r2.width + 1 == r1.x) {
-					// �������������
-					cx = Math.max(r1.x - 1, r2.x - 1);
-					cy = Chance.rand(Math.max(r1.y, r2.y), Math.min(r1.y
-							+ r1.height - 1, r2.y + r2.height - 1));
-				} else {
-					// ���������������
-					cy = Math.max(r1.y - 1, r2.y - 1); // ��, ��� x ������ max,
-														// � ����� y - min.
-					cx = Chance.rand(Math.max(r1.x, r2.x),
-							Math.min(r1.x + r1.width - 1, r2.x + r2.width - 1));
-				}
-				setObject(x, y, GameObjects.OBJ_DOOR_BLUE);
-				setFloor(x, y, floorType);
-			}
-		}
-		return graph;
-	}
-	public ArrayList<Coordinate> getRectangleCells(Rectangle r) {
-		ArrayList<Coordinate> answer = new ArrayList<Coordinate>();
-		for (int i=r.x; i<r.x+r.width; i++) {
-			for (int j=r.y; j<r.y+r.height; j++) {
-				answer.add(new Coordinate(i,j));
-			}
-		}
-		return answer;
-	}
+	
 	public ArrayList<Coordinate> getCellsAroundCell(int x, int y) {
 		ArrayList<Coordinate> answer = new ArrayList<Coordinate>();
 		int x1[] = {x, x+1, x+1, x+1, x, x-1, x-1, x-1};
@@ -759,21 +673,21 @@ public class TerrainGenerator extends TerrainBasics {
 		}
 		return answer;
 	}
-	public void lineToRectangleBorded(int startX, int startY, int side, Rectangle r, int type, int val) {
+	public void lineToRectangleBorded(int startX, int startY, Side side, Rectangle r, int type, int val) {
 		if (!r.contains(startX, startY)) {
 			throw new Error("Rectangle "+r+" contains no point "+startX+":"+startY);
 		}
 		int endX, endY;
-		if (side == SIDE_N) {
+		if (side == Side.N) {
 			endX = startX;
 			endY = r.y;
-		} else if (side == SIDE_E) {
+		} else if (side == Side.E) {
 			endX = r.x+r.width-1;
 			endY = startY;
-		} else if (side == SIDE_S) {
+		} else if (side == Side.S) {
 			endX = startX;
 			endY = r.y+r.height-1;
-		} else if (side == SIDE_W) {
+		} else if (side == Side.W) {
 			endX = r.x;
 			endY = startY;
 		} else {
@@ -781,30 +695,6 @@ public class TerrainGenerator extends TerrainBasics {
 		}
 		line(startX, startY, endX, endY, type, val);
 	}
-	public boolean isCellOnRectangleBorder(int x, int y, Rectangle r) {
-		return x == r.x || y == r.y || x == r.x+r.width-1 || y == r.y+r.height-1;
-	}
-	public static int distanceFromRectangleToLine(Rectangle r, Coordinate start, Coordinate end) {
-	/**
-	 * Finds distance from line to rectangle's nearest border parallel to that line
-	 */
-		boolean dir;
-		if (start.x == end.x) {
-			dir = true;
-		} else if (start.y == end.y) {
-			dir = false;
-		} else {
-			throw new Error(start+" and "+end+" are not on the same line");
-		}
-		if (dir && start.x >= r.x && start.x <= r.x+r.width-1) {
-			throw new Error("Vertical line inside rectangle");
-		} else if (!dir && start.y >= r.y && start.y <= r.y+r.height-1) {
-			throw new Error("Horizontal line inside rectangle");
-		}
-		if (dir) {
-			return start.x > r.x ? start.x-r.x-r.width+1 : r.x - start.x;
-		} else {
-			return start.y > r.y ? start.y-r.y-r.height+1 : r.y - start.y;
-		}
-	}
+	
+	
 }

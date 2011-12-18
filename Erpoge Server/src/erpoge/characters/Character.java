@@ -354,7 +354,7 @@ public abstract class Character extends Seer {
 		return x==atX && y==atY;
 	}
 	
-	protected void move(int nx, int ny) {
+	public void move(int nx, int ny) {
 		location.passability[x][y] = 0;
 		location.cells[x][y].character(false);
 		x = nx;

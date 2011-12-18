@@ -44,12 +44,7 @@ public abstract class TerrainBasics {
 		PASSABILITY_NO = 1,
 		
 		TO_LOCATION = 1,
-		TO_WORLD = 2,
-		
-		SIDE_N = 1,		
-		SIDE_E = 2,
-		SIDE_S = 3,
-		SIDE_W = 4;
+		TO_WORLD = 2;
 
 	public int width;
 	public int height;

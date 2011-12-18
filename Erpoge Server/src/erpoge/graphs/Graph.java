@@ -10,7 +10,6 @@ import erpoge.Main;
 
 
 public class Graph<ContentClass> {
-	public static final int SIDE_N = 1, SIDE_E = 2, SIDE_S = 3, SIDE_W = 4;
 	public HashMap<Integer, ArrayList<Integer>> edges;
 	public HashMap<Integer, ContentClass> excluded = new HashMap<Integer, ContentClass>();
 	public int size;

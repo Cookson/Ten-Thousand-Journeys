@@ -13,13 +13,16 @@ import java.util.Set;
 
 import erpoge.Chance;
 import erpoge.Coordinate;
+import erpoge.Direction;
 import erpoge.Main;
+import erpoge.RectangleArea;
+import erpoge.Side;
 import erpoge.Utils;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.Cell;
 import erpoge.terrain.TerrainBasics;
 
-public class RectangleSystem extends Graph<Rectangle> {
+public class RectangleSystem extends Graph<RectangleArea> {
 	// Класс для разбиения определённой прямоугольной области локации на меньшие
 	// прямоугольники
 	// и представления этой области в виде графа,
@@ -33,14 +36,14 @@ public class RectangleSystem extends Graph<Rectangle> {
 	public int minRectangleWidth;
 	public int borderWidth;
 	public TerrainBasics location;
-	public HashMap<Integer, ArrayList<Integer>> outerSides;
-	private HashMap<Integer, Rectangle> outerRectangles = new HashMap<Integer, Rectangle>();
+	public HashMap<Integer, ArrayList<Side>> outerSides;
+	private HashMap<Integer, RectangleArea> outerRectangles = new HashMap<Integer, RectangleArea>();
 
 	/*
 	 * Многоугольники, которые покрывают уровень при представлении уровня как
 	 * графа из многоугольников, см. функцию getGraph
 	 */
-	public HashMap<Integer, Rectangle> rectangles;
+	public HashMap<Integer, RectangleArea> rectangles;
 
 	public RectangleSystem(TerrainBasics loc, int startX, int startY, int w,
 			int h, int minRectangleWidth) {
@@ -62,9 +65,9 @@ public class RectangleSystem extends Graph<Rectangle> {
 		startX = sx;
 		startY = sy;
 		edges = new HashMap<Integer, ArrayList<Integer>>();
-		excluded = new HashMap<Integer, Rectangle>();
+		excluded = new HashMap<Integer, RectangleArea>();
 		rectangles = content;
-		rectangles.put(0, new Rectangle(sx, sy, w, h));
+		rectangles.put(0, new RectangleArea(sx, sy, w, h));
 		minRectangleWidth = minrw;
 		borderWidth = bw;
 
@@ -78,13 +81,13 @@ public class RectangleSystem extends Graph<Rectangle> {
 				if (rectangles.get(i).width > splitableRecSizeLimit
 						&& rectangles.get(i).height > splitableRecSizeLimit) {
 					noMoreRectangles = false;
-					splitRectangle(i, ch.roll() ? true : false);
+					splitRectangle(i, ch.roll() ? Direction.V : Direction.H);
 				} else if (rectangles.get(i).width > splitableRecSizeLimit) {
 					noMoreRectangles = false;
-					splitRectangle(i, true);
+					splitRectangle(i, Direction.V);
 				} else if (rectangles.get(i).height > splitableRecSizeLimit) {
 					noMoreRectangles = false;
-					splitRectangle(i, false);
+					splitRectangle(i, Direction.H);
 				}
 			}
 		}
@@ -102,8 +105,8 @@ public class RectangleSystem extends Graph<Rectangle> {
 		this.height = crs.height;
 		this.location = crs.location;
 		this.edges = crs.edges;
-		this.excluded = new HashMap<Integer, Rectangle>();
-		this.outerSides = new HashMap<Integer, ArrayList<Integer>>();
+		this.excluded = new HashMap<Integer, RectangleArea>();
+		this.outerSides = new HashMap<Integer, ArrayList<Side>>();
 //		buildEdges();
 		findOuterSidesOfComplexForm();
 	}
@@ -112,34 +115,34 @@ public class RectangleSystem extends Graph<Rectangle> {
 		return rectangles.size();
 	}
 
-	public void splitRectangle(int i, boolean dir) {
+	public void splitRectangle(int i, Direction dir) {
 		// Разделить прямоугольник на два, каждый из которых по ширине и по
 		// высоте больше minRectangleWidth*2
 		// i - индекс прямоугольника в массиве rectangles
 		// dir - направление разделяющей стены - вертикальное (true) или
 		// горизонтальное (false)
 		Rectangle r = rectangles.get(i);
-		if (dir) {
-			// Вертикальное
+		if (dir == Direction.V) {
+			// Vertical
 			int x = Chance.rand(r.x + minRectangleWidth, r.x + r.width
 					- minRectangleWidth - 1 - borderWidth + 1);
-			rectangles.put(i, new Rectangle(r.x, r.y, x - r.x, r.height));
+			rectangles.put(i, new RectangleArea(r.x, r.y, x - r.x, r.height));
 			rectangles.put(rectangles.size(),
-					new Rectangle(x + 1 + borderWidth - 1, r.y, r.x + r.width
+					new RectangleArea(x + 1 + borderWidth - 1, r.y, r.x + r.width
 							- x - 1 - borderWidth + 1, r.height));
 		} else {
-			// Горизонтальное
+			// Horizontal
 			int y = Chance.rand(r.y + minRectangleWidth, r.y + r.height
 					- minRectangleWidth - 1 - borderWidth + 1);
-			rectangles.put(i, new Rectangle(r.x, r.y, r.width, y - r.y));
-			rectangles.put(rectangles.size(), new Rectangle(r.x, y + 1
+			rectangles.put(i, new RectangleArea(r.x, r.y, r.width, y - r.y));
+			rectangles.put(rectangles.size(), new RectangleArea(r.x, y + 1
 					+ borderWidth - 1, r.width, r.y + r.height - y - 1
 					- borderWidth + 1));
 		}
 	}
 
 	public void buildEdges() {
-		// Построить рёбра в графе
+	// Построить рёбра в графе
 		int len = rectangles.size();
 		edges = new HashMap<Integer, ArrayList<Integer>>();
 		for (int i = 0; i < len; i++) {
@@ -282,23 +285,23 @@ public class RectangleSystem extends Graph<Rectangle> {
 			Set<Integer> keys = rectangles.keySet();
 			for (int k : keys) {
 				Rectangle r = rectangles.get(k);
-				if (!outerSides.get(k).contains(SIDE_E)) {
+				if (!outerSides.get(k).contains(Side.E)) {
 					location.square(r.x + r.width, r.y, borderWidth, r.height,
 							type, name, true);
 				}
-				if (!outerSides.get(k).contains(SIDE_S)) {
+				if (!outerSides.get(k).contains(Side.S)) {
 					location.square(r.x, r.y + r.height, r.width, borderWidth,
 							type, name, true);
 				}
-				if (!outerSides.get(k).contains(SIDE_S)
-						&& !outerSides.get(k).contains(SIDE_E)) {
+				if (!outerSides.get(k).contains(Side.S)
+						&& !outerSides.get(k).contains(Side.E)) {
 					location.square(r.x + r.width, r.y + r.height, borderWidth,
 							borderWidth, type, name, true);
 				}
 			}
 		} else {
 			// Очерчивание границ всех прямоугольников
-			for (Map.Entry<Integer, Rectangle> e : rectangles.entrySet()) {
+			for (Map.Entry<Integer, RectangleArea> e : rectangles.entrySet()) {
 				Rectangle r = e.getValue();
 				location.square(r.x - 1, r.y - 1, r.width + 2, r.height + 2,
 						type, name);
@@ -501,7 +504,7 @@ public class RectangleSystem extends Graph<Rectangle> {
 		 * результат работы метода будет:
 		 * Graph::outerSides=array(array(1,4),array(1,2),array(2,3),array(3,4))
 		 */
-		outerSides = new HashMap<Integer, ArrayList<Integer>>();
+		outerSides = new HashMap<Integer, ArrayList<Side>>();
 		int size = 0;
 
 		Set<Integer> rkeys = rectangles.keySet();
@@ -509,23 +512,23 @@ public class RectangleSystem extends Graph<Rectangle> {
 		while (it.hasNext()) {
 			int key = it.next();
 			Rectangle r = rectangles.get(key);
-			outerSides.put(key, new ArrayList<Integer>());
+			outerSides.put(key, new ArrayList<Side>());
 			try {
 				if (r.y == startY) {
 					// Верхняя сторона
-					outerSides.get(key).add(SIDE_N);
+					outerSides.get(key).add(Side.N);
 				}
 				if (r.x + r.width == startX + width) {
 					// Правая
-					outerSides.get(key).add(SIDE_E);
+					outerSides.get(key).add(Side.E);
 				}
 				if (r.y + r.height == startY + height) {
 					// Нижняя
-					outerSides.get(key).add(SIDE_S);
+					outerSides.get(key).add(Side.S);
 				}
 				if (r.x == startX) {
 					// Левая
-					outerSides.get(key).add(SIDE_W);
+					outerSides.get(key).add(Side.W);
 				}
 			} catch (Exception e) {
 			}
@@ -537,26 +540,26 @@ public class RectangleSystem extends Graph<Rectangle> {
 		// Initial search for outer sides in custom rectangle system of
 		// non-squared form
 		for (int i : rectangles.keySet()) {
-			outerSides.put(i, new ArrayList<Integer>());
+			outerSides.put(i, new ArrayList<Side>());
 			Rectangle r = rectangles.get(i);
 			ArrayList<Integer> thisEdges = edges.get(i);
-			HashMap<Integer, Integer> sides = new HashMap<Integer, Integer>();
-			sides.put(SIDE_N, r.width);
-			sides.put(SIDE_E, r.height);
-			sides.put(SIDE_S, r.width);
-			sides.put(SIDE_W, r.height);
+			HashMap<Side, Integer> sides = new HashMap<Side, Integer>();
+			sides.put(Side.N, r.width);
+			sides.put(Side.E, r.height);
+			sides.put(Side.S, r.width);
+			sides.put(Side.W, r.height);
 			for (int j : thisEdges) {
 				Rectangle r2 = rectangles.get(j);
 				if (areRectanglesNear(r, r2)) {
-					int side = getNeighborSide(r, r2);
+					Side side = getNeighborSide(r, r2);
 					sides.put(side, sides.get(side)
 							- lengthOfAdjacenctZone(r, r2));
 				} else {
 					throw new Error("Rectangles are not close to each other! Error in logic of rectangles' splitting!");
 				}
 			}
-			ArrayList<Integer> thisOuterSides = outerSides.get(i);
-			for (Map.Entry<Integer, Integer> e : sides.entrySet()) {
+			ArrayList<Side> thisOuterSides = outerSides.get(i);
+			for (Map.Entry<Side, Integer> e : sides.entrySet()) {
 				if (e.getValue() > 0) {
 					thisOuterSides.add(e.getKey());
 				}
@@ -568,7 +571,7 @@ public class RectangleSystem extends Graph<Rectangle> {
 		// Исключить прямоугольник из системы, удалив его, его рёбра и записи о
 		// граничащих с ним сторонах
 		// Стоит учитывать, что после этого под индексом удалённого
-		// приямоугольника не будет прямоугольника,
+		// прямоугольника не будет прямоугольника,
 		// что необходимо будет учитывать при переборе массива прямоугольников в
 		// цикле с итератором.
 		if (!rectangles.containsKey(num)) {
@@ -581,24 +584,8 @@ public class RectangleSystem extends Graph<Rectangle> {
 		Rectangle r = rectangles.get(num);
 		for (int neighbor : edges.get(num)) {
 			Rectangle nr = rectangles.get(neighbor);
-
-			// if (side == SIDE_N && nr.y == r.y + r.height + borderWidth
-			// && !outerSides.get(neighbor).contains(1) || side == SIDE_E
-			// && r.x == nr.x + nr.width + borderWidth
-			// && !outerSides.get(neighbor).contains(2) || side == SIDE_S
-			// && r.y == nr.y + nr.height + borderWidth
-			// && !outerSides.get(neighbor).contains(3) || side == SIDE_W
-			// && nr.x == r.x + r.width + borderWidth
-			// && !outerSides.get(neighbor).contains(4)) {
-			// outerSides.get(neighbor).add(side);
-			// if (outerRectangles != null
-			// && outerRectangles.containsKey(neighbor)) {
-			// outerRectangles.put(neighbor,
-			// outerRectangles.get(neighbor));
-			// }
-			// }
-			int side = getNeighborSide(nr, r);
-			ArrayList<Integer> neighborOuterSides = outerSides.get(neighbor);
+			Side side = getNeighborSide(nr, r);
+			ArrayList<Side> neighborOuterSides = outerSides.get(neighbor);
 			if (!neighborOuterSides.contains(side)) {
 				neighborOuterSides.add(side);
 			}
@@ -860,12 +847,12 @@ public class RectangleSystem extends Graph<Rectangle> {
 			}
 		};
 		for (int i : getRectanglesKeys()) {
-			ArrayList<Integer> sides = outerSides.get(i);
+			ArrayList<Side> sides = outerSides.get(i);
 			Rectangle r = rectangles.get(i);
-			boolean n = sides.contains(SIDE_N);
-			boolean e = sides.contains(SIDE_E);
-			boolean s = sides.contains(SIDE_S);
-			boolean w = sides.contains(SIDE_W);
+			boolean n = sides.contains(Side.N);
+			boolean e = sides.contains(Side.E);
+			boolean s = sides.contains(Side.S);
+			boolean w = sides.contains(Side.W);
 			if (n && e) {
 				corners.add(new Coordinate(r.x + r.width - 1
 						+ (considerBorderWidth ? borderWidth : 0) + padding,
@@ -909,48 +896,47 @@ public class RectangleSystem extends Graph<Rectangle> {
 		}
 	}
 
-	public int getNeighborSide(Rectangle rectangle, Rectangle neighbor) {
+	public Side getNeighborSide(Rectangle rectangle, Rectangle neighbor) {
 		// Get side from which neighbor is located relatively to the first
 		// rectangle
 		if (rectangle.y == neighbor.y + neighbor.height + borderWidth) {
-			return SIDE_N;
+			return Side.N;
 		}
 		if (rectangle.x + rectangle.width + borderWidth == neighbor.x) {
-			return SIDE_E;
+			return Side.E;
 		}
 		if (rectangle.y + rectangle.height + borderWidth == neighbor.y) {
-			return SIDE_S;
+			return Side.S;
 		}
 		if (rectangle.x == neighbor.x + neighbor.width + borderWidth) {
-			return SIDE_W;
+			return Side.W;
 		}
 		throw new Error("Cannot find side of neighbor rectangle " + neighbor
 				+ " for rectangle " + rectangle);
 	}
 
-	public static int getOppositeSide(int side) {
-		if (side == SIDE_N) {
-			return SIDE_S;
+	public static Side getOppositeSide(Side side) {
+		if (side == Side.N) {
+			return Side.S;
 		}
-		if (side == SIDE_E) {
-			return SIDE_W;
+		if (side == Side.E) {
+			return Side.W;
 		}
-		if (side == SIDE_S) {
-			return SIDE_N;
+		if (side == Side.S) {
+			return Side.N;
 		}
-		if (side == SIDE_W) {
-			return SIDE_E;
+		if (side == Side.W) {
+			return Side.E;
 		}
 		throw new Error(side + " is an inappropriate side id");
 	}
 
 	public static RectangleSystem createSystemFromRectangleSet(
-			TerrainBasics terrain, Set<Rectangle> set, int borderWidth) {
-		int width, heght, startX, startY;
+			TerrainBasics terrain, Set<RectangleArea> set, int borderWidth) {
 		CustomRectangleSystem newCRS = new CustomRectangleSystem(terrain);
 		newCRS.setStartCoord(terrain.width, terrain.height);
 		int endX = 0, endY = 0;
-		for (Rectangle r : set) {
+		for (RectangleArea r : set) {
 			newCRS.addRectangle(r);
 			if (r.x < newCRS.startX) {
 				newCRS.startX = r.x;
@@ -993,12 +979,12 @@ public class RectangleSystem extends Graph<Rectangle> {
 		if (!areRectanglesNear(r1, r2)) {
 			return -1;
 		}
-		int side = getNeighborSide(r1, r2);
-		if (side == SIDE_N || side == SIDE_S) {
+		Side side = getNeighborSide(r1, r2);
+		if (side == Side.N || side == Side.S) {
 			return Math.min(r1.x + r1.width, r2.x + r2.width)
 					- Math.max(r1.x, r2.x);
 		}
-		if (side == SIDE_E || side == SIDE_W) {
+		if (side == Side.E || side == Side.W) {
 			return Math.min(r1.y + r1.height, r2.y + r2.height)
 					- Math.max(r1.y, r2.y);
 		}

@@ -8,18 +8,18 @@ import java.util.HashMap;
 import erpoge.Chance;
 import erpoge.Coordinate;
 import erpoge.Main;
+import erpoge.RectangleArea;
 import erpoge.graphs.RectangleSystem;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.CellCollection;
 import erpoge.terrain.TerrainBasics;
 import erpoge.terrain.TerrainGenerator;
+import erpoge.terrain.locationtypes.Settlement;
 import erpoge.terrain.settlements.Building.BasisBuildingSetup;
 
 public class Crypt extends Building {
 	public Coordinate stairsCoord;
-	public Crypt(TerrainGenerator settlement, int x, int y, int width,
-			int height) {
-		super(settlement, x, y, width, height, 5);
+	public void draw() {
 		
 		buildBasis(GameObjects.OBJ_WALL_GREY_STONE, BasisBuildingSetup.CONVERT_TO_DIRECTED_TREE);
 		settlement.square(x, y, width, height, TerrainBasics.ELEMENT_FLOOR,
@@ -48,12 +48,16 @@ public class Crypt extends Building {
 				settlement.setObject(c.x, c.y, GameObjects.OBJ_VOID);
 			}
 		}
-		Rectangle stairsRec = roomsValues.get(Chance.rand(0,
-				roomsValues.size() - 1));
-		CellCollection stairsRoomCS = settlement.newCellCollection(settlement
-				.getRectangleCells(stairsRec));
+		RectangleArea stairsRec = new RectangleArea(roomsValues.get(Chance.rand(0,
+				roomsValues.size() - 1)));
+		CellCollection stairsRoomCS = settlement.newCellCollection(stairsRec.getCells());
 		stairsCoord = stairsRoomCS.setElementAndReport(
 				TerrainBasics.ELEMENT_OBJECT,
 				GameObjects.OBJ_STAIRS_SONE_GREY_DOWN);
+	}
+	@Override
+	public boolean fitsToPlace(BuildingPlace place) {
+		// TODO Auto-generated method stub
+		return true;
 	}
 }

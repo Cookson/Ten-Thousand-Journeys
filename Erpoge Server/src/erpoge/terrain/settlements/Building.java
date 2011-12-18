@@ -9,6 +9,8 @@ import java.util.Set;
 import erpoge.Chance;
 import erpoge.Coordinate;
 import erpoge.Main;
+import erpoge.RectangleArea;
+import erpoge.Side;
 import erpoge.graphs.RectangleSystem;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.CellCollection;
@@ -16,72 +18,53 @@ import erpoge.terrain.Location;
 import erpoge.terrain.TerrainBasics;
 import erpoge.terrain.TerrainGenerator;
 import erpoge.terrain.locationtypes.Settlement;
-import erpoge.terrain.locationtypes.Settlement.QuarterSystem.BuildingPlace;
 import erpoge.terrain.locationtypes.Settlement.RoadSystem.Road;
+import erpoge.terrain.settlements.buildings.Inn;
 
-public class Building extends Rectangle {
+public abstract class Building extends Rectangle {
 	public static final int
 		SIDE_N = 1,		
 		SIDE_E = 2,
 		SIDE_S = 3,
 		SIDE_W = 4;
-	public TerrainGenerator location;
-	public Settlement settlement;
-	public HashMap<Integer, Rectangle> rooms;
+	public TerrainGenerator settlement;
+	public HashMap<Integer, RectangleArea> rooms;
 	public RectangleSystem rectangleSystem;
 	public int lobby = -1;
-	public ArrayList<Integer> doorSides = new ArrayList<Integer>();
+	public ArrayList<Side> doorSides = new ArrayList<Side>();
 	public Coordinate frontDoor;
 	public ArrayList<Road> closeRoads;
 	private boolean hasSettlement;
+	private static HashMap<String, Class<? extends Building>> buildingClasses;
 	/**
 	 * ArrayList of rectangleIds
 	 */
 	private ArrayList<Integer> hallways = new ArrayList<Integer>();
-	
-	public Building(TerrainGenerator settlement, int x, int y, int width,
-			int height, int minRoomSize) {
-		/* */ // Deprecated constructor for buildings not in settlements
-		this.x = x;
-		this.y = y;
-		this.width = width;
-		this.height = height;
-		this.location = settlement;
-		hasSettlement = false;
-		if (settlement instanceof Settlement) {
-			Settlement s = (Settlement) settlement;
-			this.settlement = s;
-			hasSettlement = true;
-		}
-		rectangleSystem = location.getGraph(x + 1, y + 1, width - 2,
-				height - 2, minRoomSize, 1);
+
+	public Building() {
+		
 	}
-	public Building(TerrainGenerator settlement, int x, int y, int width,
-			int height, BuildingPlace place) {
-		this.x = x;
-		this.y = y;
-		this.width = width;
-		this.height = height;
-		this.location = settlement;
+	public Building setProperties(TerrainGenerator settlement, BuildingPlace place) {
+		this.x = place.x+1;
+		this.y = place.y+1;
+		this.width = place.width-2;
+		this.height = place.height-2;
 		this.closeRoads = place.closeRoads;
-		hasSettlement = false;
-		if (settlement instanceof Settlement) {
-			Settlement s = (Settlement) settlement;
-			this.settlement = s;
-			hasSettlement = true;
-		}
+		this.settlement = settlement;
+		hasSettlement = true;
 		getDoorSides();
+		return this;
 	}
 	
 	private void getDoorSides() {
 		for (Road road : closeRoads) {
-			int side = road.getSideOfRectangle(this);
+			Side side = road.getSideOfRectangle(this);
 			if (!doorSides.contains(side)) {
 				doorSides.add(side);
 			}
 		}
 	}
-	public int getDoorSide() {
+	public Side getDoorSide() {
 	/**
 	 * Returns first available door side
 	 */
@@ -91,30 +74,30 @@ public class Building extends Rectangle {
 			throw new Error("No available door sides");
 		}
 	}
-	public Coordinate placeFrontDoor(int side) {
+	public Coordinate placeFrontDoor(Side side) {
 		HashMap<Integer, Integer> cells = findDoorAppropriateCells(side);
 		if (cells.size() == 0) {
 			throw new Error("Nowhere to place the door from side " + side);
 		}
 		int dx, dy;
-		if (side == TerrainBasics.SIDE_N || side == TerrainBasics.SIDE_S) {
+		if (side == Side.N || side == Side.S) {
 			ArrayList<Integer> xes = new ArrayList<Integer>(cells.keySet());
 			dx = xes.get(Chance.rand(0, xes.size() - 1));
 			dy = cells.get(dx);
-			location.setObject(dx, dy, GameObjects.OBJ_DOOR_BLUE);
+			settlement.setObject(dx, dy, GameObjects.OBJ_DOOR_BLUE);
 		} else {
 			ArrayList<Integer> yes = new ArrayList<Integer>(cells.keySet());
 			dy = yes.get(Chance.rand(0, yes.size() - 1));
 			dx = cells.get(dy);
-			location.setObject(dx, dy, GameObjects.OBJ_DOOR_BLUE);
+			settlement.setObject(dx, dy, GameObjects.OBJ_DOOR_BLUE);
 		}
-		if (side == TerrainBasics.SIDE_N) {
+		if (side == Side.N) {
 			lobby = rectangleSystem.findRectangleByCell(dx, dy + 1);
-		} else if (side == TerrainBasics.SIDE_E) {
+		} else if (side == Side.E) {
 			lobby = rectangleSystem.findRectangleByCell(dx - 1, dy);
-		} else if (side == TerrainBasics.SIDE_S) {
+		} else if (side == Side.S) {
 			lobby = rectangleSystem.findRectangleByCell(dx, dy - 1);
-		} else if (side == TerrainBasics.SIDE_W) {
+		} else if (side == Side.W) {
 			lobby = rectangleSystem.findRectangleByCell(dx + 1, dy);
 		} else {
 			throw new Error("Unappropriate side");
@@ -126,9 +109,9 @@ public class Building extends Rectangle {
 		frontDoor = new Coordinate(dx, dy);
 		return frontDoor;
 	}
-	public Coordinate placeFrontDoor(int rectangleId, int side) {
+	public Coordinate placeFrontDoor(int rectangleId, Side side) {
 		Rectangle r = rectangleSystem.rectangles.get(rectangleId);
-		if (side == -1) {
+		if (side == Side.ANY_SIDE) {
 			side = rectangleSystem.outerSides.get(rectangleId).get(0);
 		}
 		HashMap<Integer, Integer> cells = findDoorAppropriateCells(r,side);
@@ -140,24 +123,24 @@ public class Building extends Rectangle {
 			return null;
 		}
 		int dx, dy;
-		if (side == TerrainBasics.SIDE_N || side == TerrainBasics.SIDE_S) {
+		if (side == Side.N || side == Side.S) {
 			ArrayList<Integer> xes = new ArrayList<Integer>(cells.keySet());
 			dx = xes.get(Chance.rand(0, xes.size() - 1));
 			dy = cells.get(dx);
-			location.setObject(dx, dy, GameObjects.OBJ_DOOR_BLUE);
+			settlement.setObject(dx, dy, GameObjects.OBJ_DOOR_BLUE);
 		} else {
 			ArrayList<Integer> yes = new ArrayList<Integer>(cells.keySet());
 			dy = yes.get(Chance.rand(0, yes.size() - 1));
 			dx = cells.get(dy);
-			location.setObject(dx, dy, GameObjects.OBJ_DOOR_BLUE);
+			settlement.setObject(dx, dy, GameObjects.OBJ_DOOR_BLUE);
 		}
-		if (side == TerrainBasics.SIDE_N) {
+		if (side == Side.N) {
 			lobby = rectangleSystem.findRectangleByCell(dx, dy + 1);
-		} else if (side == TerrainBasics.SIDE_E) {
+		} else if (side == Side.E) {
 			lobby = rectangleSystem.findRectangleByCell(dx - 1, dy);
-		} else if (side == TerrainBasics.SIDE_S) {
+		} else if (side == Side.S) {
 			lobby = rectangleSystem.findRectangleByCell(dx, dy - 1);
-		} else if (side == TerrainBasics.SIDE_W) {
+		} else if (side == Side.W) {
 			lobby = rectangleSystem.findRectangleByCell(dx + 1, dy);
 		} else {
 			throw new Error("Unappropriate side");
@@ -172,10 +155,10 @@ public class Building extends Rectangle {
 	public boolean hasSettlement() {
 		return hasSettlement;
 	}
-	public HashMap<Integer, Integer> findDoorAppropriateCells(int side) {
+	public HashMap<Integer, Integer> findDoorAppropriateCells(Side side) {
 		HashMap<Integer, Integer> cells = new HashMap<Integer, Integer>();
 		Set<Integer> keys;
-		if (side == SIDE_N) {
+		if (side == Side.N) {
 			for (Rectangle r : rooms.values()) {
 				int y = r.y - 1;
 				for (int i = r.x; i < r.x + r.width; i++) {
@@ -187,11 +170,11 @@ public class Building extends Rectangle {
 			keys = new HashSet<Integer>(cells.keySet());
 			for (int x : keys) {
 				int y = cells.get(x);
-				if (location.cells[x][y + 1].object() != 0) {
+				if (settlement.cells[x][y + 1].object() != 0) {
 					cells.remove(x);
 				}
 			}
-		} else if (side == SIDE_E) {
+		} else if (side == Side.E) {
 			for (Rectangle r : rooms.values()) {
 				int x = r.x + r.width;
 				for (int i = r.y; i < r.y + r.height; i++) {
@@ -203,11 +186,11 @@ public class Building extends Rectangle {
 			keys = new HashSet<Integer>(cells.keySet());
 			for (int y : keys) {
 				int x = cells.get(y);
-				if (location.cells[x - 1][y].object() != 0) {
+				if (settlement.cells[x - 1][y].object() != 0) {
 					cells.remove(y);
 				}
 			}
-		} else if (side == SIDE_S) {
+		} else if (side == Side.S) {
 			for (Rectangle r : rooms.values()) {
 				int y = r.y + r.height;
 				for (int i = r.x; i < r.x + r.width; i++) {
@@ -219,11 +202,11 @@ public class Building extends Rectangle {
 			keys = new HashSet<Integer>(cells.keySet());
 			for (int x : keys) {
 				int y = cells.get(x);
-				if (location.cells[x][y - 1].object() != 0) {
+				if (settlement.cells[x][y - 1].object() != 0) {
 					cells.remove(x);
 				}
 			}
-		} else if (side == SIDE_W) {
+		} else if (side == Side.W) {
 			for (Rectangle r : rooms.values()) {
 				int x = r.x - 1;
 				for (int i = r.y; i < r.y + r.height; i++) {
@@ -235,17 +218,17 @@ public class Building extends Rectangle {
 			keys = new HashSet<Integer>(cells.keySet());
 			for (int y : keys) {
 				int x = cells.get(y);
-				if (location.cells[x + 1][y].object() != 0) {
+				if (settlement.cells[x + 1][y].object() != 0) {
 					cells.remove(y);
 				}
 			}
 		}
 		return cells;
 	}
-	public HashMap<Integer, Integer> findDoorAppropriateCells(Rectangle r, int side) {
+	public HashMap<Integer, Integer> findDoorAppropriateCells(Rectangle r, Side side) {
 		HashMap<Integer, Integer> cells = new HashMap<Integer, Integer>();
 		Set<Integer> keys;
-		if (side == SIDE_N) {
+		if (side == Side.N) {
 			int y = r.y - 1;
 			for (int i = r.x; i < r.x + r.width; i++) {
 				if (!cells.containsKey(i) || cells.get(i) > y) {
@@ -255,11 +238,11 @@ public class Building extends Rectangle {
 			keys = new HashSet<Integer>(cells.keySet());
 			for (int x : keys) {
 				y = cells.get(x);
-				if (location.cells[x][y + 1].object() != 0) {
+				if (settlement.cells[x][y + 1].object() != 0) {
 					cells.remove(x);
 				}
 			}
-		} else if (side == SIDE_E) {
+		} else if (side == Side.E) {
 			int x = r.x + r.width;
 			for (int i = r.y; i < r.y + r.height; i++) {
 				if (!cells.containsKey(i) || cells.get(i) < x) {
@@ -269,11 +252,11 @@ public class Building extends Rectangle {
 			keys = new HashSet<Integer>(cells.keySet());
 			for (int y : keys) {
 				x = cells.get(y);
-				if (location.cells[x - 1][y].object() != 0) {
+				if (settlement.cells[x - 1][y].object() != 0) {
 					cells.remove(y);
 				}
 			}
-		} else if (side == SIDE_S) {
+		} else if (side == Side.S) {
 			int y = r.y + r.height;
 			for (int i = r.x; i < r.x + r.width; i++) {
 				if (!cells.containsKey(i) || cells.get(i) < y) {
@@ -283,11 +266,11 @@ public class Building extends Rectangle {
 			keys = new HashSet<Integer>(cells.keySet());
 			for (int x : keys) {
 				y = cells.get(x);
-				if (location.cells[x][y - 1].object() != 0) {
+				if (settlement.cells[x][y - 1].object() != 0) {
 					cells.remove(x);
 				}
 			}
-		} else if (side == SIDE_W) {
+		} else if (side == Side.W) {
 			int x = r.x - 1;
 			for (int i = r.y; i < r.y + r.height; i++) {
 				if (!cells.containsKey(i) || cells.get(i) > x) {
@@ -297,7 +280,7 @@ public class Building extends Rectangle {
 			keys = new HashSet<Integer>(cells.keySet());
 			for (int y : keys) {
 				x = cells.get(y);
-				if (location.cells[x + 1][y].object() != 0) {
+				if (settlement.cells[x + 1][y].object() != 0) {
 					cells.remove(y);
 				}
 			}
@@ -350,7 +333,7 @@ public class Building extends Rectangle {
 				Rectangle r2 = graph.rectangles.get(vertex);
 				Coordinate c = connectRoomsWithDoor(r1, r2,
 						GameObjects.OBJ_DOOR_BLUE);
-				location.setFloor(c.x, c.y, floorType);
+				settlement.setFloor(c.x, c.y, floorType);
 			}
 		}
 		rooms = graph.rectangles;
@@ -375,44 +358,44 @@ public class Building extends Rectangle {
 			x = Chance.rand(Math.max(r1.x, r2.x),
 					Math.min(r1.x + r1.width - 1, r2.x + r2.width - 1));
 		}
-		location.setObject(x, y, doorObjectId);
+		settlement.setObject(x, y, doorObjectId);
 		return new Coordinate(x, y);
 	}
 	public void fillFloor(Rectangle r, int floorId) {
-		location.square(r.x, r.y, r.width, r.height, 0, floorId, true);
+		settlement.square(r.x, r.y, r.width, r.height, 0, floorId, true);
 	}
 	public ArrayList<Coordinate> getCellsNearWalls(Rectangle r) {
 		ArrayList<Coordinate> answer = new ArrayList<Coordinate>();
 		for (int i = r.x + 1; i < r.x + r.width - 1; i++) {
-			if (!location.isDoor(i, r.y - 1)) {
+			if (!settlement.isDoor(i, r.y - 1)) {
 				answer.add(new Coordinate(i, r.y));
 			}
-			if (!location.isDoor(i, r.y + r.height)) {
+			if (!settlement.isDoor(i, r.y + r.height)) {
 				answer.add(new Coordinate(i, r.y + r.height - 1));
 			}
 		}
 		for (int i = r.y + 1; i < r.y + r.height - 1; i++) {
-			if (!location.isDoor(r.x - 1, i)) {
+			if (!settlement.isDoor(r.x - 1, i)) {
 				answer.add(new Coordinate(r.x, i));
 			}
-			if (!location.isDoor(r.x + r.width, i)) {
+			if (!settlement.isDoor(r.x + r.width, i)) {
 				answer.add(new Coordinate(r.x + r.width - 1, i));
 			}
 		}
 		// Checking cells in corners
-		if (!location.isDoor(r.x, r.y - 1) && !location.isDoor(r.x - 1, r.y)) {
+		if (!settlement.isDoor(r.x, r.y - 1) && !settlement.isDoor(r.x - 1, r.y)) {
 			answer.add(new Coordinate(r.x, r.y));
 		}
-		if (!location.isDoor(r.x + r.width - 1, r.y - 1)
-				&& !location.isDoor(r.x + r.width, r.y)) {
+		if (!settlement.isDoor(r.x + r.width - 1, r.y - 1)
+				&& !settlement.isDoor(r.x + r.width, r.y)) {
 			answer.add(new Coordinate(r.x + r.width - 1, r.y));
 		}
-		if (!location.isDoor(r.x + r.width, r.y + r.height - 1)
-				&& !location.isDoor(r.x + r.width - 1, r.y + r.height)) {
+		if (!settlement.isDoor(r.x + r.width, r.y + r.height - 1)
+				&& !settlement.isDoor(r.x + r.width - 1, r.y + r.height)) {
 			answer.add(new Coordinate(r.x + r.width - 1, r.y + r.height - 1));
 		}
-		if (!location.isDoor(r.x, r.y + r.height)
-				&& !location.isDoor(r.x - 1, r.y + r.height - 1)) {
+		if (!settlement.isDoor(r.x, r.y + r.height)
+				&& !settlement.isDoor(r.x - 1, r.y + r.height - 1)) {
 			answer.add(new Coordinate(r.x, r.y + r.height - 1));
 		}
 		return answer;
@@ -420,35 +403,35 @@ public class Building extends Rectangle {
 	public ArrayList<Coordinate> getCellsNearDoors(Rectangle r) {
 		ArrayList<Coordinate> answer = new ArrayList<Coordinate>();
 		for (int i = r.x + 1; i < r.x + r.width - 1; i++) {
-			if (location.isDoor(i, r.y - 1)) {
+			if (settlement.isDoor(i, r.y - 1)) {
 				answer.add(new Coordinate(i, r.y));
 			}
-			if (location.isDoor(i, r.y + r.height)) {
+			if (settlement.isDoor(i, r.y + r.height)) {
 				answer.add(new Coordinate(i, r.y + r.height - 1));
 			}
 		}
 		for (int i = r.y + 1; i < r.y + r.height - 1; i++) {
-			if (location.isDoor(r.x - 1, i)) {
+			if (settlement.isDoor(r.x - 1, i)) {
 				answer.add(new Coordinate(r.x, i));
 			}
-			if (location.isDoor(r.x + r.width, i)) {
+			if (settlement.isDoor(r.x + r.width, i)) {
 				answer.add(new Coordinate(r.x + r.width - 1, i));
 			}
 		}
 		// Checking cells in corners
-		if (location.isDoor(r.x, r.y - 1) || location.isDoor(r.x - 1, r.y)) {
+		if (settlement.isDoor(r.x, r.y - 1) || settlement.isDoor(r.x - 1, r.y)) {
 			answer.add(new Coordinate(r.x, r.y));
 		}
-		if (location.isDoor(r.x + r.width - 1, r.y - 1)
-				|| location.isDoor(r.x + r.width, r.y)) {
+		if (settlement.isDoor(r.x + r.width - 1, r.y - 1)
+				|| settlement.isDoor(r.x + r.width, r.y)) {
 			answer.add(new Coordinate(r.x + r.width - 1, r.y));
 		}
-		if (location.isDoor(r.x + r.width, r.y + r.height - 1)
-				|| location.isDoor(r.x + r.width - 1, r.y + r.height)) {
+		if (settlement.isDoor(r.x + r.width, r.y + r.height - 1)
+				|| settlement.isDoor(r.x + r.width - 1, r.y + r.height)) {
 			answer.add(new Coordinate(r.x + r.width - 1, r.y + r.height - 1));
 		}
-		if (location.isDoor(r.x, r.y + r.height)
-				|| location.isDoor(r.x - 1, r.y + r.height - 1)) {
+		if (settlement.isDoor(r.x, r.y + r.height)
+				|| settlement.isDoor(r.x - 1, r.y + r.height - 1)) {
 			answer.add(new Coordinate(r.x, r.y + r.height - 1));
 		}
 		return answer;
@@ -462,9 +445,13 @@ public class Building extends Rectangle {
 	}
 	public void clearBasisInside() {
 		for (Rectangle r : rectangleSystem.rectangles.values()) {
-			location.square(r.x, r.y, r.width, r.height,
+			settlement.square(r.x, r.y, r.width, r.height,
 					TerrainBasics.ELEMENT_OBJECT, GameObjects.OBJ_VOID, true);
 		}
+	}
+	public void setLobby(int rectangleId) {
+		lobby = rectangleId;
+		Building.registerClass(Inn.class);
 	}
 	public enum BasisBuildingSetup {
 	/**
@@ -472,4 +459,12 @@ public class Building extends Rectangle {
 	 */
 		NOT_BUILD_EDGES, CONVERT_TO_DIRECTED_TREE, KEYPOINTS_BASED
 	}
+	public static boolean registerClass(Class<? extends Building> cls) {
+		Main.console("Register "+cls.getName());
+		buildingClasses.put(cls.getName(), cls);
+		
+		return true;
+	}
+	public abstract boolean fitsToPlace(BuildingPlace place);
+	public abstract void draw();
 }

@@ -7,7 +7,10 @@ import java.util.HashSet;
 
 import erpoge.Chance;
 import erpoge.Coordinate;
+import erpoge.Direction;
 import erpoge.Main;
+import erpoge.RectangleArea;
+import erpoge.Side;
 import erpoge.Utils;
 import erpoge.characters.*;
 import erpoge.characters.Character;
@@ -15,13 +18,14 @@ import erpoge.graphs.CustomRectangleSystem;
 import erpoge.graphs.RectangleSystem;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.*;
-import erpoge.terrain.locationtypes.Settlement.QuarterSystem.BuildingPlace;
 import erpoge.terrain.locationtypes.Settlement.RoadSystem.Road;
 import erpoge.terrain.settlements.Building;
+import erpoge.terrain.settlements.BuildingPlace;
 import erpoge.terrain.settlements.Service;
 import erpoge.terrain.settlements.buildings.BuildingType;
 import erpoge.terrain.settlements.buildings.Inn;
 import erpoge.terrain.settlements.buildings.OneRoomHouse;
+import erpoge.terrain.settlements.buildings.Temple;
 import erpoge.terrain.settlements.buildings.TestBuilding;
 public class Settlement extends LocationGenerator {
 	public CustomRectangleSystem rectangleSystem;
@@ -36,18 +40,31 @@ public class Settlement extends LocationGenerator {
 		super(location);
 		quarterSystem = new QuarterSystem(this);
 	}
-	public void placeBuilding(BuildingPlace place, BuildingType type) {
-		int x = place.x+1;
-		int y = place.y+1;
-		int width = place.width-2;
-		int height= place.height-2;
-		if (type == BuildingType.TEST) {
-			buildings.add(new TestBuilding(this, x, y, width, height, place));
-		} else if (type == BuildingType.INN) {
-			buildings.add(new Inn(this, x, y, width, height, place));
-		} else if (type == BuildingType.ONE_ROOM_HOUSE) {
-			buildings.add(new OneRoomHouse(this, x, y, width, height, place));
-		}
+	public void placeBuilding(BuildingPlace place, Class<? extends Building> cls) {
+		
+			Building building;
+			try {
+				building = cls.newInstance().setProperties(this, place);
+				building.draw();
+				buildings.add(building);
+				Main.console("KAKA");
+			} catch (InstantiationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+//		if (type == BuildingType.TEST) {
+//			buildings.add(new TestBuilding(this, place));
+//		} else if (type == BuildingType.INN) {
+//			buildings.add(new Inn(this, place));
+//		} else if (type == BuildingType.ONE_ROOM_HOUSE) {
+//			buildings.add(new OneRoomHouse(this, place));
+//		} else if (type == BuildingType.TEMPLE) {
+//			buildings.add(new Temple(this, place));
+//		}
 	}
 	public void createRandomRoadSystem() {
 		for (int y = Chance.rand(0, 20); y<height; y+=Chance.rand(20,25)) {
@@ -91,10 +108,10 @@ public class Settlement extends LocationGenerator {
 			
 			// If new road lies on the same cells as one of 
 			// existing roads, then throw an error.
-			if (newRoad.direction) {
+			if (newRoad.direction == Direction.V) {
 				for (Road road : roads) {
 					if (
-						road.direction && 
+						road.direction == Direction.V && 
 						road.start.x == newRoad.start.x && 
 						Utils.integersRangeIntersection(road.start.y, road.end.y, newRoad.start.y, newRoad.end.y) >= 1
 					) {
@@ -104,7 +121,7 @@ public class Settlement extends LocationGenerator {
 			} else {
 				for (Road road : roads) {
 					if (
-						!road.direction && 
+						road.direction == Direction.H && 
 						road.start.y == newRoad.start.y && 
 						Utils.integersRangeIntersection(road.start.x, road.end.x, newRoad.start.x, newRoad.end.x) >= 1
 					) {
@@ -126,7 +143,7 @@ public class Settlement extends LocationGenerator {
 			for (Road oldRoad : roads) {
 				if (!areParallel(newRoad, oldRoad)) {
 				// If roads are parallel, then go to next road
-					if (newRoad.direction) {
+					if (newRoad.direction == Direction.V) {
 					// If new road is vertical
 						if (
 							(newRoad.start.y == oldRoad.start.y || newRoad.end.y == oldRoad.start.y) && 
@@ -165,7 +182,8 @@ public class Settlement extends LocationGenerator {
 		}
 		public void drawRoads() {
 			for (Road road : roads) {
-				boldLine(road.start.x, road.start.y, road.end.x, road.end.y, ELEMENT_FLOOR, GameObjects.FLOOR_STONE, 5);
+				boldLine(road.start.x, road.start.y, road.end.x, road.end.y, 
+						ELEMENT_FLOOR, GameObjects.FLOOR_GROUND, 5);
 			}
 		}
 		public void printStatistics() {
@@ -205,7 +223,7 @@ public class Settlement extends LocationGenerator {
 		public class Road {
 			public final Coordinate start;
 			protected final Coordinate end;
-			protected final boolean direction;
+			protected final Direction direction;
 			protected int width = 5;
 			public Road(int startX, int startY, int endX, int endY) {
 				if (startX != endX && startY != endY) {
@@ -213,46 +231,46 @@ public class Settlement extends LocationGenerator {
 				}
 				start = new Coordinate(startX, startY);
 				end = new Coordinate(endX, endY);
-				direction = start.x == end.x;
+				direction = start.x == end.x ? Direction.V : Direction.H;
 			}
 			public String toString() {
 				return "Road ["+start.x+", "+start.y+", "+end.x+", "+end.y+"];";
 			}
-			public int getSideOfRectangle(Rectangle r) {
+			public Side getSideOfRectangle(Rectangle r) {
 			// Get side of rectangle from which this road is located
-				if (direction) {
+				if (direction == Direction.V) {
 					if (this.start.x < r.x) {
-						return TerrainBasics.SIDE_W;
+						return Side.W;
 					} else if (this.start.x >= r.x+r.width) {
-						return TerrainBasics.SIDE_E;
+						return Side.E;
 					} else {
 						throw new Error("Vertical road "+this+" is inside rectangle "+r);
 					}
 				} else {
 					if (this.start.y < r.y) {
-						return TerrainBasics.SIDE_N;
+						return Side.N;
 					} else if (this.start.y >= r.y+r.height) {
-						return TerrainBasics.SIDE_S;
+						return Side.S;
 					} else {
 						throw new Error("Horizontal road "+this+" is inside rectangle "+r);
 					}
 				}
 			}
 			public boolean crossesRectangle(Rectangle r) {
-				if (direction) {
+				if (direction == Direction.V) {
 					return start.x >= r.x && start.x < r.x+r.width;
 				} else {
 					return start.y >= r.y && start.y < r.y+r.height;
 				}
 			}
 			public boolean isRectangleOverlapsRoad(Rectangle rectangle) {
-				if (direction) {
+				RectangleArea ra = new RectangleArea(rectangle);
+				if (direction == Direction.V) {
 					if (
 						Utils.integersRangeIntersection(
 							rectangle.y, rectangle.y+rectangle.height-1, 
 							start.y, end.y) > 0 && 
-						TerrainGenerator.distanceFromRectangleToLine(
-								rectangle, start, end) < width / 2
+						ra.distanceToLine(start, end) < width / 2
 					) {
 					// If road line and rectangle overlap in y-axis,
 					// and road is close enough to rectangle
@@ -263,8 +281,7 @@ public class Settlement extends LocationGenerator {
 						Utils.integersRangeIntersection(
 							rectangle.x, rectangle.x+rectangle.width-1, 
 							start.x, end.x) > 0 && 
-						TerrainGenerator.distanceFromRectangleToLine(
-								rectangle, start, end) < width / 2
+						ra.distanceToLine(start, end) < width / 2
 					) {
 					// Same for x-axis
 						return true;
@@ -276,13 +293,13 @@ public class Settlement extends LocationGenerator {
 				/**
 				 * Checks if this road goes along one of the borders of a rectangle
 				 */
-					if (direction) {
+					RectangleArea ra = new RectangleArea(rectangle);
+					if (direction == Direction.V) {
 						if (
 							Utils.integersRangeIntersection(
 								rectangle.y, rectangle.y+rectangle.height-1, 
 								start.y, end.y) > 0 && 
-							TerrainGenerator.distanceFromRectangleToLine(
-									rectangle, start, end) == width/2+1
+							ra.distanceToLine(start, end) == width/2+1
 						) {
 						// If road line and rectangle overlap in y-axis,
 						// and road is close enough to rectangle
@@ -293,8 +310,7 @@ public class Settlement extends LocationGenerator {
 							Utils.integersRangeIntersection(
 								rectangle.x, rectangle.x+rectangle.width-1, 
 								start.x, end.x) > 0 && 
-							TerrainGenerator.distanceFromRectangleToLine(
-									rectangle, start, end) == width/2+1
+							ra.distanceToLine(start, end) == width/2+1
 						) {
 						// Same for x-axis
 							return true;
@@ -348,7 +364,7 @@ public class Settlement extends LocationGenerator {
 				}
 			}
 			for (Road road : settlement.roadSystem.roads) {
-				if (road.direction) {
+				if (road.direction == Direction.V) {
 					for (int y=road.start.y; y<=road.end.y; y++) {
 						grid[road.start.x][y] = ROAD;
 					}
@@ -481,23 +497,23 @@ public class Settlement extends LocationGenerator {
 			 * Change rectangle start and dimensions as if road would "bite off" 
 			 * a part of rectangle by road's width.
 			 */
-				int side = road.getSideOfRectangle(rec);
-				if (side == TerrainBasics.SIDE_N) {
+				Side side = road.getSideOfRectangle(rec);
+				if (side == Side.N) {
 					int newY = Math.max(road.start.y+road.width/2+1, rec.y);
 					if (newY != rec.y) {
 						rec.setBounds(rec.x, newY, rec.width, rec.height-(newY-road.start.y)+1);
 					}
-				} else if (side == TerrainBasics.SIDE_E) {
+				} else if (side == Side.E) {
 					int newEndX = Math.min(rec.x+rec.width-1, road.start.x-road.width/2-1);
 					if (newEndX != rec.x+rec.width-1) {
 						rec.setSize(newEndX-rec.x+1, rec.height);
 					}
-				} else if (side == TerrainBasics.SIDE_S) {
+				} else if (side == Side.S) {
 					int newEndY = Math.min(rec.y+rec.height-1, road.start.y-road.width/2-1);
 					if (newEndY != rec.y+rec.height-1) {
 						rec.setSize(rec.width, newEndY-rec.y+1);
 					}
-				} else if (side == TerrainBasics.SIDE_W) {
+				} else if (side == Side.W) {
 					int newX = Math.max(road.start.x+road.width/2+1, rec.x);
 					if (newX != rec.x) {
 						rec.setBounds(newX, rec.y, rec.width-(newX-road.start.x)+1, rec.height);
@@ -505,20 +521,6 @@ public class Settlement extends LocationGenerator {
 				}
 			}
 		}
-		public class BuildingPlace extends Rectangle {
-		/**
-		 * Space for placing a building. Each quarter will be divided into 
-		 * several of those after roads' and quarters' generation.
-		 */
-			public final ArrayList<Road> closeRoads = new ArrayList<Road>();
-			public BuildingPlace(Rectangle rectangle, Quarter quarter) {
-				super(rectangle);
-				for (Road road : quarter.closeRoads) {
-					if (road.isRectangleNearRoad(this)) {
-						closeRoads.add(road);
-					}
-				}
-			}
-		}
+		
 	}
 }

@@ -12,6 +12,7 @@ import erpoge.Chance;
 import erpoge.Coordinate;
 import erpoge.Main;
 import erpoge.MainHandler;
+import erpoge.Side;
 import erpoge.characters.PlayerCharacter;
 import erpoge.graphs.RectangleSystem;
 import erpoge.magic.Spells;
@@ -19,8 +20,6 @@ import erpoge.serverevents.EventChatMessage;
 import erpoge.serverevents.EventDamage;
 import erpoge.serverevents.ServerEvent;
 import erpoge.terrain.locationtypes.*;
-import erpoge.terrain.settlements.Rampart;
-import erpoge.terrain.settlements.Village;
 
 public class World extends Location {
 	public final static World ABSTRACT_WORLD = new World(1, 1, "None", "Abstract World");
@@ -38,29 +37,26 @@ public class World extends Location {
 				cells[i][j] = new WorldCell();
 			}
 		}
-//		setForests();
-//		setRivers(10);
-//		// setCities();
-//		setRoads();
-		/*
-		 * for (i=0;i<h;i++) { // ������� ��������� ����� ����� � ������ if
-		 * (i==5) { i=h-5; } line(rand(0,6),i,w-rand(0,6),i,4,3); }
-		 */
-//		for (int i = 0; i < 50; i++) {
-//			int rX = Chance.rand(1, width - 2);
-//			int rY = Chance.rand(1, height - 2);
-////			if (cells[rX][rY].objects.size() < 1) {
-//				setGround(rX, rY, 2);
-//				setObject(rX, rY, Chance.rand(1, 4));
-////			}
-//		}
+		int attempts = 0;
+		while (true) {
+	 		try {
+				tryGeneratingWorld(type);
+				break;
+			} catch (Error e) {
+				Main.console("Failed attempt to generate world");
+				if (attempts++ > 10) {
+					break;
+				}
+			}
+		}
+	}
+	public void tryGeneratingWorld(String type) {
 		if (type.equals("Continent")) {
 			new Continent(this);
 		} else if (type.equals("TestWorld")) {
 			new TestWorld(this);
 		}
 	}
-	
 	public PlayerCharacter createCharacter(String type, String name, int race,
 			String cls, int x, int y) {
 		PlayerCharacter ch = new PlayerCharacter(type, name, race, cls, Location.ABSTRACT_LOCATION,
@@ -78,21 +74,19 @@ public class World extends Location {
 			f  = new Forest(loc);
 		} else if (type.equals("Empty")) {
 			f  = new Empty(loc);
-		} else if (type.equals("Dungeon")) {
-			f  = new Dungeon(loc);
-		} else if (type.equals("Village")) {
+		} else if (type.equals("BuildingTest")) {
+			f  = new BuildingTest(loc);
+		}else if (type.equals("Village")) {
 			f  = new Village(loc);
 		} else if (type.equals("DragonLair")) {
 			f  = new DragonLair(loc);
-		} else if (type.equals("SchoolOfMartialArts")) {
-			f  = new SchoolOfMartialArts(loc);
-		}  else if (type.equals("Stead")) {
-			f  = new Stead(loc);
-		}  else if (type.equals("Graveyard")) {
-			f  = new Graveyard(loc);
-		} else if (type.equals("CryptDungeon")) {
-			f  = new CryptDungeon(loc);
-		} else if (type.equals("Rampart")) {
+		} 
+//		else if (type.equals("SchoolOfMartialArts")) {
+//			f  = new SchoolOfMartialArts(loc);
+//		} else if (type.equals("Graveyard")) {
+//			f  = new Graveyard(loc);
+//		} 
+		else if (type.equals("Rampart")) {
 			f  = new Rampart(loc);
 		} else {
 			throw new Error("No such location type "+type);
@@ -214,7 +208,7 @@ public class World extends Location {
 		numOfRivers = graph.rectangles.size();
 		for (int i = 0; i < numOfRivers; i++) {
 			// dir - ����������� (1-8 �� ������� �������)
-			int dir = Chance.rand(1, 8);
+			Side dir = Side.int2side(Chance.rand(1, 8));
 			int x = Chance.rand(0, width);
 			int y = Chance.rand(0, height);
 			Chance ch1 = new Chance(1);
@@ -226,56 +220,56 @@ public class World extends Location {
 				setRiver(x, y, 1);
 				switch (dir) {
 				// ��������� �����������
-				case 1:
+				case N:
 					if (ch4.roll()) {
 						x += (ch50.roll()) ? 1 : -1;
 					} else {
 						y++;
 					}
 					break;
-				case 2:
+				case NE:
 					if (ch50.roll()) {
 						x++;
 					} else {
 						y++;
 					}
 					break;
-				case 3:
+				case E:
 					if (ch4.roll()) {
 						y += (ch50.roll()) ? 1 : -1;
 					} else {
 						x++;
 					}
 					break;
-				case 4:
+				case SE:
 					if (ch50.roll()) {
 						x++;
 					} else {
 						y--;
 					}
 					break;
-				case 5:
+				case S:
 					if (ch4.roll()) {
 						x += (ch50.roll()) ? 1 : -1;
 					} else {
 						y--;
 					}
 					break;
-				case 6:
+				case SW:
 					if (ch50.roll()) {
 						x--;
 					} else {
 						y--;
 					}
 					break;
-				case 7:
+				case W:
 					if (ch4.roll()) {
 						y += (ch50.roll()) ? 1 : -1;
 					} else {
 						x--;
 					}
 					break;
-				case 8:
+				case NW:
 					if (ch50.roll()) {
 						x--;
 					} else {
@@ -285,10 +279,10 @@ public class World extends Location {
 				}
 				if (ch8.roll()) {
 					// ����� ����������� � ��������� ������������
-					int newDir = dir;
-					while (newDir == dir || Math.abs(newDir - dir) >= 2
-							&& Math.abs(newDir - dir) <= 6) {
-						newDir = Chance.rand(1, 8);
+					Side newDir = dir;
+					while (newDir == dir || Math.abs(Side.side2int(newDir) - Side.side2int(dir)) >= 2
+							&& Math.abs(Side.side2int(newDir) - Side.side2int(dir)) <= 6) {
+						newDir = Side.int2side(Chance.rand(1, 8));
 					}
 					dir = newDir;
 				}

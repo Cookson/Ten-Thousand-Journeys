@@ -1,21 +1,16 @@
 package erpoge;
 
+import java.awt.Point;
+
 import erpoge.terrain.TerrainBasics;
 
 
-public class Coordinate {
-	public int x;
-	public int y;
+public class Coordinate extends Point{
 	public Coordinate(int x, int y) {
-		this.x = x;
-		this.y = y;
+		super(x,y);
 	}
 	public Coordinate(Coordinate c) {
-		this.x = c.x;
-		this.y = c.y;
-	}
-	public int hashCode() {
-		return x*10000+y;
+		super(c.x,c.y);
 	}
 	public boolean equals(Object o) {
 		if (!(o instanceof Coordinate)) {
@@ -51,15 +46,15 @@ public class Coordinate {
 	// ���������� ����� ����� �������
 		return (int)Math.sqrt(Math.pow(this.x-e.x, 2)+Math.pow(this.y-e.y, 2));
 	}
-	public void moveToSide(int side) {
-		if (side == TerrainBasics.SIDE_N) {
-			this.y--;
-		} else if (side == TerrainBasics.SIDE_E) {
-			this.x++;
-		} else if (side == TerrainBasics.SIDE_S) {
-			this.y++;
-		} else if (side == TerrainBasics.SIDE_W) {
-			this.x--;
+	public void moveToSide(Side side, int distance) {
+		if (side == Side.N) {
+			this.y -= distance;
+		} else if (side == Side.E) {
+			this.x += distance;
+		} else if (side == Side.S) {
+			this.y += distance;
+		} else if (side == Side.W) {
+			this.x -= distance;
 		} else {
 			throw new Error("Inappropriate side "+side);
 		}
