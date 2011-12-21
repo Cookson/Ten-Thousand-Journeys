@@ -78,31 +78,6 @@ function getPixel(imageData, x, y) {
 			imageData.data[(x + y * imageData.width) * 4 + 2],
 			imageData.data[(x + y * imageData.width) * 4 + 3] ];
 }
-CanvasRenderingContext2D.prototype.drawFromMatrix = function(matrix) {
-	var h = matrix[0].length;
-	var w = matrix.length;
-	for ( var i = 0; i < w; i++) {
-		for ( var j = 0; j < h; j++) {
-			this.drawImage(tiles[matrix[i][j]], i * 32, j * 32);
-			if (j > 0 && j < h - 1 && matrix[i][j - 1] != matrix[i][j]) {
-				this.applyTransition(getTransition(matrix[i][j - 1], 1, true),
-						i * 32, j * 32);
-			}
-			if (i > 0 && i < w - 1 && matrix[i + 1][j] != matrix[i][j]) {
-				this.applyTransition(getTransition(matrix[i + 1][j], 2, true),
-						i * 32, j * 32);
-			}
-			if (j > 0 && j < h - 1 && matrix[i][j + 1] != matrix[i][j]) {
-				this.applyTransition(getTransition(matrix[i][j + 1], 3, true),
-						i * 32, j * 32);
-			}
-			if (i > 0 && i < w - 1 && matrix[i - 1][j] != matrix[i][j]) {
-				this.applyTransition(getTransition(matrix[i - 1][j], 4, true),
-						i * 32, j * 32);
-			}
-		}
-	}
-};
 CanvasRenderingContext2D.prototype.applyTransition = function(transition) {
 	// Буферный canvas, из которого будет нарисовано изображение в this
 	if (bufCanvas == -1) {
@@ -227,30 +202,6 @@ function getTileSetOnCanvas() {
 			x = 0;
 		}
 	}
-}
-function render() {
-	var time = new Date().getTime();
-	getTileSetOnCanvas();
-	var matrix = [ [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 2, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 2, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 2, 2, 2, 2, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-			[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ] ];
-	var canvas = document.getElementById("canvas").getContext("2d");
-	var canvasData = canvas.getImageData(0, 0, 320, 320);
-	canvas.drawFromMatrix(matrix);
 }
 function Doll(character) {
 	// Кукла персонажа

@@ -894,7 +894,7 @@ UIElementTypes.iconsLoot = {
 			while (this.rootElement.children.length>0) {
 				this.rootElement.removeChild(this.rootElement.children[0]);
 			}
-			var cellItems = matrix[player.x][player.y].items.getValues();
+			var cellItems = Terrain.cells[player.x][player.y].items.getValues();
 			for (var i in cellItems) {
 				lootSlotsNum++;
 				var item = cellItems[i];
@@ -954,9 +954,9 @@ UIElementTypes.iconsLoot = {
 			var item;
 			if (isUnique(typeId)) {
 				var param = this.getData("param");
-				item = matrix[player.x][player.y].items.getUnique(param);
+				item = Terrain.cells[player.x][player.y].items.getUnique(param);
 			} else {
-				item =  matrix[player.x][player.y].items.getPile(typeId);
+				item =  Terrain.cells[player.x][player.y].items.getPile(typeId);
 			}
 			player.sendPickUp(item);
 		},

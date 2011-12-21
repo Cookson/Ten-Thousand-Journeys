@@ -80,13 +80,11 @@ function prepareArea(isWorld) {
 	rendCY=-1;
 	prevRendCX=-1;
 	prevRendCY=-1;
-	matrix = blank2dArray();
-	vertex = blank2dArray();
+	Terrain.cells = blank2dArray();
 	for (var i=0;i<width;i++) { 
 	// Установка вершин и создание ячеек
 		for (var j=0;j<height;j++) { 
-			matrix[i][j] = new MatrixCell(i,j);
-			vertex[i][j] = -1;
+			Terrain.cells[i][j] = new Cell(i,j);
 		}
 	}
 	// Canvas с полом
@@ -104,7 +102,7 @@ function playerClick(x, y, shiftKey) {
 	}
 	var aim;
 	if (
-		(aim = matrix[x][y].character) &&
+		(aim = Terrain.cells[x][y].character) &&
 		player.isEnemy(aim)
 	) {
 	// Если игрок атакует
@@ -115,7 +113,7 @@ function playerClick(x, y, shiftKey) {
 	} else if (player.spellId!=-1) {
 	// Если игрок произносит заклинание
 		var spell=spells[player.spellId];
-		if (!spell.onCell && vertex[x][y] != 3 || spell.onCell && !spell.onOccupiedCell && vertex[x][y]!=-1) {
+		if (!spell.onCell && Terrain.cells[x][y].passability != Terrain.PASS_SEE || spell.onCell && !spell.onOccupiedCell && Terrain.cells[x][y].passability!=Terrain.PASS_FREE) {
 			player.unselectSpell(player.spellId);
 			return false;
 		}
@@ -134,21 +132,21 @@ function playerClick(x, y, shiftKey) {
 			player.spellY=y;
 			player.spellAimId=-1;			
 		}
-	} else if ((aim = matrix[x][y].character) && !player.isEnemy(aim)) {
+	} else if ((aim = Terrain.cells[x][y].character) && !player.isEnemy(aim)) {
 		player.sendStartConversation(aim.characterId);
 	} else if (
-		matrix[x][y].object && isDoor(matrix[x][y].object.type) && 
-		(!isOpenDoor(matrix[x][y].object.type) || shiftKey) && 
+			Terrain.cells[x][y].object && isDoor(Terrain.cells[x][y].object.type) && 
+		(!isOpenDoor(Terrain.cells[x][y].object.type) || shiftKey) && 
 		player.isNear(x,y)
 	) {
 	// Открыть дверь
 		player.sendUseObject(x,y);
-	} else if (matrix[x][y].object && player.isNear(x,y) && isContainer(matrix[x][y].object.type)) {
+	} else if (Terrain.cells[x][y].object && player.isNear(x,y) && isContainer(Terrain.cells[x][y].object.type)) {
 	// Открыть контейнер
 		Global.container.x = x;
 		Global.container.y = y;
 		player.sendOpenContainer();
-	} else if (vertex[x][y]==1 || vertex[x][y]==3) {
+	} else if (Terrain.cells[x][y].passability==Terrain.PASS_BLOCKED || Terrain.cells[x][y].passability==Terrain.PASS_SEE) {
 	// Если игрок идёт к объекту или мобу
 		player.aimcharacter=-1; // Нужно, если игрок идёт
 		player.destX = x;
@@ -157,7 +155,6 @@ function playerClick(x, y, shiftKey) {
 		if (player.comeTo(x,y)) {
 			player.sendMove();
 		} else {
-			console.log("NOES");
 			return;
 		}
 	} else if (UI.mode == UI.MODE_CURSOR_ACTION) {
@@ -213,34 +210,34 @@ function renderView() {
 				var y=startY+j;
 				if (player.seenCells[x][y]!=undefined && !onGlobalMap) {
 					if (isInPlayerVis(x,y) && !isInPlayerPrevVis(x,y)) {
-						if (matrix[x][y].floor==null) {
-							if (matrix[x][y].visible) {
+						if (Terrain.cells[x][y].floor==null) {
+							if (Terrain.cells[x][y].visible) {
 							}
-							matrix[x][y].show();
+							Terrain.cells[x][y].show();
 							shown++;
 						}
-						// matrix[x][y].unshade();
+						// Terrain.cells[x][y].unshade();
 						unshaded++;
 					} else if (!isInPlayerVis(x,y) && isInPlayerPrevVis(x,y)) {
 						// shadedD+=x+", "+y+"(player.visibleCells["+x+"]["+y+"]) -
 						// "+player.visibleCells[x][y]+"\n"
-						matrix[x][y].shade();
+						Terrain.cells[x][y].shade();
 						shaded++;
 					} else if (isInRendRange(x,y) && !isInPrevRendRange(x,y) && prevRendCX!=-1) {
-						matrix[x][y].show();
+						Terrain.cells[x][y].show();
 						shown++;
 						if (player.visibleCells[x][y]==undefined) {
-							matrix[x][y].shade();
+							Terrain.cells[x][y].shade();
 						}
 					}
 				} else if (onGlobalMap && !isInPrevRendRange(x,y) && isInRendRange(x,y)) {
 					// Показать новые
-					matrix[x][y].show();
+					Terrain.cells[x][y].show();
 					shown++;
 				}
 				if (isInPrevRendRange(x,y) && !isInRendRange(x,y) && (player.seenCells[x][y] || onGlobalMap) && prevRendCX!=-1) {
 					// Спрятать старые
-					matrix[x][y].hide();
+					Terrain.cells[x][y].hide();
 					hidden++;
 				}
 			}
@@ -252,8 +249,8 @@ function renderView() {
 	
 }
 function showCell(x,y) {
-	matrix[x][y].hide();
-	setTimeout(function() { matrix[x][y].show(); },500);
+	Terrain.cells[x][y].hide();
+	setTimeout(function() { Terrain.cells[x][y].show(); },500);
 }
 function showSound(x, y, type) {
 	var wrap = document.createElement("div");
@@ -535,10 +532,10 @@ function drawWorldMapFloor(ctx,x,y,floor) {
 // отрисовываются так же, как и на локальной карте)
 	// Получаем типы соседних тайлов или тип этого тайла, если такого соседнего
 	// тайла нет (если этот тайл на границе)
-	var up=(y==0) ? floor : matrix[x][y-1].floor.type;
-	var right=(x==width-1) ? floor : matrix[x+1][y].floor.type;
-	var down=(y==height-1) ? floor : matrix[x][y+1].floor.type;
-	var left=(x==0) ? floor : matrix[x-1][y].floor.type;
+	var up=(y==0) ? floor : Terrain.cells[x][y-1].floor.type;
+	var right=(x==width-1) ? floor : Terrain.cells[x+1][y].floor.type;
+	var down=(y==height-1) ? floor : Terrain.cells[x][y+1].floor.type;
+	var left=(x==0) ? floor : Terrain.cells[x-1][y].floor.type;
 	
 	var tileType="t"+floor+","+up+","+right+","+down+","+left;
 	if (up!=floor || right!=floor || down!=floor || left!=floor) {
@@ -626,7 +623,7 @@ function readWorld(data) {
 	}
 	
 	for (var num=0;num<contents.length;num++) {
-		matrix[x][y].floor = new Floor(x,y,contents[num][0]);
+		Terrain.cells[x][y].floor = new Floor(x,y,contents[num][0]);
 		x++;
 		if (x==width) {
 			x=0;
@@ -638,16 +635,16 @@ function readWorld(data) {
 	y=0;
 	for (var num=0;num<contents.length;num++) {
 		// (пол создавался выше)
-		matrix[x][y].floor.show();
+		Terrain.cells[x][y].floor.show();
 		if (contents[x+y*width][1]==901) {
 			new WorldObject(x,y,901);
 		} else if (contents[x+y*width][1] != 0) {
 		// Лес
 			if (contents[x+y*width][1]==900) {
-				matrix[x][y].forest = new Forest(x,y,900);
+				Terrain.cells[x][y].forest = new Forest(x,y,900);
 			} else if (contents[x+y*width][1]==903) {
 				new Wall(x,y,903);
-				matrix[x][y].wall.show();
+				Terrain.cells[x][y].wall.show();
 			} else if (contents[x+y*width][1]==904) {
 				new WorldObject(x,y,904);
 			}
@@ -656,29 +653,29 @@ function readWorld(data) {
 		var isRoad = contents[x+y*width][2] > 0;
 		if (isRiver) {
 		// Река
-			matrix[x][y].path = new Path(x,y,21);
+			Terrain.cells[x][y].path = new Path(x,y,21);
 		} else if (isRoad) {
 		// Дорога
-			matrix[x][y].path = new Path(x,y,31);
+			Terrain.cells[x][y].path = new Path(x,y,31);
 		}
 		if (isRiver || isRoad) {
-			if (x-1>=0 && matrix[x-1][y].wall) {
-				matrix[x-1][y].wall.hide(); matrix[x-1][y].wall.show();
+			if (x-1>=0 && Terrain.cells[x-1][y].wall) {
+				Terrain.cells[x-1][y].wall.hide(); Terrain.cells[x-1][y].wall.show();
 			}
-			if (x+1<width && matrix[x+1][y].wall) { 
-				matrix[x+1][y].wall.hide(); matrix[x+1][y].wall.show(); 
+			if (x+1<width && Terrain.cells[x+1][y].wall) { 
+				Terrain.cells[x+1][y].wall.hide(); Terrain.cells[x+1][y].wall.show(); 
 			}
-			if (y+1<height && matrix[x][y+1].wall) { 
-				matrix[x][y+1].wall.hide(); matrix[x][y+1].wall.show();
+			if (y+1<height && Terrain.cells[x][y+1].wall) { 
+				Terrain.cells[x][y+1].wall.hide(); Terrain.cells[x][y+1].wall.show();
 			}
-			if (y-1>=0 && matrix[x][y-1].wall) { 
-				matrix[x][y-1].wall.hide(); matrix[x][y-1].wall.show();
+			if (y-1>=0 && Terrain.cells[x][y-1].wall) { 
+				Terrain.cells[x][y-1].wall.hide(); Terrain.cells[x][y-1].wall.show();
 			}
 		}
 		if (contents[x+y*width][3]!=0) {
 			for (var i=0;i<contents[x+y*width][3].length;i++) {
 				new WorldObject(x,y,contents[x+y*width][3][i]);
-				matrix[x][y].object.show();
+				Terrain.cells[x][y].object.show();
 			}
 		}
 		x++;
@@ -733,7 +730,7 @@ function readLocation(data) {
 	var cell;
 	for (var num=0;num<contents.length;num++) {
 		cell = contents[x+y*width];
-		matrix[x][y].floor = new Floor(x,y,contents[num][0]);
+		Terrain.cells[x][y].floor = new Floor(x,y,contents[num][0]);
 		if (cell[1]!=0) {
 			if (isWall(cell[1])) {
 				new Wall(x, y, cell[1]);					
@@ -747,10 +744,10 @@ function readLocation(data) {
 				var param = cell[2][i][1];
 				if (isUnique(typeId)) {
 				// Здесь нужно именно так, чтобы не вызывалось отображение добавляемого предмета
-					matrix[x][y].addItemWithoutShowing(new UniqueItem(typeId, param));
+					Terrain.cells[x][y].addItemWithoutShowing(new UniqueItem(typeId, param));
 				} else {
 				// Здесь нужно именно так, чтобы не вызывалось отображение добавляемого предмета
-					matrix[x][y].addItemWithoutShowing(new ItemPile(typeId, param));
+					Terrain.cells[x][y].addItemWithoutShowing(new ItemPile(typeId, param));
 				}
 			}
 		}
@@ -759,6 +756,7 @@ function readLocation(data) {
 			x=0;
 			y++;
 		}
+		
 	}
 	// Read sounds
 	if (data.s) {

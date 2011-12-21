@@ -8,10 +8,10 @@
 	this.x=x;
 	this.y=y;
 	if (areaId!==null) {
-		vertex[x][y]=3;
+		Terrain.cells[x][y].passability=Terrain.PASS_SEE;
 	}
 	this.isClientPlayer = isClientPlayer;
-	matrix[x][y].character = this;
+	Terrain.cells[x][y].character = this;
 	this.characterId=id;
 	this.destX=this.x;
 	this.destY=this.y;
@@ -169,7 +169,7 @@ Character.prototype.canSee = function (x, y, setVisibleCells, test) {
 		// Для вертикальных линий
 			var dy=Math.abs(y-this.y)/(y-this.y);
 			for (var i=this.y+dy;i!=y;i+=dy) {
-				if (vertex[x][i] == 1) {
+				if (Terrain.cells[x][i].passability == Terrain.PASS_BLOCKED) {
 					return false;
 				}
 			}
@@ -177,7 +177,7 @@ Character.prototype.canSee = function (x, y, setVisibleCells, test) {
 		// Для горизонтальных линий
 			var dx=Math.abs(x-this.x)/(x-this.x);
 			for (var i=this.x+dx;i!=x;i+=dx) {
-				if (vertex[i][y]==1) {
+				if (Terrain.cells[i][y].passability == Terrain.PASS_BLOCKED) {
 					return false;
 				}
 			}
@@ -191,7 +191,7 @@ Character.prototype.canSee = function (x, y, setVisibleCells, test) {
 		var yMin=Math.min(y,this.y);
 		var yMax=Math.max(y,this.y);
 		for (var i=yMin+1;i<yMax;i++) {
-			if (vertex[x][i]==1) {
+			if (Terrain.cells[x][i].passability==Terrain.PASS_BLOCKED) {
 				break;
 			}
 			if (i==yMax-1) {
@@ -202,7 +202,7 @@ Character.prototype.canSee = function (x, y, setVisibleCells, test) {
 			}
 		}
 		for (var i=yMin+1;i<yMax;i++) {
-			if (vertex[this.x][i]==1) {
+			if (Terrain.cells[this.x][i].passability==Terrain.PASS_BLOCKED) {
 				break;
 			}
 			if (i==yMax-1) {
@@ -218,7 +218,7 @@ Character.prototype.canSee = function (x, y, setVisibleCells, test) {
 		var xMin=Math.min(x,this.x);
 		var xMax=Math.max(x,this.x);
 		for (var i=xMin+1;i<xMax;i++) {
-			if (vertex[i][y]==1) {
+			if (Terrain.cells[i][y].passability==Terrain.PASS_BLOCKED) {
 				break;
 			}
 			if (i==xMax-1) {
@@ -229,7 +229,7 @@ Character.prototype.canSee = function (x, y, setVisibleCells, test) {
 			}
 		}
 		for (var i=xMin+1;i<xMax;i++) {
-			if (vertex[i][this.y]==1) {
+			if (Terrain.cells[i][this.y].passability==Terrain.PASS_BLOCKED) {
 				break;
 			}
 			if (i==xMax-1) {
@@ -251,7 +251,7 @@ Character.prototype.canSee = function (x, y, setVisibleCells, test) {
 		for (var i=1;i<dMax;i++) {
 			cx+=dx;
 			cy+=dy;
-			if (vertex[cx][cy]==1) {
+			if (Terrain.cells[cx][cy].passability==Terrain.PASS_BLOCKED) {
 				return false;
 			}
 			
@@ -298,7 +298,7 @@ Character.prototype.canSee = function (x, y, setVisibleCells, test) {
 					/* */ // Здесь x|yPoint - глобальные переменные. Пофиксить.
 					xPoint=rays[i][0];
 					yPoint=rays[i][1];
-					if (vertex[xPoint][yPoint]==1) {
+					if (Terrain.cells[xPoint][yPoint].passability==Terrain.PASS_BLOCKED) {
 					// Проверяем каждую клетку
 						if (xPoint==this.x && yPoint==this.y || xPoint==x && yPoint==y) {
 							continue;
@@ -378,7 +378,7 @@ Character.prototype.damage=function(dmg) {
 };
 Character.prototype.showDeath = function() {
 	this.cellWrap.parentNode.removeChild(this.cellWrap);
-	vertex[this.x][this.y]=-1;
+	Terrain.cells[this.x][this.y].passability=Terrain.PASS_FREE;
 	if (this === player) {
 		UI.notify("death");
 		var nlEffects=document.getElementById("effectsList").children;
@@ -386,7 +386,7 @@ Character.prototype.showDeath = function() {
 			nlEffects[0].parentNode.removeChild(nlEffects[0]);
 		}
 	}
-	matrix[this.x][this.y].character = undefined;
+	Terrain.cells[this.x][this.y].character = undefined;
 	delete characters[this.characterId];
 	handleNextEvent();
 };
@@ -496,68 +496,11 @@ Character.prototype.getVisibleCells=function() {
 			this.canSee(i,j,true);
 		}
 	}
-//	var R=this.VISION_RANGE; 
-//	var d=-R/2;
-//	var xCoord=0;
-//	var yCoord=R;
-//	var x=[0];
-//	var y=[R];
-//	var circle=[];
-//	do {
-//	// Получаем дугу
-//		if (d<0) {
-//			xCoord+=1;
-//			d+=xCoord;
-//		} else {
-//			yCoord-=1;
-//			d-=yCoord;
-//		}
-//		x.push(xCoord);
-//		y.push(yCoord);
-//	} while (yCoord>0);
-//	for (var i=0;i<x.length;i++) {
-//	// Для каждой точки полученной дуги
-//		for (var j=0;j<4;j++) {
-//		// Проверяем на видмость соответствующие точки с четырёх сторон от центра окружности
-//		// И получаем окружность с поправкой на то, что некоторые клетки могут быть вне игрового поля
-//			var a=this.x+((j%2==1)?x[i]:-x[i]);
-//			var b=this.y+((j<2)?y[i]:-y[i]);
-//			// a,b - координаты x,y
-//			a=(a>=0)?((a<width)?a:width-1):0;
-//			b=(b>=0)?((b<height)?b:height-1):0;
-//			circle.push(getNum(a,b));
-//			this.canSee(a,b,true);
-////			matrix[a][b].hide()
-//		}
-//	}
-//	var start=getNum(this.x,this.y)-R-width*R; // Левая верхняя клетка в формате num
-//	var t=0;
-//	for (var i=1;i<R*2;i++)  {
-//	// Проходим по квадрату из клеток со стороной 2*R-1, начиная от start
-//		var st=false; // Флаг начала линии
-//		for (var j=0;j<=R*2;j++)  {
-//			var c=start+j+i*width; // Текущая клетка
-//			if (!st) {
-//				if (circle.indexOf(c)!=-1 && circle.indexOf(c+1)==-1) {
-//				// Если клетка на текущей линии - одна из образующих круг, 
-//				// то начинаем расчёт видимости для нескольких подряд идущих клеток на этой линии
-//					st=true;
-//				} 
-//			} else {
-//				if (circle.indexOf(c)!=-1) {
-//					break;
-//				} else {
-//					this.canSee(getX(c),getY(c),true);
-//					t++;
-//				}
-//			}
-//		}	
-//	}
 };
 Character.prototype.getPathTable=function(ignorecharacters) {
 // Получает таблицу путей по волновому алгоритму
 	// Отключено для возможности использования объектов
-	// if (vertex[this.destX][this.destY]==1) {
+	// if (Terrain.cells[this.destX][this.destY].passability==Terrain.PASS_BLOCKED) {
 		// this.destX=this.x;
 		// this.destY=this.y;
 	// }
@@ -568,7 +511,6 @@ Character.prototype.getPathTable=function(ignorecharacters) {
 	var oldFront=[];
 	var newFront=[];
 	newFront[0]={x:this.x,y:this.y}; // От какой  клетки начинать отсчёт; было так: newFront[0]=[this.coord];
-//	this.pathTable=blank2dArray();
 	for (var i=0;i<height;i++) {
 		this.pathTable[i]=[];
 	}
@@ -590,13 +532,13 @@ Character.prototype.getPathTable=function(ignorecharacters) {
 				var thisNumX=adjactentX[j];
 				var thisNumY=adjactentY[j];
 				
-				if (thisNumX<0 || thisNumX>=width || thisNumY<0 && thisNumY>=height || this.pathTable[thisNumX][thisNumY]!=undefined) {
+				if (thisNumX<0 || thisNumX>=width || thisNumY<0 || thisNumY>=height || this.pathTable[thisNumX][thisNumY]!=undefined) {
 					continue;
 				}
 				if (thisNumX==this.destX && thisNumY==this.destY) {
 					isPathFound = null;
 				}
-				if (vertex[thisNumX][thisNumY]!=1 && vertex[thisNumX][thisNumY]!=3 || matrix[thisNumX][thisNumY].object && isDoor(matrix[thisNumX][thisNumY].object.type)/* */ /* && this.seenCells[thisNumX][thisNumY]!=undefined */) {
+				if (Terrain.cells[thisNumX][thisNumY].passability!=Terrain.PASS_BLOCKED && Terrain.cells[thisNumX][thisNumY].passability!=Terrain.PASS_SEE || Terrain.cells[thisNumX][thisNumY].object && isDoor(Terrain.cells[thisNumX][thisNumY].object.type)/* */ /* && this.seenCells[thisNumX][thisNumY]!=undefined */) {
 					this.pathTable[thisNumX][thisNumY]=t+1;
 					newFront[newFront.length]={x:thisNumX,y:thisNumY};
 				}
@@ -659,7 +601,7 @@ Character.prototype.comeTo=function(x,y) {
 	for (var i=0;i<8 && !allPathsAreAvailable;i++) {
 		this.destX=dists[i*2];
 		this.destY=dists[i*2+1];
-		if (vertex[this.destX][this.destY]!=-1) {
+		if (Terrain.cells[this.destX][this.destY].passability!=Terrain.PASS_FREE) {
 			continue;
 		}
 		var allPathsAreAvailable=true;
@@ -808,14 +750,14 @@ Character.prototype.sendMove=function() {
 	if (this.x!=this.destX || this.y!=this.destY) {
 		this.getPathTable();
 //		if (
-//			vertex[this.destX][this.destY]!=-1 && 
-//			!(vertex[this.destX][this.destY]==3 && !this.canSee(this.destX, this.destY))
+//			Terrain.cells[this.destX][this.destY].passability!=Terrain.PASS_FREE && 
+//			!(Terrain.cells[this.destX][this.destY].passability==Terrain.PASS_SEE && !this.canSee(this.destX, this.destY))
 //		) {
 //		// Если клетка не свободна и там не находится персонаж, которого этот не может видеть
 //			this.destX=this.x;
 //			this.destY=this.y;
 //		}
-		vertex[this.x][this.y]=-1;
+		Terrain.cells[this.x][this.y].passability=Terrain.PASS_FREE;
 		if (this.isClientPlayer) {
 		// Для игрока
 //			CellCursor.prototype.hideAllCursors();
@@ -833,7 +775,7 @@ Character.prototype.sendMove=function() {
 			}
 			var nextCellX=path[0].x; 
 			var nextCellY=path[0].y;
-			if (vertex[nextCellX][nextCellY]==1 && matrix[nextCellX][nextCellY].object && isDoor(matrix[nextCellX][nextCellY].object.type)) {
+			if (Terrain.cells[nextCellX][nextCellY].passability==Terrain.PASS_BLOCKED && Terrain.cells[nextCellX][nextCellY].object && isDoor(Terrain.cells[nextCellX][nextCellY].object.type)) {
 				player.addActionToQueue(player.sendMove);
 				this.sendUseObject(nextCellX, nextCellY);
 				return true;
@@ -892,7 +834,7 @@ Character.prototype.sendMove=function() {
 					animationsLeft--;
 					character.x=character.destX;
 					character.y=character.destY;
-					vertex[character.x][character.y]=3;
+					Terrain.cells[character.x][character.y].passability=Terrain.PASS_SEE;
 					setTimeout(function() {
 						tryRefreshingInterval();
 					},10);
@@ -907,7 +849,7 @@ Character.prototype.sendMove=function() {
 				// }
 				this.x=this.destX;
 				this.y=this.destY;
-				vertex[this.x][this.y]=3;
+				Terrain.cells[this.x][this.y].passability=Terrain.PASS_SEE;
 				setTimeout(function() {
 					tryRefreshingInterval();
 				},10);
@@ -919,8 +861,8 @@ Character.prototype.sendMove=function() {
 Character.prototype.showMove = function(nextCellX, nextCellY) {
 	var top = 0;
 	var left = 0;
-	matrix[this.x][this.y].character = undefined;
-	vertex[this.x][this.y] = 0;
+	Terrain.cells[this.x][this.y].character = undefined;
+	Terrain.cells[this.x][this.y].passability = Terrain.PASS_FREE;
 	
 	if (this.y-nextCellY==1) {
 		top=-32;
@@ -942,8 +884,8 @@ Character.prototype.showMove = function(nextCellX, nextCellY) {
 			moveGameField(this.x, this.y);
 			this.x=nextCellX; 
 			this.y=nextCellY;
-			vertex[this.x][this.y] = 3;
-			matrix[this.x][this.y].character = this;
+			Terrain.cells[this.x][this.y].passability = Terrain.PASS_SEE;
+			Terrain.cells[this.x][this.y].character = this;
 			renderView();
 		});
 	} else {
@@ -952,8 +894,8 @@ Character.prototype.showMove = function(nextCellX, nextCellY) {
 		this.cellWrap.style.zIndex = this.y*2 + 2;
 		this.x = nextCellX; 
 		this.y = nextCellY;
-		vertex[this.x][this.y] = 3;
-		matrix[this.x][this.y].character = this;
+		Terrain.cells[this.x][this.y].passability = Terrain.PASS_SEE;
+		Terrain.cells[this.x][this.y].character = this;
 		if (this.visible && !player.visibleCells[this.x][this.y]) {
 			this.hideModel();
 		} else if (!this.visible && player.visibleCells[this.x][this.y]) {
@@ -1420,7 +1362,7 @@ Character.prototype.showVisibleCells = function() {
 //	for (var i=0;i<width;i++) {
 //		for (var j=0;j<height;j++) {
 //			if (!this.visibleCells[i][j]) {
-//				matrix[i][j].shade();
+//				Terrain.cells[i][j].shade();
 //			}
 //		}
 //	}
@@ -1434,13 +1376,13 @@ Character.prototype.updateVisibility = function() {
 		for (var j=0;j<height;j++) {
 			if (this.visibleCells[i][j] && !this.prevVisibleCells[i][j]) {
 				if (this.seenCells[i][j]) {
-					matrix[i][j].unshade();
+					Terrain.cells[i][j].unshade();
 				} else {
 					this.seenCells[i][j] = true;
-					matrix[i][j].show();
+					Terrain.cells[i][j].show();
 				}
 			} else if (this.prevVisibleCells[i][j] && !this.visibleCells[i][j]) {
-				matrix[i][j].shade();
+				Terrain.cells[i][j].shade();
 			}
 		}
 	}
@@ -1450,7 +1392,7 @@ Character.prototype.initVisibility = function() {
 	for (var i=0;i<width;i++) {
 		for (var j=0;j<height;j++) {
 			if (this.visibleCells[i][j]) {
-				matrix[i][j].show();
+				Terrain.cells[i][j].show();
 				this.seenCells[i][j] = true;
 			}
 		}
@@ -1458,10 +1400,10 @@ Character.prototype.initVisibility = function() {
 	if (isLocationPeaceful) {
 		for (var i=0;i<width;i++) {
 			for (var j=0;j<height;j++) {
-				if (!matrix[i][j].visible) {
+				if (!Terrain.cells[i][j].visible) {
 					player.seenCells[i][j] = true;
 					player.visibleCells[i][j] = true;
-					matrix[i][j].show();
+					Terrain.cells[i][j].show();
 				}
 			}
 		}

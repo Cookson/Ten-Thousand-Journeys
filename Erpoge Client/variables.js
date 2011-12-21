@@ -36,13 +36,16 @@ Global = {
 	playerLogin: null,
 	playerPassword: null	
 };
-// var qaToSet=false;
-// var isOnUserSelectImg=false;
-// var worldLoadProcess="";
-// var worldLoading=0;
-// var worldLoadingStart=0;
+Terrain = {
+// Passability constants
+	PASS_FREE    : -1,
+	PASS_BLOCKED :  1,
+	PASS_SEE     :  3,
+	
+	cells : null
+};
 // Переменные соединения
-var servers=[[]]; // Список всех серверов с логинами и паролями к персонажу на них, берётся из кук
+var servers=[[]]; // Список всех серверов с логинами и паролями к персонажу на них, берётся из localStorage
 var session="";
 var currentCharacterId=0; // Id текущего персонажа. Используется в функциях чтения ответа сервера, в которых не указан действующий персонаж
 
@@ -65,8 +68,6 @@ var effectData=[]; // Сюда функции эффектов сохраняю�
 var width=0;
 var height=0;
 var areaId=null;
-var vertex=[];
-var matrix=[];
 var rendW=0;
 var rendH=0;
 var rendCX=-1;

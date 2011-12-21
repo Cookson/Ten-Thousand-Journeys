@@ -144,9 +144,9 @@ function handleNextEvent() {
 			throw new Error("Item appear on global map!");
 		} else {
 			if (isUnique(value.typeId)) {
-				matrix[value.x][value.y].addItem(new UniqueItem(value.typeId, value.param));
+				Terrain.cells[value.x][value.y].addItem(new UniqueItem(value.typeId, value.param));
 			} else {
-				matrix[value.x][value.y].addItem(new ItemPile(value.typeId, value.param));
+				Terrain.cells[value.x][value.y].addItem(new ItemPile(value.typeId, value.param));
 			}				
 		}
 		handleNextEvent();
@@ -155,7 +155,7 @@ function handleNextEvent() {
 		if (onGlobalMap) {
 			throw new Error("Item appear on global map!");
 		} else {
-			matrix[value.x][value.y].removeItem(value.typeId, value.param);
+			Terrain.cells[value.x][value.y].removeItem(value.typeId, value.param);
 			if (value.x == player.x && value.y == player.y) {
 				player.showLoot();
 			}
@@ -198,7 +198,7 @@ function handleNextEvent() {
 		handleNextEvent();
 		break;
 	case "objectDisappear":
-		matrix[value.x][value.y].object.remove();
+		Terrain.cells[value.x][value.y].object.remove();
 		player.updateVisibility();
 		handleNextEvent();
 		break;	
@@ -229,7 +229,7 @@ function handleNextEvent() {
 		handleNextEvent();
 		break;
 	case "soundSourceDisappear":
-		matrix[value.x][value.y].soundSource.remove();
+		Terrain.cells[value.x][value.y].soundSource.remove();
 		handleNextEvent();
 		break;
 	case "dialoguePoint":

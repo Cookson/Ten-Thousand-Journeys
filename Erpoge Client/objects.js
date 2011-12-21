@@ -1,5 +1,5 @@
-﻿function MatrixCell(x, y) {
-	// Ячейка массива matrix, содержащего модели объектов, предметов и стен
+﻿function Cell(x, y) {
+	// Ячейка массива клеток, содержащего модели объектов, предметов и стен
 	// Свойства ячейки области
 	this.wall;
 	this.object;
@@ -10,6 +10,7 @@
 	this.x = x;
 	this.y = y;
 	this.visible = false;
+	this.passability = Terrain.PASS_FREE;
 	if (onGlobalMap) {
 		this.worldPlayers = [];
 	}
@@ -158,7 +159,7 @@
 }
 function CellItemImage(cell, item) {
 	this.item = item;
-	this.cell = matrix[cell.x][cell.y];
+	this.cell = Terrain.cells[cell.x][cell.y];
 	this.image = null;
 	this.show = function() {
 		this.image = document.createElement("img");
@@ -194,59 +195,59 @@ function Wall(x, y, type) {
 	this.doorSides = []; // Когда стена граничит с дверью, создаются
 	// дополнительные изображения для сторон стены, с
 	// которых находятся двери
-	vertex[x][y] = objectProperties[type][2];
+	Terrain.cells[x][y].passability = objectProperties[type][2];
 	this.show = function() {
 		var postfix = "";
 		var x = this.x;
 		var y = this.y;
-		if (y>0&&matrix[x][y-1].object&&isDoor(matrix[x][y-1].object.type)
-				&&( !matrix[x][y-2].floor||matrix[x][y-1].wall)) {
+		if (y>0&&Terrain.cells[x][y-1].object&&isDoor(Terrain.cells[x][y-1].object.type)
+				&&( !Terrain.cells[x][y-2].floor||Terrain.cells[x][y-1].wall)) {
 			this.newDoorSide(0);
 		}
-		if (x<width-1&&matrix[x+1][y].object
-				&&isDoor(matrix[x+1][y].object.type)
-				&&( !matrix[x+2][y].floor||matrix[x+2][y].wall)) {
+		if (x<width-1&&Terrain.cells[x+1][y].object
+				&&isDoor(Terrain.cells[x+1][y].object.type)
+				&&( !Terrain.cells[x+2][y].floor||Terrain.cells[x+2][y].wall)) {
 			this.newDoorSide(1);
 		}
-		if (y<height-1&&matrix[x][y+1].object
-				&&isDoor(matrix[x][y+1].object.type)
-				&&( !matrix[x][y+2].floor||matrix[x][y+2].wall)) {
+		if (y<height-1&&Terrain.cells[x][y+1].object
+				&&isDoor(Terrain.cells[x][y+1].object.type)
+				&&( !Terrain.cells[x][y+2].floor||Terrain.cells[x][y+2].wall)) {
 			this.newDoorSide(2);
 		}
-		if (x>0&&matrix[x-1][y].object&&isDoor(matrix[x-1][y].object.type)
-				&&( !matrix[x-2][y].floor||matrix[x-2][y].wall)) {
+		if (x>0&&Terrain.cells[x-1][y].object&&isDoor(Terrain.cells[x-1][y].object.type)
+				&&( !Terrain.cells[x-2][y].floor||Terrain.cells[x-2][y].wall)) {
 			this.newDoorSide(3);
 		}
 		
-		postfix += (y>0&&(matrix[x][y-1].wall && 
-				(!wallConnectsOnlyWithItself(matrix[x][y-1].wall.type) &&
-				!wallConnectsOnlyWithItself(matrix[x][y].wall.type) || 
-					wallConnectsOnlyWithItself(matrix[x][y].wall.type) && 
-					matrix[x][y-1].wall.type==matrix[x][y].wall.type) ||
+		postfix += (y>0&&(Terrain.cells[x][y-1].wall && 
+				(!wallConnectsOnlyWithItself(Terrain.cells[x][y-1].wall.type) &&
+				!wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) || 
+					wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) && 
+					Terrain.cells[x][y-1].wall.type==Terrain.cells[x][y].wall.type) ||
 				this.doorSides[0])
 		// !player.canSee(x,y-1)
 		) ? "1" : "0";
-		postfix += (x<width-1&&(matrix[x+1][y].wall
-				&& (!wallConnectsOnlyWithItself(matrix[x+1][y].wall.type) &&
-				!wallConnectsOnlyWithItself(matrix[x][y].wall.type)	|| 
-					wallConnectsOnlyWithItself(matrix[x][y].wall.type) && 
-					matrix[x+1][y].wall.type==matrix[x][y].wall.type) ||
+		postfix += (x<width-1&&(Terrain.cells[x+1][y].wall
+				&& (!wallConnectsOnlyWithItself(Terrain.cells[x+1][y].wall.type) &&
+				!wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type)	|| 
+					wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) && 
+					Terrain.cells[x+1][y].wall.type==Terrain.cells[x][y].wall.type) ||
 				this.doorSides[1]) 
 				//!player.canSee(x+1,y)
 				) ? "1" : "0";
-		postfix += (y<height-1&&(matrix[x][y+1].wall
-				&& (!wallConnectsOnlyWithItself(matrix[x][y+1].wall.type) &&
-				!wallConnectsOnlyWithItself(matrix[x][y].wall.type) || 
-					wallConnectsOnlyWithItself(matrix[x][y].wall.type) && 
-					matrix[x][y+1].wall.type == matrix[x][y].wall.type)||
+		postfix += (y<height-1&&(Terrain.cells[x][y+1].wall
+				&& (!wallConnectsOnlyWithItself(Terrain.cells[x][y+1].wall.type) &&
+				!wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) || 
+					wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) && 
+					Terrain.cells[x][y+1].wall.type == Terrain.cells[x][y].wall.type)||
 				this.doorSides[2])
 				// !player.canSee(x,y+1)
 				) ? "1" : "0";
-		postfix += (x>0&&(matrix[x-1][y].wall
-				&& (!wallConnectsOnlyWithItself(matrix[x-1][y].wall.type) &&
-					!wallConnectsOnlyWithItself(matrix[x][y].wall.type) || 
-					wallConnectsOnlyWithItself(matrix[x][y].wall.type) && 
-					matrix[x-1][y].wall.type == matrix[x][y].wall.type) ||
+		postfix += (x>0&&(Terrain.cells[x-1][y].wall
+				&& (!wallConnectsOnlyWithItself(Terrain.cells[x-1][y].wall.type) &&
+					!wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) || 
+					wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) && 
+					Terrain.cells[x-1][y].wall.type == Terrain.cells[x][y].wall.type) ||
 				this.doorSides[3])
 				// !player.canSee(x-1,y)
 				) ? "1" : "0";
@@ -288,16 +289,16 @@ function Wall(x, y, type) {
 	};
 	this.remove = function() {
 		this.hide();
-		vertex[this.x][this.y] = -1;
-		delete matrix[this.x][this.y].wall;
-		delete matrix[this.x][this.y].object;
+		Terrain.cells[this.x][this.y].passability = Terrain.PASS_FREE;
+		delete Terrain.cells[this.x][this.y].wall;
+		delete Terrain.cells[this.x][this.y].object;
 		var sides = [0, -1, 1, 0, 0, 1, -1, 0];
 		for ( var i = 0; i<sides.length/2; i++ ) {
 			var nx = this.x+sides[i*2];
 			var ny = this.y+sides[i*2+1];
-			if (matrix[nx][ny].wall&&matrix[nx][ny].visible) {
-				matrix[nx][ny].wall.hide();
-				matrix[nx][ny].wall.show();
+			if (Terrain.cells[nx][ny].wall&&Terrain.cells[nx][ny].visible) {
+				Terrain.cells[nx][ny].wall.hide();
+				Terrain.cells[nx][ny].wall.show();
 			}
 		}
 	};
@@ -328,8 +329,8 @@ function Wall(x, y, type) {
 			this.doorSides[i].style.opacity = "1";
 		}
 	};
-	matrix[x][y].wall = this;
-	matrix[x][y].object = this;
+	Terrain.cells[x][y].wall = this;
+	Terrain.cells[x][y].object = this;
 }
 function Floor(x, y, type) {
 	this.type = type;
@@ -355,26 +356,26 @@ function Floor(x, y, type) {
 		} else {
 
 		}
-		if (x+1<width&&matrix[x+1][y].floor.type!=this.type||x-1>0
-				&&matrix[x-1][y].floor.type!=this.type||y+1<height
-				&&matrix[x][y+1].floor.type!=this.type||y-1>0
-				&&matrix[x][y-1].floor.type!=this.type) {
+		if (x+1<width&&Terrain.cells[x+1][y].floor.type!=this.type||x-1>0
+				&&Terrain.cells[x-1][y].floor.type!=this.type||y+1<height
+				&&Terrain.cells[x][y+1].floor.type!=this.type||y-1>0
+				&&Terrain.cells[x][y-1].floor.type!=this.type) {
 			// Если этот тайл граничит с тайлом другого типа
 
 			// Получаем типы соседних тайлов или тип этого тайла, если такого
 			// соседнего тайла нет (если этот тайл на границе)
 			var up = (y==0) ? this.type
-					: (matrix[x][y-1].floor==null||matrix[x][y-1].wall) ? this.type
-							: matrix[x][y-1].floor.type;
+					: (Terrain.cells[x][y-1].floor==null||Terrain.cells[x][y-1].wall) ? this.type
+							: Terrain.cells[x][y-1].floor.type;
 			var right = (x==width-1) ? this.type
-					: (matrix[x+1][y].floor==null||matrix[x+1][y].wall) ? this.type
-							: matrix[x+1][y].floor.type;
+					: (Terrain.cells[x+1][y].floor==null||Terrain.cells[x+1][y].wall) ? this.type
+							: Terrain.cells[x+1][y].floor.type;
 			var down = (y==height-1) ? this.type
-					: (matrix[x][y+1].floor==null||matrix[x][y+1].wall) ? this.type
-							: matrix[x][y+1].floor.type;
+					: (Terrain.cells[x][y+1].floor==null||Terrain.cells[x][y+1].wall) ? this.type
+							: Terrain.cells[x][y+1].floor.type;
 			var left = (x==0) ? this.type
-					: (matrix[x-1][y].floor==null||matrix[x-1][y].wall) ? this.type
-							: matrix[x-1][y].floor.type;
+					: (Terrain.cells[x-1][y].floor==null||Terrain.cells[x-1][y].wall) ? this.type
+							: Terrain.cells[x-1][y].floor.type;
 
 			var tileType = "t"+this.type+","+up+","+right+","+down+","+left;
 			if (floorImages[tileType]!==undefined) {
@@ -532,15 +533,15 @@ function GameObject(x, y, type) {
 	this.y = y;
 	this.image = null;
 	this.mod = -1;
-	vertex[this.x][this.y] = objectProperties[type][2];
+	Terrain.cells[this.x][this.y].passability = objectProperties[type][2];
 	this.show = function() {
 		if (this.image==null) {
 			this.image = document.createElement("img");
 			this.y *= 1; /* */// Здесь this.y оказывается сторокой,
 			// разобраться
 			var vertical = isDoor(this.type)
-					&&(1+this.y<width&&matrix[this.x][1+this.y].wall
-							&&this.y-1>0&&matrix[this.x][this.y-1].wall);
+					&&(1+this.y<width&&Terrain.cells[this.x][1+this.y].wall
+							&&this.y-1>0&&Terrain.cells[this.x][this.y-1].wall);
 			this.image.style.position = "absolute";
 			this.image.style.top = +"px";
 			this.image.style.left = +"px";
@@ -565,8 +566,8 @@ function GameObject(x, y, type) {
 	};
 	this.remove = function() {
 		this.hide();
-		matrix[this.x][this.y].object = null;
-		vertex[this.x][this.y] = -1;
+		Terrain.cells[this.x][this.y].object = null;
+		Terrain.cells[this.x][this.y].passability = Terrain.PASS_FREE;
 	};
 	this.shade = function() {
 		this.image.style.opacity = "0.5";
@@ -577,7 +578,7 @@ function GameObject(x, y, type) {
 	this.unshade = function() {
 		this.image.style.opacity = "1";
 	};
-	matrix[x][y].object = this;
+	Terrain.cells[x][y].object = this;
 }
 function Forest(x, y, type) {
 	this.type = type;
@@ -588,13 +589,13 @@ function Forest(x, y, type) {
 		var postfix = "";
 		var x = this.x;
 		var y = this.y;
-		if (matrix[x][y].path) {
+		if (Terrain.cells[x][y].path) {
 			// Особый спрайт леса выбирается в том случае, если на той же клетке
 			// есть река
-			postfix += (y>0&&matrix[x][y-1].path) ? "1" : "0";
-			postfix += (x<width-1&&matrix[x+1][y].path) ? "1" : "0";
-			postfix += (y<height-1&&matrix[x][y+1].path) ? "1" : "0";
-			postfix += (x>0&&matrix[x-1][y].path) ? "1" : "0";
+			postfix += (y>0&&Terrain.cells[x][y-1].path) ? "1" : "0";
+			postfix += (x<width-1&&Terrain.cells[x+1][y].path) ? "1" : "0";
+			postfix += (y<height-1&&Terrain.cells[x][y+1].path) ? "1" : "0";
+			postfix += (x>0&&Terrain.cells[x-1][y].path) ? "1" : "0";
 		} else {
 			// Иначе используется обычный спрайт
 			postfix = "0000";
@@ -617,8 +618,8 @@ function Forest(x, y, type) {
 	};
 	this.remove = function() {
 		this.hide();
-		vertex[this.x][this.y] = -1;
-		matrix[this.x][this.y].wall = null;
+		Terrain.cells[this.x][this.y].passability = Terrain.PASS_FREE;
+		Terrain.cells[this.x][this.y].wall = null;
 	};
 	this.shade = function() {
 		this.image.getElementsByTagName("img")[0].style.opacity = "0.5";
@@ -639,13 +640,13 @@ function Path(x, y, type) {
 		var postfix = "";
 		var x = this.x;
 		var y = this.y;
-		postfix += (y>0&&matrix[x][y-1].path&&matrix[x][y-1].path.type==this.type) ? "1"
+		postfix += (y>0&&Terrain.cells[x][y-1].path&&Terrain.cells[x][y-1].path.type==this.type) ? "1"
 				: "0";
-		postfix += (x<width-1&&matrix[x+1][y].path&&matrix[x+1][y].path.type==this.type) ? "1"
+		postfix += (x<width-1&&Terrain.cells[x+1][y].path&&Terrain.cells[x+1][y].path.type==this.type) ? "1"
 				: "0";
-		postfix += (y<height-1&&matrix[x][y+1].path&&matrix[x][y+1].path.type==this.type) ? "1"
+		postfix += (y<height-1&&Terrain.cells[x][y+1].path&&Terrain.cells[x][y+1].path.type==this.type) ? "1"
 				: "0";
-		postfix += (x>0&&matrix[x-1][y].path&&matrix[x-1][y].path.type==this.type) ? "1"
+		postfix += (x>0&&Terrain.cells[x-1][y].path&&Terrain.cells[x-1][y].path.type==this.type) ? "1"
 				: "0";
 		this.image = document.createElement('div');
 		this.image.className = "wrap";
@@ -665,8 +666,8 @@ function Path(x, y, type) {
 	};
 	this.remove = function() {
 		this.hide();
-		vertex[this.x][this.y] = -1;
-		matrix[this.x][this.y].wall = null;
+		Terrain.cells[this.x][this.y].passability = Terrain.PASS_FREE;
+		Terrain.cells[this.x][this.y].wall = null;
 	};
 	this.shade = function() {
 		this.image.getElementsByTagName("img")[0].style.opacity = "0.5";
@@ -690,7 +691,7 @@ function WorldPlayer(x, y, character) {
 	character.doll = this.doll;
 	this.doll.draw();
 	// Индекс объекта в массиве с игроками в его ячейке
-	this.worldPlayersPos = matrix[x][y].worldPlayers.length;
+	this.worldPlayersPos = Terrain.cells[x][y].worldPlayers.length;
 	this.image = null;
 	this.hide = function() {
 		if (this.visible) {
@@ -700,7 +701,7 @@ function WorldPlayer(x, y, character) {
 
 	};
 	this.show = function() {
-		var cell = matrix[this.x][this.y];
+		var cell = Terrain.cells[this.x][this.y];
 		if (cell.worldPlayers.length==2) {
 			// Отобразить группу (если этот игрок - второй присоединяемый к
 			// группе).
@@ -738,22 +739,22 @@ function WorldPlayer(x, y, character) {
 		}
 	};
 	this.move = function(x, y) {
-		if (matrix[this.x][this.y].worldPlayers.length>1) {
+		if (Terrain.cells[this.x][this.y].worldPlayers.length>1) {
 			// Изменить свойство wolrdPlayersPos у всех игроков, имеющих больший
 			// индекс в массиве игроков
-			for ( var i = this.worldPlayersPos+1; i<matrix[this.x][this.y].worldPlayers.length; i++ ) {
-				matrix[this.x][this.y].worldPlayers[i].worldPlayersPos-- ;
+			for ( var i = this.worldPlayersPos+1; i<Terrain.cells[this.x][this.y].worldPlayers.length; i++ ) {
+				Terrain.cells[this.x][this.y].worldPlayers[i].worldPlayersPos-- ;
 			}
 
 		}
-		matrix[this.x][this.y].worldPlayers.splice(this.worldPlayersPos, 1);
+		Terrain.cells[this.x][this.y].worldPlayers.splice(this.worldPlayersPos, 1);
 		this.redrawCellGroup(); // Перерисовать старую клетку
 		this.image.style.top = (y*32)+"px";
 		this.image.style.left = (x*32)+"px";
 		this.x = x;
 		this.y = y;
-		matrix[this.x][this.y].worldPlayers.push(this);
-		this.worldPlayersPos = matrix[this.x][this.y].worldPlayers.length-1;
+		Terrain.cells[this.x][this.y].worldPlayers.push(this);
+		this.worldPlayersPos = Terrain.cells[this.x][this.y].worldPlayers.length-1;
 		this.redrawCellGroup(); // Перерировать новую клетку
 	};
 	this.redrawCellGroup = function() {
@@ -763,7 +764,7 @@ function WorldPlayer(x, y, character) {
 		// 1) когда в клетке этот и ещё один игрок;
 		// 2) когда этот игрок - единственный в клетке;
 		// 3) все остальные случаи
-		var cell = matrix[this.x][this.y];
+		var cell = Terrain.cells[this.x][this.y];
 		if (cell.worldPlayers.length>2&&this.worldPlayersPos<2) {
 			// Если этот игрок - второй в массиве, и в массиве больше двух
 			// игроков
@@ -783,25 +784,25 @@ function WorldPlayer(x, y, character) {
 			// 2)
 			// Иначе никаких изображений не удаляется - только объект
 			// Удаление
-			matrix[this.x][this.y].worldPlayers[1].show();
+			Terrain.cells[this.x][this.y].worldPlayers[1].show();
 		}
 	};
 	this.remove = function() {
 		// Удаление игрока из клетки на глобальной карте.
-		matrix[this.x][this.y].worldPlayers.splice(this.worldPlayersPos, 1);
+		Terrain.cells[this.x][this.y].worldPlayers.splice(this.worldPlayersPos, 1);
 		this.image.parentNode.removeChild(this.image);
 
 		// Изменить свойство wolrdPlayersPos у всех игроков, имеющих больший
 		// индекс в массиве игроков
-		for ( var i = this.worldPlayersPos; i<matrix[this.x][this.y].worldPlayers.length; i++ ) {
-			matrix[this.x][this.y].worldPlayers[i].worldPlayersPos-- ;
+		for ( var i = this.worldPlayersPos; i<Terrain.cells[this.x][this.y].worldPlayers.length; i++ ) {
+			Terrain.cells[this.x][this.y].worldPlayers[i].worldPlayersPos-- ;
 		}
 		this.redrawCellGroup();
 		delete worldPlayers[this.characterId];
 	};
-	matrix[x][y].worldPlayers.push(this);
+	Terrain.cells[x][y].worldPlayers.push(this);
 	worldPlayers[this.characterId] = this;
-	if (matrix[x][y].worldPlayers.length<3) {
+	if (Terrain.cells[x][y].worldPlayers.length<3) {
 		// Вызывать отображние только для первого и второго (отображние группы)
 		// игроков в клетке
 		this.show();
@@ -812,14 +813,14 @@ function WorldObject(x, y, type) {
 	this.x = x;
 	this.y = y;
 	this.image = null;
-	vertex[this.x][this.y] = worldObjectProperties[type][2];
+	Terrain.cells[this.x][this.y].passability = worldObjectProperties[type][2];
 	this.show = function() {
 		if (this.image==null) {
 			this.image = document.createElement("img");
 			this.y *= 1; /* */// Здесь this.y оказывается сторокой,
 			// разобраться
 			var vertical = isDoor(this.type)
-					&&(matrix[this.x][1+this.y].wall||matrix[this.x][this.y-1].wall);
+					&&(Terrain.cells[this.x][1+this.y].wall||Terrain.cells[this.x][this.y-1].wall);
 			this.image.style.position = "absolute";
 			this.image.style.top = +"px";
 			this.image.style.left = +"px";
@@ -845,7 +846,7 @@ function WorldObject(x, y, type) {
 	};
 	this.remove = function() {
 		this.hide();
-		matrix[this.x][this.y].object = null;
+		Terrain.cells[this.x][this.y].object = null;
 	};
 	this.shade = function() {
 		this.image.style.opacity = "0.5";
@@ -853,7 +854,7 @@ function WorldObject(x, y, type) {
 	this.unshade = function() {
 		this.image.style.opacity = "1";
 	};
-	matrix[x][y].object = this;
+	Terrain.cells[x][y].object = this;
 }
 function SoundSource(x, y, type) {
 	this.x = x;
@@ -896,16 +897,16 @@ function seenToNum(x, y) {
 function wallToNum(x, y) {
 	// Возвращает 1, если на клетке есть стена, и 0, если на клетке нет стены
 	// или нет такой клетки
-	return +(x>=0&&x<width&&y>0&&y<height&&( ! !matrix[x][y].wall|| ! !(matrix[x][y].object&&isDoor(matrix[x][y].object.type))));
+	return +(x>=0&&x<width&&y>0&&y<height&&( ! !Terrain.cells[x][y].wall|| ! !(Terrain.cells[x][y].object&&isDoor(Terrain.cells[x][y].object.type))));
 }
 function anyItemsInCell(x, y) {
 	// Проверяет, есть ли в клетке предметы
 	// На клетках, на которых не было и нет предметов, работает очень быстро
-	for (var i in matrix[x][y].items.uniqueItems) {
+	for (var i in Terrain.cells[x][y].items.uniqueItems) {
 		// Если в клетке нет ни одного предмета, то этот цикл не начинается
 		return true;
 	}
-	for (var i in matrix[x][y].items.itemPiles) {
+	for (var i in Terrain.cells[x][y].items.itemPiles) {
 		// Если в клетке нет ни одного предмета, то этот цикл не начинается
 		return true;
 	}
@@ -914,7 +915,7 @@ function anyItemsInCell(x, y) {
 function getObject(x, y) {
 	// Возвращает объект стены или объект GameObject, если один из них есть в
 	// клетке x:y, иначе - false
-	return matrix[x]&&matrix[x][y]&&(matrix[x][y].wall||matrix[x][y].object);
+	return Terrain.cells[x]&&Terrain.cells[x][y]&&(Terrain.cells[x][y].wall||Terrain.cells[x][y].object);
 }
 // Функции типов объектов
 function isDoor(type) {

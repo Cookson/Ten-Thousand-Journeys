@@ -352,7 +352,7 @@ function showRightPanelKeys(mode) {
 		var rootElemId="spellsList";
 	} else if (mode==4) {
 		var len=0;
-		for (var i in matrix[player.x][player.y].items) {
+		for (var i in Terrain.cells[player.x][player.y].items) {
 		// Находим количество предметов в клетке на полу
 			len++;
 		}

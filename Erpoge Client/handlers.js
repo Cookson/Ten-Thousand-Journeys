@@ -137,7 +137,7 @@ handlers={
 				return;
 			}
 			// Распрозрачивание горизонтального ряда объектов, закрывающих обзор
-			for (var dy=1; !getObject(x,y+dy-1) && matrix[x][y+dy]; dy++) {
+			for (var dy=1; !getObject(x,y+dy-1) && Terrain.cells[x][y+dy]; dy++) {
 				if (hiddenBotheringObjects.indexOf(getNum(x,y+dy))==-1) {
 				// Если при движении мыши скрывается один и тот же ряд объектов, то ничего не делать, 
 				// иначе распрозрачить предыдущие запрозраченные объекты
@@ -177,14 +177,14 @@ handlers={
 //			}
 			// Запрозрачивание горизонтального ряда объектов, закрывающих обзор
 			var objUnderCursor=getObject(x,y);
-			for (var dy=1;!getObject(x,y+dy-1) && matrix[x][y+dy];dy++) {
+			for (var dy=1;!getObject(x,y+dy-1) && Terrain.cells[x][y+dy];dy++) {
 				if (hiddenBotheringObjects.indexOf(getNum(x,y+dy))==-1 && player.seenCells[x][y] && (!objUnderCursor || objectProperties[objUnderCursor.type][2]==1)) {
 				// Если при движении мыши скрывается один и тот же ряд объектов, то ничего не делать, 
 				// иначе запрозрачить предыдущие распрозраченные объекты
 					var objectLower=getObject(x,y+dy);
 					if (objectLower && objectProperties[objectLower.type][1]>dy*32) {
 					// Если есть мешающий объект и он закрывает своей высотой обзор
-						// var obj=matrix[mapCursorX][mapCursorY+1].wall || matrix[mapCursorX][mapCursorY+1].object;
+						// var obj=Terrain.cells[mapCursorX][mapCursorY+1].wall || Terrain.cells[mapCursorX][mapCursorY+1].object;
 						// obj.hide();
 						// obj.show();
 						// if (!player.canSee(mapCursorX,mapCursorY+1)) {
@@ -225,17 +225,17 @@ handlers={
 			
 			// Получаем информацию о локации
 			var cellData=[];
-			cellData.push((matrix[x][y].floor.type==1) ? "Трава" : (matrix[x][y].floor.type==3) ? "Снег" : "Какая-то поверхность");
-			if (matrix[x][y].forest) {
+			cellData.push((Terrain.cells[x][y].floor.type==1) ? "Трава" : (Terrain.cells[x][y].floor.type==3) ? "Снег" : "Какая-то поверхность");
+			if (Terrain.cells[x][y].forest) {
 				cellData.push("Лес");
 			}
-			if (matrix[x][y].path) {
-				cellData.push((matrix[x][y].path.type==21) ? "Река" : "Дорога");
+			if (Terrain.cells[x][y].path) {
+				cellData.push((Terrain.cells[x][y].path.type==21) ? "Река" : "Дорога");
 			}
-			if (matrix[x][y].object) {
-				cellData.push(worldObjectProperties[matrix[x][y].object.type][3]);
-			} else if (matrix[x][y].object) {
-				cellData.push(worldObjectProperties[matrix[x][y].object.type][3]);
+			if (Terrain.cells[x][y].object) {
+				cellData.push(worldObjectProperties[Terrain.cells[x][y].object.type][3]);
+			} else if (Terrain.cells[x][y].object) {
+				cellData.push(worldObjectProperties[Terrain.cells[x][y].object.type][3]);
 			}
 			var playersArrayPos=cellData.length; // Позиция массива с игроками
 			
@@ -303,7 +303,7 @@ handlers={
 			*/
 			if (data.error !== undefined) {
 			// If there is an error
-				UI.notify("loginError", data.error)
+				UI.notify("loginError", data.error);
 			} else {
 				UI.notify("accountPlayersRecieve", data.players);
 				Net.setServerAdressesStorage(serverAddress, Global.playerLogin, Global.playerPassword);
@@ -404,9 +404,9 @@ handlers={
 				moveGameField(player.x, player.y, true);
 				player.initVisibility();
 //				document.getElementById("minimap").style.display="block";
-				if (matrix[player.x][player.y].object && matrix[player.x][player.y].object.type==9000) {
+				if (Terrain.cells[player.x][player.y].object && Terrain.cells[player.x][player.y].object.type==9000) {
 				// Событие при появлении в локации
-					events[matrix[player.x][player.y].object.mod](matrix[player.x][player.y].object);
+					events[Terrain.cells[player.x][player.y].object.mod](Terrain.cells[player.x][player.y].object);
 				}
 				readCharacters(data.online);
 //				minimap=new Minimap(document.getElementById("minimap"));
