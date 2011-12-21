@@ -11,10 +11,12 @@ import erpoge.Coordinate;
 import erpoge.Main;
 import erpoge.RectangleArea;
 import erpoge.Side;
+import erpoge.graphs.CustomRectangleSystem;
 import erpoge.graphs.RectangleSystem;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.CellCollection;
 import erpoge.terrain.Location;
+import erpoge.terrain.LocationGenerator;
 import erpoge.terrain.TerrainBasics;
 import erpoge.terrain.TerrainGenerator;
 import erpoge.terrain.locationtypes.Settlement;
@@ -40,11 +42,16 @@ public abstract class Building extends Rectangle {
 	 * ArrayList of rectangleIds
 	 */
 	private ArrayList<Integer> hallways = new ArrayList<Integer>();
+	
+	protected Side frontSide;
+	protected Side leftSide;
+	protected Side rightSide;
+	protected Side backSide;
 
 	public Building() {
 		
 	}
-	public Building setProperties(TerrainGenerator settlement, BuildingPlace place) {
+	public Building setProperties(LocationGenerator settlement, BuildingPlace place) {
 		this.x = place.x+1;
 		this.y = place.y+1;
 		this.width = place.width-2;
@@ -53,6 +60,11 @@ public abstract class Building extends Rectangle {
 		this.settlement = settlement;
 		hasSettlement = true;
 		getDoorSides();
+//		frontSide = doorSides.get(0);
+		frontSide = Side.E;
+		leftSide = frontSide.clockwise();
+		rightSide = frontSide.counterClockwise();
+		backSide = frontSide.opposite();
 		return this;
 	}
 	
@@ -73,6 +85,22 @@ public abstract class Building extends Rectangle {
 		} else {
 			throw new Error("No available door sides");
 		}
+	}
+	public Coordinate placeDoor(RectangleArea r, Side side, int object) {
+	/**
+	 * Places door in the middle of certain side of room.
+	 */
+		Coordinate c = r.getMiddleOfSide(side).moveToSide(side, 1);
+		settlement.setObject(c.x, c.y, object);
+		return c;
+	}
+	public Coordinate placeDoor(RectangleArea r, Side side, Side sideOfSide, int depth, int object) {
+	/**
+	 * Places door in the certain cell on certain side of room
+	 */
+		Coordinate c = r.getCellFromSide(side, sideOfSide, depth).moveToSide(side, 1);
+		settlement.setObject(c.x, c.y, object);
+		return c;
 	}
 	public Coordinate placeFrontDoor(Side side) {
 		HashMap<Integer, Integer> cells = findDoorAppropriateCells(side);
@@ -110,46 +138,14 @@ public abstract class Building extends Rectangle {
 		return frontDoor;
 	}
 	public Coordinate placeFrontDoor(int rectangleId, Side side) {
-		Rectangle r = rectangleSystem.rectangles.get(rectangleId);
-		if (side == Side.ANY_SIDE) {
-			side = rectangleSystem.outerSides.get(rectangleId).get(0);
-		}
-		HashMap<Integer, Integer> cells = findDoorAppropriateCells(r,side);
-		try {
-			if (cells.size() == 0) {
-				throw new Error("Nowhere to place the door from side " + side);
-			}
-		} catch (Error e) {
-			return null;
-		}
-		int dx, dy;
-		if (side == Side.N || side == Side.S) {
-			ArrayList<Integer> xes = new ArrayList<Integer>(cells.keySet());
-			dx = xes.get(Chance.rand(0, xes.size() - 1));
-			dy = cells.get(dx);
-			settlement.setObject(dx, dy, GameObjects.OBJ_DOOR_BLUE);
-		} else {
-			ArrayList<Integer> yes = new ArrayList<Integer>(cells.keySet());
-			dy = yes.get(Chance.rand(0, yes.size() - 1));
-			dx = cells.get(dy);
-			settlement.setObject(dx, dy, GameObjects.OBJ_DOOR_BLUE);
-		}
-		if (side == Side.N) {
-			lobby = rectangleSystem.findRectangleByCell(dx, dy + 1);
-		} else if (side == Side.E) {
-			lobby = rectangleSystem.findRectangleByCell(dx - 1, dy);
-		} else if (side == Side.S) {
-			lobby = rectangleSystem.findRectangleByCell(dx, dy - 1);
-		} else if (side == Side.W) {
-			lobby = rectangleSystem.findRectangleByCell(dx + 1, dy);
-		} else {
-			throw new Error("Unappropriate side");
-		}
-		if (lobby == -1) {
-			throw new Error(
-					"Can't determine the lobby room because desired cell is not in this rectangle system");
-		}
-		frontDoor = new Coordinate(dx, dy);
+	/**
+	 * Place front door in the middle of rectangle from certain side.
+	 */
+		RectangleArea r = rectangleSystem.rectangles.get(rectangleId);
+		Coordinate doorCoord = r.getMiddleOfSide(side).moveToSide(side, 1);
+		settlement.setObject(doorCoord.x, doorCoord.y, GameObjects.OBJ_DOOR_BLUE);
+		lobby = rectangleId;
+		frontDoor = doorCoord;
 		return frontDoor;
 	}
 	public boolean hasSettlement() {
@@ -287,7 +283,7 @@ public abstract class Building extends Rectangle {
 		}
 		return cells;
 	}
-	public RectangleSystem buildBasis(int wallType, BasisBuildingSetup setup) {
+	public RectangleSystem buildBasis(int wallType) {
 		RectangleSystem graph = rectangleSystem;
 //		if (notSimpleForm) {
 //			if (graph.rectangles.size() > 3) {
@@ -311,13 +307,13 @@ public abstract class Building extends Rectangle {
 //				}
 //			}
 //		}
-		if (setup == BasisBuildingSetup.CONVERT_TO_DIRECTED_TREE) {
-			graph.convertGraphToDirectedTree();
-		} else if (setup == BasisBuildingSetup.KEYPOINTS_BASED) {
-			
-		} else if (setup == BasisBuildingSetup.NOT_BUILD_EDGES) {
-			
-		}
+//		if (setup == BasisBuildingSetup.CONVERT_TO_DIRECTED_TREE) {
+//			graph.convertGraphToDirectedTree();
+//		} else if (setup == BasisBuildingSetup.KEYPOINTS_BASED) {
+//			
+//		} else if (setup == BasisBuildingSetup.NOT_BUILD_EDGES) {
+//			
+//		}
 		
 		graph.drawBorders(1, wallType, false);
 		int floorType = GameObjects.FLOOR_STONE;
@@ -341,6 +337,11 @@ public abstract class Building extends Rectangle {
 	}
 	public RectangleSystem getRectangleSystem(int minRoomSize) {
 		rectangleSystem = settlement.getGraph(x, y, width, height, minRoomSize, 1);
+		return rectangleSystem;
+	}
+	
+	public RectangleSystem setRectangleSystem(CustomRectangleSystem crs) {
+		rectangleSystem = settlement.getGraph(crs);
 		return rectangleSystem;
 	}
 	public Coordinate connectRoomsWithDoor(Rectangle r1, Rectangle r2,
@@ -453,6 +454,45 @@ public abstract class Building extends Rectangle {
 		lobby = rectangleId;
 		Building.registerClass(Inn.class);
 	}
+	public void removeWall(Rectangle r, Side side) {
+	/**
+	 * Removes objects on rectangle's border from side side.
+	 * Removed objects are not inside the rectangle, they are 
+	 * outside the rectangle. The ends of border are remain unremoved.
+	 * Don't mix this up with TerrainGenerator.fillSideOfRectangle:
+	 * that function removes objects inside the rectangle
+	 */
+		int startX, startY, endX, endY;
+		switch (side) {
+		case N:
+			startX = r.x;
+			startY = r.y-1;
+			endX = r.x+r.width-1;
+			endY = r.y-1;
+			break;
+		case E:
+			startX = r.x+r.width;
+			startY = r.y;
+			endX = r.x+r.width;
+			endY = r.y+r.height-1;
+			break;
+		case S:
+			startX = r.x;
+			startY = r.y+r.height;
+			endX = r.x+r.width-1;
+			endY = r.y+r.height;
+			break;
+		case W:
+			startX = r.x-1;
+			startY = r.y;
+			endX = r.x-1;
+			endY = r.y+r.height-1;
+			break;
+		default:
+			throw new Error("Incorrect side "+side);
+		}
+		settlement.line(startX, startY, endX, endY, TerrainBasics.ELEMENT_OBJECT, GameObjects.OBJ_VOID);
+	}
 	public enum BasisBuildingSetup {
 	/**
 	 * Describes which methods should buildBasis use to build edges of graph
@@ -465,6 +505,8 @@ public abstract class Building extends Rectangle {
 		
 		return true;
 	}
-	public abstract boolean fitsToPlace(BuildingPlace place);
+	public boolean fitsToPlace(BuildingPlace place) {
+		return true;
+	}
 	public abstract void draw();
 }

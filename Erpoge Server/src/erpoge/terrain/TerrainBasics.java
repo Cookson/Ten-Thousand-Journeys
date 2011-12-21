@@ -130,10 +130,11 @@ public abstract class TerrainBasics {
 		}
 		computePassability(x, y);
 	}
+	
 	protected boolean isContainer(int id) {
 		return id >= 60 && id <= 63;
 	}
-	abstract protected Character createCharacter(String type, String name,
+	protected abstract Character createCharacter(String type, String name,
 			int x, int y);
 	protected void createContainer(int x, int y, int capacity) {
 		containers.put(getNum(x, y), new Container(capacity));

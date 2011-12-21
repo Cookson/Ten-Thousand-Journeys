@@ -63,7 +63,6 @@ public class CustomRectangleSystem extends Graph<RectangleArea> {
 			int x = r.x + width;
 			RectangleArea leftRec = new RectangleArea(r.x, r.y, x - r.x, r.height);
 			RectangleArea rightRec = new RectangleArea(x+1+borderWidth-1, r.y, r.x+r.width-x-1-borderWidth+1, r.height);
-			Main.console(negativeWidth);
 			rectangles.put(i, negativeWidth ? leftRec : rightRec);
 			rectangles.put(rectangles.size(), negativeWidth ? rightRec : leftRec);
 			newRecId = rectangles.size()-1;
@@ -133,7 +132,9 @@ public class CustomRectangleSystem extends Graph<RectangleArea> {
 		return false;
 	}
 	public void addRectangle(RectangleArea r) {
-		rectangles.put(rectangles.values().size(), r);
+		int size = rectangles.values().size();
+		rectangles.put(size, r);
+		edges.put(size, new ArrayList<Integer>());
 	}
 	public int size() {
 		return rectangles.size();
@@ -193,9 +194,7 @@ public class CustomRectangleSystem extends Graph<RectangleArea> {
 			throw new Error("The rectangle system already has no �" + num
 					+ " rectangle");
 		}
-		Main.console("Exclude "+num);
 		excluded.put(num, rectangles.get(num));
-
 		rectangles.remove(num); // Удаляем прямоугольник...
 		edges.remove(num); // его рёбра...
 		Set<Integer> keys = edges.keySet();

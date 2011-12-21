@@ -13,12 +13,15 @@ import erpoge.Chance;
 import erpoge.Coordinate;
 import erpoge.Direction;
 import erpoge.Main;
+import erpoge.RectangleArea;
 import erpoge.Side;
 import erpoge.characters.Character;
 import erpoge.characters.CharacterSet;
 import erpoge.characters.NonPlayerCharacter;
 import erpoge.graphs.RectangleSystem;
 import erpoge.inventory.Item;
+import erpoge.inventory.ItemPile;
+import erpoge.inventory.UniqueItem;
 import erpoge.objects.GameObjects;
 import erpoge.serverevents.EventFloorChange;
 import erpoge.serverevents.EventObjectAppear;
@@ -673,7 +676,7 @@ public class TerrainGenerator extends TerrainBasics {
 		}
 		return answer;
 	}
-	public void lineToRectangleBorded(int startX, int startY, Side side, Rectangle r, int type, int val) {
+	public void lineToRectangleBorder(int startX, int startY, Side side, Rectangle r, int type, int val) {
 		if (!r.contains(startX, startY)) {
 			throw new Error("Rectangle "+r+" contains no point "+startX+":"+startY);
 		}
@@ -695,6 +698,49 @@ public class TerrainGenerator extends TerrainBasics {
 		}
 		line(startX, startY, endX, endY, type, val);
 	}
-	
-	
+	public void fillSideOfRectangle(Rectangle r, Side side, int type, int val) {
+		int startX, startY, endX, endY;
+		switch (side) {
+		case N:
+			startX = r.x;
+			startY = r.y;
+			endX = r.x+r.width-1;
+			endY = r.y;
+			break;
+		case E:
+			startX = r.x+r.width-1;
+			startY = r.y;
+			endX = r.x+r.width-1;
+			endY = r.y+r.height-1;
+			break;
+		case S:
+			startX = r.x;
+			startY = r.y+r.height-1;
+			endX = r.x+r.width-1;
+			endY = r.y+r.height-1;
+			break;
+		case W:
+			startX = r.x;
+			startY = r.y;
+			endX = r.x;
+			endY = r.y+r.height-1;
+			break;
+		default:
+			throw new Error("Incorrect side "+side);
+		}
+		line(startX, startY, endX, endY, type, val);
+	}
+	public void fillRectangle(Rectangle r, int type, int val, int chance) {
+	/**
+	 * Fill rectngle with objects randomly. chance% of cells 
+	 * will be filled with these objects.
+	 */
+		for (int x = r.x; x<r.x+r.width; x++) {
+			for (int y = r.y; y<r.y+r.height; y++) {
+				if (Chance.roll(chance)) {
+					setElement(x, y, type, val);
+				}
+			}
+		}
+	}
 }

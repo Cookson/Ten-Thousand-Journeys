@@ -46,17 +46,39 @@ public class Coordinate extends Point{
 	// ���������� ����� ����� �������
 		return (int)Math.sqrt(Math.pow(this.x-e.x, 2)+Math.pow(this.y-e.y, 2));
 	}
-	public void moveToSide(Side side, int distance) {
-		if (side == Side.N) {
-			this.y -= distance;
-		} else if (side == Side.E) {
-			this.x += distance;
-		} else if (side == Side.S) {
-			this.y += distance;
-		} else if (side == Side.W) {
-			this.x -= distance;
-		} else {
+	public Coordinate moveToSide(Side side, int distance) {
+		switch (side) {
+		case N:
+			y -= distance;
+			break;
+		case E:
+			x += distance;
+			break;
+		case S:
+			y += distance;
+			break;
+		case W:
+			x -= distance;
+			break;
+		case NE:
+			x += distance;
+			y -= distance;
+			break;
+		case SE:
+			x += distance;
+			y += distance;
+			break;
+		case SW:
+			x -= distance;
+			y += distance;
+			break;
+		case NW:
+			x -= distance;
+			y -= distance;
+			break;
+		default:
 			throw new Error("Inappropriate side "+side);
 		}
+		return this;
 	}
 }

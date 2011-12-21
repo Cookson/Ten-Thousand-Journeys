@@ -107,7 +107,7 @@ public class RectangleSystem extends Graph<RectangleArea> {
 		this.edges = crs.edges;
 		this.excluded = new HashMap<Integer, RectangleArea>();
 		this.outerSides = new HashMap<Integer, ArrayList<Side>>();
-//		buildEdges();
+		buildEdges();
 		findOuterSidesOfComplexForm();
 	}
 
@@ -144,6 +144,8 @@ public class RectangleSystem extends Graph<RectangleArea> {
 	public void buildEdges() {
 	// Построить рёбра в графе
 		int len = rectangles.size();
+		
+		
 		edges = new HashMap<Integer, ArrayList<Integer>>();
 		for (int i = 0; i < len; i++) {
 			edges.put(i, new ArrayList<Integer>());
@@ -153,6 +155,7 @@ public class RectangleSystem extends Graph<RectangleArea> {
 			for (int j = i + 1; j < len; j++) {
 				Rectangle r2 = rectangles.get(j);
 				if (areRectanglesNear(r1, r2)) {
+					
 					edges.get(i).add(j);
 					edges.get(j).add(i);
 				}
@@ -282,6 +285,7 @@ public class RectangleSystem extends Graph<RectangleArea> {
 			// }
 			// }
 			// }
+		
 			Set<Integer> keys = rectangles.keySet();
 			for (int k : keys) {
 				Rectangle r = rectangles.get(k);
@@ -537,18 +541,17 @@ public class RectangleSystem extends Graph<RectangleArea> {
 	}
 
 	public void findOuterSidesOfComplexForm() {
-		// Initial search for outer sides in custom rectangle system of
-		// non-squared form
+	// Initial search for outer sides in custom rectangle system of
+	// non-squared form
 		for (int i : rectangles.keySet()) {
 			outerSides.put(i, new ArrayList<Side>());
 			Rectangle r = rectangles.get(i);
-			ArrayList<Integer> thisEdges = edges.get(i);
 			HashMap<Side, Integer> sides = new HashMap<Side, Integer>();
 			sides.put(Side.N, r.width);
 			sides.put(Side.E, r.height);
 			sides.put(Side.S, r.width);
 			sides.put(Side.W, r.height);
-			for (int j : thisEdges) {
+			for (int j : edges.get(i)) {
 				Rectangle r2 = rectangles.get(j);
 				if (areRectanglesNear(r, r2)) {
 					Side side = getNeighborSide(r, r2);
@@ -1046,7 +1049,6 @@ public class RectangleSystem extends Graph<RectangleArea> {
 					nextCoord = c;
 				}
 			}
-			Main.console(newAngle);
 			lastAngle = newAngle;
 			if (nextCoord != null) {
 				answer.add(nextCoord);

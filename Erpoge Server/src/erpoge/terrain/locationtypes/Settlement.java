@@ -44,10 +44,14 @@ public class Settlement extends LocationGenerator {
 		
 			Building building;
 			try {
-				building = cls.newInstance().setProperties(this, place);
-				building.draw();
-				buildings.add(building);
-				Main.console("KAKA");
+				building = cls.newInstance();
+				if (building.fitsToPlace(place)) {
+					building.setProperties(this, place);
+					building.draw();
+					buildings.add(building);
+				} else {
+					Main.console("Coundn't place building "+cls.getSimpleName());
+				}
 			} catch (InstantiationException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
