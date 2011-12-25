@@ -19,13 +19,12 @@ public class Main {
 	public static final int DEFAULT_PORT = 8787;
 	public static int[][] arr;
 	public final static boolean DEBUG = true;
-	public static final String TEST_LOCATION_TYPE = "BuildingTest";
-	public static final int DEFAULT_LOCATION_WIDTH = 50;
-	public static final int DEFAULT_LOCATION_HEIGHT = 50;
+	public static final String TEST_LOCATION_TYPE = "Forest";
+	public static final int DEFAULT_LOCATION_WIDTH = 60;
+	public static final int DEFAULT_LOCATION_HEIGHT = 40;
 	public static <T> void out(T string) {
 		System.out.print(string);
 	}
-
 	public static <T> void outln(T string) {
 		System.out.println(string);
 	}
@@ -50,14 +49,15 @@ public class Main {
 		ItemsTypology.init();
 		CharacterTypes.init();
 //		Main.console(GameObjects.jsonGetObjectProperties());
-//		CharacterTypes.jsonTypes();
+		CharacterTypes.jsonTypes();
 //		ItemsTypology.showTypology();
 //		Main.console(GameObjects.jsonGetObjectProperties());
-		World world = new World(40,40,"TestWorld", "Erpoge World");
 		
+		World world = new World(40,40,"TestWorld", "Erpoge World");
 //		world.showWorld();
-		Location loc = world.createLocation(0, 0, 60, 40, TEST_LOCATION_TYPE, "New Location");
-		loc.showLocation();	
+		
+//		Location loc = world.createLocation(0, 0, 60, 40, TEST_LOCATION_TYPE, "New Location");
+//		loc.showLocation();	
 		
 		PlayerCharacter burok = world.createCharacter("palyer", "Alvoi", 2, "Warrior", 13, 26);
 		burok.getItem(new UniqueItem(ItemType.CLASS_SWORD * ItemsTypology.CLASS_LENGTH));

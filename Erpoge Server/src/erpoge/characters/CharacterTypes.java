@@ -6,7 +6,10 @@ import java.util.HashMap;
 import erpoge.Main;
 import erpoge.itemtypes.ItemType;
 import erpoge.language.Language;
-
+/**
+ * Typology of all characters who are in game.
+ *
+ */
 public final class CharacterTypes {
 	private static final CharacterTypes instance = new CharacterTypes();
 	public static final int 
@@ -55,7 +58,9 @@ public final class CharacterTypes {
 				protections());
 		addType("dwarvenHooker", CREATURE_TYPE_HUMANOID, SIZE_LARGE, 30, 0, 10, 5, 9, spells(),
 				protections());
-		addType("innkeeper", CREATURE_TYPE_HUMANOID, SIZE_LARGE, 30, 0, 10, 5, 9, spells(),
+		addType("innkeeper", CREATURE_TYPE_HUMANOID, SIZE_MEDIUM, 30, 0, 10, 5, 9, spells(),
+				protections());
+		addType("bear", CREATURE_TYPE_ANIMAL, SIZE_LARGE, 30, 0, 10, 5, 9, spells(),
 				protections());
 	}
 	public static void addType(String type, int creatureType, int size, int hp, int mp, int speed, int armor, int evasion,

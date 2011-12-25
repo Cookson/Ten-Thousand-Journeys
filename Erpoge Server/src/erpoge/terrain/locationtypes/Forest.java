@@ -11,28 +11,22 @@ import erpoge.objects.GameObjects;
 import erpoge.terrain.Cell;
 import erpoge.terrain.CellCollection;
 import erpoge.terrain.Location;
+import erpoge.terrain.LocationGenerator;
 import erpoge.terrain.TerrainGenerator;
 import erpoge.terrain.World;
 
 import java.util.ArrayList;
 
-public class Forest extends TerrainGenerator {
+public class Forest extends LocationGenerator {
 	public Forest(Location location) {
 		super(location);
 		fillWithCells(1,0);
+		setStartArea(0, 0, 10, 10);
+		
 		Chance ch50 = new Chance(50);
 		// Choose starting position
 		int x;
 		int y;
-		if (ch50.roll()) {
-			y = (ch50.roll()) ? 1 : width - 2;
-			x = Chance.rand(1, width - 10);
-			startArea = new Rectangle(x, y, 8, 1);
-		} else {
-			x = (ch50.roll()) ? 1 : height - 2;
-			y = Chance.rand(1, height - 10);
-			startArea = new Rectangle(x, y, 1, 8);
-		}
 
 		// Objects creation
 		// num=(w*h)/50;
@@ -45,7 +39,7 @@ public class Forest extends TerrainGenerator {
 		// setObject(x,y,GameObjects.OBJ_TREE_2);
 		// }
 
-		// Mods creation
+		// Mobs creation
 		ArrayList<Coordinate> coords = new ArrayList<Coordinate>();
 		coords.add(new Coordinate(0, 0));
 		coords.add(new Coordinate(width - 1, 0));
@@ -58,7 +52,7 @@ public class Forest extends TerrainGenerator {
 		// }
 		
 		ArrayList<GeneratorCharacterGroup> listcs = new ArrayList<GeneratorCharacterGroup>();
-		listcs.add(new GeneratorCharacterGroup("bear", "Мишка", width * height / 150, 0));
+		listcs.add(new GeneratorCharacterGroup("bear", "пїЅпїЅпїЅпїЅпїЅ", width * height / 150, 0));
 		mobsSpace.placeCharacters(listcs);
 		
 		mobsSpace.forest(Chance.rand(5, 12));
@@ -74,12 +68,12 @@ public class Forest extends TerrainGenerator {
 		// Draw a road, if needed
 //		 if (false) {
 //			 if (ch50.roll()) {
-//			 // Горизонтальная дорога
+//			 // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 //			 int roadY=(int)Math.floor(height/2)+Chance.rand(0,3)-3;
 //			 boldLine(0,roadY,width,roadY,ELEMENT_REMOVE,1,5);
 //			 boldLine(0,roadY,width,roadY,ELEMENT_FLOOR,5);
 //			 } else {
-//			 // Вертикальная дорога
+//			 // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 //			 int roadX=(int)Math.floor(width/2)+Chance.rand(0,3)-3;
 //			 boldLine(roadX,0,roadX,height,ELEMENT_REMOVE,1,5);
 //			 boldLine(roadX,0,roadX,height,ELEMENT_FLOOR,5);
@@ -95,6 +89,5 @@ public class Forest extends TerrainGenerator {
 //		RectangleSystem caveRS = location.getGraph(caveX, caveY, caveW, caveH, 1, 0);
 //		caveRS.nibbleSystem(1, 90);
 //		caveRS.drawBorders(ELEMENT_OBJECT, GameObjects.OBJ_WALL_CAVE, false);
-		
 	}
 }

@@ -2,7 +2,6 @@ package erpoge.terrain.settlements;
 
 import java.util.HashMap;
 
-import erpoge.terrain.locationtypes.Settlement;
 import erpoge.characters.Character;
 
 public class Service {
@@ -13,19 +12,19 @@ public class Service {
 	public HashMap<Integer, Integer> items = new HashMap<Integer, Integer>();
 
 	public Service(Character dweller, int type, String name) {
-		// dweller - объект жителя
-		// type - тип услуги, строка латиницей
-		// name - название услуги, отображаемой в клиенте
+		// dweller - пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+		// type - пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+		// name - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		this.dweller = dweller;
 		this.type = type;
 		this.name = name;
 	}
 	
 	public void addItem(int itemId, int amount) {
-		// Добавить предмет. Если такой предмет уже есть в услуге - увеличить
-		// количество таких предметов.
-		// itemId - предмет
-		// itemNum - количество предметов
+		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ. пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
+		// itemId - пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+		// itemNum - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		if (items.containsKey(itemId)) {
 			items.put(itemId, items.get(itemId) + amount);
 		} else {

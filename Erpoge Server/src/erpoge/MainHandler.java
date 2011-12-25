@@ -9,7 +9,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import erpoge.characters.Character;
-import erpoge.characters.CharacterSet;
 import erpoge.characters.PlayerCharacter;
 import erpoge.clientmessages.*;
 import erpoge.inventory.Item;
@@ -18,6 +17,7 @@ import erpoge.inventory.ItemsTypology;
 import erpoge.inventory.UniqueItem;
 import erpoge.itemtypes.ItemType;
 import erpoge.terrain.Location;
+import erpoge.terrain.Portal;
 import erpoge.terrain.World;
 import net.tootallnate.websocket.Draft;
 import net.tootallnate.websocket.WebSocket;
@@ -289,12 +289,11 @@ public class MainHandler extends WebSocketServer {
 				conn.send(conn.character.jsonGetEnteringData(conn.character.isOnGlobalMap()));
 				break;
 			case LEAVE_LOCATION:
-				Location portalLocation = conn.character.getPortalLocation();
-				conn.character.leaveLocation();
-				if (portalLocation != null) {
-				// If player character leeaves current location near a portal to another location,
-				// then send him to that another location.
-					portalLocation.addCharacter(conn.character);
+				Portal portal = conn.character.getNearbyPortal();
+				if (portal != null) {
+					conn.character.goToAnotherLevel(portal);
+				} else {
+					conn.character.leaveLocation();
 				}
 				conn.send(conn.character.jsonGetEnteringData(conn.character.isOnGlobalMap()));
 				break;
@@ -312,7 +311,6 @@ public class MainHandler extends WebSocketServer {
 			default:
 				throw new Error("Unhandlable action code came from a client");
 			}
-			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

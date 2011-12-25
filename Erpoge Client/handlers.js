@@ -89,6 +89,20 @@ handlers={
 				player.doActionFromQueue();
 			},
 			context: window
+		},
+		rotateCamera: {
+			action: function _() {
+				if (Terrain.cameraOrientation == Terrain.SIDE_N) {
+					rotateCamera(Terrain.SIDE_E);
+				} else if (Terrain.cameraOrientation == Terrain.SIDE_E) {
+					rotateCamera(Terrain.SIDE_S);
+				} else if (Terrain.cameraOrientation == Terrain.SIDE_S) {
+					rotateCamera(Terrain.SIDE_W);
+				} else if (Terrain.cameraOrientation == Terrain.SIDE_W) {
+					rotateCamera(Terrain.SIDE_N);
+				}
+			},
+			context: window		
 		}
 	},
 	document: {
@@ -100,8 +114,11 @@ handlers={
 	gameField: {
 		click:function _(e) {
 			var elementCoord=getOffsetRect(gameField);
-			var x=Math.floor((e.clientX-elementCoord.left)/32);
-			var y=Math.floor((e.clientY-elementCoord.top)/32);
+			var xPx = Math.floor((e.clientX-elementCoord.left)/32);
+			var yPx = Math.floor((e.clientY-elementCoord.top)/32);
+			var normal = Terrain.getNormalView(xPx, yPx);
+			var x=normal.x;
+			var y=normal.y;
 			if (onGlobalMap) {
 			// На глобальной карте
 				if (e.shiftKey || inMenu) {
@@ -131,11 +148,21 @@ handlers={
 			prevClientX=e.clientX;
 			prevClientY=e.clientY;
 			var elementCoord=getOffsetRect(gameField);
-			var x=Math.floor((e.clientX-elementCoord.left)/32);
-			var y=Math.floor((e.clientY-elementCoord.top)/32);
+			var normal = Terrain.getNormalView(
+					Math.floor((e.clientX-elementCoord.left)/32),
+					Math.floor((e.clientY-elementCoord.top)/32));
+			var x=normal.x;
+			var y=normal.y;
 			if (x==mapCursorX && y==mapCursorY) {
 				return;
 			}
+			// Hide ceiling, if there is one.
+			if (Terrain.cells[x][y].ceiling !== undefined) {
+				Terrain.cells[x][y].ceiling.parent.hide();
+			} else if (Terrain.cells[mapCursorX][mapCursorY].ceiling !== undefined) {
+				console.log("SHOW")
+				Terrain.cells[mapCursorX][mapCursorY].ceiling.parent.show();
+			} 
 			// Распрозрачивание горизонтального ряда объектов, закрывающих обзор
 			for (var dy=1; !getObject(x,y+dy-1) && Terrain.cells[x][y+dy]; dy++) {
 				if (hiddenBotheringObjects.indexOf(getNum(x,y+dy))==-1) {
@@ -400,7 +427,6 @@ handlers={
 				prepareArea();
 				readLocation(data.l);
 				createPlayerFromData(data.p);
-				
 				moveGameField(player.x, player.y, true);
 				player.initVisibility();
 //				document.getElementById("minimap").style.display="block";

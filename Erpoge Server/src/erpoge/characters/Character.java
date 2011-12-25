@@ -93,13 +93,11 @@ public abstract class Character extends Seer {
 		name = "Generator character "+type;
 		location.passability[x][y] = 3;
 	}
-
 	public Character() {
 		super(0,0, World.ABSTRACT_LOCATION);
 		type = "Dummy";
 		name = DEFAULT_NAME;
 	}
-
 	public Character(boolean b) {
 		/**
 		 * Create an empty character, used for constants
@@ -109,25 +107,13 @@ public abstract class Character extends Seer {
 		name = "Abstract Character";
 
 	}
-
-	public int mp() {
-		return mp;
-	}
-
-	public int hp() {
-		return hp;
-	}
-
-	public Location location() {
-		return location;
-	}
-		
+	
+	/* Actions */	
 	public void attack(Character aim) {
 		location.addEvent(new EventMeleeAttack(characterId, aim.characterId));
 		aim.getDamage(10, DAMAGE_PLAIN);
 		moveTime(500);
 	}
-
 	public void shootMissile(int toX, int toY, ItemPile missile) {
 		loseItem(missile);
 		Coordinate end = getRayEnd(toX, toY);
@@ -137,69 +123,44 @@ public abstract class Character extends Seer {
 			location.cells[end.x][end.y].character().getDamage(10, DAMAGE_PLAIN);
 		}
 	}
-	
-	public void getDamage(int amount, int type) {
-		hp -= amount;
-		location.addEvent(new EventDamage(characterId, amount, type));
-		if (hp <= 0) {
-			die();
-		}
-	}
-
-	public void die() {
-		excludeFromSeers();
-		location.removeCharacter(this);
-		location.addEvent(new EventDeath(characterId));
-	}
-	
 	public void castSpell(int spellId, int x, int y) {
 		location.addEvent(new EventCastSpell(characterId, spellId, x, y));
 		Spells.cast(this, spellId, x, y);
 		moveTime(500);
 	}
-	
 	public void learnSpell(int spellId) {
 		spells.add(spellId);
 	}
-
-	protected void increaseHp(int value) {
-		hp = (hp + value > maxHp) ? maxHp : hp + value;
+	public void die() {
+		excludeFromSeers();
+		location.removeCharacter(this);
+		location.addEvent(new EventDeath(characterId));
 	}
-
-	protected void removeEffect(CharacterEffect effect) {
-		effects.remove(effect);
-	}
-	
-	public boolean isOnGlobalMap() {
-		return location == Location.ABSTRACT_LOCATION;
-	}
-	
 	public void putOn(UniqueItem item, boolean omitEvent) {
-	// Main put on function
-		int cls = item.getType().getCls();
-		int slot = item.getType().getSlot();
-		if (cls == ItemType.CLASS_RING) {
-			// ����������� ������, ����� �������� ������ (�� ����� ����
-			// ������������ ���)
-			int numOfRings = 0;
-			if (numOfRings == 2) {
+		// Main put on function
+			int cls = item.getType().getCls();
+			int slot = item.getType().getSlot();
+			if (cls == ItemType.CLASS_RING) {
+				// ����������� ������, ����� �������� ������ (�� ����� ����
+				// ������������ ���)
+				int numOfRings = 0;
+				if (numOfRings == 2) {
+					throw new Error("Character " + name
+							+ " is trying to put on more than 2 rings");
+				}
+			} else if (ammunition.hasPiece(slot)) {
+				// ���� ����� ������� ���� �� ����
 				throw new Error("Character " + name
-						+ " is trying to put on more than 2 rings");
+						+ " is trying to put on a piece he is already wearing");
 			}
-		} else if (ammunition.hasPiece(slot)) {
-			// ���� ����� ������� ���� �� ����
-			throw new Error("Character " + name
-					+ " is trying to put on a piece he is already wearing");
+			ammunition.add(item);
+			inventory.removeUnique(item);
+			if (!this.isOnGlobalMap() && !omitEvent) {
+			// Sending for mobs. Sending for players is in PlayerCharacter.putOn()
+				location.addEvent(new EventPutOn(characterId, item.getItemId()));
+			}
+			moveTime(500);
 		}
-		ammunition.add(item);
-		inventory.removeUnique(item);
-		if (!this.isOnGlobalMap() && !omitEvent) {
-		// Sending for mobs. Sending for players is in PlayerCharacter.putOn()
-			location.addEvent(new EventPutOn(characterId, item.getItemId()));
-		}
-		moveTime(500);
-	}
-	
 	public void takeOff(UniqueItem item) {
 	// Main take off function
 		ammunition.removeSlot(item.getType().getSlot());
@@ -210,7 +171,6 @@ public abstract class Character extends Seer {
 		}
 		moveTime(500);
 	}
-
 	public void pickUp(ItemPile pile) {
 		/*
 		 * Pick up an item lying on the same cell where the character stands.
@@ -229,86 +189,49 @@ public abstract class Character extends Seer {
 		location.removeItem(item, x, y);
 		moveTime(500);
 	}
-
 	public void drop(UniqueItem item) {
 		loseItem(item);
 		location.addItem(item, x, y);
 		location.addEvent(new EventDropItem(characterId, item.getTypeId(), item.getItemId()));
 		moveTime(500);
 	}
-	
 	public void drop(ItemPile pile) {
 		loseItem(pile);
 		location.addItem(pile, x, y);
 		location.addEvent(new EventDropItem(characterId, pile.getType().getTypeId(), pile.getAmount()));
 		moveTime(500);
 	}
-	
 	public void takeFromContainer(ItemPile pile, Container container) {
 		getItem(pile);
 		container.removePile(pile);
 		location.addEvent(new EventTakeFromContainer(characterId, pile.getTypeId(), pile.getAmount(), x, y));
 		moveTime(500);
 	}
-	
 	public void takeFromContainer(UniqueItem item, Container container) {
 		getItem(item);
 		container.removeUnique(item);
 		location.addEvent(new EventTakeFromContainer(characterId, item.getTypeId(), item.getItemId(), x, y));
 		moveTime(500);
 	}
-
 	public void putToContainer(ItemPile pile, Container container) {
 		loseItem(pile);
 		container.add(pile);
 		location.addEvent(new EventPutToContainer(characterId, pile.getTypeId(), pile.getAmount(), x, y));
 		moveTime(500);
 	}
-	
 	public void putToContainer(UniqueItem item, Container container) {
 		loseItem(item);
 		container.add(item);
 		location.addEvent(new EventPutToContainer(characterId, item.getTypeId(), item.getItemId(), x, y));
 		moveTime(500);
 	}
-	
 	public void useObject(int x, int y) {
-		if (location.isDoor(x, y)) {
-			location.openDoor(x,y);
+			if (location.isDoor(x, y)) {
+				location.openDoor(x,y);
+			}
+			location.addEvent(new EventUseObject(characterId, x, y));
+			moveTime(500);
 		}
-		location.addEvent(new EventUseObject(characterId, x, y));
-		moveTime(500);
-	}
-
-	public boolean hasItem(int typeId, int amount) {
-		return inventory.hasPile(typeId, amount);
-	}
-
-	public void getItem(UniqueItem item) {
-		inventory.add(item);
-		location.addEvent(new EventGetUniqueItem(characterId, item.getTypeId(), item.getItemId()));
-	}
-
-	public void getItem(ItemPile pile) {
-		inventory.add(pile);
-		location.addEvent(new EventGetItemPile(characterId, pile.getTypeId(), pile.getAmount()));
-	}
-
-	public void loseItem(UniqueItem item) {
-		if (inventory.hasUnique(item.getItemId())) {
-			inventory.removeUnique(item);
-			location.addEvent(new EventLoseItem(characterId, item.getType().getTypeId(), item.getItemId()));
-		} else {
-			throw new Error("An attempt to lose an item width id " + item.getItemId()
-					+ " that is neither in inventory nor in ammunition");
-		}
-	}
-	
-	public void loseItem(ItemPile pile) {
-		inventory.removePile(pile);
-		location.addEvent(new EventLoseItem(characterId, pile.getType().getTypeId(), pile.getAmount()));
-	}
-	
 	public void idle() {
 		moveTime(500);
 	}
@@ -349,11 +272,6 @@ public abstract class Character extends Seer {
 		}
 		move(x + dx, y + dy);
 	}
-	
-	public boolean at(int atX, int atY) {
-		return x==atX && y==atY;
-	}
-	
 	public void move(int nx, int ny) {
 		location.passability[x][y] = 0;
 		location.cells[x][y].character(false);
@@ -366,33 +284,57 @@ public abstract class Character extends Seer {
 		moveTime(500);
 		getVisibleEntities();
 	}
-		
-	public String jsonGetEffects() {
-		return "[]";
-	}
-
-	public String jsonGetAmmunition() {
-		return ammunition.jsonGetAmmunition();
-	}
-
-	public int[] getEffects() {
-		return new int[0];
-	}
 	
-	public int[][] getAmmunition() {
-		return new int[0][2];
+	/* Getters */
+	public abstract int getArmor();
+	public int mp() {
+		return mp;
+	}
+	public int hp() {
+		return hp;
+	}
+	public Location location() {
+		return location;
+	}
+
+	/* Setters */
+	public void getDamage(int amount, int type) {
+		hp -= amount;
+		location.addEvent(new EventDamage(characterId, amount, type));
+		if (hp <= 0) {
+			die();
+		}
+	}
+	protected void increaseHp(int value) {
+		hp = (hp + value > maxHp) ? maxHp : hp + value;
+	}
+	protected void removeEffect(CharacterEffect effect) {
+		effects.remove(effect);
+	}
+	public void getItem(UniqueItem item) {
+		inventory.add(item);
+		location.addEvent(new EventGetUniqueItem(characterId, item.getTypeId(), item.getItemId()));
+	}
+	public void getItem(ItemPile pile) {
+		inventory.add(pile);
+		location.addEvent(new EventGetItemPile(characterId, pile.getTypeId(), pile.getAmount()));
+	}
+	public void loseItem(UniqueItem item) {
+		if (inventory.hasUnique(item.getItemId())) {
+			inventory.removeUnique(item);
+			location.addEvent(new EventLoseItem(characterId, item.getType().getTypeId(), item.getItemId()));
+		} else {
+			throw new Error("An attempt to lose an item width id " + item.getItemId()
+					+ " that is neither in inventory nor in ammunition");
+		}
+	}
+	public void loseItem(ItemPile pile) {
+		inventory.removePile(pile);
+		location.addEvent(new EventLoseItem(characterId, pile.getType().getTypeId(), pile.getAmount()));
 	}
 	public void setFraction(int f) {
 		fraction = f;
 	}
-	public boolean isEnemy(Character ch) {
-		if (fraction == FRACTION_NEUTRAL) {
-			return false;
-		}
-		return ch.fraction != fraction;
-	}
-	
-	public abstract int getArmor();
 	public void addEffect(int effectId, int duration, int modifier) {
 		if (effects.containsKey(effectId)) {
 			removeEffect(effectId);
@@ -414,6 +356,39 @@ public abstract class Character extends Seer {
 			}
 		}
 	}
+	
+	/* Checks */
+	public boolean at(int atX, int atY) {
+		return x==atX && y==atY;
+	}
+	public boolean hasItem(int typeId, int amount) {
+		return inventory.hasPile(typeId, amount);
+	}
+	public boolean isOnGlobalMap() {
+		return location == Location.ABSTRACT_LOCATION;
+	}
+	public boolean isEnemy(Character ch) {
+		if (fraction == FRACTION_NEUTRAL) {
+			return false;
+		}
+		return ch.fraction != fraction;
+	}
+	
+	/* Data */
+	public String jsonGetEffects() {
+		return "[]";
+	}
+	public String jsonGetAmmunition() {
+		return ammunition.jsonGetAmmunition();
+	}
+	public int[] getEffects() {
+		return new int[0];
+	}
+	public int[][] getAmmunition() {
+		return new int[0][2];
+	}
+	
+	/* Nested classes */
 	public class Effect {
 	// Class that holds description of one current character's effect
 		public int duration, modifier, effectId;

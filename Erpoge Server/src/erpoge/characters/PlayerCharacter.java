@@ -20,6 +20,7 @@ import erpoge.inventory.UniqueItem;
 import erpoge.serverevents.*;
 import erpoge.terrain.Container;
 import erpoge.terrain.Location;
+import erpoge.terrain.Portal;
 import erpoge.terrain.World;
 
 public class PlayerCharacter extends Character {
@@ -139,7 +140,6 @@ public class PlayerCharacter extends Character {
 			location.flushEvents(Location.TO_LOCATION, this);
 		}
 	}
-
 	public void drop(int typeId, int amount) {
 		if (this.isOnGlobalMap()) {
 			throw new Error("Drop on global map");
@@ -156,7 +156,6 @@ public class PlayerCharacter extends Character {
 			location.flushEvents(Location.TO_LOCATION, this);
 		}
 	}
-
 	public void pickUp(int typeId, int amount) {
 		if (this.isOnGlobalMap()) {
 			throw new Error("Pick up on global map");
@@ -165,7 +164,6 @@ public class PlayerCharacter extends Character {
 			location.flushEvents(Location.TO_LOCATION, this);
 		}
 	}
-	
 	public void pickUp(int itemId) {
 		if (this.isOnGlobalMap()) {
 			throw new Error("Pick up on global map");
@@ -174,7 +172,6 @@ public class PlayerCharacter extends Character {
 			location.flushEvents(Location.TO_LOCATION, this);
 		}
 	}
-
 	public void attack(Character aim) {
 		if (this.isOnGlobalMap()) {
 			throw new Error("Attack on global map");
@@ -183,7 +180,6 @@ public class PlayerCharacter extends Character {
 			location.flushEvents(Location.TO_LOCATION, this);
 		}
 	}
-
 	public void shootMissile(int x, int y, int missile) {
 		if (this.isOnGlobalMap()) {
 			throw new Error("Shoot missile on global map");
@@ -192,7 +188,6 @@ public class PlayerCharacter extends Character {
 			location.flushEvents(Location.TO_LOCATION, this);
 		}
 	}
-
 	public void useObject(int x, int y) {
 		if (this.isOnGlobalMap()) {
 			throw new Error("Use object on global map");
@@ -201,7 +196,6 @@ public class PlayerCharacter extends Character {
 			location.flushEvents(Location.TO_LOCATION, this);
 		}
 	}
-
 	public void takeFromContainer(int typeId, int param, int x, int y) {
 		if (this.isOnGlobalMap()) {
 			throw new Error("Take from contaier on global map");
@@ -215,7 +209,6 @@ public class PlayerCharacter extends Character {
 			location.flushEvents(Location.TO_LOCATION, this);
 		}
 	}
-
 	public void putToContainer(int typeId, int param, int x, int y) {
 		if (this.isOnGlobalMap()) {
 			throw new Error("Put to contaier on global map");
@@ -229,7 +222,6 @@ public class PlayerCharacter extends Character {
 			location.flushEvents(Location.TO_LOCATION, this);
 		}
 	}
-
 	public String jsonGetEnteringData(boolean isWorld) {
 		// ������, ����������� ������� ��� ������ � ���� �� �����������
 		// ���������
@@ -372,7 +364,6 @@ public class PlayerCharacter extends Character {
 		answer += "\"en\":false}";
 		return answer;
 	}
-
 	public String jsonGetAuthData() {
 		/*
 		 * { onGlobalMap : boolean, worldX : int, worldY : int, party : int,
@@ -383,7 +374,6 @@ public class PlayerCharacter extends Character {
 				+ ",\"characterId\":" + characterId + ",\"name\":\"" + name
 				+ "\"}";
 	}
-
 	public void leaveLocation() {
 		worldX = location.worldX;
 		worldY = location.worldY;
@@ -392,7 +382,26 @@ public class PlayerCharacter extends Character {
 		mp = maxMp;
 		location.removeCharacter(this);
 	}
-
+	public void goToAnotherLevel(Portal portal) {
+	/**
+	 * Transports character to another level of current location.
+	 */
+		energy = 0;
+		location.removeCharacter(this);
+		portal.location.addCharacter(this, portal);
+	}
+	public Portal getNearbyPortal() {
+	/**
+	 * Returns Portal if character stand next to one.
+	 * Otherwise returns null
+	 */
+		for (Portal portal : location.portals) {
+			if (portal.isNear(x, y) || portal.x == x && portal.y == y) {
+				return portal;
+			}
+		}
+		return null;
+	}
 	public void worldTravel(int x, int y) {
 		worldX = x;
 		worldY = y;
@@ -400,7 +409,6 @@ public class PlayerCharacter extends Character {
 //		world.addEvent();
 //		world.flushEvents(Location.TO_WORLD, this);
 	}
-
 	public String jsonGetWorldTravel(int x, int y) {
 		if (canTravelTo(x, y)) {
 			return "{\"x\":" + x + ",\"y\":" + y + "}";
@@ -408,11 +416,9 @@ public class PlayerCharacter extends Character {
 			return "{\"x\":" + worldX + ",\"y\":" + worldY + "}";
 		}
 	}
-
 	private boolean canTravelTo(int x, int y) {
 		return true;
 	}
-
 	private void flushEvents() {
 		if (isOnGlobalMap()) {
 			world.flushEvents(Location.TO_WORLD, this);
@@ -420,11 +426,9 @@ public class PlayerCharacter extends Character {
 			location.flushEvents(Location.TO_LOCATION, this);
 		}
 	}
-
 	public boolean isAuthorized() {
 		return isAuthorized;
 	}
-
 	public void deauthorize() {
 		// Inform all characters who are on global map right now that
 		// this character has left
@@ -433,7 +437,6 @@ public class PlayerCharacter extends Character {
 		world.addEvent(new EventDeauthorization(characterId));
 		world.flushEvents(Location.TO_WORLD, this);
 	}
-
 	public void authorize() {
 		// Inform all characters who are on global map right now that
 		// this character has entered the game
@@ -446,19 +449,8 @@ public class PlayerCharacter extends Character {
 			world.flushEvents(Location.TO_WORLD, this);
 		}
 	}
-
 	public void setConnection(WebSocket connection) {
 		this.connection = connection;
-	}
-
-	public Location getPortalLocation() {
-		Set<Coordinate> keys = location.locationPortals.keySet();
-		for (Coordinate k : keys) {
-			if (k.isNear(x, y) || k.x == x && k.y == y) {
-				return location.locationPortals.get(k);
-			}
-		}
-		return null;
 	}
 	public void dialogueAnswer(int answerIndex) {
 		say(dialoguePartner.dialogues.get(this).getAnswerText(answerIndex));

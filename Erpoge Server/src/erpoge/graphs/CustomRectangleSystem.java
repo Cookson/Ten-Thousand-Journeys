@@ -191,7 +191,7 @@ public class CustomRectangleSystem extends Graph<RectangleArea> {
 		// что необходимо будет учитывать при переборе массива прямоугольников в
 		// цикле с итератором.
 		if (!rectangles.containsKey(num)) {
-			throw new Error("The rectangle system already has no �" + num
+			throw new Error("The rectangle system already has no " + num
 					+ " rectangle");
 		}
 		excluded.put(num, rectangles.get(num));

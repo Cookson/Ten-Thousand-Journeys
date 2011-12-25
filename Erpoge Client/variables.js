@@ -41,8 +41,57 @@ Terrain = {
 	PASS_FREE    : -1,
 	PASS_BLOCKED :  1,
 	PASS_SEE     :  3,
+// Cardinal directions
+	SIDE_N       :  1,
+	SIDE_E       :  2,
+	SIDE_S       :  3,
+	SIDE_W       :  4,
 	
-	cells : null
+	cells : null,
+	ceilings: [],
+	cameraOrientation : 1,
+	cssSideX : "left",
+	cssSideY : "top",
+	
+	getViewIndentation: function _(x,y,scale) {
+		if (Terrain.cameraOrientation == Terrain.SIDE_N) {
+			return {left: x*scale, top: y*scale};
+		} else if (Terrain.cameraOrientation == Terrain.SIDE_E) {
+			return {left: (height-y-1)*scale, top: x*scale};
+		} else if (Terrain.cameraOrientation == Terrain.SIDE_S) {
+			return {left: (width-x-1)*scale, top: (height-y-1)*scale};
+		} else if (Terrain.cameraOrientation == Terrain.SIDE_W) {
+			return {left: y*scale, top: (width-x-1)*scale};
+		}
+	},
+	getNormalView: function (x,y) {
+		if (Terrain.cameraOrientation == Terrain.SIDE_N) {
+			return {x: x, y: y};
+		} else if (Terrain.cameraOrientation == Terrain.SIDE_E) {
+			return {x: y, y: (height-x-1)};
+		} else if (Terrain.cameraOrientation == Terrain.SIDE_S) {
+			return {x: (width-x-1), y: (height-y-1)};
+		} else if (Terrain.cameraOrientation == Terrain.SIDE_W) {
+			return {x: (width-y-1), y: x};
+		}
+	},
+	isOrientationVertical: function _() {
+		return this.cameraOrientation == this.SIDE_N || this.cameraOrientation == this.SIDE_S;
+	},
+	getHorizontalDimension: function _() {
+		if (this.cameraOrientation == this.SIDE_N || this.cameraOrientation == this.SIDE_S) {
+			return width;
+		} else {
+			return height;
+		}
+	},
+	getVerticalDimension: function _() {
+		if (this.cameraOrientation == this.SIDE_N || this.cameraOrientation == this.SIDE_S) {
+			return height;
+		} else {
+			return width;
+		}
+	}	
 };
 // Переменные соединения
 var servers=[[]]; // Список всех серверов с логинами и паролями к персонажу на них, берётся из localStorage
@@ -106,8 +155,8 @@ var newPlayerLearnedSkills=[];
 var newPlayerClass="";
 var onlinePlayers=[];
 var inviterPlayerId=0;
-var mapCursorX=-1;
-var mapCursorY=-1;
+var mapCursorX=0; // dfffffffff
+var mapCursorY=0;
 var gAlertTimeout=null;
 var actionsList=null;
 // var charDollItemsIndents={

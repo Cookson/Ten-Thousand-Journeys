@@ -19,8 +19,7 @@ import erpoge.terrain.Location;
 import erpoge.terrain.LocationGenerator;
 import erpoge.terrain.TerrainBasics;
 import erpoge.terrain.TerrainGenerator;
-import erpoge.terrain.locationtypes.Settlement;
-import erpoge.terrain.locationtypes.Settlement.RoadSystem.Road;
+import erpoge.terrain.settlements.Settlement.RoadSystem.Road;
 import erpoge.terrain.settlements.buildings.Inn;
 
 public abstract class Building extends Rectangle {
@@ -29,7 +28,7 @@ public abstract class Building extends Rectangle {
 		SIDE_E = 2,
 		SIDE_S = 3,
 		SIDE_W = 4;
-	public TerrainGenerator settlement;
+	public LocationGenerator settlement;
 	public HashMap<Integer, RectangleArea> rooms;
 	public RectangleSystem rectangleSystem;
 	public int lobby = -1;
@@ -61,7 +60,7 @@ public abstract class Building extends Rectangle {
 		hasSettlement = true;
 		getDoorSides();
 //		frontSide = doorSides.get(0);
-		frontSide = Side.E;
+		frontSide = Side.S;
 		leftSide = frontSide.clockwise();
 		rightSide = frontSide.counterClockwise();
 		backSide = frontSide.opposite();
@@ -452,7 +451,6 @@ public abstract class Building extends Rectangle {
 	}
 	public void setLobby(int rectangleId) {
 		lobby = rectangleId;
-		Building.registerClass(Inn.class);
 	}
 	public void removeWall(Rectangle r, Side side) {
 	/**

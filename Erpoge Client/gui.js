@@ -184,10 +184,12 @@ var CellCursor = {
 	x:-1,
 	y:-1,
 	move: function _(x,y) {
+		var viewIndent = Terrain.getViewIndentation(x,y,1);
+		
 		mapCursorX=x;
 		mapCursorY=y;
-		this.elem.style.left=x*32+"px";
-		this.elem.style.top=y*32+"px";
+		this.elem.style.left=viewIndent.left*32+"px";
+		this.elem.style.top=viewIndent.top*32+"px";
 		this.x=x;
 		this.y=y;
 	},
@@ -205,7 +207,7 @@ var CellCursor = {
 		this.elem.appendChild(this.bg);
 		gameField.appendChild(this.elem);
 		this.changeStyle("Main");
-		this.move(-1,-1); // Убираем курсор за границы видимости, чтобы не висел в углу изначально
+		this.move(0,0); // Убираем курсор за границы видимости, чтобы не висел в углу изначально
 	},
 	invoke: function _(x,y) {
 		if (x==undefined) {

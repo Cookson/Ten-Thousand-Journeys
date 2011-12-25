@@ -17,7 +17,8 @@
 	this.destY=this.y;
 	this.type=(type!=undefined)?type:"player";
 	if (this.type!="player") {
-		this.name=characterTypes[type][0];
+		console.log(type);
+		this.name = characterTypes[type][0];
 	}
 	
 	this.fraction=(fraction==undefined)?(this.characterId==0)?1:0:fraction;
@@ -49,8 +50,9 @@
 	this.cellWrap.className="cellWrap";
 	this.cellWrap.setAttribute("id", "character"+this.characterId);
 	gameField.appendChild(this.cellWrap);
-	this.cellWrap.style.top=(32*y)+"px";
-	this.cellWrap.style.left=(32*x)+"px";
+	var viewIndent = Terrain.getViewIndentation(x,y,32);
+	this.cellWrap.style.top=viewIndent.top+"px";
+	this.cellWrap.style.left=viewIndent.left+"px";
 	this.cellWrap.style.opacity="0";
 	this.cellWrap.style.zIndex=this.y*2+2;
 	
@@ -572,9 +574,9 @@ Character.prototype.showPathTable=function() {
 			num.style.fontSize="18px";
 			num.style.display="inline-block";
 			num.style.border="1px solid black";
-			
-			w.style.left = i*32+"px";
-			w.style.top = j*32+"px";
+			var viewIndent = Terrain.getViewIntentation(i,j,32);
+			w.style.left = viewIndent.left+"px";
+			w.style.top = viewIndent.top+"px";
 			w.appendChild(num);
 			document.getElementById("gameField").appendChild(w);
 			
@@ -820,13 +822,14 @@ Character.prototype.sendMove=function() {
 			} else if (this.x-this.destX==-1) {
 				var left=32;
 			}
+			var viewIndent = Terrain.getViewIntentation(x/32,y/32,32);
 			if ((this.x!=this.destX || this.y!=this.destY) && !player.canSee(this.x,this.y) && player.canSee(this.destX,this.destY)) {
 				this.cellWrap.style.display="block";
 			}
 			if (+localStorage.getItem(1) && player.canSee(this.x, this.y)) {
 			// Анимировать...
 				animationsLeft++;
-				qanimate(character.cellWrap,[left,top], 100, function() {
+				qanimate(character.cellWrap,[viewIndent.left,viewIndent.top], 100, function() {
 				// Скрыть персонажа, если он ушёл из поля видимости
 					// if ((character.x!=character.destX || character.y!=character.destY) && player.canSee(character.x,character.y) && !player.canSee(character.destX,character.destY)) {
 						// character.cellWrap.style.display="none";
@@ -864,21 +867,12 @@ Character.prototype.showMove = function(nextCellX, nextCellY) {
 	Terrain.cells[this.x][this.y].character = undefined;
 	Terrain.cells[this.x][this.y].passability = Terrain.PASS_FREE;
 	
-	if (this.y-nextCellY==1) {
-		top=-32;
-	} else if (this.y-nextCellY==-1) {
-		top=32;
-	} 
-	if (this.x-nextCellX==1) {
-		left=-32;
-	} else if (this.x-nextCellX==-1) {
-		left=32;
-	}
+	var viewIndent = Terrain.getViewIndentation(nextCellX, nextCellY, 1);
 	
 	if (+localStorage.getItem(1)) {
 		animationsLeft++;
 		var character = this;
-		qanimate(this.cellWrap,[left,top], 75, function() {
+		qanimate(this.cellWrap,[viewIndent.left,viewIndent.top], 75, function() {
 			animationsLeft--;
 			character.cellWrap.style.zIndex=character.y*2+2;
 			moveGameField(this.x, this.y);
@@ -889,9 +883,9 @@ Character.prototype.showMove = function(nextCellX, nextCellY) {
 			renderView();
 		});
 	} else {
-		this.cellWrap.style.top=parseInt(this.cellWrap.style.top)+top+"px";
-		this.cellWrap.style.left=parseInt(this.cellWrap.style.left)+left+"px";
-		this.cellWrap.style.zIndex = this.y*2 + 2;
+		this.cellWrap.style.top=viewIndent.top*32+"px";
+		this.cellWrap.style.left=viewIndent.left*32+"px";
+		this.cellWrap.style.zIndex = viewIndent.top*2 + 2;
 		this.x = nextCellX; 
 		this.y = nextCellY;
 		Terrain.cells[this.x][this.y].passability = Terrain.PASS_SEE;
@@ -908,7 +902,8 @@ Character.prototype.showMove = function(nextCellX, nextCellY) {
 			renderView();
 		}
 		for (var i in this.effects) {
-			this.effects[i].move(this.x, this.y);
+			var viewIndent = Terrain.getViewIndentation(this.x, this.y, 1);
+			this.effects[i].move(viewIndent.left, viewIndent.top);
 		}
 		handleNextEvent();
 	}	
@@ -983,8 +978,10 @@ Character.prototype.placeSprite = function(x,y) {
 		x=this.x;
 		y=this.y;
 	}
-	this.cellWrap.style.left=x*32+"px";
-	this.cellWrap.style.top=y*32+"px";
+	var viewIndent = Terrain.getViewIndentation(x,y,1);
+	this.cellWrap.style.left=viewIndent.left*32+"px";
+	this.cellWrap.style.top=viewIndent.top*32+"px";
+	this.cellWrap.style.zIndex=viewIndent.top*2+1;
 };
 Character.prototype.sendPickUp = function(item) {
 	if (item.isUnique) {
@@ -1275,6 +1272,13 @@ Character.prototype.cellChooseAction = function() {
 };
 Character.prototype.showMissileFlight = function(fromX, fromY, toX, toY, missile) {
 	this.unselectMissile();
+	
+	var startViewIndent = Terrain.getViewIndentation(fromX, fromY, 1);
+	var endViewIndent = Terrain.getViewIndentation(toX, toY, 1);
+	fromX = startViewIndent.left;
+	fromY = startViewIndent.top;
+	toX = endViewIndent.left;
+	toY = endViewIndent.top;
 	animationsLeft++;
 	animationsLeft++; // Так надо: второй раз - для анимации снаряда
 	var character=this;

@@ -49,7 +49,7 @@ function recountWindowSize() {
 	// nGameZone.style.width=(nWindowWrap.clientWidth-nIntfInfo.clientWidth)-(nWindowWrap.clientWidth-nIntfInfo.clientWidth%32)+"px";
 	// document.getElementById("intfBorder").style.width=(nWindowWrap.clientWidth-nGameZone.clientWidth-nIntfInfo.clientWidth-4)+"px";
 	var l=0;
-	UI.width = nWindowWrap.clientWidth-nIntfInfo.clientWidth;
+	UI.width = nWindowWrap.clientWidth;
 	UI.width = UI.width-UI.width%32;
 	UI.height = nWindowWrap.clientHeight;
 	nGameZone.style.width=UI.width+"px";

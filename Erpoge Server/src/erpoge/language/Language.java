@@ -7,7 +7,7 @@ import java.util.HashMap;
 import erpoge.Main;
 
 public abstract class Language {
-	public static Language instance = new Russian();
+	public static Language instance = new English();
 	public final HashMap<String, ArrayList<String>> characterNames = new HashMap<String, ArrayList<String>>();
 	public final HashMap<String, ArrayList<String>> itemNames = new HashMap<String, ArrayList<String>>();
 	public final HashMap<String, ArrayList<String>> objectNames = new HashMap<String, ArrayList<String>>();
@@ -20,7 +20,11 @@ public abstract class Language {
 		characterNames.put(type, new ArrayList<String>(Arrays.asList(names)));
 	}
 	public static String getCharacterName(String type) {
-		return instance.characterNames.get(type).get(0);
+		try {
+			return instance.characterNames.get(type).get(0);
+		} catch (Exception e) {
+			throw new Error("Language has no name for character "+type);
+		}
 	}
 	public void addItemName(String type, String... names) {
 		itemNames.put(type, new ArrayList<String>(Arrays.asList(names)));

@@ -9,6 +9,7 @@ public class English extends Language {
 		addCharacterName("goblinMage", "goblin-mage");
 		addCharacterName("dwarvenHooker", "dwarven hooker");
 		addCharacterName("innkeeper", "innkeeper");
-		addCharacterName("orge", "ogre");
+		addCharacterName("ogre", "ogre");
+		addCharacterName("bear", "bear");
 	}
 }

@@ -2,27 +2,19 @@ package erpoge.terrain;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.Iterator;
 
 import erpoge.Chance;
 import erpoge.Coordinate;
 import erpoge.Main;
 import erpoge.characters.Character;
-import erpoge.characters.CharacterSet;
-import erpoge.characters.NonPlayerCharacter;
-import erpoge.characters.PlayerCharacter;
 import erpoge.graphs.CustomRectangleSystem;
 import erpoge.graphs.RectangleSystem;
-import erpoge.inventory.Item;
 import erpoge.inventory.ItemPile;
 import erpoge.inventory.UniqueItem;
 import erpoge.objects.GameObjects;
-import erpoge.serverevents.EventFloorChange;
-import erpoge.serverevents.EventObjectAppear;
 
 public abstract class TerrainBasics {
 	public static final int 
@@ -50,11 +42,12 @@ public abstract class TerrainBasics {
 	public int height;
 	public HashMap<Integer, Character> characters = new HashMap<Integer, Character>();
 	public HashMap<Integer, Container> containers = new HashMap<Integer, Container>();
+	public ArrayList<Ceiling> ceilings;
 	public Cell[][] cells;
 	public int[][] passability;
 	public World world;
 	public Rectangle startArea = new Rectangle(0, 0, 0, 0);
-	public HashMap<Coordinate, Location> locationPortals = new HashMap<Coordinate, Location>();
+	public HashSet<Portal> portals = new HashSet<Portal>();
 	public boolean isPeaceful = false;
 	
 	public TerrainBasics(int width, int height) {
@@ -107,10 +100,7 @@ public abstract class TerrainBasics {
 		}
 	}
 	public void setStartArea(int x, int y, int width, int height) {
-		startArea.x = x;
-		startArea.y = y;
-		startArea.width = width;
-		startArea.height = height;
+		startArea.setBounds(x, y, width, height);
 	}
 	public void setStartArea(Rectangle r) {
 		// TODO Auto-generated method stub
@@ -130,6 +120,9 @@ public abstract class TerrainBasics {
 		}
 		computePassability(x, y);
 	}
+	public void setObject(Coordinate c, int type) {
+		setObject(c.x, c.y, type);
+	}
 	
 	protected boolean isContainer(int id) {
 		return id >= 60 && id <= 63;
@@ -138,6 +131,9 @@ public abstract class TerrainBasics {
 			int x, int y);
 	protected void createContainer(int x, int y, int capacity) {
 		containers.put(getNum(x, y), new Container(capacity));
+	}
+	public void createCeiling(Rectangle ceiling, int type) {
+		ceilings.add(new Ceiling(ceiling, type));
 	}
 	public Container createContainer(int x, int y) {
 		Container container = new Container();
@@ -399,7 +395,7 @@ public abstract class TerrainBasics {
 	}
 	public void computePassability(int x, int y) {
 		Cell c = cells[x][y];
-		if (c.floor() == 7) {
+		if (c.floor() == GameObjects.FLOOR_WATER) {
 			passability[x][y] = 1;
 		} else if (c.object() != GameObjects.OBJ_VOID) {
 			passability[x][y] = GameObjects.getPassability(c.object());
@@ -416,8 +412,5 @@ public abstract class TerrainBasics {
 			}
 			Main.outln();
 		}
-	}
-	public void createPortal(int x, int y, Location aimLocation) {
-		locationPortals.put(new Coordinate(x, y), aimLocation);
 	}
 }

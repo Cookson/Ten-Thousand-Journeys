@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.awt.Rectangle;
 import java.io.IOException;
 
+
 import net.tootallnate.websocket.WebSocket;
 
 import erpoge.Chance;
@@ -18,7 +19,6 @@ import erpoge.Coordinate;
 import erpoge.Main;
 import erpoge.MainHandler;
 import erpoge.characters.Character;
-import erpoge.characters.CharacterSet;
 import erpoge.characters.NonPlayerCharacter;
 import erpoge.characters.PlayerCharacter;
 import erpoge.characters.TurnQueue;
@@ -37,6 +37,7 @@ public class Location extends TerrainBasics {
 	public int worldY;
 	
 	private ArrayList<PlayerCharacter> players = new ArrayList<PlayerCharacter>();
+	protected ArrayList<Ceiling> ceilings = new ArrayList<Ceiling>();
 	private ArrayList<Sound> soundSources = new ArrayList<Sound>();
 	/**
 	 * serverEvents - a core of the mechanism of asynchronous server-side data sending.
@@ -138,7 +139,7 @@ public class Location extends TerrainBasics {
 	public String jsonPartGetLocationContents() {
 		/*
 			Format: non-valid json data; 
-				String "w:xSize,h:ySize,p:boolean,c:[[floor,object,[[itemId,amount]xN]]xM]";
+				String "w:xSize,h:ySize,p:boolean,s:[[x,y,type]xJ]c:[[floor,object,[[itemId,amount]xN]]xM],ceilings:[[x,y,width,height]xL]";
 		*/
 		String answer = "\"w\":"+width+",\"h\":"+height+",\"p\":"+isPeaceful+",";
 		int sSize=soundSources.size();
@@ -169,10 +170,18 @@ public class Location extends TerrainBasics {
 				answer += "]"+(i+j<width+height-2 ? "," : "");
 			}
 		}
+		answer += "],\"ceilings\":[";
+		int ceilingsSize = ceilings.size();
+		int i=0;
+		for (Ceiling c : ceilings) {
+			answer += "["+c.x+","+c.y+","+c.width+","+c.height+","+c.type+"]"+(++i<ceilingsSize ? "," : "");
+		}
 		answer += "]";
+		Main.console(answer.length()+" AAARs");
 		return answer;
 	}
 	public Coordinate getStartCoord() {
+		Main.console(startArea);
 		for (int i=startArea.x;i<startArea.x+startArea.width;i++) {
 			for (int j=startArea.y;j<startArea.y+startArea.height;j++) {
 				if (passability[i][j] == PASSABILITY_FREE) {
@@ -202,22 +211,52 @@ public class Location extends TerrainBasics {
 	}	
 	
 	public void addCharacter(Character ch) {
-		Coordinate start = getStartCoord();
-		cells[start.x][start.y].character(ch);
-		ch.x = start.x;
-		ch.y = start.y;
+		Coordinate spawn = getStartCoord();
+		cells[spawn.x][spawn.y].character(ch);
+		ch.x = spawn.x;
+		ch.y = spawn.y;
 		characters.put(ch.characterId, ch);
 		ch.location = this;
 		if (ch instanceof PlayerCharacter) {
 			players.add((PlayerCharacter)ch);
 		}
 	}
-	
+	public void addCharacter(Character ch, Portal portal) {
+	/**
+	 * Adds character near portal. Portal is portal object
+	 * not in this location, but in location character came from.
+	 */
+		Coordinate spawn = portal.getAnotherEnd();
+		boolean freeSpaceFound = false;
+		both:
+		for (int dx = -1; dx<2; dx++) {
+		/**
+		 * Search for a free space near portal
+		 */
+			for (int dy = -1; dy<2; dy++) {
+				if (passability[spawn.x+dx][spawn.y+dy] == PASSABILITY_FREE) {
+					spawn.move(spawn.x+dx, spawn.y+dy);
+					freeSpaceFound = true;
+					break both;
+				}
+			}
+		}
+		if (!freeSpaceFound) {
+			throw new Error("Free space not found");
+		}
+		cells[spawn.x][spawn.y].character(ch);
+		ch.x = spawn.x;
+		ch.y = spawn.y;
+		ch.location = this;
+		characters.put(ch.characterId, ch);
+		if (ch instanceof PlayerCharacter) {
+			players.add((PlayerCharacter)ch);
+		}
+	}	
 	public void removeCharacter(Character character) {
 		passability[character.x][character.y] = 0;
 		characters.remove(character.characterId);
 	}
-	
 	public void removeCharacter(PlayerCharacter character) {
 		passability[character.x][character.y] = 0;
 		characters.remove(character);
@@ -239,6 +278,9 @@ public class Location extends TerrainBasics {
 				ch.getVisibleEntities();
 			}
 		}
+	}
+	public void setObject(Coordinate c, int type) {
+		setObject(c.x, c.y, type);
 	}
 	
 	public void removeObject(int x, int y) {
@@ -338,4 +380,5 @@ public class Location extends TerrainBasics {
 		}		                            
 		throw new Error("Sound source at "+x+":"+y+" not found");
 	}
+	
 }

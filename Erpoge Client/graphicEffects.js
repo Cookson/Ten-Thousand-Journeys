@@ -8,10 +8,12 @@ function Effect(startX, startY, endX, endY, padding1, padding2, padding3, paddin
 		this.padding3 = (padding3) ? padding3 : 0;
 		this.padding4 = (padding4) ? padding4 : 0;
 		this.callback = (callback) ? callback : undefined;
-		this.startX = startX;
-		this.startY = startY;
-		this.endX = endX;
-		this.endY = endY;
+		var startViewIndent = Terrain.getViewIndentation(startX, startY, 1);
+		var endViewIndent = Terrain.getViewIndentation(endX, endY, 1);
+		this.startX = startViewIndent.left;
+		this.startY = startViewIndent.top;
+		this.endX = endViewIndent.left;
+		this.endY = endViewIndent.top;
 		this.width = Math.abs(startX-endX)*32+32;
 		this.height = Math.abs(startY-endY)*32+32;
 		this.overallWidth = this.width+this.padding2+this.padding4;
@@ -36,8 +38,8 @@ function Effect(startX, startY, endX, endY, padding1, padding2, padding3, paddin
 	}
 };
 Effect.prototype.move = function(x, y) {
-	this.wrap.style.top = (y*32-this.padding1-((this.endY>this.startY)? 0 : this.height-32)-16)+"px";
-	this.wrap.style.left = (x*32-this.padding4-((this.endX>this.startX)? 0 : this.width-32))+"px";
+	this.wrap.style.left = x*32-this.padding4-((this.endX>this.startX)? 0 : this.width-32)+"px";
+	this.wrap.style.top = y*32-this.padding1-((this.endY>this.startY)? 0 : this.height-32)-16+"px";	
 };
 Effect.prototype.pause = function() {
 // Places a fake function to _this particular_ object to pause the draw "loop"

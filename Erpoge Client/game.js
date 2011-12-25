@@ -21,21 +21,25 @@ onLoadEvents['game'] = function _() {
 	}
 	cacheImages();
 	saveParticlesImageData();
+//	rotateCamera(Terrain.SIDE_E);
 };
 function moveGameField(x,y,initiate) {
 // Центрировать камеру на клетке x;y
+	var normal = Terrain.getViewIndentation(x,y,1);
+	x = normal.left;
+	y = normal.top;
 	var xCells=x;
 	var yCells=y;
 	x=UI.width/2-x*32;
 	x-=(x%32==0)?0:16;
-	x=(x<0)?((width-xCells-1)*32<UI.width/2)?UI.width-width*32:x:0;
-	if (width*32<UI.width) {
+	x=(x<0)?((Terrain.getHorizontalDimension()-xCells-1)*32<UI.width/2)?UI.width-Terrain.getHorizontalDimension()*32:x:0;
+	if (Terrain.getHorizontalDimension()*32<UI.width) {
 		x=0;
 	}
 	y=(UI.height-UI.height%32)/2-y*32;
 	y-=(y%32==0)?0:16;
-	y=(y<0)?((height-yCells-1)*32<UI.height/2)?UI.height-height*32:y:0;
-	if (height*32<UI.height) {
+	y=(y<0)?((Terrain.getVerticalDimension()-yCells-1)*32<UI.height/2)?UI.height-Terrain.getVerticalDimension()*32:y:0;
+	if (Terrain.getVerticalDimension()*32<UI.height) {
 		y=0;
 	}
 	// На этом месте переменные x и y обозначают отступы в пикселях
@@ -52,8 +56,8 @@ function moveGameField(x,y,initiate) {
 			});
 		}
 	} else {
-		gameField.style.top=y+"px";
 		gameField.style.left=x+"px";
+		gameField.style.top=y+"px";		
 		if (weatherEffect) {
 			var wx = player.x;
 			var wy = player.y;
@@ -88,15 +92,16 @@ function prepareArea(isWorld) {
 		}
 	}
 	// Canvas с полом
-	floorCanvas.width=width*32;
-	floorCanvas.height=height*32;
+	floorCanvas.width=Terrain.getHorizontalDimension()*32;
+	floorCanvas.height=Terrain.getVerticalDimension()*32;
 	// Игровое поле
 	gameField.style.display="inline-block";
-	gameField.style.width=(32*width)+"px";
-	gameField.style.height=(32*height)+"px";	
+	gameField.style.width=(32*Terrain.getHorizontalDimension())+"px";
+	gameField.style.height=(32*Terrain.getVerticalDimension())+"px";	
 }
 function playerClick(x, y, shiftKey) {
 // Функция обработки клика игрока
+//	console.log(x,y);
 	if (player.x != player.destX || player.y != player.destY) {
 		return;
 	}
@@ -247,6 +252,27 @@ function renderView() {
 	prevRendCX=rendCX;
 	prevRendCY=rendCY;
 	
+}
+function rotateCamera(side) {
+	
+	Terrain.cameraOrientation = side;
+	for (var y=0; y<height; y++) {
+		for (var x=0; x<width; x++) {
+			Terrain.cells[x][y].hide();
+		}
+	}
+	floorCanvas.width=Terrain.getHorizontalDimension()*32;
+	floorCanvas.height=Terrain.getVerticalDimension()*32;
+	for (var y=0; y<height; y++) {
+		for (var x=0; x<width; x++) {
+			Terrain.cells[x][y].show();
+		}
+	}
+	for (var ch in characters) {
+		characters[ch].placeSprite();
+	}
+	moveGameField(player.x, player.y, true);
+	UI.notify("cameraRotation");
 }
 function showCell(x,y) {
 	Terrain.cells[x][y].hide();
@@ -704,7 +730,6 @@ function readLocation(data) {
 		c:[[floor,object,items,river,race,[objects]]xN]
 	}
 */
-	
 	width=data.w;
 	height=data.h;
 	player.seenCells=[];
@@ -762,6 +787,11 @@ function readLocation(data) {
 	if (data.s) {
 		for (var i in data.s) {
 			new SoundSource(data.s[i][0], data.s[i][1], data.s[i][2]);
+		}
+	}
+	if (data.ceilings) {
+		for (var i=0; i<data.ceilings.length; i++) {
+			new Ceiling(data.ceilings[i][0],data.ceilings[i][1],data.ceilings[i][2],data.ceilings[i][3]);
 		}
 	}
 }

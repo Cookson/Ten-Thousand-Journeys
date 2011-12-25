@@ -16,12 +16,13 @@
 */
 // Имя, сила, ловкость, мудрость, аммуниция
 characterTypes = {
-	"innkeeper":["дварфийская проститутка", 30, 0], 
-	"goblin":["гоблин", 30, 0], 
-	"ogre":["огр", 30, 0], 
-	"dragon":["дракон", 300, 200], 
-	"goblinMage":["гоблин-маг", 30, 0], 
-	"dwarvenHooker":["дварфийская проститутка", 30, 0]
+	"bear":["bear", 30, 0], 
+	"innkeeper":["innkeeper", 30, 0], 
+	"goblin":["goblin", 30, 0], 
+	"ogre":["ogre", 30, 0], 
+	"dragon":["dragon", 300, 200], 
+	"goblinMage":["goblin-mage", 30, 0], 
+	"dwarvenHooker":["dwarven hooker", 30, 0]
 };
 
 

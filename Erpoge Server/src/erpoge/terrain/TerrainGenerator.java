@@ -16,24 +16,21 @@ import erpoge.Main;
 import erpoge.RectangleArea;
 import erpoge.Side;
 import erpoge.characters.Character;
-import erpoge.characters.CharacterSet;
 import erpoge.characters.NonPlayerCharacter;
-import erpoge.graphs.RectangleSystem;
-import erpoge.inventory.Item;
-import erpoge.inventory.ItemPile;
-import erpoge.inventory.UniqueItem;
-import erpoge.objects.GameObjects;
-import erpoge.serverevents.EventFloorChange;
-import erpoge.serverevents.EventObjectAppear;
 
 public class TerrainGenerator extends TerrainBasics {
-	public TerrainBasics location;
+	/**
+	 * Levels of multi-level locations store here.
+	 * First level is number 0.
+	 */
+
+	public Location location;
 
 	public TerrainGenerator(Location location) {
 		super(location.width, location.height);
 		this.location = location;
 	}
-
+	
 	public ArrayList<Coordinate> polygon(ArrayList<Coordinate> coords) {
 		return polygon(coords, false);
 	}

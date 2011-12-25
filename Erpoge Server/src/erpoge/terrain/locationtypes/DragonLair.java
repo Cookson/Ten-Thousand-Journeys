@@ -22,7 +22,7 @@ public class DragonLair extends LocationGenerator {
 		mainRS.initialFindOuterSides();
 		ArrayList<Integer> outerRecs = mainRS.getOuterRectanglesNums();
 		
-		// Строим дерево, начинающееся с одного из внешних прямоугольников
+		// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		ArrayList<Integer> deadEnds = mainRS.convertGraphToDirectedTree(outerRecs.get(Chance.rand(0,
 				outerRecs.size() - 1)));
 		setStartArea(mainRS.rectangles.get(deadEnds.get(0)));
@@ -74,10 +74,8 @@ public class DragonLair extends LocationGenerator {
 					CellCollection.rectangleToCellsList(new Rectangle(entranceCell.x-1, entranceCell.y-1, 3, 3)))
 					.fillWithElements(ELEMENT_OBJECT, GameObjects.OBJ_VOID);
 			// Modify rectangle system
-			additionalRS.excludeRectanglesHaving(ELEMENT_OBJECT, GameObjects.OBJ_DOOR_BLUE);
+//			additionalRS.excludeRectanglesHaving(ELEMENT_OBJECT, GameObjects.OBJ_DOOR_BLUE);
 			additionalRS.excludeRectanglesHaving(ELEMENT_OBJECT, GameObjects.OBJ_VOID);
 		}
 	}
-
-	
 }

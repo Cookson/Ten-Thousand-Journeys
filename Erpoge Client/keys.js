@@ -61,6 +61,10 @@ onLoadEvents['keys'] = function _() {
 			"takeAllFromContainer", 
 			"A",
 			UI.MODE_CONTAINER);
+	Keys.assign(
+			"rotateCamera", 
+			"C",
+			UI.MODE_ALWAYS);
 };
 //leaveParty: function _() {
 //	if (player.partyId==0) {

@@ -54,6 +54,7 @@ var UI = {
 		dialogueEnd: {},
 		containerOpen: {},
 		containerChange: {},
+		cameraRotation: {},
 		/* Interface events */
 		spellSelect: {},
 		spellUnselect: {},

@@ -105,9 +105,9 @@ public class RectangleSystem extends Graph<RectangleArea> {
 		this.height = crs.height;
 		this.location = crs.location;
 		this.edges = crs.edges;
-		this.excluded = new HashMap<Integer, RectangleArea>();
+		this.excluded = crs.excluded;
 		this.outerSides = new HashMap<Integer, ArrayList<Side>>();
-		buildEdges();
+//		buildEdges();
 		findOuterSidesOfComplexForm();
 	}
 
@@ -147,13 +147,19 @@ public class RectangleSystem extends Graph<RectangleArea> {
 		
 		
 		edges = new HashMap<Integer, ArrayList<Integer>>();
-		for (int i = 0; i < len; i++) {
+		for (int i : rectangles.keySet()) {
 			edges.put(i, new ArrayList<Integer>());
 		}
 		for (int i = 0; i < len; i++) {
 			Rectangle r1 = rectangles.get(i);
+			if (r1 == null) {
+				continue;
+			}
 			for (int j = i + 1; j < len; j++) {
 				Rectangle r2 = rectangles.get(j);
+				if (r2 == null) {
+					continue;
+				}
 				if (areRectanglesNear(r1, r2)) {
 					
 					edges.get(i).add(j);
@@ -551,6 +557,9 @@ public class RectangleSystem extends Graph<RectangleArea> {
 			sides.put(Side.E, r.height);
 			sides.put(Side.S, r.width);
 			sides.put(Side.W, r.height);
+			if (edges.get(i) == null) {
+				Main.console(rectangles+"\n"+edges);
+			}
 			for (int j : edges.get(i)) {
 				Rectangle r2 = rectangles.get(j);
 				if (areRectanglesNear(r, r2)) {
@@ -558,6 +567,7 @@ public class RectangleSystem extends Graph<RectangleArea> {
 					sides.put(side, sides.get(side)
 							- lengthOfAdjacenctZone(r, r2));
 				} else {
+					Main.console(i+" "+j);
 					throw new Error("Rectangles are not close to each other! Error in logic of rectangles' splitting!");
 				}
 			}

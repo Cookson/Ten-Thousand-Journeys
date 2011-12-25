@@ -108,10 +108,9 @@ CanvasRenderingContext2D.prototype.getTransition = function(tileType,
 		y = 0;
 	}
 	var imageData = this.getImageData(x, y, 32, 32);
-
+	
 	// Получаем данные об изображении, к которому переходим
 	var tileImageCtx = document.createElement("canvas").getContext("2d");
-	
 	tileImageCtx.drawImage(tiles[tileType][0], 0, 0);
 	var tileImageData = tileImageCtx.getImageData(0, 0, 32, 32);
 	var i;
@@ -266,8 +265,8 @@ function Minimap(elem) {
 }
 Minimap.prototype.init = function() {
 	this.elem = this.elem ? this.elem : document.createElement("canvas");
-	this.elem.width = this.w * this.scale;
-	this.elem.height = this.h * this.scale;
+	this.elem.width = Terrain.getHorizontalDimension() * this.scale;
+	this.elem.height = Terrain.getVerticalDimension() * this.scale;
 	this.ctx = this.elem.getContext("2d");
 	// this.elem.style.position="absolute";
 	// this.elem.style.top="200px";
@@ -336,9 +335,8 @@ Minimap.prototype.drawCell = function(x, y, fillStyle) {
 		return false;
 	}
 	this.ctx.fillStyle = this.fillStyles[fillStyle];
-	var pixelX = x * this.scale;
-	var pixelY = y * this.scale;
-	this.ctx.fillRect(pixelX, pixelY, this.scale, this.scale);
+	var viewIndent = Terrain.getViewIndentation(x, y, this.scale);
+	this.ctx.fillRect(viewIndent.left, viewIndent.top, this.scale, this.scale);
 };
 Minimap.prototype.fillStyles = {
 	clientPlayer : "rgb(56,255,56)",

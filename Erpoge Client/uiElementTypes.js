@@ -571,10 +571,13 @@ UIElementTypes.minimap = {
 		 this.rootElement.appendChild(nMap);
 		 
 		 this.setData("minimap", minimap);
-	 },
+	},
 	listeners: {
 		environmentChange: function _(notifier) {
 		 	this.getData("minimap").draw();
+	 	},
+	 	cameraRotation: function _() {
+	 		this.getData("minimap").init();		
 	 	},
 	 	locationLoad: function _() {
 	 		this.getData("minimap").changeDimensions(width, height);
@@ -586,7 +589,10 @@ UIElementTypes.minimap = {
 		click: function _(e) {
 			var minimap = this.getData("minimap");
 			var rect=getOffsetRect(minimap.elem);
-			playerClick(Math.floor((e.clientX-rect.left)/minimap.scale),Math.floor((e.clientY-rect.top)/minimap.scale));
+			var normal = Terrain.getNormalView(
+					Math.floor((e.clientX-rect.left)/minimap.scale), 
+					Math.floor((e.clientY-rect.top)/minimap.scale));
+			playerClick(normal.x,normal.y);
 		},
 		mousemove: function _(e) {
 			var minimap = this.getData("minimap");
