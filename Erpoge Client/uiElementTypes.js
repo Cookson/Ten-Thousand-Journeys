@@ -22,6 +22,15 @@ UIElementTypes.uiWindowPrototype = {
 		
 	}
 };
+UIElementTypes.panel = {
+	onInit: function _() {},
+	listeners: {},
+	keysActions: {},
+	handlers: {},
+	cssRules: function _() {
+		
+	}
+};
 UIElementTypes.windowGameAlert = {
 	onInit: function _() {
 		var nText = document.createElement("div");
@@ -121,7 +130,7 @@ UIElementTypes.windowAccountCharacters = {
 	listeners: {
 		accountPlayersRecieve: function _(data) {
 			// Clear players list
-			// data: [[characterId, name, class, race, level, ammunition]xN]
+			// data: [[characterId, name, class, race, ammunition]xN]
 			var nPlayersList = this.getData("playersListNode");
 			while (nPlayersList.children.length>0) {
 				nPlayersList.children[0].parentNode.removeChild(nPlayersList.children[0]);
@@ -135,7 +144,7 @@ UIElementTypes.windowAccountCharacters = {
 				
 				nDiv.appendChild(document.createTextNode(
 					data[i][1]+" - "+Global.races[data[i][3]]+" " +
-					data[i][2]+" "+data[i][4]+" уровня"
+					data[i][2]
 				));
 				nPlayersList.appendChild(nDiv);
 				nDiv.setData("characterId", data[i][0]);
@@ -542,6 +551,7 @@ UIElementTypes.iconsInventory = {
 		div.$type$ {					\
 			cursor: pointer;			\
 			max-width: 240px;			\
+			width: 240px;				\
 		}								\
 		div.$type$DivWrap {				\
 			display: inline-block;		\
@@ -1158,6 +1168,7 @@ UIElementTypes.iconsSpells = {
     		-webkit-box-sizing: border-box;	\
     		-moz-box-sizing: border-box;	\
     		padding: 0px 0px 0px 0px;		\
+    		width: 240px;				\
     	}								\
     	div.$type$ > div {				\
     		display: inline-block;		\
@@ -1255,7 +1266,7 @@ UIElementTypes.hpBar = {
     listeners: {
     	healthChange: function _() {
 	    	this.getData("valueTextNode").nodeValue = player.hp+"/"+player.maxHp;
-	    	this.getData("stripNode").style.width = (110*player.hp/player.maxHp)+"px";
+	    	this.getData("stripNode").style.width = (240*player.hp/player.maxHp)+"px";
     	},
     	locationLoad: "healthChange"
     },
@@ -1269,7 +1280,7 @@ UIElementTypes.hpBar = {
  		div.$type$Bg {					\
  			display: inline-block;		\
  			background-color: #272;		\
- 			width: 110px;				\
+ 			width: 240px;				\
  			height: 20px;				\
  			text-align: left;			\
  			border-radius: 4px;			\
@@ -1289,7 +1300,83 @@ UIElementTypes.hpBar = {
  			vertical-align: middle;		\
  			line-height: 20px;			\
  			height: 20px;				\
- 			width: 110px;				\
+ 			width: 240px;				\
+ 		}								\
+ 		div.$type$ > div.wrap {			\
+ 			position: absolute;			\
+ 			top: 0px;					\
+ 			left: 0px;					\
+ 		}								\
+ 		";
+ 	}
+};
+UIElementTypes.mpBar = {
+    onInit: function _() {
+    	var nMainWrap = document.createElement("div");
+    	var nWrap1 = document.createElement("div");
+    	var nWrap2 = document.createElement("div");
+    	var nBg = document.createElement("div");
+    	var nStrip = document.createElement("div");
+    	var nValue = document.createElement("div");
+    	var nValueTextNode = document.createTextNode("");
+    	
+    
+    	this.addCustomClass(nBg, "Bg");
+    	this.addCustomClass(nStrip, "Strip");
+    	this.addCustomClass(nValue, "Value");
+    	
+    	nWrap1.addClass("wrap");
+    	nWrap2.addClass("wrap");
+    	
+    	nValue.appendChild(nValueTextNode);
+    	this.rootElement.appendChild(nBg);
+    	this.rootElement.appendChild(nStrip);
+    	nWrap2.appendChild(nValue);
+    	nValueTextNode.nodeValue = "blablabla";
+    	this.rootElement.appendChild(nWrap2);
+    	
+    	this.setData("stripNode", nStrip);
+    	this.setData("valueTextNode", nValueTextNode);    	
+    }, 
+    listeners: {
+    	manaChange: function _() {
+	    	this.getData("valueTextNode").nodeValue = player.mp+"/"+player.maxMp;
+	    	this.getData("stripNode").style.width = (240*player.mp/player.maxMp)+"px";
+    	},
+    	locationLoad: "manaChange"
+    },
+    keysActions: {},
+ 	handlers: {},
+ 	cssRules: function _() {
+ 		return "						\
+ 		div.$type$ {					\
+ 			height: 20px;				\
+ 			position: relative;			\
+ 		}								\
+ 		div.$type$Bg {					\
+ 			display: inline-block;		\
+ 			background-color: #237;		\
+ 			width: 240px;				\
+ 			height: 20px;				\
+ 			text-align: left;			\
+ 			border-radius: 4px;			\
+ 		}								\
+ 		div.$type$Strip {				\
+ 			background-color: #44a;		\
+ 			height: 20px;				\
+ 			position: absolute;			\
+ 			top: 0px;					\
+ 			left: 0px;					\
+ 			border-radius: 4px;			\
+ 		}								\
+ 		div.$type$Value {				\
+ 			font-size: 13px;			\
+ 			color: #fff;				\
+ 			text-align: center;			\
+ 			vertical-align: middle;		\
+ 			line-height: 20px;			\
+ 			height: 20px;				\
+ 			width: 240px;				\
  		}								\
  		div.$type$ > div.wrap {			\
  			position: absolute;			\
@@ -2247,6 +2334,86 @@ UIElementTypes.windowAccountCreate = {
 			color: #f55;			\
 			text-align: center;		\
 			font-size: 13px;		\
+		}							\
+		";
+	}
+};
+UIElementTypes.attributeList = {
+	onInit: function _() {
+		var nHeader = document.createElement("div");
+		var nArmorName = document.createElement("div");
+		var nArmorValue = document.createElement("div");
+		var nlAttributes = [];
+		var nEvasionName = document.createElement("div");
+		var nEvasionValue = document.createElement("div");
+		var nArmorText = document.createTextNode("");
+		var nEvasionText = document.createTextNode("");
+		var attributeList = ["str", "dex", "wis", "itl", "armor", "evasion", "fireRes", "coldRes", "poisonRes"];
+		
+		this.addCustomClass(nHeader, "Header");
+		nHeader.appendChild(document.createTextNode("Атрибуты"));
+		this.rootElement.appendChild(nHeader);
+		for (var i in attributeList) {
+			var nName = document.createElement("div");
+			var nValue = document.createElement("div");
+			var nValueText = document.createTextNode("");
+			
+			this.addCustomClass(nName, "AttrName");
+			this.addCustomClass(nValue, "AttrValue");
+			
+			nName.appendChild(document.createTextNode(attributeList[i]));	
+			nValue.appendChild(nValueText);
+			this.rootElement.appendChild(nName);
+			this.rootElement.appendChild(nValue);
+			
+			this.setData(attributeList[i]+"Text",nValueText);
+		}
+	},
+	listeners: {
+		attributeChange: function _(data) {
+		/* data: [attrId, value] */
+			switch (data[0]) {
+			case 1:
+				this.getData("armorText").nodeValue = data[1];
+			}
+		},
+		attributesInit: function _() {
+			this.getData("armorText").nodeValue = player.attributes.armor;
+			this.getData("evasionText").nodeValue = player.attributes.evasion;
+			this.getData("fireResText").nodeValue = player.attributes.fireRes;
+			this.getData("coldResText").nodeValue = player.attributes.coldRes;
+			this.getData("poisonResText").nodeValue = player.attributes.poisonRes;
+			this.getData("strText").nodeValue = player.attributes.str;
+			this.getData("dexText").nodeValue = player.attributes.dex;
+			this.getData("wisText").nodeValue = player.attributes.wis;
+			this.getData("itlText").nodeValue = player.attributes.itl;
+		}
+	},
+	keysActions: {},
+	handlers: {},
+	cssRules: function _() {
+		return "					\
+		div.$type$ {				\
+			background-color: #333;	\
+			width: 200px;			\
+			color: #fff;			\
+		}							\
+		div.$type$Header {			\
+			text-align: center;		\
+			color:#fff;				\
+			font-weight: bold;		\
+			font-size: 18px;		\
+		}							\
+		div.$type$Attr {			\
+			width: 100%;			\
+		}							\
+		div.$type$AttrName {		\
+			display: inline-block;	\
+			width: 100px;			\
+		}							\
+		div.$type$AttrValue {		\
+			display: inline-block;	\
+			width: 50px;			\
 		}							\
 		";
 	}

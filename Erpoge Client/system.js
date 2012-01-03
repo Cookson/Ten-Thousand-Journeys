@@ -39,7 +39,6 @@ window.onunload=function () {
 function recountWindowSize() {
 	var nGameZone = document.getElementById("intfGameZone");
 	var nWindowWrap = document.getElementById("intfWindowWrap");
-	var nIntfInfo = document.getElementById("intfInfo");
 	document.getElementById("stLoad").style.lineHeight = document.body.clientHeight+"px";
 	
 	// Центрировать игровое окно по вертикали
@@ -52,11 +51,11 @@ function recountWindowSize() {
 	UI.width = nWindowWrap.clientWidth;
 	UI.width = UI.width-UI.width%32;
 	UI.height = nWindowWrap.clientHeight;
-	nGameZone.style.width=UI.width+"px";
-	nGameZone.style.height=UI.height+"px";
+//	nGameZone.style.width=UI.width+"px";
+//	nGameZone.style.height=UI.height+"px";
 	
-	var w=Math.floor(UI.width/32);
-	var h=Math.floor(UI.height/32);
+	var w=Math.floor((UI.visibleWidth)/32);
+	var h=Math.floor((UI.visibleHeight)/32);
 	rendW=((w%2==1)?w:w+1)+2;
 	rendH=((h%2==1)?h:h+1)+2;
 	prevRendCX=-1;

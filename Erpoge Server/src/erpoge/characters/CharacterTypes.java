@@ -71,14 +71,14 @@ public final class CharacterTypes {
 	public static CharacterType getType(String type) {
 		return types.get(type);
 	}
-	public static ArrayList<Integer> spells(int... ids) {
+	private static ArrayList<Integer> spells(int... ids) {
 		ArrayList<Integer> answer = new ArrayList<Integer>();
 		for (int spellId : ids) {
 			answer.add(spellId);
 		}
 		return answer;
 	}
-	public static ArrayList<Integer> protections(int... args) {
+	private static ArrayList<Integer> protections(int... args) {
 		ArrayList<Integer> answer = new ArrayList<Integer>(NUMBER_OF_PROTECTIONS);
 		int len = (int) Math.floor(args.length/2);
 		for (int i=0; i<NUMBER_OF_PROTECTIONS; i++) {

@@ -193,7 +193,7 @@ Particle.prototype.pointKinematicsMove = function() {
 //		}
 		this.start(); 
 	};
-	effectTypes.rain = function (startX, startY, endX, endY, padding1, padding2, padding3, padding4, callback) {
+	effectTypes.rain = function _(startX, startY, endX, endY, padding1, padding2, padding3, padding4, callback) {
 		arguments.callee.prototype.constructor.call(this, startX, startY, endX, endY, padding1, padding2, padding3, padding4, callback);
 		this.frames = Math.round(this.overallHeight*(this.FPS/500));
 		this.framesLeft = this.frames;
@@ -226,7 +226,7 @@ Particle.prototype.pointKinematicsMove = function() {
 		this.frameEvents[2] = addDrop;
 		this.start();
 	};
-	effectTypes.sinusoidal = function(startX, startY, endX, endY, padding1, padding2, padding3, padding4, callback) {
+	effectTypes.sinusoidal = function _(startX, startY, endX, endY, padding1, padding2, padding3, padding4, callback) {
 		arguments.callee.prototype.constructor.call(this, startX, startY, endX, endY, padding1, padding2, padding3, padding4, callback);
 		var init = function() {
 			this.endX = (this.effect.startX > this.effect.endX) ? 16 : this.effect.width-16;
@@ -256,8 +256,8 @@ Particle.prototype.pointKinematicsMove = function() {
 		}
 		this.start(); 
 	};
-	effectTypes.blood = function(startX, startY, endX, endY, padding1, padding2, padding3, padding4, callback) {
-		arguments.callee.prototype.constructor.call(this, startX, startY, endX, endY, padding1, padding2, padding3, padding4);
+	effectTypes.blood = function _(startX, startY, endX, endY, padding1, padding2, padding3, padding4, callback) {
+		Effect.apply(this, arguments);
 		this.frames = Math.round(this.FPS/3*2);
 		this.framesLeft = this.frames;
 		var init = function() {

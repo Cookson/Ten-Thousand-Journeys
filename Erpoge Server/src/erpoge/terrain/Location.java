@@ -25,6 +25,7 @@ import erpoge.characters.TurnQueue;
 import erpoge.inventory.Item;
 import erpoge.inventory.ItemPile;
 import erpoge.inventory.UniqueItem;
+import erpoge.itemtypes.Attribute;
 import erpoge.objects.Sound;
 import erpoge.serverevents.*;
 
@@ -141,44 +142,61 @@ public class Location extends TerrainBasics {
 			Format: non-valid json data; 
 				String "w:xSize,h:ySize,p:boolean,s:[[x,y,type]xJ]c:[[floor,object,[[itemId,amount]xN]]xM],ceilings:[[x,y,width,height]xL]";
 		*/
-		String answer = "\"w\":"+width+",\"h\":"+height+",\"p\":"+isPeaceful+",";
+		StringBuilder answer = new StringBuilder();
+		answer
+			.append("\"w\":").append(width)
+			.append(",\"h\":").append(height)
+			.append(",\"p\":").append(isPeaceful).append(",");
 		int sSize=soundSources.size();
 		if (sSize > 0) {
-			answer += "\"s\":[";
+			answer.append("\"s\":[");
 			for (int i=0;i<sSize-1;i++) {
 				Sound s = soundSources.get(i);
-				answer += "["+s.x+","+s.y+","+s.type+"],";
+				answer
+					.append("[")
+					.append(s.x).append(",")
+					.append(s.y).append(",")
+					.append(s.type).append("],");
 			}
 			Sound s = soundSources.get(sSize-1);
-			answer += "["+s.x+","+s.y+","+s.type+"]],";
+			answer
+				.append("[")
+				.append(s.x).append(",")
+				.append(s.y).append(",")
+				.append(s.type).append("]],");
 		}
-		answer += "\"c\":[";
+		answer.append("\"c\":[");
 		for (int j = 0;j<height;j++) {
 			for (int i=0;i<width;i++) {
 				Cell c = cells[i][j];
-				answer += "["+c.floor()+","+c.object();
+				answer.append("["+c.floor()).append(",").append(c.object());
 				int iSize = c.items.size();
 				if (iSize > 0) {
-					answer += ",[";
+					answer.append(",[");
 					int k=0;
 					for (Item item : c.items.values()){
-						answer += item.toJson()+((k<iSize-1) ? "," : "");
+						answer.append(item.toJson()).append((k<iSize-1) ? "," : "");
 						k++;
 					}
-					answer += "]";
+					answer.append("]");
 				}
-				answer += "]"+(i+j<width+height-2 ? "," : "");
+				answer.append("]").append(i+j<width+height-2 ? "," : "");
 			}
 		}
-		answer += "],\"ceilings\":[";
+		answer.append("],\"ceilings\":[");
 		int ceilingsSize = ceilings.size();
 		int i=0;
 		for (Ceiling c : ceilings) {
-			answer += "["+c.x+","+c.y+","+c.width+","+c.height+","+c.type+"]"+(++i<ceilingsSize ? "," : "");
+			answer
+				.append("[")
+				.append(c.x).append(",")
+				.append(c.y).append(",")
+				.append(c.width).append(",")
+				.append(c.height).append(",")
+				.append(c.type).append("]").append(++i<ceilingsSize ? "," : "");
 		}
-		answer += "]";
-		Main.console(answer.length()+" AAARs");
-		return answer;
+		answer.append("]");
+		return answer.toString();
 	}
 	public Coordinate getStartCoord() {
 		Main.console(startArea);
@@ -204,8 +222,11 @@ public class Location extends TerrainBasics {
 		Character ch = new NonPlayerCharacter(type, name, this, sx, sy);
 		characters.put(ch.characterId, ch);
 		cells[sx][sy].character(ch);
-		addEvent(new EventCharacterAppear(ch.characterId, ch.x, ch.y, ch.type, ch.name, ch.maxHp, ch.hp,
-				ch.maxMp, ch.mp, ch.getEffects(), ch.getAmmunition()));
+		addEvent(new EventCharacterAppear(
+				ch.characterId, ch.x, ch.y, ch.type, ch.name,
+				ch.getAttribute(Attribute.MAX_HP), ch.getAttribute(Attribute.HP),
+				ch.getAttribute(Attribute.MAX_MP), ch.getAttribute(Attribute.MP),
+				ch.getEffects(), ch.getAmmunition()));
 		ch.getVisibleEntities();
 		return ch;
 	}	

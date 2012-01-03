@@ -225,8 +225,10 @@ function Doll(character) {
 	this.draw = function() {
 		this.ctx.clearRect(0, 0, 32, 32);
 		this.drawBody();
-		if (this.character && this.character.ammunition
-				&& this.character.ammunition.getItemInSlot(6)) {
+		if (
+			this.character && this.character.ammunition &&
+			this.character.ammunition.getItemInSlot(6)
+		) {
 			this.drawAmmunition(this.character.ammunition.getItemInSlot(6).typeId);
 		}
 		if (!onGlobalMap || this.character.characterId == player.characterId) {
@@ -240,10 +242,11 @@ function Doll(character) {
 				if (i == 6) {
 					continue;
 				}
-				if (this.character && this.character.ammunition
-						&& this.character.ammunition.getItemInSlot(i)) {
+				if (
+					this.character && this.character.ammunition &&
+					this.character.ammunition.getItemInSlot(i)
+				) {
 					this.drawAmmunition(this.character.ammunition.getItemInSlot(i).typeId);
-
 				}
 			}
 		} else if (onGlobalMap && !this.character.characterId == player.characterId) {
@@ -353,7 +356,7 @@ Minimap.prototype.changeDimensions = function(newWidth, newHeight) {
 	this.w = newWidth;
 	this.h = newHeight;
 	this.init();
-}
+};
 Minimap.prototype.cellTypes = {
 	empty : 0,
 	floor : 1,

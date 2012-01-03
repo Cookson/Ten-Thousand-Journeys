@@ -65,6 +65,10 @@ onLoadEvents['keys'] = function _() {
 			"rotateCamera", 
 			"C",
 			UI.MODE_ALWAYS);
+	Keys.assign(
+			"idle", 
+			"S",
+			UI.MODE_ALWAYS);
 };
 //leaveParty: function _() {
 //	if (player.partyId==0) {

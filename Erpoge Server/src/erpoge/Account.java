@@ -26,7 +26,7 @@ public class Account {
 	public void accountStatistic() {
 		Main.console("Characters on account "+login+" "+this);
 		for (PlayerCharacter ch : characters) {
-			Main.console(ch.name+" "+ch.cls());
+			Main.console(ch.name+" "+ch.getCls());
 		}
 	}
 
@@ -74,9 +74,8 @@ public class Account {
 		for (;i <= iterations;i++) {
 			answer += 	"["+values[i].characterId+
 						",\""+values[i].name+
-						"\",\""+values[i].cls()+
-						"\","+values[i].race+
-						","+values[i].level()+",[";
+						"\",\""+values[i].getCls()+
+						"\","+values[i].race+",[";
 			int[] ammunition = values[i].ammunition.getIntArray();
 			int j=ammunition.length-1;
 			for (;j>=0;j--) {

@@ -1,7 +1,6 @@
 package erpoge.itemtypes;
 
 import erpoge.Main;
-import erpoge.inventory.ItemsTypology;
 
 public class SimpleItem {
 	public int id = -1;

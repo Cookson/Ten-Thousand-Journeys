@@ -30,16 +30,16 @@ function moveGameField(x,y,initiate) {
 	y = normal.top;
 	var xCells=x;
 	var yCells=y;
-	x=UI.width/2-x*32;
+	x=UI.visibleWidth/2-x*32;
 	x-=(x%32==0)?0:16;
-	x=(x<0)?((Terrain.getHorizontalDimension()-xCells-1)*32<UI.width/2)?UI.width-Terrain.getHorizontalDimension()*32:x:0;
-	if (Terrain.getHorizontalDimension()*32<UI.width) {
+	x=(x<0)?((Terrain.getHorizontalDimension()-xCells-1)*32<UI.visibleWidth/2)?UI.visibleWidth-Terrain.getHorizontalDimension()*32:x:0;
+	if (Terrain.getHorizontalDimension()*32<UI.visibleWidth) {
 		x=0;
 	}
-	y=(UI.height-UI.height%32)/2-y*32;
+	y=UI.visibleHeight/2-y*32;
 	y-=(y%32==0)?0:16;
-	y=(y<0)?((Terrain.getVerticalDimension()-yCells-1)*32<UI.height/2)?UI.height-Terrain.getVerticalDimension()*32:y:0;
-	if (Terrain.getVerticalDimension()*32<UI.height) {
+	y=(y<0)?((Terrain.getVerticalDimension()-yCells-1)*32<UI.visibleHeight/2)?UI.visibleHeight-Terrain.getVerticalDimension()*32:y:0;
+	if (Terrain.getVerticalDimension()*32<UI.visibleHeight) {
 		y=0;
 	}
 	// На этом месте переменные x и y обозначают отступы в пикселях
@@ -101,23 +101,24 @@ function prepareArea(isWorld) {
 }
 function playerClick(x, y, shiftKey) {
 // Функция обработки клика игрока
-//	console.log(x,y);
 	if (player.x != player.destX || player.y != player.destY) {
 		return;
 	}
 	var aim;
+	// If we click behind a character who we can attack
+	var dx = x-player.x;
+	var shiftX = dx == 0 ? player.x : player.x+dx/Math.abs(dx);
+	var dy = y-player.y;
+	var shiftY = dy == 0 ? player.y : player.y+dy/Math.abs(dy);
 	if (
-		(aim = Terrain.cells[x][y].character) &&
+		(aim = Terrain.cells[shiftX][shiftY].character) &&
 		player.isEnemy(aim)
 	) {
-	// Если игрок атакует
-		if (isMelee(player.ammunition.getItemInSlot(0).typeId) && !player.isNear(x,y)) {
-			return false;
-		}
-		player.sendAttack(aim.characterId,!isMelee(player.ammunition.getItemInSlot(0).typeId));
+	// Attack
+		player.sendAttack(aim.characterId, !(player.isBareHanded() || player.ammunition.getItemInSlot(0).isMelee()));
 	} else if (player.spellId!=-1) {
-	// Если игрок произносит заклинание
-		var spell=spells[player.spellId];
+	// Spell
+		var spell = spells[player.spellId];
 		if (!spell.onCell && Terrain.cells[x][y].passability != Terrain.PASS_SEE || spell.onCell && !spell.onOccupiedCell && Terrain.cells[x][y].passability!=Terrain.PASS_FREE) {
 			player.unselectSpell(player.spellId);
 			return false;
@@ -131,7 +132,6 @@ function playerClick(x, y, shiftKey) {
 			player.spellX=-1;
 			player.spellY=-1;
 			player.spellAimId=player.aimcharacter.characterId;
-			
 		} else if (spells[player.spellId].onCell) {
 			player.spellX=x;
 			player.spellY=y;
@@ -144,16 +144,16 @@ function playerClick(x, y, shiftKey) {
 		(!isOpenDoor(Terrain.cells[x][y].object.type) || shiftKey) && 
 		player.isNear(x,y)
 	) {
-	// Открыть дверь
+	// Open door
 		player.sendUseObject(x,y);
 	} else if (Terrain.cells[x][y].object && player.isNear(x,y) && isContainer(Terrain.cells[x][y].object.type)) {
-	// Открыть контейнер
+	// Open cotainer
 		Global.container.x = x;
 		Global.container.y = y;
 		player.sendOpenContainer();
 	} else if (Terrain.cells[x][y].passability==Terrain.PASS_BLOCKED || Terrain.cells[x][y].passability==Terrain.PASS_SEE) {
-	// Если игрок идёт к объекту или мобу
-		player.aimcharacter=-1; // Нужно, если игрок идёт
+	// Go to object
+		player.aimcharacter=-1;
 		player.destX = x;
 		player.destY = y;
 		player.getPathTable();
@@ -165,7 +165,7 @@ function playerClick(x, y, shiftKey) {
 	} else if (UI.mode == UI.MODE_CURSOR_ACTION) {
 		player.cellChooseAction();
 	} else {
-	// Если игрок идёт к клетке
+	// If player goes to cell
 		player.destX=x;
 		player.destY=y;
 		player.sendMove();
@@ -274,10 +274,6 @@ function rotateCamera(side) {
 	moveGameField(player.x, player.y, true);
 	UI.notify("cameraRotation");
 }
-function showCell(x,y) {
-	Terrain.cells[x][y].hide();
-	setTimeout(function() { Terrain.cells[x][y].show(); },500);
-}
 function showSound(x, y, type) {
 	var wrap = document.createElement("div");
 	var text = document.createElement("div");
@@ -295,8 +291,6 @@ function showSound(x, y, type) {
 	});
 }
 function readCharacters(data) {
-// Читает полученную от сервера информацию о персонажах в area и обрабатывает
-// логику
 /*
 in : [[
 0	characterId,
@@ -315,214 +309,36 @@ in : [[
 	]xM],
  */
 	
+	
 	for (var i=0;i<data.length;i++) {
 		if (data[i][3] == player.name) {
 			continue;
 		}
-		var isPlayer = data[i].length == 13;
-		if (characters[data[i][0]] == undefined) {
-			// (id, type, x, y, fraction, race)
-			characters[data[i][0]] = new Character(data[i][0], isPlayer ? undefined : data[i][11], data[i][1], data[i][2], data[i][4], data[i][12]);
-			var character = characters[data[i][0]];
-//			if (!player.canSee(characters[data[i][0]].x,characters[data[i][0]].y)) {
-//				characters[data[i][0]].hide();
-//			}
-//			if (data[i][1]=="player") {
-//				characters[data[i][0]].name=alliesNames[data[i][0]];
-//			}
-		} else {
-			throw new Error("Персонаж "+data[3]+" уже создан!");
-		}
-		// Амуниция
-//		currentCharacterId=data[i][0];
-//		readAmmunition(data[i][10]);
-		if (isPlayer) {		
-			character.name = data[i][3];
-			character.maxHp=data[i][71];
-			character.mp=data[i][8];
-			if (data[i][12]) {
-				character.race = +data[i][12];
-			}
-			var ammunition = data[i][10];
-			for (var i in ammunition) {
-				character.ammunition.putOnToSlot(i, new UniqueItem(ammunition[i][0], ammunition[i][1]));
-			}
-			
-			character.showAmmunition();
-		}
-	}
-}
-// Вспомогательные функции для readCharacters
-	function readAttacks(attackers, index) {
-		var attacker = attackers[index];
-		var character = characters[attacker[0]];
-		var isAttackMelee = isMelee(character.ammunition.getItemInSlot(0).typeId);
-		var killedByAttackCopy=[];
-		for (var i in killedByAttackCharacters) {
-			killedByAttackCopy.push(killedByAttackCharacters[i]);
-		}
-		if (attacker[6][2]) {
-		// Если атака приходится на клетку, а не на персонажа
-			var projectileType=1;
-			character.rangedAttack(attacker[6][0], attacker[6][1], projectileTypesNames[projectileType]);
-		} else {
-			var aimcharacter=characters[attacker[6][0]];
-			if (!character.isClientPlayer) {
-				character.aimcharacter=aimcharacter;
-			}
-			// Движение атакующего
-			if (isAttackMelee) {
-				character.meleeAttack(aimcharacter.x, aimcharacter.y);
-			} else {
-				var projectileType=1;
-				character.rangedAttack(aimcharacter.x, aimcharacter.y, projectileTypesNames[projectileType],function() {
-					aimcharacter.graphicEffect((attacker[6][1]>0 ? projectileEffectsNames[projectileType] : "none"),function() {
-						if (attacker[6][1]!=-1) {
-							var killedByAttackBuf=window.killedByAttackCharacters;
-							window.killedByAttackCharacters=killedByAttackCopy;
-							aimcharacter.showAttackResult();
-							window.killedByAttackCharacters=killedByAttackBuf;
-						}
-					});
-				});
-			}
-			if (attacker[6][1]==-1) {
-			// Уворот
-				aimcharacter.dodge(character);
-			} else {
-				if (isAttackMelee) {
-					aimcharacter.graphicEffect(attacker[6][1]>0 ? "blood" : "none",function() {
-						var killedByAttackBuf=window.killedByAttackCharacters;
-						window.killedByAttackCharacters=killedByAttackCopy;
-						aimcharacter.showAttackResult();
-						window.killedByAttackCharacters=killedByAttackBuf;
-					});
-				}
-				var characterIsDead=false;
-				for (var j in killedByAttackCharacters) {
-					if (killedByAttackCharacters[j]==aimcharacter.characterId) {
-						killedByAttackCharacters[j]=undefined;
-						characterIsDead=true;
-					}
-				}
-				if (!characterIsDead) {
-					aimcharacter.hp-=attacker[6][1];
-					aimcharacter.showHpBar();
-				}
-			}
-		}
-		if (index<attackers.length-1) {
-			// setTimeout здесь для того, чтобы не создавать рекурсию и начинать
-			// каждую функцию в новом замыкании
-			setTimeout(function() { 
-				readAttacks(attackers, index+1); 
-			},700);
-		}
-		// Обработка смерти происходит в другом месте. Не помню, где. Но
-		// происходит :3
-	}
-function readDeadCharacters(data) {
-	if (!data) {
-		return;
-	}
-	
-	if (data===0) {
-		return false;
-	}
-	deadCharacters=[];
-	try {
-		data.length;
-	} catch (e) {
-	}
-	for (var i=0;i<data.length;i++) {
-		if (characters[data[i]]!==undefined) {
-			deadCharacters.push(data[i]);
-		}
-	}
-}
-function readTurns(data) {
-// Получает порядок ходящих персонажей и отображает его в #intfQueue,
-// А также устанавливает canAct, определяющую, может ли игрок сейчас отправлять
-// данные о своих действиях
-// Внимание: обрабатывает логику ходов персонажей функция readCharacters
-	turns=data;
-	
-	if (!data || data.length==0) {
-		return;
-	}
-	
-	// Если следующий ход - ход игрока клиента, то игрок может действовать
-	currentCharacterId=data[0];
-	if (!characters[currentCharacterId]) {
-		return;
-	}
-	if (characters[currentCharacterId].type=="player") {
-	// Если это игрок, создать canvas с его изображением
-		var canvas=document.getElementById("queueCharacter");
-		var imageData=characters[currentCharacterId].doll.DOMNode.getContext("2d").getImageData(0,0,32,32);
-		canvas.getContext("2d").putImageData(imageData,0,0);
-		var nName=document.getElementById("queueCharacterName");
-		nName.innerHTML=characters[currentCharacterId].name;
-		if (characters[currentCharacterId].characterId==player.characterId) {
-			// nName.style.color="#5d5";
-			// nName.style.backgroundColor="#282";
-		} else {
-			nName.style.color="#fff";
-			nName.style.backgroundColor="#aa7";
-		}
-	}
-}
-function readItems(data) {
-// Обрабатывает принятые данные о предметах в рюкзаке
-	var i;
-	for (i=0;i<data.length;i++) {
-		var typeId = data[i][0];
-		var param = data[i][1];
-		if (isUnique(typeId)) {
-			player.items.addItem(new UniqueItem(typeId, param));
-		} else {
-			player.items.addItem(new ItemPile(typeId, param));
-		}
-	}
-	UI.notify("inventoryChange");
-}
-function readAmmunition(data, currentCharacterId) {
-// Обрабатывает принятые данные об амуниции
-// Формат: [(id)xN]
-	// Копируем амуницию игрока для функции player.showAmmuniiton() (чтобы
-	// проверить, нужно перерисовывать куклу, или нет)
-	for (var slot in data) {
-	// Записать в объект
-		if (slot==9 && characters[currentCharacterId].ammunition.hasItemInSlot(9)) {
-			slot=10;
-		}
-		characters[currentCharacterId].ammunition.putOnToSlot(slot, new UniqueItem(data[slot][0], data[slot][1]));
-	}
-	if (characters[currentCharacterId].type == "player") {
-		characters[currentCharacterId].showAmmunition();
-	}
-}
-function readSpells(data) {
-// Отобразить полученные заклинания
-// Format: [(spellId)xN]
-	player.spells = data;
-	
-}
-function readSkills(data) {
-	var len=data.length/2;
-	player.skills=[];
-	for (var i=0;i<len;i++) {
-		player.skills.push(data[i*2]);
-		player.skills.push(data[i*2+1]);
-	}
-}
-function sendPlayerQueuedAction() {
-// Автоматически отправляет действие игрока), которое поставлено в очередь
-// (например, когда игрок идёт на несколько ячеек
-	if (player.destX!=player.x || player.destY!=player.y) {
-		window.futter=new Date().getTime();
-		player.action();
 		
+		var isPlayer = data[i].length == 13;
+		new Character(
+			data[i][0], 
+			isPlayer ? "player" : data[i][11], 
+			data[i][1], 
+			data[i][2], 
+			data[i][4], 
+			data[i][12]
+		);
+		characters[data[i][0]].display();
+//		// Амуниция
+//		if (isPlayer) {
+//			character.name = data[i][3];
+//			character.maxHp=data[i][71];
+//			character.mp=data[i][8];
+//			if (data[i][12]) {
+//				character.race = +data[i][12];
+//			}
+//			var ammunition = data[i][10];
+//			for (var i in ammunition) {
+//				character.ammunition.putOnToSlot(i, new UniqueItem(ammunition[i][0], ammunition[i][1]));
+//			}
+//			character.showAmmunition();
+//		}
 	}
 }
 function worldMapRenderView() {
@@ -795,77 +611,6 @@ function readLocation(data) {
 		}
 	}
 }
-function createPlayerFromData(data) {
-	
-// Создаёт игрока
-/*
- * Формат данных: [ 0:id, 1:name, 2:race, 3:cls, 4:lvl, 5:maxHp,
- * 6:maxMp, 7:hp, 8:mp, 9:str, 10:dex, 11:wis, 12:int, 13:items,
- * 14:ammunition, 15:spells, 16:skills, 17:x, 18:y ]
- * 
- * 
- */
-	
-	player=new Character(data[0],"player",data[17],data[18],1,data[2],true);
-	UI.notify("titleChange");
-	
-	characters[data[0]]=player;
-	player.name=data[1];
-	player.race=data[2];
-	player.cls=data[3];
-	player.lvl=data[4];
-	player.maxHp=data[5];
-	player.maxMp=data[6];
-	player.hp=data[7];
-	player.mp=data[8];
-	player.str=data[9];
-	player.dex=data[10];
-	player.wis=data[11];
-	player.itl=data[12];
-	readItems(data[13]);
-	readAmmunition(data[14], data[0]);
-	readSpells(data[15]);
-	readSkills(data[16]);
-	player.showLoot();
-	return true;
-}
-function readWorldPlayer(data) {
-	// Получить и отобразить полную информацию об игроке на глобальной карте
-	// Формат: [characterId, name, race, class, level, maxHp, maxMp, str, dex, wis, itl,
-	// items, ammunition, spells, skills, worldX, worldY]
-	// Похоже на createPlayerFromData, но для глобальной карты]
-		player = characters[data[0]];
-		UI.notify("titleChange");
-		player.isClientPlayer = true;
-		player.name = data[1];
-		player.race = data[2];
-		player.cls = data[3];
-		player.level = data[4];
-		player.hp = data[5];
-		player.maxHp = data[5];
-		player.mp = data[6];
-		player.maxMp = data[6];
-		player.str = data[7];
-		player.dex = data[8];
-		player.wis = data[9];
-		player.itl = data[10];
-		readItems(data[11]);
-		readAmmunition(data[12], data[0]);
-		player.worldX = data[15];
-		player.worldY = data[16];
-		UI.notify("inventoryChange");
-		player.showAmmunition();
-		return true;
-	}
-function test(x,y) {
-	player={
-		name:player.name,
-		worldX:x,
-		worldY:y,
-		partyId:player.partyId
-	};
-	enterArea();
-}
 function enterArea(callback) {
 // Войти в область [player.worldX,player.worldY] и загрузить информацию о
 // персонаже
@@ -892,8 +637,8 @@ function readOnlinePlayers(data) {
 // Отобразить список игроков онлайн и сохранить его в переменной
 // in: [[characterId,name,class,race,party,worldX,worldY]xN]
 	for (var i in data) {
-		characters[data[i][0]] = new Character(data[i][0], "player", data[i][5], data[i][6], 1, data[i][3], false);
-		new WorldPlayer(data[i][5],data[i][6],characters[data[i][0]]);
+//		characters[data[i][0]] = new Player(data[i][0], "player", data[i][5], data[i][6], 1, data[i][3]);
+		new WorldPlayer(data[i][0], data[i][1], data[i][2], data[i][3], data[i][4], data[i][5], data[i][6]);
 	}
 }
 function readChatMessages(data) {

@@ -1,5 +1,7 @@
 package erpoge.inventory;
 
+import erpoge.itemtypes.ItemsTypology;
+
 public class UniqueItem extends Item {
 	private static int lastId = 1;
 	protected int itemId;

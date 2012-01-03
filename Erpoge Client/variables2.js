@@ -1,1 +1,1 @@
-var player = new Character(-1); // Объект игрока
+//var player = new Character(-1); // Объект игрока

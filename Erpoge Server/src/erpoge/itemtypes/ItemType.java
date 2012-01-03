@@ -1,6 +1,9 @@
 package erpoge.itemtypes;
 
-import erpoge.inventory.ItemsTypology;
+import java.util.HashMap;
+
+import erpoge.characters.Character;
+import erpoge.itemtypes.Attribute;
 
 public abstract class ItemType extends ItemSystemMetaInfo {
 	protected String name;
@@ -10,6 +13,7 @@ public abstract class ItemType extends ItemSystemMetaInfo {
 	protected final int material;
 	protected int id;
 	protected boolean unique;
+	protected HashMap<Attribute, Integer> specialAttributes = new HashMap<Attribute, Integer>();
 
 	public ItemType(String name, int cls, int weight, int price, int material) {
 		this.name = name;
@@ -35,6 +39,8 @@ public abstract class ItemType extends ItemSystemMetaInfo {
 			return SLOT_RING;
 		} else if (cls == CLASS_AMULET) {
 			return SLOT_AMULET;
+		}  else if (cls == CLASS_HEADGEAR) {
+			return SLOT_HEADGEAR;
 		} else {
 			throw new Error("Unknown slot");
 		}
@@ -50,7 +56,12 @@ public abstract class ItemType extends ItemSystemMetaInfo {
 	public static boolean isArmor(int c) {
 		return c >= 11 && c <= 21;
 	}
-
+	public void addSpecialAttribute(Attribute attribute, int value) {
+	/**
+	 * Add additional custom attribute bonus
+	 */
+		specialAttributes.put(attribute, value);
+	}
 	public static boolean isWeapon(int c) {
 		return c >= 0 && c <= 10;
 	}
@@ -79,4 +90,6 @@ public abstract class ItemType extends ItemSystemMetaInfo {
 	public boolean isUnique() {
 		return unique;
 	}
+	public abstract void addBonuses(Character character);
+	public abstract void removeBonuses(Character character);
 }

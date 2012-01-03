@@ -1,5 +1,8 @@
 package erpoge.itemtypes;
 
+import erpoge.characters.Character;
+import erpoge.characters.CustomCharacterAction;
+
 public class Weapon extends ItemType {
 	private final int damage;
 	private final int accuracy;
@@ -15,7 +18,17 @@ public class Weapon extends ItemType {
 	public String jsonPartTypology() {
 	// Get a json string that describes this item type
 	// Out: [name,cls,weight,price, damage, accuracy, speed]
-		return "[\""+name+"\", "+cls+", "+weight+","+price+","+material+","+damage+","+accuracy+","+speed+"]";
+		return new StringBuilder()
+			.append("[\"")
+			.append(name).append("\", ")
+			.append(cls).append(",")
+			.append(weight).append(",")
+			.append(price).append(",")
+			.append(material).append(",")
+			.append(damage).append(",")
+			.append(accuracy).append(",")
+			.append(speed).append("]")
+			.toString();
 	}
 	public int getDamage() {
 		return damage;
@@ -25,5 +38,15 @@ public class Weapon extends ItemType {
 	}
 	public int getSpeed() {
 		return speed;
+	}
+	@Override
+	public void addBonuses(Character character) {
+		// TODO Auto-generated method stub
+
+	}
+	@Override
+	public void removeBonuses(Character character) {
+		// TODO Auto-generated method stub
+		
 	}
 }

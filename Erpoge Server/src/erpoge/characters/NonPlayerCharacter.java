@@ -7,8 +7,8 @@ import erpoge.Chance;
 import erpoge.Coordinate;
 import erpoge.Main;
 import erpoge.inventory.Item;
-import erpoge.inventory.ItemsTypology;
 import erpoge.itemtypes.ItemType;
+import erpoge.itemtypes.ItemsTypology;
 import erpoge.serverevents.EventDialogueEnd;
 import erpoge.serverevents.EventDialoguePoint;
 import erpoge.terrain.Location;
@@ -42,7 +42,7 @@ public class NonPlayerCharacter extends Character {
 		// Set character's destX and destY to the closest cell near the given
 		// entity
 		if (isNear(entity.x, entity.y)) {
-			// Стоять на месте, если цель на соседней клетке
+			// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 			destX = x;
 			destY = y;
 			return;
@@ -54,7 +54,7 @@ public class NonPlayerCharacter extends Character {
 				curX + 1, curY - 1, curX - 1, curY - 1};
 		int dist = Integer.MAX_VALUE;
 		int curDestX = -1, curDestY = -1;
-		// Иначе следовать за ним
+		// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅ
 		for (int i = 0; i < 8; i++) {
 			curX = dists[i * 2];
 			curY = dists[i * 2 + 1];
@@ -159,18 +159,12 @@ public class NonPlayerCharacter extends Character {
 		}
 		Main.outln("------");
 	}
-	public int getArmor() {
-		return characterType.armor;
-	}
-	public int getEvasion() {
-		return characterType.evasion;
-	}
 	public int getProtection(int type) {
 		return characterType.protections.get(type);
 	}
 	public void getPathTable() {
-		// Получает таблицу путей по волновому алгоритму
-		// Отключено для возможности использования объектов
+		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		// if (vertex[this.destX][this.destY]==2) {
 		// this.destX=this.x;
 		// this.destY=this.y;
@@ -182,7 +176,7 @@ public class NonPlayerCharacter extends Character {
 		boolean isPathFound = false;
 		ArrayList<Coordinate> oldFront = new ArrayList<Coordinate>();
 		ArrayList<Coordinate> newFront = new ArrayList<Coordinate>();
-		// От какой клетки начинать отсчёт
+		// пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 		newFront.add(new Coordinate(x, y));
 		for (int i = 0; i < location.width; i++) {
 			for (int j = 0; j < location.height; j++) {
@@ -200,7 +194,7 @@ public class NonPlayerCharacter extends Character {
 			oldFront = newFront;
 			newFront = new ArrayList<Coordinate>();
 			for (int i = 0; i < oldFront.size(); i++) {
-				// Двигает фронт на восемь доступных сторон от каждой клетки
+				// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 				int x = oldFront.get(i).x;
 				int y = oldFront.get(i).y;
 				int[] adjactentX = new int[]{x + 1, x, x, x - 1, x + 1, x + 1,
@@ -233,8 +227,8 @@ public class NonPlayerCharacter extends Character {
 		} while (newFront.size() > 0 && !isPathFound && t < 25);
 	};
 	public ArrayList<Coordinate> getPath(int destinationX, int destinationY) {
-		// Получить путь до клетки в виде массива координат (0 - первый шаг и т.
-		// д.)
+		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (0 - пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅ пїЅ.
+		// пїЅ.)
 		if (destinationX == this.x && destinationY == this.y) {
 			throw new Error("Getting path to itself");
 		}
@@ -243,19 +237,19 @@ public class NonPlayerCharacter extends Character {
 			path.add(new Coordinate(destinationX, destinationY));
 			return path;
 		}
-		// Нахождение пути
+		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 		int currentNumX = destinationX;
 		int currentNumY = destinationY;
 		int x = currentNumX;
 		int y = currentNumY;
 		for (int j = this.pathTable[currentNumX][currentNumY]; j > 0; j = this.pathTable[currentNumX][currentNumY]) {
-			// Счётчик: от кол-ва шагов до клетки dest до начальной клетки (шаг
+			// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅ пїЅпїЅпїЅ-пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ dest пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅ
 			// 1)
 			path.add(0, new Coordinate(currentNumX, currentNumY));
 			int[] adjactentX = {x, x + 1, x, x - 1, x + 1, x + 1, x - 1, x - 1};
 			int[] adjactentY = {y - 1, y, y + 1, y, y + 1, y - 1, y + 1, y - 1};
 			for (int i = 0; i < 8; i++) {
-				// Для каждой из доступных сторон (С, Ю, З, В)
+				// пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ, пїЅ, пїЅ, пїЅ)
 				int thisNumX = adjactentX[i];
 				if (thisNumX < 0 || thisNumX >= location.width) {
 					continue;
@@ -265,8 +259,8 @@ public class NonPlayerCharacter extends Character {
 					continue;
 				}
 				if (pathTable[thisNumX][thisNumY] == j - 1) {
-					// Если клетка в этой стороне является предыдущим шагом,
-					// перейти на неё
+					// пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ,
+					// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅ
 					currentNumX = adjactentX[i];
 					currentNumY = adjactentY[i];
 					x = currentNumX;

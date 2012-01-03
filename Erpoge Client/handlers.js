@@ -103,6 +103,12 @@ handlers={
 				}
 			},
 			context: window		
+		},
+		idle: {
+			action: function () {
+				player.idle();
+			},
+			context: window
 		}
 	},
 	document: {
@@ -160,7 +166,6 @@ handlers={
 			if (Terrain.cells[x][y].ceiling !== undefined) {
 				Terrain.cells[x][y].ceiling.parent.hide();
 			} else if (Terrain.cells[mapCursorX][mapCursorY].ceiling !== undefined) {
-				console.log("SHOW")
 				Terrain.cells[mapCursorX][mapCursorY].ceiling.parent.show();
 			} 
 			// Распрозрачивание горизонтального ряда объектов, закрывающих обзор
@@ -397,8 +402,7 @@ handlers={
 				prepareArea();
 				readWorld(data.w);
 				readOnlinePlayers(data.online);
-				readWorldPlayer(data.p);
-				player.isPartyLeader = data.islead;
+				new Player(data.p);
 				centerWorldCamera(player.worldX,player.worldY,true);
 				readChatMessages(data.chat);
 				data.inv && readInvite(data.inv);
@@ -426,16 +430,11 @@ handlers={
 				onlinePlayers=[];
 				prepareArea();
 				readLocation(data.l);
-				createPlayerFromData(data.p);
+				new Player(data.p);
+				player.display();
 				moveGameField(player.x, player.y, true);
 				player.initVisibility();
-//				document.getElementById("minimap").style.display="block";
-				if (Terrain.cells[player.x][player.y].object && Terrain.cells[player.x][player.y].object.type==9000) {
-				// Событие при появлении в локации
-					events[Terrain.cells[player.x][player.y].object.mod](Terrain.cells[player.x][player.y].object);
-				}
 				readCharacters(data.online);
-//				minimap=new Minimap(document.getElementById("minimap"));
 				UI.enterLocationMode();
 				UI.notify("locationLoad");
 				UI.setMode(UI.MODE_IN_LOCATION);
@@ -455,5 +454,131 @@ handlers={
 		// And that server may now send events to this client
 			
 		}
+	},
+	initWindows: function _() {
+	// Windows are initiated before other ui elements, but after panels
+		UI.addWindow({
+			type: "windowGameAlert",
+			hAlign: "left",
+			vAlign: "top",
+			displayMode: "always",
+			keyMode: "always"
+		});
+		UI.addWindow({
+			type: "windowLogin",
+			hAlign: "center",
+			vAlign: "center",
+			displayMode: "always",
+			keyMode: "always"
+		});
+		UI.addWindow({
+			type: "windowAccountCharacters",
+			hAlign: "center",
+			vAlign: "center",
+			displayMode: "always",
+			keyMode: "always"
+		});
+		UI.addWindow({
+			type: "windowSkills",
+			hAlign: "center",
+			vAlign: "center",
+			displayMode: "always",
+			keyMode: "always"
+		});
+		UI.addWindow({
+			type: "windowDeath",
+			hAlign: "center",
+			vAlign: "center",
+			displayMode: "always",
+			keyMode: "always"
+		});
+		UI.addWindow({
+			type: "windowSettings",
+			hAlign: "center",
+			vAlign: "center",
+			displayMode: "always",
+			keyMode: "always"
+		});
+		UI.addWindow({
+			type: "windowDialogue",
+			hAlign: "center",
+			vAlign: "center",
+			displayMode: "always",
+			keyMode: "always"
+		});
+		UI.addWindow({
+			type: "windowContainer",
+			hAlign: "center",
+			vAlign: "center",
+			displayMode: "always",
+			keyMode: "always"
+		});
+		UI.addWindow({
+			type: "windowAccountCreate",
+			hAlign: "center",
+			vAlign: "center",
+			displayMode: "always",
+			keyMode: "always"
+		});
+		UI.addWindow({
+			type: "windowPlayerCreate",
+			hAlign: "center",
+			vAlign: "center",
+			displayMode: "always",
+			keyMode: "always"
+		});
+	},
+	initInterface : function() {
+	// First panels are initiated, then windows,
+	// then other elements.
+		UI.addPanel({
+			name: "main",
+			width: 240,
+			side: "right"
+		});
+		handlers.initWindows();
+		UI.addElement({
+			type:"chat",
+			hAlign: "left",
+			vAlign: "bottom",
+			displayMode: "always",
+			panel: null
+		});
+		UI.addElement({
+			type: "hpBar",
+			panel: "main"
+		});
+		UI.addElement({
+			type: "attributeList",
+			panel: "main"
+		});
+
+		UI.addElement({
+			type: "mpBar",
+			panel: "main"
+		});
+		UI.addElement({
+			type: "iconsSpells",
+			panel: "main"
+		});
+		UI.addElement({
+			type: "ammunition",
+			panel: "main"
+		});
+		UI.addElement({
+			type: "iconsInventory",
+			panel: "main"
+		});
+		UI.addElement({
+			type: "iconsLoot",
+			panel: "main"
+		});
+		UI.addElement({
+			type: "minimap",
+			hAlign: "left",
+			vAlign: "top",
+			displayMode: "in location",
+			panel: null
+		});
 	}
 };

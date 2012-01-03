@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import erpoge.Utils;
 import erpoge.Main;
+import erpoge.itemtypes.ItemsTypology;
 
 public class AmmunitionMap extends ItemMap {
 	private static final UniqueItem FREE_PIECE = new UniqueItem(-1);

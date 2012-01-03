@@ -17,13 +17,13 @@ public class TurnQueue {
 		ArrayList<Character> values = new ArrayList<Character>(characters.values());
 		Character nextCharacter = values.get(0);
 		for (Character ch : values) {
-			if (ch.energy > nextCharacter.energy) {
+			if (ch.actionPoints > nextCharacter.actionPoints) {
 				nextCharacter = ch;
 			}
 		}
-		if (nextCharacter.energy <= 0) {
+		if (nextCharacter.actionPoints <= 0) {
 			for (Character ch : values) {
-				ch.energy += BASE_ENERGY;
+				ch.actionPoints += BASE_ENERGY;
 			}
 			return next();
 		}

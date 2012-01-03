@@ -93,6 +93,7 @@ Terrain = {
 		}
 	}	
 };
+var player ={};
 // Переменные соединения
 var servers=[[]]; // Список всех серверов с логинами и паролями к персонажу на них, берётся из localStorage
 var session="";
@@ -146,7 +147,6 @@ var dialOrder={
 	second:[13,8,18,14,3,23,9,19,4,24]
 };
 // Переменные персонажей
-// var liveCharacters=[]; // Живые персонажи (для readCharacters)
 var deadCharacters=[]; // Мёртвые (оттуда же)
 var killedByAttackCharacters=[]; // Персонажи, убитые какой-либо прямой атакой, а не эффектом или чем-нибудь ещё
 

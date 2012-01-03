@@ -600,7 +600,7 @@ function GameObject(x, y, type) {
 			var viewIndent = Terrain.getViewIndentation(this.x, this.y, 1);
 			// разобраться
 			var vertical = isDoor(this.type)
-					&&(1+this.y<width&&Terrain.cells[this.x][1+this.y].wall
+					&&(1+this.y<height&&Terrain.cells[this.x][1+this.y].wall
 							&&this.y-1>0&&Terrain.cells[this.x][this.y-1].wall);
 			if (isDoor(this.type) && (Terrain.cameraOrientation == Terrain.SIDE_E || Terrain.cameraOrientation == Terrain.SIDE_W)) {
 				vertical = !vertical;
@@ -740,17 +740,15 @@ function Path(x, y, type) {
 		// this.image.getElementsByTagName("img")[0].style.display="inline-block";
 	};
 }
-function WorldPlayer(x, y, character) {
+function WorldPlayer(characterId, name, cls, race, party, x, y) {
 	this.image = null;
 	this.x = x;
 	this.y = y;
 	this.name = name;
-	this.characterId = character.characterId;
-	this.race = character.race;
+	this.characterId = characterId;
+	this.race = race;
 	this.visible = false;
-	this.character = character;
-	this.doll = new Doll(character);
-	character.doll = this.doll;
+	this.doll = new Doll(this);
 	this.doll.draw();
 	// Индекс объекта в массиве с игроками в его ячейке
 	this.worldPlayersPos = Terrain.cells[x][y].worldPlayers.length;

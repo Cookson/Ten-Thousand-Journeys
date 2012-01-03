@@ -15,8 +15,8 @@ import erpoge.MainHandler;
 import erpoge.clientmessages.ServerMessageCharacterAuthInfo;
 import erpoge.inventory.Item;
 import erpoge.inventory.ItemPile;
-import erpoge.inventory.ItemsTypology;
 import erpoge.inventory.UniqueItem;
+import erpoge.itemtypes.ItemsTypology;
 import erpoge.serverevents.*;
 import erpoge.terrain.Container;
 import erpoge.terrain.Location;
@@ -25,15 +25,13 @@ import erpoge.terrain.World;
 
 public class PlayerCharacter extends Character {
 	protected final String cls;
-	protected int level = 1;
 	public final int race;
 	
 	private int str;
 	private int dex;
 	private int wis;
 	private int itl;
-	private int armor;
-	private int evasion;
+	
 	private final ArrayList<Integer> protections = new ArrayList<Integer>(
 			CharacterTypes.NUMBER_OF_PROTECTIONS);
 	
@@ -45,7 +43,7 @@ public class PlayerCharacter extends Character {
 	private NonPlayerCharacter dialoguePartner;
 	public World world;
 	public boolean checkedOut = false;
-	private boolean isAuthorized = false;
+	protected boolean isAuthorized = false;
 	public static final String[] skillNames = {"mace", "axe", "shield",
 			"sword", "polearm", "stealth", "reaction", "bow", "dagger",
 			"unarmed", "staff", "kinesis", "fire", "cold", "necros",
@@ -67,24 +65,18 @@ public class PlayerCharacter extends Character {
 		fraction = 1;
 	}
 
-	public int level() {
-		return level;
-	}
+	/* Getters */
 	public String toString() {
 		return "Player character "+name+" the "+cls;
 	}
 	public int hashCode() {
 		return characterId;
 	}
-	public String cls() {
+	public String getCls() {
 		return cls;
 	}
-	public int getArmor() {
-		return armor;
-	}
-	public int getEvasion() {
-		return evasion;
-	}
+	
+	/* Actions */
 	public void say(String message) {
 		if (this.isOnGlobalMap()) {
 			// World message
@@ -95,26 +87,6 @@ public class PlayerCharacter extends Character {
 			// location message
 			Chat.locationMessage(this, message);
 			location.addEvent(new EventChatMessage(characterId, message));
-			location.flushEvents(Location.TO_LOCATION, this);
-		}
-	}
-
-	public void putOn(int itemId) {
-		
-		super.putOn(inventory.getUnique(itemId), false);
-		if (this.isOnGlobalMap()) {
-			world.sendOutEvent(this, new EventPutOn(characterId, itemId));
-		} else {
-			location.flushEvents(Location.TO_LOCATION, this);
-		}
-	}
-
-	public void castSpell(int spellId, int x, int y) {
-		if (this.isOnGlobalMap()) {
-			throw new Error("Spell cast from character " + name
-					+ " on global map!");
-		} else {
-			super.castSpell(spellId, x, y);
 			location.flushEvents(Location.TO_LOCATION, this);
 		}
 	}
@@ -130,160 +102,100 @@ public class PlayerCharacter extends Character {
 				return;
 			}
 		}
-		location.noMorePlayersInLocation = true;
 	}
-	public void takeOff(int itemId) {
-		super.takeOff(ammunition.getUnique(itemId));
-		if (this.isOnGlobalMap()) {
-			world.sendOutEvent(this, new EventTakeOff(characterId, itemId));
-		} else {
-			location.flushEvents(Location.TO_LOCATION, this);
-		}
-	}
-	public void drop(int typeId, int amount) {
-		if (this.isOnGlobalMap()) {
-			throw new Error("Drop on global map");
-		} else {
-			super.drop(inventory.getPile(typeId).separatePile(amount));
-			location.flushEvents(Location.TO_LOCATION, this);
-		}
-	}
-	public void drop(int itemId) {
-		if (this.isOnGlobalMap()) {
-			throw new Error("Drop on global map");
-		} else {
-			super.drop(inventory.getUnique(itemId));
-			location.flushEvents(Location.TO_LOCATION, this);
-		}
-	}
-	public void pickUp(int typeId, int amount) {
-		if (this.isOnGlobalMap()) {
-			throw new Error("Pick up on global map");
-		} else {
-			super.pickUp(location.cells[x][y].items.getPile(typeId).separatePile(amount));
-			location.flushEvents(Location.TO_LOCATION, this);
-		}
-	}
-	public void pickUp(int itemId) {
-		if (this.isOnGlobalMap()) {
-			throw new Error("Pick up on global map");
-		} else {
-			super.pickUp(location.cells[x][y].items.getUnique(itemId));
-			location.flushEvents(Location.TO_LOCATION, this);
-		}
-	}
-	public void attack(Character aim) {
-		if (this.isOnGlobalMap()) {
-			throw new Error("Attack on global map");
-		} else {
-			super.attack(aim);
-			location.flushEvents(Location.TO_LOCATION, this);
-		}
-	}
-	public void shootMissile(int x, int y, int missile) {
-		if (this.isOnGlobalMap()) {
-			throw new Error("Shoot missile on global map");
-		} else {
-			super.shootMissile(x, y, inventory.getPile(missile).separatePile(1));
-			location.flushEvents(Location.TO_LOCATION, this);
-		}
-	}
-	public void useObject(int x, int y) {
-		if (this.isOnGlobalMap()) {
-			throw new Error("Use object on global map");
-		} else {
-			super.useObject(x, y);
-			location.flushEvents(Location.TO_LOCATION, this);
-		}
-	}
-	public void takeFromContainer(int typeId, int param, int x, int y) {
-		if (this.isOnGlobalMap()) {
-			throw new Error("Take from contaier on global map");
-		} else {
-			Container container = location.getContainer(x, y);
-			if (ItemsTypology.item(typeId).isUnique()) {
-				super.takeFromContainer(container.getUnique(param), container);
-			} else {
-				super.takeFromContainer(container.getPile(typeId).separatePile(param), container);
-			}			
-			location.flushEvents(Location.TO_LOCATION, this);
-		}
-	}
-	public void putToContainer(int typeId, int param, int x, int y) {
-		if (this.isOnGlobalMap()) {
-			throw new Error("Put to contaier on global map");
-		} else {
-			Container container = location.getContainer(x, y);
-			if (ItemsTypology.item(typeId).isUnique()) {
-				super.putToContainer(inventory.getUnique(param), container);
-			} else {
-				super.putToContainer(inventory.getPile(typeId).separatePile(param), container);
-			}
-			location.flushEvents(Location.TO_LOCATION, this);
-		}
-	}
-	public String jsonGetEnteringData(boolean isWorld) {
-		// ������, ����������� ������� ��� ������ � ���� �� �����������
-		// ���������
-		// The same data is used for entering both global and local map
-		// in: isWorld - is character in world. If it is false, then location
-		// data is formed.
-		// Location data differs from world data only by cell contents
-		// structure.
-		/*
-		 * on world map: { onGlobalMap: true, w :
-		 * {w,h,c:[[ground,forest,road,river,race,[objects]]xN]}, p : [
-		 * characterId, name, race, class, level, maxHp, maxMp, str, dex, wis,
-		 * itl, items, ammunition, spells, skills, worldX, worldY ], islead :
-		 * boolean, online :
-		 * [[characterId,name,class,race,party,worldX,worldY]xM], chat :
-		 * [name,message, name,message ...] || 0, invite :
-		 * [inviterId,inviterName] || 0 }, in location: { onGlobalMap: false, l
-		 * : {w,h,locationId,c:[[ground,forest,road,river,race,[objects]]xN]}, p
-		 * : [ characterId, name, race, class, level, maxHp, maxMp, str, dex,
-		 * wis, itl, items, ammunition, spells, skills, x, y ], islead :
-		 * boolean, online :
-		 * [[characterId,x,y,name,maxHp,hp,maxMp,mp,effects,ammunition
-		 * (,cls,race)|(,type)]xM], }
-		 */
-		String answer = "{\"a\":"
-				+ MainHandler.LOAD_CONTENTS
-				+ ",\"onGlobalMap\":"
-				+ isWorld
-				+ ",\""
-				+ (isWorld ? "w" : "l")
-				+ "\":{"
-				+ (isWorld ? world.jsonPartGetWorldContents() : location
-						.jsonPartGetLocationContents()) + "},";
-		answer += "\"p\":[" + characterId + ",\"" + name + "\"," + race + ",\""
-				+ cls + "\"," + level + "," + maxHp + "," + maxMp + ","
-				+ (isWorld ? "" : hp + "," + mp + ",") + str + "," + dex + ","
-				+ wis + "," + itl + ",["+inventory.jsonGetContents()+"],"+ammunition.jsonGetAmmunition()+",[";
 
-		// spells
+	
+	public String jsonGetEnteringData(boolean isWorld) {
+		/**The same data is used for entering both global and local map
+		 * @param isWorld Is character in world. If it is false, then location
+		 * 		data is formed. Location data differs from world data only by cell 
+		 * 		contents structure.
+		*/
+		/* In world:
+		 * {
+		 * 		onGlobalMap: true, 
+		 * 		w :{w,h,c:[[ground,forest,road,river,race,[objects]]xN]}, 
+		 *  	p : [(0)characterId, (1)worldX, (2)worldY, (3)isLead, (4)name, (5)race, (6)class, 
+		 *  		(7)maxHp, (8)maxMp, (9)maxEp, (10)hp, (11)mp, (12)ep, 
+		 *  		(13)str, (14)dex, (15)wis, (16)itl, (17)items[], (18)ammunition[], (19)spells[], (20)skills[],
+		 *  		(21)ac, (22)ev, (23)resistances[]],
+		 * 		online : [[characterId,name,class,race,party,worldX,worldY]xM], 
+		 * 		chat : [name,message, name,message ...] || 0, 
+		 * 		invite : [inviterId,inviterName] || 0 
+		 * }
+		 */ 
+		/* In location: 
+		 * { 	
+		 * 		onGlobalMap: false,
+		 * 		l: {w,h,locationId,c:[[ground,forest,road,river,race,[objects]]xN]}, 
+		 * 		p : [(0)characterId, (1)worldX, (2)worldY, (3)isLead, (4)name, (5)race, (6)class, 
+		 *  		(7)maxHp, (8)maxMp, (9)maxEp, (10)hp, (11)mp, (12)ep, 
+		 *  		(13)str, (14)dex, (15)wis, (16)itl, (17)items[], (18)ammunition[], (19)spells[], (20)skills[],
+		 *  		(21)ac, (22)ev, (23)resistances[]],
+		 * 		online : [[characterId,x,y,name,maxHp,hp,effects,ammunition(,cls,race)|(,type)]xM], 
+		 * }
+		 */
+		StringBuilder answer = new StringBuilder();
+		answer
+			.append("{\"a\":")
+			.append(MainHandler.LOAD_CONTENTS)
+			.append(",\"onGlobalMap\":").append(isWorld).append(",\"")
+			.append(isWorld ? "w" : "l").append("\":{")
+			.append(isWorld ? world.jsonPartGetWorldContents() : location.jsonPartGetLocationContents())
+			.append("},");
+		// Player data
+		answer
+			.append("\"p\":[")
+/* 0 */		.append(characterId).append(",")
+/* 1 */		.append(isWorld ? worldX : x).append(",")
+/* 2 */		.append(isWorld ? worldY : y).append(",")
+/* 3 */		.append(true).append(",\"")
+/* 4 */		.append(name).append("\",")
+/* 5 */		.append(race).append(",\"")
+/* 6 */		.append(cls).append("\",")
+/* 7 */		.append(maxHp).append(",")
+/* 8 */		.append(maxMp).append(",")
+/* 9 */		.append(maxEp).append(",")
+/* 10*/		.append(hp).append(",")
+/* 11*/		.append(mp).append(",")
+/* 12*/		.append(ep).append(",")
+/* 13*/ 	.append(str).append(",")
+/* 14*/		.append(dex).append(",")
+/* 15*/		.append(wis).append(",")
+/* 16*/		.append(itl).append(",")
+/* 17*/		.append(inventory.jsonGetContents()).append(",")
+/* 18*/		.append(ammunition.jsonGetAmmunition()).append(",[");
+/* 19*/	// Spells
 		int i = 0;
 		int iterations = spells.size() - 1;
 		if (iterations > -1) {
 			for (; i < iterations; i++) {
-				answer += spells.get(i) + ",";
+				answer.append(spells.get(i)).append(",");
 			}
-			answer += spells.get(i);
+			answer.append(spells.get(i));
 		}
-		answer += "],[";
+		answer.append("],[");
 
-		// skills
+/* 20*/	// Skills
 		i = 0;
 		for (iterations = skillNames.length - 1; i < iterations; i++) {
-			answer += skills.get(skillNames[i]) + ",";
+			answer.append(skills.get(skillNames[i])).append(",");
 		}
-		answer += skills.get(skillNames[i]) + "],";
-
-		// worldX, worldY, islead
-		boolean isLead = true;
-		answer += (isWorld ? worldX : x) + "," + (isWorld ? worldY : y)
-				+ "],\"islead\":" + isLead + ",\"online\":[";
-
-		// online characters
+		answer.append(skills.get(skillNames[i])).append("],");
+		// Parameters
+		answer
+/* 21*/		.append(armor).append(",")
+/* 22*/		.append(evasion).append(",")
+		// Resistances
+/* 23*/
+		.append("[")
+		.append(fireRes).append(",")
+		.append(coldRes).append(",")
+		.append(poisonRes).append(",")
+		.append(acidRes).append("]")
+		
+		// Online characters
+		.append("],\"online\":[");
 		ArrayList<Character> onlinePlayers = new ArrayList<Character>((isWorld)
 				? world.onlinePlayers.values()
 				: location.getCharacters());
@@ -295,89 +207,117 @@ public class PlayerCharacter extends Character {
 				for (; i < iterations; i++) {
 					PlayerCharacter player = (PlayerCharacter) onlinePlayers
 							.get(i);
-					answer += "[" + player.characterId + ",\"" + player.name
-							+ "\",\"" + player.cls + "\"," + player.race + ","
-							+ player.party + "," + player.worldX + ","
-							+ player.worldY + "],";
+					answer
+						.append("[")
+						.append(player.characterId).append(",\"")
+						.append(player.name).append("\",\"")
+						.append(player.cls).append("\",")
+						.append(player.race).append(",")
+						.append(player.party).append(",")
+						.append(player.worldX).append(",")
+						.append(player.worldY).append("],");
 				}
 				PlayerCharacter player = (PlayerCharacter) onlinePlayers.get(i);
-				answer += "[" + player.characterId + ",\"" + player.name
-						+ "\",\"" + player.cls + "\"," + player.race + ","
-						+ player.party + "," + player.worldX + ","
-						+ player.worldY + "]";
+				answer
+					.append("[")
+					.append(player.characterId).append(",\"")
+					.append(player.name).append("\",\"")
+					.append(player.cls).append("\",")
+					.append(player.race).append(",")
+					.append(player.party).append(",")
+					.append(player.worldX).append(",")
+					.append(player.worldY).append("]");
 			} else {
 				for (; i < iterations; i++) {
 					Character character = onlinePlayers.get(i);
-					answer += "[" + character.characterId + "," + character.x
-							+ "," + character.y + ",\"" + character.name
-							+ "\"," + character.fraction + ","
-							+ character.maxHp + "," + character.hp + ","
-							+ character.maxMp + "," + character.mp + ","
-							+ character.jsonGetEffects() + ","
-							+ character.jsonGetAmmunition();
+					answer
+						.append("[")
+						.append(character.characterId).append(",")
+						.append(character.x).append(",")
+						.append(character.y).append(",\"")
+						.append(character.name).append("\",")
+						.append(character.fraction).append(",")
+						.append(character.maxHp).append(",")
+						.append(character.hp).append(",")
+						.append(character.maxMp).append(",")
+						.append(character.mp).append(",")
+						.append(character.jsonGetEffects()).append(",")
+						.append(character.jsonGetAmmunition());
 					if (character instanceof PlayerCharacter) {
 						PlayerCharacter player = (PlayerCharacter) onlinePlayers
 								.get(i);
-						answer += ",\"" + player.cls + "\"," + player.race
-								+ "],";
+						answer
+							.append(",\"")
+							.append(player.cls).append("\",")
+							.append(player.race).append("],");
 					} else {
-						answer += ",\"" + character.type + "\"],";
+						answer
+							.append(",\"")
+							.append(character.type).append("\"],");
 					}
 				}
 				Character character = onlinePlayers.get(i);
-				answer += "[" + character.characterId + "," + character.x + ","
-						+ character.y + ",\"" + character.name + "\","
-						+ character.fraction + "," + character.maxHp + ","
-						+ character.hp + "," + character.maxMp + ","
-						+ character.mp + "," + character.jsonGetEffects() + ","
-						+ character.jsonGetAmmunition();
+				answer
+					.append("[")
+					.append(character.characterId).append(",")
+					.append(character.x).append(",")
+					.append(character.y).append(",\"")
+					.append(character.name).append("\",")
+					.append(character.fraction).append(",")
+					.append(character.maxHp).append(",")
+					.append(character.hp).append(",")
+					.append(character.maxMp).append(",")
+					.append(character.mp).append(",")
+					.append(character.jsonGetEffects()).append(",")
+					.append(character.jsonGetAmmunition());
 				if (character instanceof PlayerCharacter) {
 					PlayerCharacter player = (PlayerCharacter) onlinePlayers
 							.get(i);
-					answer += ",\"" + player.cls + "\"," + player.race + "]";
+					answer
+						.append(",\"")
+						.append(player.cls).append("\",")
+						.append(player.race).append("]");
 				} else {
-					answer += ",\"" + character.type + "\"]";
+					answer
+						.append(",\"")
+						.append(character.type).append("\"]");
 				}
 			}
 		}
 
-		answer += "],\"chat\":[";
-		// chat messages and invite
+		answer.append("],\"chat\":[");
+		// Chat messages and invite
 		Chat.Message[] messages = Chat.getMessagesAfter(System
 				.currentTimeMillis() - 1000 * 60 * 10);
 
 		if (messages.length > 0) {
 			for (i = 0; i < messages.length - 1; i++) {
-				answer += "\"" + messages[i].player.name + "\",\""
-						+ messages[i].message + "\",";
+				answer
+					.append("\"")
+					.append(messages[i].player.name).append("\",\"")
+					.append(messages[i].message).append("\",");
 			}
-			answer += "\"" + messages[i].player.name + "\",\""
-					+ messages[i].message + "\"";
+			answer
+			.append("\"")
+			.append(messages[i].player.name).append("\",\"")
+			.append(messages[i].message).append("\"");
 		}
-		answer += "],";
+		answer.append("],");
 		if (inviter != null) {
-			answer += "\"invite\":[" + inviter.characterId + "," + inviter.name
-					+ "],";
+			answer
+				.append("\"invite\":[")
+				.append(inviter.characterId).append(",")
+				.append(inviter.name).append("],");
 		}
 
 		// entering
-		answer += "\"en\":false}";
-		return answer;
-	}
-	public String jsonGetAuthData() {
-		/*
-		 * { onGlobalMap : boolean, worldX : int, worldY : int, party : int,
-		 * characterId : int, name : string }
-		 */
-		return "{\"onGlobalMap\":" + (location == null) + ",\"worldX\":"
-				+ worldX + ",\"worldY\":" + worldY + ",\"party\":" + party
-				+ ",\"characterId\":" + characterId + ",\"name\":\"" + name
-				+ "\"}";
+		answer.append("\"en\":false}");
+		return answer.toString();
 	}
 	public void leaveLocation() {
 		worldX = location.worldX;
 		worldY = location.worldY;
-		energy = 0;
+		actionPoints = 0;
 		hp = maxHp;
 		mp = maxMp;
 		location.removeCharacter(this);
@@ -386,7 +326,7 @@ public class PlayerCharacter extends Character {
 	/**
 	 * Transports character to another level of current location.
 	 */
-		energy = 0;
+		actionPoints = 0;
 		location.removeCharacter(this);
 		portal.location.addCharacter(this, portal);
 	}
@@ -429,26 +369,7 @@ public class PlayerCharacter extends Character {
 	public boolean isAuthorized() {
 		return isAuthorized;
 	}
-	public void deauthorize() {
-		// Inform all characters who are on global map right now that
-		// this character has left
-		isAuthorized = false;
-		world.onlinePlayers.remove(this.characterId);
-		world.addEvent(new EventDeauthorization(characterId));
-		world.flushEvents(Location.TO_WORLD, this);
-	}
-	public void authorize() {
-		// Inform all characters who are on global map right now that
-		// this character has entered the game
-
-		isAuthorized = true;
-		world.onlinePlayers.put(this.characterId, this);
-		if (location != null) {
-			world.addEvent(new EventWorldEntering(characterId, name, cls, race,
-					worldX, worldY));
-			world.flushEvents(Location.TO_WORLD, this);
-		}
-	}
+	
 	public void setConnection(WebSocket connection) {
 		this.connection = connection;
 	}

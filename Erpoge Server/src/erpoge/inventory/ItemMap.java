@@ -83,17 +83,18 @@ public class ItemMap extends ItemSystemMetaInfo {
 		return answer + "]";
 	}
 	public String jsonGetContents() {
-		String answer = new String();
+		StringBuilder answer = new StringBuilder("[");
 		int i = 1;
 		int size = size();
 		for (UniqueItem item : uniqueItems.values()) {
-			answer += item.toJson() + ((i == size) ? "" : ",");
+			answer.append(item.toJson()).append((i == size) ? "" : ",");
 			i++;
 		}
 		for (ItemPile item : itemPiles.values()) {
-			answer += item.toJson() + ((i == size) ? "" : ",");
+			answer.append(item.toJson()).append((i == size) ? "" : ",");
 			i++;
 		}
-		return answer;
+		answer.append("]");
+		return answer.toString();
 	}
 }

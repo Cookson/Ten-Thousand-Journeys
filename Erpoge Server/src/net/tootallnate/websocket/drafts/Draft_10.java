@@ -167,7 +167,7 @@ public class Draft_10 extends Draft {
 		buf.put ( one );
 		byte[] payloadlengthbytes = toByteArray ( mes.length , sizebytes );
 		assert( payloadlengthbytes.length == sizebytes );
-		Main.console(">  "+sizebytes);
+//		Main.console(">  "+sizebytes);
 		if( sizebytes == 0){
 			//controllframe
 		}

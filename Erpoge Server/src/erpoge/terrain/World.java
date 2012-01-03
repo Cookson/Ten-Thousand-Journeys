@@ -12,6 +12,7 @@ import erpoge.Chance;
 import erpoge.Coordinate;
 import erpoge.Main;
 import erpoge.MainHandler;
+import erpoge.PlayerHandler;
 import erpoge.Side;
 import erpoge.characters.PlayerCharacter;
 import erpoge.graphs.RectangleSystem;
@@ -25,8 +26,8 @@ public class World extends Location {
 	public final static World ABSTRACT_WORLD = new World(1, 1, "None", "Abstract World");
 	public HashMap<Coordinate, Location> locations = new HashMap<Coordinate, Location>();
 	protected WorldCell cells[][];
-	public final HashMap<Integer,PlayerCharacter> onlinePlayers = new HashMap<Integer, PlayerCharacter>();
-	public final HashMap<Integer, PlayerCharacter> players = new HashMap<Integer, PlayerCharacter>();
+	public final HashMap<Integer,PlayerHandler> onlinePlayers = new HashMap<Integer, PlayerHandler>();
+	public final HashMap<Integer, PlayerHandler> players = new HashMap<Integer, PlayerHandler>();
 	private String serialized;
 	private boolean needsNewSerialization = true;
 	public World(int w, int h, String type, String n) {
@@ -59,7 +60,7 @@ public class World extends Location {
 	}
 	public PlayerCharacter createCharacter(String type, String name, int race,
 			String cls, int x, int y) {
-		PlayerCharacter ch = new PlayerCharacter(type, name, race, cls, Location.ABSTRACT_LOCATION,
+		PlayerHandler ch = new PlayerHandler(type, name, race, cls, Location.ABSTRACT_LOCATION,
 				x, y);
 		addPlayer(ch, x, y);
 		ch.learnSpell(Spells.SPELL_FIREBALL);
@@ -337,30 +338,38 @@ public class World extends Location {
 				String "w:xSize,h:ySize,c:[[ground,forest,road,river,race,[objects]]xN]";
 		*/
 		if (needsNewSerialization) {
-			String answer = "\"w\":"+width+",\"h\":"+height+",\"c\":[";
+			StringBuilder answer = new StringBuilder();
+			answer
+				.append("\"w\":").append(width)
+				.append(",\"h\":").append(height)
+				.append(",\"c\":[");
 			for (int j = 0;j<height;j++) {
 				for (int i=0;i<width;i++) {
 					WorldCell c = cells[i][j];
-					answer += "["+c.floor+","+c.object+","+c.road+","+c.river+","+c.race;
+					answer
+						.append("[")
+						.append(c.floor).append(",")
+						.append(c.object).append(",")
+						.append(c.road).append(",")
+						.append(c.river).append(",")
+						.append(c.race);
 					int oSize = c.objects.size();
 					if (oSize > 0) {
-						answer +=",[";
+						answer.append(",[");
 						for (int k=0;k<oSize;k++){
-							answer+=c.objects.get(k)+((k<oSize-1)?",":"");
+							answer.append(c.objects.get(k)).append((k<oSize-1)?",":"");
 						}
-						answer+="]";
+						answer.append("]");
 					}
-					answer+="]"+(i+j<width+height-2 ? "," : "");
+					answer.append("]").append(i+j<width+height-2 ? "," : "");
 				}
 			}
-			answer+="]";
-			serialized = answer;
+			answer.append("]");
+			serialized = answer.toString();
 			needsNewSerialization = false;
-			return answer;
-		} else {
-			// return the cached version
-			return serialized;
 		}
+		// return the cached version
+		return serialized;
 	}
 	public void flushEvent(ServerEvent event) {
 		// Send event to all clients
@@ -384,14 +393,14 @@ public class World extends Location {
 		}
 		Main.console("flush "+data);
 	}
-	public void addPlayer(PlayerCharacter player, int x, int y) {
+	public void addPlayer(PlayerHandler player, int x, int y) {
 		players.put(player.characterId, player);
 		player.world = this;
 		player.worldX = x;
 		player.worldY = y;
 	}
 
-	public PlayerCharacter getPlayerById(int characterId) {
+	public PlayerHandler getPlayerById(int characterId) {
 		return players.get(characterId);
 	}	
 }

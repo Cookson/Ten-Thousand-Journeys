@@ -1,49 +1,35 @@
-﻿function Character(id, type, x, y, fraction, race, isClientPlayer) {
-// Объект character 
+﻿function Character(id, type, x, y, fraction) {
 	if (id == -1) {
+	// For Player.prototype
 		return;
 	}
-	// Основное
-	this.reportActionOn=false;
+	characters[id] = this;
 	this.x=x;
 	this.y=y;
-	if (areaId!==null) {
-		Terrain.cells[x][y].passability=Terrain.PASS_SEE;
-	}
-	this.isClientPlayer = isClientPlayer;
+	this.isClientPlayer = false;
 	Terrain.cells[x][y].character = this;
 	this.characterId=id;
 	this.destX=this.x;
 	this.destY=this.y;
 	this.type=(type!=undefined)?type:"player";
 	if (this.type!="player") {
-		console.log(type);
 		this.name = characterTypes[type][0];
 	}
 	
 	this.fraction=(fraction==undefined)?(this.characterId==0)?1:0:fraction;
-	this.attr=[];
 	
 	this.aimcharacter=-1;
-	this.behavior=(this.characterId==0)?undefined:"wander";
-	this.race = race;
 	this.cls = null;
 	if (this.type!="player") {
 		this.maxHp=(this.type=="player")?30:characterTypes[this.type][1];
 		this.maxMp=this.mp;
+		this.maxEp=this.ep;
 		this.hp=this.maxHp;
 		this.mp=this.maxHp;
 	}
-	this.size=2;
-	this.level=1;
 	
 	this.VISION_RANGE=8;
 	this.visible;
-	
-	// Эффекты и речь
-	this.eff="";
-	this.effTimeout="";
-	this.tellTimeout="";
 	
 	// Ячейка
 	this.cellWrap=document.createElement("div");
@@ -56,71 +42,8 @@
 	this.cellWrap.style.opacity="0";
 	this.cellWrap.style.zIndex=this.y*2+2;
 	
-	// Кукла персонажа
-	if (!onGlobalMap) {
-		if (this.type=="player") {
-		// Игрока
-			this.doll = new Doll(this);
-			document.getElementById("character"+this.characterId).appendChild(this.doll.DOMNode);
-		} else {
-		// Моба
-			var ncharacterImage=document.createElement("img");
-			ncharacterImage.className="characterIcon";
-			ncharacterImage.setAttribute("characterId",this.characterId);
-			ncharacterImage.setAttribute("src","images/characters/"+this.type+".png");
-			if (this.type in characterSpriteSizes) {
-			// Если у спрайта этого моба необычный размер (не 32х32)
-				ncharacterImage.style.left=((32-characterSpriteSizes[this.type][0])/2)+"px";
-				ncharacterImage.style.top=((16-characterSpriteSizes[this.type][1]))+"px";
-			}
-			document.getElementById("character"+this.characterId).appendChild(ncharacterImage);
-			if (this.fraction==1) {
-				var nWrap=document.createElement("div");
-				nWrap.className="wrap";
-				var nFriendMarker=document.createElement("img");
-				nFriendMarker.className="cellFriendMarker";
-				nFriendMarker.src="./images/intf/friendMarker.png";
-				nWrap.appendChild(nFriendMarker);
-				this.cellWrap.insertBefore(nWrap,this.cellWrap.children[0]);
-			}
-		}
-	}
-	
-	// Полоска здоровья
-	var nHpStrip=document.createElement("div");
-	nHpStrip.className="cellHp";
-	document.getElementById("character"+this.characterId).appendChild(nHpStrip);
-	if (this.type in characterSpriteSizes) {
-		nHpStrip.style.top=((16-characterSpriteSizes[this.type][1]))+"px";
-	}
-	this.visible = false;
-	if (this.isClientPlayer || player.visibleCells[this.x][this.y]) {
-		this.showModel();
-	}
-		
-	// Индикаторы
-	this.attacks=false; 
-	this.actionType=0; // 0 - движение, 1 - атака, 2 - использование, 3 - заклинание
-	this.willDie=false;
-	this.picksItem=true;
-	this.casts=false;
-	this.diagonalMove=false;
-
-	// Массивы
-	this.pathTable=blank2dArray();
-	
-	this.items = new ItemMap();
-	this.ammunition = new Ammunition();
-	this.spells = [];
-	
-	// Видимость
-	this.visibleCells=blank2dArray();
-	this.prevVisibleCells=blank2dArray();
-	this.seenCells=blank2dArray();
-	this.aimCoordX=-1;
-	this.aimCoordY=-1;
-	
-	// Эффекты
+	// Массивы	
+	this.ammunition = new Ammunition();	
 	this.effects={};
 	
 	// Заклинания
@@ -128,25 +51,46 @@
 	this.spellAimId=-1;
 	this.spellX=-1;
 	this.spellY=-1;
-	
-	this.skills=[];
-	this.actionQueue = [];
-	this.actionQueueParams = [];
 }
+Character.prototype.display = function () { 
+// Initiates character view
+// This method is overriden in Player class
+	var ncharacterImage=document.createElement("img");
+	ncharacterImage.className="characterIcon";
+	ncharacterImage.setAttribute("characterId",this.characterId);
+	ncharacterImage.setAttribute("src","images/characters/"+this.type+".png");
+	if (this.type in characterSpriteSizes) {
+	// If this mod's sprite has irregular size (not 32х32)
+		ncharacterImage.style.left=((32-characterSpriteSizes[this.type][0])/2)+"px";
+		ncharacterImage.style.top=((16-characterSpriteSizes[this.type][1]))+"px";
+	}
+	this.cellWrap.appendChild(ncharacterImage);
+	if (this.fraction == 1) {
+	// Friend marker
+		var nWrap=document.createElement("div");
+		nWrap.className="wrap";
+		var nFriendMarker=document.createElement("img");
+		nFriendMarker.className="cellFriendMarker";
+		nFriendMarker.src="./images/intf/friendMarker.png";
+		nWrap.appendChild(nFriendMarker);
+		this.cellWrap.insertBefore(nWrap,this.cellWrap.children[0]);
+	}
+	if (player.canSee(this.x, this.y)) {
+		this.showModel();
+	}
+	// HP strip
+	this.initHpBar();
+};
 Character.prototype.sendAttack = function(aimId, ranged) {
 	Net.send({a:Net.ATTACK, aimId:aimId, ranged:ranged});
-	console["log"]({a:Net.ATTACK, aimId:aimId, ranged:ranged});
 };
 Character.prototype.showAttack = function(aimId, ranged) {
-	console["log"](this.name+" attacks "+characters[aimId].name);
 	handleNextEvent();
 };
 Character.prototype.showDamage = function(amount, type) {
 	this.showAttackResult();
 	this.hp -= amount;
-	this.showHpBar();
-	console["log"](this.name+" got "+amount+" damage");
-	handleNextEvent();
+	this.refreshHpBar();
 };
 Character.prototype.canSee = function (x, y, setVisibleCells, test) {
 	// Проверяет, находится ли данная клетка на линии видимости
@@ -372,11 +316,8 @@ Character.prototype.showCastSpell = function(spellId, x, y) {
 Character.prototype.sendCastSpell = function(spellId, x, y) {
 	Net.send({a:Net.CAST_SPELL, spellId:spellId, x:x, y:y});
 };
-Character.prototype.animateSpell=function(spellId, aimId, spellX, spellY, callback) {
+Character.prototype.animateSpell = function(spellId, aimId, spellX, spellY, callback) {
 	spells[spellId].effect(this, (aimId==-1)?-1:characters[aimId], spellX, spellY, callback);
-};
-Character.prototype.damage=function(dmg) {
-	this.showHpBar();
 };
 Character.prototype.showDeath = function() {
 	this.cellWrap.parentNode.removeChild(this.cellWrap);
@@ -424,50 +365,8 @@ Character.prototype.dodge=function(attacker) {
 	// });
 	//this.showAttackResult("dodge");
 };
-Character.prototype.findPath=function() {
-	if (this.characterId==0 && this.pathTable[this.destX][this.destY]==-1) {
-		return {x:this.x,y:this.y};
-	}
-	if (this.characterId!=0 && this.pathTable[this.destX][this.destY]==-1) {
-	// Если цель утеряна из виду — перейти в режим "goToCell"
-		this.aimcharacter=-1;
-		this.behavior="goToCell";
-		this.destX=this.aimCoordX;
-		this.destY=this.aimCoordY;
-	}
-	if (this.destX!=this.x || this.destY!=this.Y) {
-		// Нахождение пути
-		var currentNumX=this.destX;
-		var currentNumY=this.destY;
-		var x=currentNumX;
-		var y=currentNumY;
-		var diff=[-width, 1, width, -1];
-		for (var j=this.pathTable[currentNumX][currentNumY];j!=2;j=this.pathTable[currentNumX][currentNumY]) {
-			// Счётчик: от кол-ва шагов до клетки this.dest до начальной клетки (шаг 1)
-			var diff=[-width, 1, width, -1, width+1, -width+1, width-1, -width-1];
-			var adjactentX=[x, x+1, x, x-1, x+1, x+1, x-1, x-1];
-			var adjactentY=[y-1, y, y+1, y, y+1, y-1, y+1, y-1];
-			for (var i=0;i<8;i++) {
-			var thisNumX=adjactentX[i];
-			var thisNumY=adjactentY[i];
-			// Для каждой из доступных сторон (С, Ю, З, В)
-				if (this.pathTable[thisNumX][thisNumY]==j-1) {
-				// Если клетка в этой стороне является предыдущим шагом, переёти на неё
-					x=thisNumX;
-					y=thisNumY;
-					break;
-				}
-			}
-		}
-		var ableX=Math.abs(this.x-currentNumX);
-		var ableY=Math.abs(this.y-currentNumY);
-		if (ableY==1 && ableX==1) {
-			this.diagonalMove=true;
-		}
-		return {x:currentNumX,y:currentNumY};
-	} else {
-		return {x:this.x,y:this.y};
-	}
+Character.prototype.isBareHanded = function () {
+	return this.ammunition.getItemInSlot(0) === undefined;
 };
 Character.prototype.findEnemy=function(r) {
 // Находит ближайшего противника
@@ -722,25 +621,8 @@ Character.prototype.meleeAttack=function(x,y) {
 		});
 	});
 };
-Character.prototype.idle=function() {
-	this.idles=false;
-	var hpWasAlreadyRestored=this.hp==this.maxHp;
-	var mpWasAlreadyRestored=this.mp==this.maxMp;
-	if (hpWasAlreadyRestored && mpWasAlreadyRestored) {
-		this.restorationIdles=false;
-	}
-	var self=this;
-	
-	Net.send({i:1},function(data) {
-		readEnvironment(data[0]);
-		readEvents(data[1], true);
-		if (!hpWasAlreadyRestored && self.hp==self.maxHp || !mpWasAlreadyRestored && self.mp==self.maxMp) {
-			self.restorationIdles=false;
-		}
-		if (self.restorationIdles) {
-			self.action();
-		}
-	});
+Character.prototype.idle=function() {	
+	Net.send({a:Net.IDLE});
 };
 Character.prototype.sendMove=function() {
 // Графическая и логическая обработка движения
@@ -1086,7 +968,7 @@ Character.prototype.showUseObject=function(x,y) {
 };
 Character.prototype.showAttackResult=function(res) {
 	 this.graphicEffect("blood",function() {
-		
+		 handleNextEvent();
 	 });
 };
 Character.prototype.showAmmunition=function() {
@@ -1100,53 +982,50 @@ Character.prototype.showAmmunition=function() {
 		this.doll.draw();
 	}
 };
+Character.prototype.initHpBar=function() {
+// Creates HP bar element
+	this.nHpBar = document.createElement("div");
+	this.nHpBar.className = "cellHp";
+	document.getElementById("character"+this.characterId).appendChild(this.nHpBar);
+	if (this.type in characterSpriteSizes) {
+		this.nHpBar.style.top=((16-characterSpriteSizes[this.type][1]))+"px";
+	}
+	this.nHpBar.className = "cellHp";
+	this.refreshHpBar();
+};
+Character.prototype.hideHpBar=function() {
+	this.nHpBar.display="none";
+};
 Character.prototype.showHpBar=function() {
-	
-	if (this.hp==this.maxHp) {
-		this.hideHpBar();
-		return false;
-	}
-	var nHpBar=document.getElementById("character"+this.characterId).getElementsByTagName("div");
-	for (var i=0;i<nHpBar.length;i++) {
-	// Search for hp bar among divs in player's cellwrap
-		if (nHpBar[i].className=="cellHp") {
-			nHpBar=nHpBar[i];
-			break;
+	this.nHpBar.display="block";
+};
+Character.prototype.refreshHpBar = function () {
+// Adjusts HP bar length and color.
+//	if (this.hp==this.maxHp) {
+//	// If HP is max then hide bar
+//		this.hideHpBar();
+//		return false;
+//	} else {
+	// Else change it's length and color
+		var w=((BARwidth/this.maxHp*this.hp>=BARwidth)? BARwidth : Math.ceil(BARwidth/this.maxHp*this.hp));
+		this.nHpBar.style.width=w+"px";
+		this.nHpBar.style.borderRight=(BARwidth-w)+"px solid #000";
+		// Colors of HP bar
+		if (w<=BARwidth/4) {
+		// Very low hp
+			this.nHpBar.style.backgroundColor="#ff2400";
+		}  else if (w<=BARwidth/2) {
+		// Low hp
+			this.nHpBar.style.backgroundColor="#e6dc0d";
+		} else {
+		// Normal hp
+			this.nHpBar.style.backgroundColor="#34c924";
 		}
-	}
-	var w=((BARwidth/this.maxHp*this.hp>=BARwidth)? BARwidth : Math.ceil(BARwidth/this.maxHp*this.hp));
-	nHpBar.style.width=w+"px";
-	nHpBar.style.borderRight=(BARwidth-w)+"px solid #000";
-	if (w<BARwidth/2) {
-		nHpBar.style.backgroundColor="#ff2400";
-	} else if (w<BARwidth/4) {
-		nHpBar.style.backgroundColor="#e6dc0d";
-	} else {
-		nHpBar.style.backgroundColor="#34c924";
-	}
-	nHpBar.style.display="block";
-	if (this.isClientPlayer) {
-		UI.notify("healthChange");
-	}
-	if (this.hp==this.maxHp) {
-		this.hideHpBar();
-		return false;
-	}
-	return this.hp/this.maxHp;	
+//	}
 };
 Character.prototype.refreshMpBar = function() {
 	document.getElementById("barsMpValue").innerHTML=this.mp+"/"+this.maxMp;
 	document.getElementById("barsMpStrip").style.width=(106*this.mp/this.maxMp)+"px";
-};
-Character.prototype.hideHpBar=function() {
-	var nHpBar=document.getElementById("character"+this.characterId).getElementsByTagName("div");
-	for (var i=0;i<nHpBar.length;i++) {
-		if (nHpBar[i].className=="cellHp") {
-			nHpBar=nHpBar[i];
-			break;
-		}
-	}
-	nHpBar.style.display="none";
 };
 Character.prototype.showTakeOff = function(itemId) {
 // Снимает предмет в слоте slot
@@ -1181,9 +1060,6 @@ Character.prototype.sendTakeOff = function(item) {
 Character.prototype.showModel=function() {
 	this.cellWrap.style.opacity="1";
 	this.visible = true;
-	if (!onGlobalMap) {
-		this.showHpBar();
-	}
 	for (var i in this.effects) {
 		this.effects[i].resume();
 	}
@@ -1203,7 +1079,7 @@ Character.prototype.graphicEffect=function(name, callback) {
 	// // Если графические эффекты отключены, ничего не делать
 		// return false;
 	// }
-	new effectTypes[name](this.x,this.y,this.x,this.y,100,100,100,100);
+	new effectTypes[name](this.x,this.y,this.x,this.y,100,100,100,100, callback);
 //	graphicEffects[name].call(this, callback);
 };
 Character.prototype.addEffect=function(effectId) {
@@ -1260,7 +1136,7 @@ Character.prototype.cellChooseAction = function() {
 			var aim = Character.prototype.findCharacterByCoords(x,y);
 			if (aim) {
 			// On character
-				player.sendAttack(aim.characterId, !isMelee(player.ammunition.getItemInSlot(0)));
+				player.sendAttack(aim.characterId, !player.ammunition.getItemInSlot(0).isMelee());
 			} else {
 			// On cell
 				player.sendShootMissile(x, y, 2300);
@@ -1500,4 +1376,104 @@ Character.prototype.unselectMissile = function() {
 	UI.notify("missileUnselect");
 	UI.setMode(UI.MODE_DEFAULT);
 	CellCursor.changeStyle("Main");
+};
+Character.prototype.changeAttribute = function _(attrId, value) {
+	this.attributes[attrId] = value;
+	UI.notify("attributeChange", [attrId, value]);
+};
+function Player(data) {
+/*	
+	data : [(0)characterId, (1)worldX, (2)worldY, (3)isLead, (4)name, (5)race, (6)class, 
+			(7)maxHp, (8)maxMp, (9)maxEp, (10)hp, (11)mp, (12)ep, 
+			(13)str, (14)dex, (15)wis, (16)itl, (17)items[], (18)ammunition[], (19)spells[], (20)skills[],
+			(21)ac, (22)ev, (23)resistances[]] 
+*/
+	Character.apply(this, [data[0],"player",data[1], data[2],1]);
+	window.player = this;
+	characters[data[0]] = this;
+	this.isClientPlayer = true;
+	if (onGlobalMap) {
+		this.worldX = data[1];
+		this.worldY = data[2];
+	} else {
+		this.x = data[1];
+		this.y = data[2];
+	}
+	UI.notify("titleChange");
+	this.isPartyLeader = data[3];
+	this.name = data[4];
+	this.race = data[5];
+	this.cls = data[6];
+	this.maxHp = data[7];
+	this.maxMp = data[8];
+	this.maxEp = data[9];
+	this.hp = data[10];
+	this.mp = data[11];
+	this.ep = data[12];
+	this.attributes={};
+	this.attributes.str = data[13];
+	this.attributes.dex = data[14];
+	this.attributes.wis = data[15];
+	this.attributes.itl = data[16];
+	this.attributes.armor = data[21];
+	this.attributes.evasion = data[22];
+	this.attributes.fireRes = data[23][0];
+	this.attributes.coldRes = data[23][1];
+	this.attributes.poisonRes = data[23][2];
+	
+
+	
+	this.pathTable=blank2dArray();
+	this.items = new ItemMap();
+	this.spells = [];
+	this.visibleCells=blank2dArray();
+	this.prevVisibleCells=blank2dArray();
+	this.seenCells=blank2dArray();
+	this.skills=[];
+	this.actionQueue = [];
+	this.actionQueueParams = [];
+	
+	// Inventory	
+	for (var i=0;i<data[17].length;i++) {
+		var typeId = data[17][i][0];
+		var param = data[17][i][1];
+		if (isUnique(typeId)) {
+			this.items.addItem(new UniqueItem(typeId, param));
+		} else {
+			this.items.addItem(new ItemPile(typeId, param));
+		}
+	}
+	UI.notify("inventoryChange");
+	
+	// Ammunition
+	for (var slot in data[18]) {
+		if (slot==9 && this.ammunition.hasItemInSlot(9)) {
+			slot=10;
+		}
+		this.ammunition.putOnToSlot(slot, new UniqueItem(data[18][slot][0], data[18][slot][1]));
+	}
+	// Spells
+	player.spells = data[19];
+	// Skills
+	var len=data[20].length/2;
+	player.skills=[];
+	for (var i=0;i<len;i++) {
+		player.skills.push(data[20][i*2]);
+		player.skills.push(data[20][i*2+1]);
+	}
+	UI.notify("attributesInit");
+	this.showLoot();
+	UI.notify("inventoryChange");
+//	this.showAmmunition();
+}
+Player.prototype = new Character(-1);
+Player.prototype.display = function () {
+	this.doll = new Doll(this);
+	this.doll.draw();
+	document.getElementById("character"+this.characterId).appendChild(this.doll.DOMNode);
+	this.initHpBar();
+};
+Player.prototype.showDamage = function (amount, type) {
+	Character.prototype.showDamage.apply(this, arguments);
+	UI.notify("healthChange");
 };

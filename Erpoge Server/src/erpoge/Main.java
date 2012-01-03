@@ -5,9 +5,9 @@ import erpoge.characters.CharacterTypes;
 import erpoge.characters.PlayerCharacter;
 import erpoge.gui.Window;
 import erpoge.inventory.ItemPile;
-import erpoge.inventory.ItemsTypology;
 import erpoge.inventory.UniqueItem;
 import erpoge.itemtypes.ItemType;
+import erpoge.itemtypes.ItemsTypology;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.Location;
 import erpoge.terrain.TerrainGenerator;
@@ -19,7 +19,7 @@ public class Main {
 	public static final int DEFAULT_PORT = 8787;
 	public static int[][] arr;
 	public final static boolean DEBUG = true;
-	public static final String TEST_LOCATION_TYPE = "Forest";
+	public static final String TEST_LOCATION_TYPE = "BuildingTest";
 	public static final int DEFAULT_LOCATION_WIDTH = 60;
 	public static final int DEFAULT_LOCATION_HEIGHT = 40;
 	public static <T> void out(T string) {
@@ -49,9 +49,9 @@ public class Main {
 		ItemsTypology.init();
 		CharacterTypes.init();
 //		Main.console(GameObjects.jsonGetObjectProperties());
-		CharacterTypes.jsonTypes();
+//		CharacterTypes.jsonTypes();
 //		ItemsTypology.showTypology();
-//		Main.console(GameObjects.jsonGetObjectProperties());
+//		ItemsTypology.jsonTypology();
 		
 		World world = new World(40,40,"TestWorld", "Erpoge World");
 //		world.showWorld();
@@ -64,6 +64,8 @@ public class Main {
 		burok.getItem(new ItemPile(ItemType.CLASS_AMMO * ItemsTypology.CLASS_LENGTH,200));
 		burok.getItem(new UniqueItem(ItemType.CLASS_BLUNT * ItemsTypology.CLASS_LENGTH));
 		burok.getItem(new UniqueItem(ItemType.CLASS_BOW * ItemsTypology.CLASS_LENGTH));
+		burok.getItem(new UniqueItem(1204));
+		burok.getItem(new UniqueItem(1102));
 		burok.learnSpell(9);
 		
 		Accounts.addAccount(new Account("1","1"));

@@ -68,6 +68,7 @@ function handleNextEvent() {
 			}
 		} else {
 			characters[value.characterId].showPutOn(value.itemId);
+			handleNextEvent();
 		}
 		break;
 	case "takeOff":
@@ -79,6 +80,7 @@ function handleNextEvent() {
 			}
 		} else {
 			characters[value.characterId].showTakeOff(value.itemId);
+			handleNextEvent();
 		}
 		break;
 	case "drop":
@@ -129,6 +131,7 @@ function handleNextEvent() {
 		if (onGlobalMap) {
 			throw new Error("Character "+value.characterId+" was damaged on global map!");
 		} else {
+		// handleNextEvent() is inside showDamage
 			characters[value.characterId].showDamage(value.amount, value.type);
 		}
 		break;
@@ -250,6 +253,10 @@ function handleNextEvent() {
 		break;
 	case "effectEnd":
 		characters[value.characterId].showEffectEnd(value.effectId);
+		handleNextEvent();
+		break;
+	case "attrChange":
+		characters[value.characterId].changeAttribute(value.attrId, value.value);
 		handleNextEvent();
 		break;
 	default:

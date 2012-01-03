@@ -13,9 +13,10 @@ import erpoge.characters.PlayerCharacter;
 import erpoge.clientmessages.*;
 import erpoge.inventory.Item;
 import erpoge.inventory.ItemPile;
-import erpoge.inventory.ItemsTypology;
 import erpoge.inventory.UniqueItem;
 import erpoge.itemtypes.ItemType;
+import erpoge.itemtypes.ItemsTypology;
+import erpoge.serverevents.EventPutOn;
 import erpoge.terrain.Location;
 import erpoge.terrain.Portal;
 import erpoge.terrain.World;
@@ -57,7 +58,8 @@ public class MainHandler extends WebSocketServer {
 	PICK_UP_UNIQUE			= 26,
 	LOAD_PASSIVE_CONTENTS	= 27,
 	ACCOUNT_REGISTER		= 28,
-	PLAYER_CREATE			= 29;
+	PLAYER_CREATE			= 29,
+	IDLE                    = 30;
 	public static final int MAX_NUM_OF_PLAYERS = 16;
 	public static final Gson gson = new Gson();
 	public static final Gson gsonIncludesStatic = new GsonBuilder()
@@ -83,233 +85,175 @@ public class MainHandler extends WebSocketServer {
 		}
 		Main.outln();
 	}
-	
+	/* Handlers */
+	private void aServerInfo(String message, WebSocket conn) throws IOException {
+		// ping
+		conn.send("{\"a\":"+MainHandler.SERVER_INFO+",\"serverName\":\"Erpoge Server\",\"online\":106}");
+	}
+	private void aLoadPassiveContents(String message, WebSocket conn) throws IOException {
+	/**
+	 * Sends only contents of world witout any login information.
+	 * Used, for example, in world preview in client.
+	 */
+		conn.send("{\"a\":"+MainHandler.SERVER_INFO+","+world.jsonPartGetWorldContents()+"}");
+	}
+	private void aLogin(String message, WebSocket conn) throws IOException {
+		/* 	in: {
+				l: String login,
+				p: String password,
+			}
+			out: [[characterId, name, race, class, level, maxHp, maxMp, str, dex, wis, itl, items, ammunition, spells]xN]
+		*/
+		ClientMessageLogin data = gson.fromJson(message, ClientMessageLogin.class);
+		if (data.l.equals("")) {
+			conn.send("{\"a\":"+MainHandler.LOGIN+",\"error\":1}");
+		} else if (data.p.equals("")) {
+			conn.send("{\"a\":"+MainHandler.LOGIN+",\"error\":2}");
+		} else if (Accounts.hasAccount(data.l)) {
+			Account account = Accounts.account(data.l);
+			if (data.p.equals(account.password)) {
+				conn.send("{\"a\":"+MainHandler.LOGIN+","+account.jsonPartGetCharactersAuthInfo()+"}");
+			} else {
+				conn.send("{\"a\":"+MainHandler.LOGIN+",\"error\":3}");
+			}
+		} else {
+			conn.send("{\"a\":"+MainHandler.LOGIN+",\"error\":3}");
+		}
+	}
+	private void aLoadContents(String message, WebSocket conn) throws IOException {
+		// Almost the same as LOAD_LOCATON_CONTENTS
+		ClientMessageAuth clientData = gson.fromJson(message, ClientMessageAuth.class);
+		if (clientData.login.equals("")) {
+		// Login is empty
+			conn.send("{\"a\":"+MainHandler.LOAD_CONTENTS+",\"error\":0}");
+		} else if (clientData.password.equals("")) {
+		// Password is empty
+			conn.send("{\"a\":"+MainHandler.LOAD_CONTENTS+",\"error\":1}");
+		}
+		Account account = Accounts.account(clientData.login);
+		
+		if (account == null) {
+		// No such account
+			conn.send("{\"a\":"+MainHandler.LOAD_CONTENTS+",\"error\":2}");
+		} else if (!account.password.equals(clientData.password)) {
+		// Client password doesn't match account password
+			conn.send("{\"a\":"+MainHandler.LOAD_CONTENTS+",\"error\":3}");
+		} else if (!account.hasCharacterWithId(clientData.characterId)) {
+			conn.send("{\"a\":"+MainHandler.LOAD_CONTENTS+",\"error\":4}");
+		} else {
+		// Everything is okay
+			conn.character = world.getPlayerById(clientData.characterId);
+			if (!conn.character.isAuthorized()) {
+				conn.character.authorize();
+				conn.character.setConnection(conn);
+			}
+			conn.send(conn.character.jsonGetEnteringData(conn.character.isOnGlobalMap()));
+		}
+	}
+	/* Listeners */
 	public void onClientOpen(WebSocket conn) {
 		Main.console("Client open");
 	}
-
 	public void onClientClose(WebSocket conn) {
 		Main.console("Client close");
 		if (conn.character != null && conn.character.isAuthorized()) {
 			conn.character.deauthorize();
 		}
 	}
-
 	public void onClientMessage(WebSocket conn, String message) {
 		Main.console(message);
 		int action = gson.fromJson(message, ClientMessageAction.class).a;
 		try {
 			switch (action) {
-			case LOGIN:
-				/* 	in: {
-						l: String login,
-						p: String password,
-					}
-					out: [[characterId, name, race, class, level, maxHp, maxMp, str, dex, wis, itl, items, ammunition, spells]xN]
-				*/
-				ClientMessageLogin data = gson.fromJson(message, ClientMessageLogin.class);
-				if (data.l.equals("")) {
-					conn.send("{\"a\":"+LOGIN+",\"error\":1}");
-				} else if (data.p.equals("")) {
-					conn.send("{\"a\":"+LOGIN+",\"error\":2}");
-				} else if (Accounts.hasAccount(data.l)) {
-					Account account = Accounts.account(data.l);
-					if (data.p.equals(account.password)) {
-						conn.send("{\"a\":"+LOGIN+","+account.jsonPartGetCharactersAuthInfo()+"}");
-					} else {
-						conn.send("{\"a\":"+LOGIN+",\"error\":3}");
-					}
-				} else {
-					conn.send("{\"a\":"+LOGIN+",\"error\":3}");
-				}
+			case LOGIN: 
+				aLogin(message, conn);
 				break;
 			case ACCOUNT_REGISTER:
-				ClientMessageAccountRegister accountRegsterData = gson.fromJson(message, ClientMessageAccountRegister.class);
-				if (Accounts.hasAccount(accountRegsterData.l)) {
-					conn.send("{\"a\":"+ACCOUNT_REGISTER+",\"error\":1}");
-				} else {
-					Accounts.addAccount(new Account(accountRegsterData.l, accountRegsterData.p));
-					Account account = Accounts.account(accountRegsterData.l);
-//					PlayerCharacter shanok = world.createCharacter("player", "Bliot", 3, "Эльфоцап", 13, 26);
-//					shanok.getItem(UniqueItem.createItemByClass(Item.CLASS_BOW, 0));
-//					shanok.getItem(UniqueItem.createItemByClass(Item.CLASS_BOW, 0));
-//					shanok.getItem(UniqueItem.createItemByClass(Item.CLASS_BOW, 0));
-//					shanok.getItem(UniqueItem.createItemByClass(Item.CLASS_SWORD, 0));
-//					shanok.getItem(ItemPile.createPileFromClass(Item.CLASS_AMMO, 0, 1000));
-//					Accounts.account(accountRegsterData.l).addCharacter(shanok);
-					conn.send("{\"a\":"+LOGIN+","+account.jsonPartGetCharactersAuthInfo()+"}");
-				}
+				conn.character.aAccountRegister(message);
 				break;
 			case PLAYER_CREATE:
-				ClientMessagePlayerCreate playerCreateData = gson.fromJson(message, ClientMessagePlayerCreate.class);
-				Account accountPlayerCreate = Accounts.account(playerCreateData.account);
-				PlayerCharacter newPlayer = world.createCharacter(
-						"player", 
-						playerCreateData.name, 
-						playerCreateData.race, 
-						playerCreateData.cls, 
-						13, 26);
-				accountPlayerCreate.addCharacter(newPlayer);
-				Main.console("New character "+newPlayer.name);
-				accountPlayerCreate.accountStatistic();
-				conn.send("{\"a\":"+LOGIN+","+accountPlayerCreate.jsonPartGetCharactersAuthInfo()+"}");
+				conn.character.aPlayerCreate(message);
 				break;
 			case LOAD_CONTENTS:
-			// Almost the same as LOAD_LOCATON_CONTENTS
-				ClientMessageAuth clientData = gson.fromJson(message, ClientMessageAuth.class);
-				if (clientData.login.equals("")) {
-				// Login is empty
-					conn.send("{\"a\":"+LOAD_CONTENTS+",\"error\":0}");
-				} else if (clientData.password.equals("")) {
-				// Password is empty
-					conn.send("{\"a\":"+LOAD_CONTENTS+",\"error\":1}");
-				}
-				Account account = Accounts.account(clientData.login);
-				
-				if (account == null) {
-				// No such account
-					conn.send("{\"a\":"+LOAD_CONTENTS+",\"error\":2}");
-				} else if (!account.password.equals(clientData.password)) {
-				// Client password doesn't match account password
-					conn.send("{\"a\":"+LOAD_CONTENTS+",\"error\":3}");
-				} else if (!account.hasCharacterWithId(clientData.characterId)) {
-					conn.send("{\"a\":"+LOAD_CONTENTS+",\"error\":4}");
-				} else {
-				// Everything is okay
-					conn.character = world.getPlayerById(clientData.characterId);
-					if (!conn.character.isAuthorized()) {
-						conn.character.authorize();
-						conn.character.setConnection(conn);
-					}
-					conn.send(conn.character.jsonGetEnteringData(conn.character.isOnGlobalMap()));
-				}
+				aLoadContents(message, conn);
 				break;
 			case SERVER_INFO:
-				// ping
-				conn.send("{\"a\":"+SERVER_INFO+",\"serverName\":\"Erpoge Server\",\"online\":106}");
+				aServerInfo(message, conn);
 				break;
 			case ATTACK:
-				// attack
-				ClientMessageAttack messageAttack = gson.fromJson(message, ClientMessageAttack.class);
-				conn.character.attack(
-					conn.character.location.characters.get(messageAttack.aimId)
-				);
+				conn.character.aAttack(message);
 				break;
 			case MOVE:
-				// move
-				// v - movement direction
-				conn.character.move(gson.fromJson(message,
-						ClientMessageMove.class).dir);
+				conn.character.aMove(message);
 				break;
 			case PUT_ON:
-				// put on an item
-				// v - item id
-				conn.character.putOn(gson.fromJson(message,
-						ClientMessagePutOn.class).itemId);
+				conn.character.aPutOn(message);
 				break;
 			case TAKE_OFF:
-				// take off an item
-				// v - item id
-				conn.character.takeOff(gson.fromJson(message,
-						ClientMessageTakeOff.class).itemId);
+				conn.character.aTakeOff(message);
 				break;
 			case PICK_UP_PILE:
-				ClientMessagePickUpPile pickItemP = gson.fromJson(message,
-						ClientMessagePickUpPile.class);
-				conn.character.pickUp(pickItemP.typeId, pickItemP.amount);
+				conn.character.aPickUpPile(message);
 				break;
 			case PICK_UP_UNIQUE:
-				ClientMessagePickUpUnique pickItemU = gson.fromJson(message,
-						ClientMessagePickUpUnique.class);
-				conn.character.pickUp(pickItemU.itemId);
+				conn.character.aPickUpUnique(message);
 				break;
 			case DROP_PILE:
-				// drop an item
-				ClientMessageDropPile dsItemP = gson.fromJson(message,
-						ClientMessageDropPile.class);
-				conn.character.drop(dsItemP.typeId, dsItemP.amount);
+				conn.character.aDropPile(message);
 				break;
 			case DROP_UNIQUE:
-				// drop an item
-				ClientMessageDropUnique dsItemU = gson.fromJson(message,
-						ClientMessageDropUnique.class);
-				conn.character.drop(dsItemU.itemId);
+				conn.character.aDropUnique(message);
 				break;
 			case WORLD_TRAVEL:
-				ClientMessageWorldTravel clientDataWT = gson.fromJson(message, ClientMessageWorldTravel.class);
-				conn.character.worldTravel(clientDataWT.x, clientDataWT.y);
+				conn.character.aWorldTravel(message);
 				break;
 			case DEAUTH:
-				if (conn.character != null) {
-					conn.character.deauthorize();
-				}
+				conn.character.aDeauth(message);
 				break;
 			case CHAT_MESSAGE:
-				ClientMessageChatMessage clientDataCHM = gson.fromJson(message, ClientMessageChatMessage.class);
-				conn.character.say(clientDataCHM.text);
+				conn.character.aChatMessage(message);
 				break;
 			case OPEN_CONTAINER:
-				ClientMessageCoordinate containerCoord = gson.fromJson(message, ClientMessageCoordinate.class);
-//				Main.console(conn.character.location.jsonGetContainerContents(containerCoord.x, containerCoord.y));
-				conn.send("[{\"e\":\"openContainer\",\"items\":["+
-						conn.character.location.jsonGetContainerContents(containerCoord.x, containerCoord.y)+"]}]");
+				conn.character.aOpenContainer(message);
 				break;
 			case TAKE_FROM_CONTAINER:
-				ClientMessageTakeFromContainer take = gson.fromJson(message, ClientMessageTakeFromContainer.class);
-				conn.character.takeFromContainer(take.typeId, take.param, take.x, take.y);
+				conn.character.aTakeFromContainer(message);
 				break;
 			case PUT_TO_CONTAINER:
-				ClientMessageTakeFromContainer put = gson.fromJson(message, ClientMessageTakeFromContainer.class);
-				conn.character.putToContainer(put.typeId, put.param, put.x, put.y);
+				conn.character.aPutToContainer(message);
 				break;
 			case CAST_SPELL:
-				ClientMessageCastSpell messageSpell = gson.fromJson(message, ClientMessageCastSpell.class);
-				conn.character.castSpell(messageSpell.spellId, messageSpell.x, messageSpell.y);
+				conn.character.aCastSpell(message);
 				break;
 			case SHOOT_MISSILE:
-				ClientMessageShootMissile messageShoot = gson.fromJson(message, ClientMessageShootMissile.class);
-				conn.character.shootMissile(messageShoot.x, messageShoot.y, messageShoot.missile);
+				conn.character.aShootMissile(message);
 				break;
 			case USE_OBJECT:
-				ClientMessageUseObject messageUse = gson.fromJson(message, ClientMessageUseObject.class);
-				conn.character.useObject(messageUse.x, messageUse.y);
+				conn.character.aUseObject(message);
 				break;
 			case CHECK_OUT:
-				conn.character.location().checkOut(conn.character);
+				conn.character.aCheckOut(message);
 				break;
 			case ENTER_LOCATION:
-				ClientMessageEnterLocation messageEnter = gson.fromJson(message, ClientMessageEnterLocation.class);
-				Location location;
-				if (world.locations.containsKey(new Coordinate(messageEnter.x, messageEnter.y))) {
-					location = world.locations.get(new Coordinate(messageEnter.x, messageEnter.y));
-				} else {
-					location = world.createLocation(messageEnter.x, messageEnter.y, Main.DEFAULT_LOCATION_WIDTH,Main.DEFAULT_LOCATION_HEIGHT, Main.TEST_LOCATION_TYPE, "����� �������");
-				}
-				location.addCharacter(conn.character);
-				conn.send(conn.character.jsonGetEnteringData(conn.character.isOnGlobalMap()));
+				conn.character.aEnterLocation(message);
 				break;
 			case LEAVE_LOCATION:
-				Portal portal = conn.character.getNearbyPortal();
-				if (portal != null) {
-					conn.character.goToAnotherLevel(portal);
-				} else {
-					conn.character.leaveLocation();
-				}
-				conn.send(conn.character.jsonGetEnteringData(conn.character.isOnGlobalMap()));
+				conn.character.aLeaveLocation(message);
 				break;
 			case ANSWER:
-				ClientMessageAnswer messageAnswer = gson.fromJson(message, ClientMessageAnswer.class);
-				conn.character.dialogueAnswer(messageAnswer.answerId);
+				conn.character.aAnswer(message);
 				break;
 			case START_CONVERSATION:
-				ClientMessageStartConversation messageConversation = gson.fromJson(message, ClientMessageStartConversation.class);
-				conn.character.startConversation(messageConversation.characterId);
+				conn.character.aStartConversation(message);
 				break;
 			case LOAD_PASSIVE_CONTENTS:
-				conn.send("{\"a\":"+SERVER_INFO+","+world.jsonPartGetWorldContents()+"}");
+				aLoadPassiveContents(message, conn);
+				break;
+			case IDLE:
+				conn.character.aIdle(message);
 				break;
 			default:
-				throw new Error("Unhandlable action code came from a client");
+				throw new Error("Unhandlable action code "+action+" came from a client");
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

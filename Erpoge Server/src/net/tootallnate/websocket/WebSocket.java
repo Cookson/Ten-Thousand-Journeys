@@ -17,6 +17,7 @@ import net.tootallnate.websocket.exeptions.InvalidHandshakeException;
 
 import java.util.concurrent.BlockingQueue;
 
+import erpoge.PlayerHandler;
 import erpoge.characters.PlayerCharacter;
 
 /**
@@ -42,7 +43,7 @@ public final class WebSocket {
    * is binded to. Note that ports under 1024 usually require root permissions.
    */
   public static final int DEFAULT_PORT = 80;
-  public PlayerCharacter character;
+  public PlayerHandler character;
   /**
    * The WebSocket protocol expects UTF-8 encoded bytes.
    */ 

@@ -8,9 +8,11 @@ import erpoge.Coordinate;
 import erpoge.Main;
 import erpoge.charactereffects.CharacterEffect;
 import erpoge.inventory.AmmunitionMap;
+import erpoge.inventory.Item;
 import erpoge.inventory.ItemMap;
 import erpoge.inventory.ItemPile;
 import erpoge.inventory.UniqueItem;
+import erpoge.itemtypes.Attribute;
 import erpoge.itemtypes.ItemType;
 import erpoge.magic.Spells;
 import erpoge.serverevents.*;
@@ -42,11 +44,20 @@ public abstract class Character extends Seer {
 	public static final String DEFAULT_NAME = "Default Name";
 	public static final double VISION_RANGE = 8;
 	
-	public int hp;
-	public int mp;
-	public int maxHp;
-	public int maxMp;
-	public int energy = 0;
+	protected int hp;
+	protected int mp;
+	protected int ep;
+	protected int energy;
+	protected int maxHp;
+	protected int maxMp;
+	protected int maxEp;
+	protected int armor;
+	protected int evasion;
+	protected int fireRes = 0;
+	protected int coldRes = 0;
+	protected int poisonRes = 0;
+	protected int acidRes = 0;
+	protected int actionPoints = 0;
 	protected int fraction;
 	public final String name;
 	public final String type;
@@ -68,10 +79,12 @@ public abstract class Character extends Seer {
 		name = n;
 		type = t;
 		location = l;
-		hp = 10;
-		mp = 100;
-		maxHp = 10;
-		maxMp = 100;
+		hp = CharacterTypes.getType(type).hp;
+		mp = CharacterTypes.getType(type).mp;
+		ep = 100;
+		maxHp = CharacterTypes.getType(type).hp;
+		maxMp = CharacterTypes.getType(type).mp;
+		maxEp = 100;
 		fraction = 0;
 		location.passability[x][y] = TerrainBasics.PASSABILITY_SEE;
 	}
@@ -111,7 +124,7 @@ public abstract class Character extends Seer {
 	/* Actions */	
 	public void attack(Character aim) {
 		location.addEvent(new EventMeleeAttack(characterId, aim.characterId));
-		aim.getDamage(10, DAMAGE_PLAIN);
+		aim.getDamage(1 , DAMAGE_PLAIN);
 		moveTime(500);
 	}
 	public void shootMissile(int toX, int toY, ItemPile missile) {
@@ -137,30 +150,31 @@ public abstract class Character extends Seer {
 		location.addEvent(new EventDeath(characterId));
 	}
 	public void putOn(UniqueItem item, boolean omitEvent) {
-		// Main put on function
-			int cls = item.getType().getCls();
-			int slot = item.getType().getSlot();
-			if (cls == ItemType.CLASS_RING) {
-				// ����������� ������, ����� �������� ������ (�� ����� ����
-				// ������������ ���)
-				int numOfRings = 0;
-				if (numOfRings == 2) {
-					throw new Error("Character " + name
-							+ " is trying to put on more than 2 rings");
-				}
-			} else if (ammunition.hasPiece(slot)) {
-				// ���� ����� ������� ���� �� ����
+	// Main put on function
+		int cls = item.getType().getCls();
+		int slot = item.getType().getSlot();
+		if (cls == ItemType.CLASS_RING) {
+			// ����������� ������, ����� �������� ������ (�� ����� ����
+			// ������������ ���)
+			int numOfRings = 0;
+			if (numOfRings == 2) {
 				throw new Error("Character " + name
-						+ " is trying to put on a piece he is already wearing");
+						+ " is trying to put on more than 2 rings");
 			}
-			ammunition.add(item);
-			inventory.removeUnique(item);
-			if (!this.isOnGlobalMap() && !omitEvent) {
-			// Sending for mobs. Sending for players is in PlayerCharacter.putOn()
-				location.addEvent(new EventPutOn(characterId, item.getItemId()));
-			}
-			moveTime(500);
+		} else if (ammunition.hasPiece(slot)) {
+			// ���� ����� ������� ���� �� ����
+			throw new Error("Character " + name
+					+ " is trying to put on a piece he is already wearing");
 		}
+		ammunition.add(item);
+		inventory.removeUnique(item);
+		if (!this.isOnGlobalMap() && !omitEvent) {
+		// Sending for mobs. Sending for players is in PlayerCharacter.putOn()
+			location.addEvent(new EventPutOn(characterId, item.getItemId()));
+		}
+		addItemBonuses(item);
+		moveTime(500);
+	}
 	public void takeOff(UniqueItem item) {
 	// Main take off function
 		ammunition.removeSlot(item.getType().getSlot());
@@ -169,6 +183,7 @@ public abstract class Character extends Seer {
 		// Sending for mobs. Sending for players is in PlayerCharacter.putOn()
 			location.addEvent(new EventTakeOff(characterId, item.getItemId()));
 		}
+		removeItemBonuses(item);
 		moveTime(500);
 	}
 	public void pickUp(ItemPile pile) {
@@ -235,43 +250,6 @@ public abstract class Character extends Seer {
 	public void idle() {
 		moveTime(500);
 	}
-	public void move(Integer dir) {
-		int dx, dy;
-		switch (dir) {
-		case 0:
-			dx = 0;
-			dy = -1;
-			break;
-		case 1:
-			dx = 1;
-			dy = -1;
-			break;
-		case 2:
-			dx = 1;
-			dy = 0;
-			break;
-		case 3:
-			dx = 1;
-			dy = 1;
-			break;
-		case 4:
-			dx = 0;
-			dy = 1;
-			break;
-		case 5:
-			dx = -1;
-			dy = 1;
-			break;
-		case 6:
-			dx = -1;
-			dy = 0;
-			break;
-		default:
-			dx = -1;
-			dy = -1;
-		}
-		move(x + dx, y + dy);
-	}
 	public void move(int nx, int ny) {
 		location.passability[x][y] = 0;
 		location.cells[x][y].character(false);
@@ -280,26 +258,29 @@ public abstract class Character extends Seer {
 		location.cells[nx][ny].character(this);
 		location.passability[nx][ny] = 3;
 		location.addEvent(new EventMove(characterId, x, y));
-		location.flushEvents(Location.TO_LOCATION, this);
 		moveTime(500);
 		getVisibleEntities();
 	}
 	
 	/* Getters */
-	public abstract int getArmor();
-	public int mp() {
-		return mp;
-	}
-	public int hp() {
-		return hp;
+	public int getAttribute(Attribute attribute) {
+		switch (attribute) {
+		case ARMOR:       return armor;
+		case EVASION:     return evasion;
+		case MAX_HP:      return maxHp;
+		case MAX_MP:      return maxMp;
+		default:
+			throw new Error("Unknown attribute");
+		}
 	}
 	public Location location() {
 		return location;
 	}
-
+	
 	/* Setters */
 	public void getDamage(int amount, int type) {
 		hp -= amount;
+		Main.console(type+" now has "+hp+" hp");
 		location.addEvent(new EventDamage(characterId, amount, type));
 		if (hp <= 0) {
 			die();
@@ -346,9 +327,8 @@ public abstract class Character extends Seer {
 		effects.remove(effectId);
 		location.addEvent(new EventEffectEnd(characterId, effectId));
 	}
-	
 	public void moveTime(int amount) {
-		energy -= amount;
+		actionPoints -= amount;
 		for (Character.Effect e : effects.values()) {
 			e.duration -= amount;
 			if (e.duration < 0) {
@@ -356,7 +336,36 @@ public abstract class Character extends Seer {
 			}
 		}
 	}
-	
+	private void addItemBonuses(Item item) {
+	/**
+	 * Add bonuses of item after putting in on
+	 */
+		item.getType().addBonuses(this);
+	}
+	private void removeItemBonuses(Item item) {
+	/**
+	 * Add bonuses of item after putting in on
+	 */
+		item.getType().removeBonuses(this);
+	}
+	public void changeAttribute(Attribute attribute, int value) {
+		int resultValue = -9000;
+		switch (attribute) {
+		case ARMOR:       resultValue = (armor += value); break;
+		case EVASION:     resultValue = (evasion += value); break;
+		case MAX_HP:      resultValue = (maxHp += value); 
+		                                 hp += value; 
+		                  location.addEvent(new EventAttributeChange(characterId, Attribute.HP.attr2int(), hp));
+		                  break;
+		case MAX_MP:      resultValue = (maxMp += value); 
+                                         hp += value; 
+                          location.addEvent(new EventAttributeChange(characterId, Attribute.MP.attr2int(), mp));
+                          break;
+		default:
+			throw new Error("Unknown attribute");
+		}
+		location.addEvent(new EventAttributeChange(characterId, attribute.attr2int(), resultValue));
+	}
 	/* Checks */
 	public boolean at(int atX, int atY) {
 		return x==atX && y==atY;
@@ -398,4 +407,6 @@ public abstract class Character extends Seer {
 			this.modifier = modifier;
 		}
 	}
+
+	
 }

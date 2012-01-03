@@ -2,6 +2,7 @@ package erpoge.charactereffects;
 
 import java.util.HashMap;
 import erpoge.characters.Character;
+import erpoge.itemtypes.Attribute;
 public class EffectsTypology {
 	public HashMap<Integer, CharacterEffect> effects = new HashMap<Integer, CharacterEffect>();
 	public static final EffectsTypology instance = new EffectsTypology();
@@ -21,7 +22,7 @@ public class EffectsTypology {
 	public EffectsTypology() {
 		addEffect(EFF_POISON, TYPE_ONTURN, new CharacterEffect() {
 			public void effect(Character ch, int modifier) {
-				ch.hp -= modifier;
+				ch.changeAttribute(Attribute.HP, -modifier);
 			}
 		});
 		addEffect(EFF_BERSERK, TYPE_ONTURN, new CharacterEffect() {

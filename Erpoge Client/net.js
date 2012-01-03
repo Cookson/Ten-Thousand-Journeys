@@ -35,6 +35,7 @@ Net = {
 	LOAD_PASSIVE_CONTENTS	: 27,
 	ACCOUNT_REGISTER		: 28,
 	PLAYER_CREATE			: 29,
+	IDLE					: 30,
 	serverAddress : "ws://"+window.location.host+":8787",
 	websocket : null,
 	send : function _(data, onmessage, callback) {
@@ -152,7 +153,7 @@ Net = {
 	},
 	quickRefresh: function _() {
 		localStorage.setItem(101,player.characterId+","+Global.playerLogin+","+Global.playerPassword);
-		window.location.href=window.location.href;
+		window.location.reload();
 	},
 	logInForCharacter: function _(characterId, login, password) {
 		Net.send({a:Net.LOGIN,l:login,p:password},function() {

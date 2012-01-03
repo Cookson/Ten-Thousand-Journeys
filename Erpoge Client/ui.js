@@ -9,6 +9,7 @@ var UI = {
 // values saved in storage
 	width			: 1024,
 	height			: 600,
+	gameZone        : null,
 // Constants describing alignation of UI elements in game window
 	ALIGN_LEFT 		: "LEFT",
 	ALIGN_RIGHT 	: "RIGHT",
@@ -43,7 +44,9 @@ var UI = {
 		ammunitionChange: {},
 		inventoryChange: {},
 		healthChange: {},
-		mana: {},
+		manaChange: {},
+		attributeChange: {},
+		attributesInit: {},
 		chatMessage: {},
 		environmentChange: {},
 		spellCast: {},
@@ -83,7 +86,13 @@ var UI = {
 // Object CSSStyleSheet. A stylesheet for custom rules of UIElements
 // This field will be set in onLoadEvents['customStylesheets']
 	styleSheet: null,
-	mode: -1
+	mode: -1,
+// Placeholders for panels
+	panels: {},
+	topPanel: null,
+	rightPanel: null,
+	bottomPanel: null,
+	leftPanel: null
 };
 UI.notify = function _(groupName, data) {
 //	console["log"](groupName);
@@ -131,7 +140,7 @@ UI.enterGlobalMapMode = function _() {
 UI.showAlwaysShownElements = function _() {
 	for (var i in this.notifiers) {
 		for (var j in this.notifiers[i]) {
-			var uiElement = this.notifiers[i][j]
+			var uiElement = this.notifiers[i][j];
 			if (uiElement.displayMode == UI.ALWAYS && !uiElement.permanentlyHidden) {
 				this.notifiers[i][j].show();
 			}
@@ -164,7 +173,7 @@ UI.enable = function _() {
 				continue;
 			}
 			UI.notifiers[i][j].show();
-			UI.notifiers[i][j].place();
+			UI.notifiers[i][j]._place();
 		}
 	}
 };
@@ -179,7 +188,208 @@ UI.setMode = function _(mode) {
 		UI.mode = mode;
 	}
 };
-function UIElement(type, hAlign, vAlign, notifiers, displayMode) {
+UI.addElement = function _(properties) {
+// Creates new UIElement from description
+	var uiElement = new UIElement(properties.type);
+	if (properties.panel) {
+	// Nothing else is needed for UIElements on panel
+		uiElement.place(UI.panels[properties.panel]);
+	} else {
+		// Vertical align
+		if (properties.vAlign !== undefined) {
+			if (properties.vAlign == "top") {
+				uiElement.vAlign = UI.ALIGN_TOP;
+			} else if (properties.vAlign == "center") {
+				uiElement.vAlign = UI.ALIGN_CENTER;
+			} else if (properties.vAlign == "bottom") {
+				uiElement.vAlign = UI.ALIGN_BOTTOM;
+			} else {
+				uiElement.vAlign = properties.vAlign;
+			}
+		} else {
+			throw new Error("Vertical align must be given for UIElements not in panel");
+		}
+		// Horizontal align
+		if (properties.hAlign !== undefined) {
+			if (properties.hAlign == "left") {
+				uiElement.hAlign = UI.ALIGN_LEFT;
+			} else if (properties.hAlign == "center") {
+				uiElement.hAlign = UI.ALIGN_CENTER;
+			} else if (properties.hAlign == "right") {
+				uiElement.hAlign = UI.ALIGN_RIGHT;
+			} else {
+				uiElement.hAlign = properties.vAlign;
+			}
+		} else {
+			throw new Error("Horizontal align must be given for UIElements not in panel");
+		}
+		uiElement.place();
+	}
+};
+UI._updateGameZoneBounds = function _() {
+// Updates left, top, width and height of intfGameZone element
+// according to panels' bounds
+	var gzWidth = this.width;
+	var gzHeight = this.height;
+	var gzLeft = 0;
+	var gzTop = 0;
+	if (this.topPanel) {
+		gzTop = this.topPanel.width;
+		gzHeight -= this.topPanel.width;
+	}
+	if (this.leftPanel) {
+		gzLeft = this.leftPanel.width;
+		gzWidth -= this.leftPanel.width;
+	}
+	if (this.bottomPanel) {
+		gzHeight -= this.bottomPanel.width;
+	}
+	if (this.rightPanel) {
+		gzWidth -= this.rightPanel.width;
+	}
+	this.gameZone.style.width = gzWidth+"px";
+	this.gameZone.style.height = gzHeight+"px";
+	this.gameZone.style.left = gzLeft+"px";
+	this.gameZone.style.top = gzTop+"px";
+	this.visibleWidth = 
+		this.width-this.getPanelWidth(Terrain.SIDE_W)
+		-this.getPanelWidth(Terrain.SIDE_E);
+	this.visibleHeight = 
+		this.height-this.getPanelWidth(Terrain.SIDE_N)
+		-this.getPanelWidth(Terrain.SIDE_S);
+};
+UI.setPanel = function _(panel, side) {
+/* Places UIPanel from certain side.
+ * If there is already a panel from that side,
+ * hides that panel.
+*/
+	var previousPanel;
+	// Remove existing panel (that panel still remains in UI.panels)
+	if (side == Terrain.SIDE_N) {
+		previousPanel = this.topPanel;
+		this.topPanel = panel;
+	} else if (side == Terrain.SIDE_E) {
+		previousPanel = this.rightPanel;
+		this.rightPanel = panel;
+	} else if (side == Terrain.SIDE_S) {
+		previousPanel = this.bottomPanel;
+		this.bottomPanel = panel;
+	} else if (side == Terrain.SIDE_W) {
+		previousPanel = this.leftPanel;
+		this.leftPanel = panel;
+	}
+	if (previousPanel) {
+		previousPanel.rootElement.parentNode.removeChild(previousPanel.rootElement);
+	}
+	
+	// Place new panel
+	if (side == Terrain.SIDE_N) {
+		UI.topPanel = panel;
+		panel.rootElement.style.width = UI.width+"px";
+		panel.rootElement.style.height = panel.width+"px";
+		panel.rootElement.style.left = 0+"px";
+		panel.rootElement.style.top = 0+"px";
+	} else if (side == Terrain.SIDE_E) {
+		UI.rightPanel = panel;
+		panel.rootElement.style.width = panel.width+"px";
+		panel.rootElement.style.height = UI.height+"px";
+		panel.rootElement.style.left = UI.width-panel.width+"px";
+		panel.rootElement.style.top = 0;
+	} else if (side == Terrain.SIDE_S) {
+		UI.bottomPanel = panel;
+		panel.rootElement.style.width = UI.width+"px";
+		panel.rootElement.style.height = panel.width+"px";
+		panel.rootElement.style.left = 0+"px";
+		panel.rootElement.style.top = UI.height-panel.width+"px";
+	} else if (side == Terrain.SIDE_W) {
+		UI.leftPanel = panel;
+		panel.rootElement.style.width = panel.width+"px";
+		panel.rootElement.style.height = UI.height+"px";
+		panel.rootElement.style.left = 0+"px";
+		panel.rootElement.style.top = 0+"px";
+	} else {
+		throw new Error("Unknown side "+side);
+	}
+	document.getElementById("intfLeftSide").appendChild(panel.rootElement);
+	UI._updateGameZoneBounds();
+};
+UI.addPanel = function _(properties) {
+/* Creates and places panel
+	properties: {
+		name - string, name of new panel in UI.panels
+		width - integer, width of panel in pixels
+		side - string, ("top"|"right"|"bottom"|"left")
+	}
+*/
+	var panel = new UIPanel(properties.name, properties.width);
+	if (properties.side) {
+		var side;
+		switch (properties.side) {
+		case "top":
+			side = Terrain.SIDE_N;
+			break;
+		case "right":
+			side = Terrain.SIDE_E;
+			break;
+		case "bottom":
+			side = Terrain.SIDE_S;
+			break;
+		case "left":
+			side = Terrain.SIDE_W;
+			break;
+		default:
+			throw new Error("Unknown side "+properties.side);
+		}
+		UI.setPanel(panel, side);
+	}
+};
+UI.getPanelWidth = function _(side) {
+	if (side == Terrain.SIDE_N) {
+		return this.topPanel ? this.topPanel.width : 0;
+	} else if (side == Terrain.SIDE_E) {
+		return this.rightPanel ? this.rightPanel.width : 0;
+	} else if (side == Terrain.SIDE_S) {
+		return this.bottomPanel ? this.bottomPanel.width : 0;
+	} else if (side == Terrain.SIDE_W) {
+		return this.leftPanel ? this.leftPanel.width : 0;
+	} else {
+		throw new Error("Unknown side "+side);
+	}
+};
+UI.addWindow = function _(properties) {
+	properties.place = null;
+	var uiWindow = new UIWindow(properties.type);
+	// Vertical align
+	if (properties.vAlign !== undefined) {
+		if (properties.vAlign == "top") {
+			uiWindow.vAlign = UI.ALIGN_TOP;
+		} else if (properties.vAlign == "center") {
+			uiWindow.vAlign = UI.ALIGN_CENTER;
+		} else if (properties.vAlign == "bottom") {
+			uiWindow.vAlign = UI.ALIGN_BOTTOM;
+		} else {
+			uiWindow.vAlign = properties.vAlign;
+		}
+	} else {
+		throw new Error("Vertical align must be given for UIElements not in panel");
+	}
+	// Horizontal align
+	if (properties.hAlign !== undefined) {
+		if (properties.hAlign == "left") {
+			uiWindow.hAlign = UI.ALIGN_LEFT;
+		} else if (properties.vAlign == "center") {
+			uiWindow.hAlign = UI.ALIGN_CENTER;
+		} else if (properties.vAlign == "right") {
+			uiWindow.hAlign = UI.ALIGN_RIGHT;
+		} else {
+			uiWindow.hAlign = properties.vAlign;
+		}
+	} else {
+		throw new Error("Horizontal align must be given for UIElements not in panel");
+	}
+	uiWindow.place();
+};
+function UIElement(type) {
 /* 
  * type - string that is equal to desired element's type name in UIElementTypes
  * hAlign - integer/enum value || UI.ALIGN_LEFT || UI.ALIGN_RIGHT || UI.ALIGN_CENTER
@@ -193,15 +403,17 @@ function UIElement(type, hAlign, vAlign, notifiers, displayMode) {
  *  notifers - array of event types (see UI.notifiers) that force this element to refresh
  *  displayMode - enum value UI.IN_LOCATION || UI.ON_GLOBAL_MAP || UI.ALWAYS
  *  	When this element must be displayed
+ *  panel - UIPanel to which this UIElement must be inserted (if needed)
  *  
  */
-	this.hAlign = hAlign;
-	this.vAlign = vAlign;
+	if (type === -1) {
+	// For prototype
+		return;
+	}
+	
 	this.type = type;
 	this.UIElementType = UIElementTypes[type];
 	this.data = {};
-	this.displayMode = displayMode;
-	this.notifiers = notifiers;
 	this.permanentlyHidden = false;
 	this.hidden = false;
 	
@@ -229,23 +441,44 @@ function UIElement(type, hAlign, vAlign, notifiers, displayMode) {
 		}
 	}
 	
+	
+};
+UIElement.prototype.setAlign = function(horizontal, vertical) {
+	this.hAlign = horizontal;
+	this.vAlign = vertical;
+	return this;
+};
+UIElement.prototype.setDisplayMode = function (displayMode) {
+	this.displayMode = displayMode;
+	return this;
+};
+UIElement.prototype.place = function (panel) {
+/* Places UIElement on it's place: on UIPanel, if
+ * argument panel is given, above game field otherwise
+ */
 	// Root element gets className that equals to argument type
 	this.rootElement = document.createElement("div");
-	this.rootElement.addClass(type);
-	var nLeftSide = document.getElementById("intfLeftSide");
-	nLeftSide.insertBefore(this.rootElement, nLeftSide.children[0]);
-	this.rootElement.style.position = "absolute";
-	this.rootElement.style.zIndex = 9000;
-	this.onBottomLayer();
+	this.rootElement.addClass(this.type);
+	if (panel !== undefined) {
+		panel.addUIElement(this);
+		this.rootElement.style.position = "relative";
+	} else {
+		var nContainer = document.getElementById("intfGameZone");
+		nContainer.insertBefore(this.rootElement, nContainer.children[0]);
+		this.rootElement.style.position = "absolute";
+		this.rootElement.style.zIndex = 9000;
+		this.onBottomLayer();
+	}
+	
 	
 	this.UIElementType.cssRules && this.UIElementType.cssRules() && this.addCSSRules();
-	
+	 
 	this.UIElementType.onInit.apply(this);
 	var a = this;
 	setTimeout(function() {
-		a.place();
+		a._place();
 	}, 1);
-}
+};
 UIElement.prototype.update = function(notifier, data) {
 	var listener = this.UIElementType.listeners[notifier];
 	if (listener === undefined) {
@@ -255,33 +488,38 @@ UIElement.prototype.update = function(notifier, data) {
 		this.update(listener, data);
 	} else {
 		this.UIElementType.listeners[notifier].apply(this, [data]);
-		this.place();
+		this._place();
 	}	
 };
-UIElement.prototype.place = function () {
+UIElement.prototype._place = function () {
 // Place element to certain coordinates in game window zone
+	if (this.panel !== undefined) {
+		console["log"]("Place "+type+" which is on panel");
+		return;
+	}
 	// Horizontally
 	if (this.hAlign == UI.ALIGN_LEFT) {
-		this.rootElement.style.left = "0px";
+		this.rootElement.style.left = UI.getPanelWidth(Terrain.SIDE_W)+"px";
 	} else if (this.hAlign == UI.ALIGN_RIGHT) {
-		this.rootElement.style.left = (UI.width - this.rootElement.clientWidth)+"px";
+		this.rootElement.style.left = (UI.width-this.rootElement.clientWidth-UI.getPanelWidth(Terrain.SIDE_E))+"px";
 	} else if (this.hAlign == UI.ALIGN_CENTER) {
-		this.rootElement.style.left = (UI.width - this.rootElement.clientWidth)/2+"px";
+		this.rootElement.style.left = (UI.width-this.rootElement.clientWidth+UI.getPanelWidth(Terrain.SIDE_W)-UI.getPanelWidth(Terrain.SIDE_E))/2+"px";
 	} else if (this.hAlign < 0) {
-		this.rootElement.style.left = (UI.width - this.rootElement.clientWidth + this.hAlign)+"px";
+		this.rootElement.style.left = (UI.width-this.rootElement.clientWidth-UI.getPanelWidth(Terrain.SIDE_E)+this.hAlign)+"px";
 	} else {
-		this.rootElement.style.left = this.hAlign+"px";
+		this.rootElement.style.left = UI.getPanelWidth(Terrain.SIDE_W)+this.hAlign+"px";
 	}
 	// Vertically
 	if (this.vAlign == UI.ALIGN_TOP) {
+		this.rootElement.style.top = UI.getPanelWidth(Terrain.SIDE_N)+"px";
 	} else if (this.vAlign == UI.ALIGN_BOTTOM) {
-		this.rootElement.style.top = (UI.height - this.rootElement.clientHeight)+"px";
+		this.rootElement.style.top = (UI.height-this.rootElement.clientHeight-UI.getPanelWidth(Terrain.SIDE_S))+"px";
 	} else if (this.vAlign == UI.ALIGN_CENTER) {
-		this.rootElement.style.top = (UI.height - this.rootElement.clientHeight)/2+"px";
+		this.rootElement.style.top = (UI.height-this.rootElement.clientHeight+UI.getPanelWidth(Terrain.SIDE_N)-UI.getPanelWidth(Terrain.SIDE_S))/2+"px";
 	} else if (this.vAlign < 0) {
-		this.rootElement.style.top = (UI.height - this.rootElement.clientHeight + this.vAlign)+"px";
+		this.rootElement.style.top = (UI.height-this.rootElement.clientHeight-UI.getPanelWidth(Terrain.SIDE_S)+this.vAlign)+"px";
 	}  else {
-		this.rootElement.style.top = this.vAlign+"px";
+		this.rootElement.style.top = UI.getPanelWidth(Terrain.SIDE_N)+this.vAlign+"px";
 	}
 };
 UIElement.prototype.setData = function(name, data) {
@@ -290,7 +528,7 @@ UIElement.prototype.setData = function(name, data) {
 };
 UIElement.prototype.getData = function(name) {
 	if (this.data[name] === undefined) {
-		throw new Error("No data field with name "+name+" is assigned to element "+this.type);
+		return null;
 	}
 	return this.data[name];
 };
@@ -301,7 +539,7 @@ UIElement.prototype.hide = function() {
 UIElement.prototype.show = function() {
 	if (!UI.disabled) {
 		this.rootElement.style.display = "block";
-		this.place();
+		this._place();
 		this.hidden = false;
 	}
 };
@@ -400,16 +638,18 @@ UIElement.prototype.addCSSRules = function _(ruleSet) {
 	}
 };
 
-function UIWindow(type, hAlign, vAlign, notifiers, displayMode, keyMode) {
-	this.keyMode = keyMode;
-	UIElement.apply(this, [type,hAlign,vAlign,notifiers,displayMode,keyMode]);
-	this.hidePermanently();
-	this.rootElement.applyStyle({
-		backgroundColor:"#333",
-		border:"2px solid #888"
-	});
+function UIWindow(type) {
+	UIElement.apply(this, [type]);
 };
 
+function UIPanel(name, width) {
+	UIElement.apply(this, ["panel", UI.ALIGN_LEFT, UI.ALIGN_TOP, {}, UI.ALWAYS]);
+	this.name = name;
+	this.width = width;
+	this.place();
+	UI.panels[name] = this;
+	UI._updateGameZoneBounds();
+}
 onLoadEvents['uiWindowPrototype'] = function _() {
 	UIWindow.prototype = new UIElement("uiWindowPrototype", -1, -1, []);
 	UIWindow.prototype.chooseElementAsCloseButton = function _(element, func) {
@@ -428,8 +668,27 @@ onLoadEvents['uiWindowPrototype'] = function _() {
 		this.hide();
 		this._onClose && this._onClose();
 	};
+	UIWindow.prototype.setKeyMode = function (mode) {
+		this.keyMode = mode;
+		return this;
+	};
+	UIWindow.prototype.place = function () {
+		UIElement.prototype.place.apply(this);
+		this.hidePermanently();
+		this.rootElement.applyStyle({
+			backgroundColor:"#333",
+			border:"2px solid #888"
+		});
+	};
+	UIPanel.prototype = new UIElement(-1);
+	UIPanel.prototype.addUIElement = function (uiElement) {
+		this.rootElement.appendChild(uiElement.rootElement);
+	};
 };
 onLoadEvents['customStylesheets'] = function _() {
 	document.head.appendChild(document.createElement("style"));
 	UI.styleSheet = document.styleSheets[document.styleSheets.length-1];
+	
+	// This souldn't be here (but it works), move somewhere else
+	UI.gameZone = document.getElementById("intfGameZone");
 };
