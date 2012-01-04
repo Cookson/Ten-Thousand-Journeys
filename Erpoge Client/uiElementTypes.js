@@ -1092,9 +1092,7 @@ UIElementTypes.iconsSpells = {
  	handlers: {
     	spellClick:function _() {
 			document.getElementById("itemInfo").style.display="none";
-			
 			var spellId = this.getData("spellId");
-			
 			if (player.spellId == spellId) {
 			// If this spell is already chosen, unchoose it
 				player.unselectSpell();
@@ -2414,6 +2412,39 @@ UIElementTypes.attributeList = {
 		div.$type$AttrValue {		\
 			display: inline-block;	\
 			width: 50px;			\
+		}							\
+		";
+	}
+};
+UIElementTypes.actionsPanel = {
+	onInit: function _() {
+		for (var i in Player.prototype.actions) {
+			console.log(Player.prototype.actions[i])
+			var nDiv = document.createElement("div");
+			this.addCustomClass(nDiv,"Action");
+			nDiv.appendChild(document.createTextNode(Player.prototype.actions[i]));
+			this.rootElement.appendChild(nDiv);
+		}
+	},
+	listeners: {},
+	keysActions: {},
+	handlers: {},
+	cssRules: function _() {
+		return "					\
+		div.$type$ {				\
+			background-color: #333;	\
+		}							\
+		div.$type$Action {			\
+			display: inline-block;	\
+			cursor: pointer;		\
+			border: 1px solid #333;	\
+			overflow: hidden;		\
+			background-color: #000;	\
+			color: #fff;			\
+			width: 32px;			\
+			height: 32px;			\
+			text-align: center;		\
+			line-height: 32px;		\
 		}							\
 		";
 	}

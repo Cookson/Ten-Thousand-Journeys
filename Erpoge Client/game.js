@@ -254,7 +254,6 @@ function renderView() {
 	
 }
 function rotateCamera(side) {
-	
 	Terrain.cameraOrientation = side;
 	for (var y=0; y<height; y++) {
 		for (var x=0; x<width; x++) {
@@ -308,8 +307,6 @@ in : [[
 	|(type)
 	]xM],
  */
-	
-	
 	for (var i=0;i<data.length;i++) {
 		if (data[i][3] == player.name) {
 			continue;
@@ -325,20 +322,6 @@ in : [[
 			data[i][12]
 		);
 		characters[data[i][0]].display();
-//		// Амуниция
-//		if (isPlayer) {
-//			character.name = data[i][3];
-//			character.maxHp=data[i][71];
-//			character.mp=data[i][8];
-//			if (data[i][12]) {
-//				character.race = +data[i][12];
-//			}
-//			var ammunition = data[i][10];
-//			for (var i in ammunition) {
-//				character.ammunition.putOnToSlot(i, new UniqueItem(ammunition[i][0], ammunition[i][1]));
-//			}
-//			character.showAmmunition();
-//		}
 	}
 }
 function worldMapRenderView() {

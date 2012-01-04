@@ -56,9 +56,11 @@ public class PlayerCharacter extends Character {
 		this.cls = cls;
 		this.race = race;
 		maxHp = 100000;
-		maxMp = 100000;
+		maxMp = 30000;
+		maxEp = 100;
 		hp = 100000;
-		mp = 100000;
+		mp = 30000;
+		ep = 100;
 		for (String skillName : skillNames) {
 			skills.put(skillName, 0);
 		}

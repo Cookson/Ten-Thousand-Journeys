@@ -57,29 +57,44 @@ function handleNextEvent() {
 		}
 		characters[value.characterId].showMove(value.x, value.y);	
 		UI.notify("environmentChange");
+		if (value.characterId == player.characterId) {
+			UI.notify("lootChange");
+		}
 		break;
 	case "putOn":
 		// Put on item
 		if (onGlobalMap) {
 			if (value.characterId == player.characterId) {
-				player.showPutOn(value.itemId);
+				player.putOn(value.itemId);
+				UI.notify("inventoryChange");
+				UI.notify("ammunitionChange");
 			} else {
 			// Someone else on world map put on an item
 			}
 		} else {
-			characters[value.characterId].showPutOn(value.itemId);
+			characters[value.characterId].putOn(value.itemId);
+			if (value.characterId == player.characterId) {
+				UI.notify("inventoryChange");
+				UI.notify("ammunitionChange");
+			}
 			handleNextEvent();
 		}
 		break;
 	case "takeOff":
 		if (onGlobalMap) {
 			if (value.characterId == player.characterId) {
-				player.showTakeOff(value.itemId);
+				player.takeOff(value.itemId);
+				UI.notify("inventoryChange");
+				UI.notify("ammunitionChange");
 			} else {
 			// Someone else on world map puts an item on
 			}
 		} else {
-			characters[value.characterId].showTakeOff(value.itemId);
+			characters[value.characterId].takeOff(value.itemId);
+			if (value.characterId == player.characterId) {
+				UI.notify("inventoryChange");
+				UI.notify("ammunitionChange");
+			}
 			handleNextEvent();
 		}
 		break;
@@ -87,14 +102,18 @@ function handleNextEvent() {
 		if (onGlobalMap) {
 			throw new Error("Character "+value.characterId+" drops an item "+items[value.typeId][0]+" on global map!");
 		} else {
-			characters[value.characterId].showDrop(value.typeId, value.param);
+			UI.notify("lootChange");
+			UI.notify("inventoryChange");
+			handleNextEvent();
 		}
 		break;
 	case "pickUp":
 		if (onGlobalMap) {
 			throw new Error("Character "+value.characterId+" picks up an item "+items[value.typeId][0]+" on global map!");
 		} else {
-			characters[value.characterId].showPickUp(value.typeId, value.param);
+			UI.notify("inventoryChange");
+			UI.notify("lootChange");
+			handleNextEvent();
 		}
 		break;
 	case "openContainer":
@@ -110,14 +129,22 @@ function handleNextEvent() {
 		if (onGlobalMap) {
 			throw new Error("Character "+value.characterId+" takes an item "+items[value.typeId][0]+" from container on global map!");
 		} else {
-			characters[value.characterId].showTakeFromContainer(value.typeId, value.param, value.x, value.y);
+			if (value.characterId == player.characterId) {
+				Global.container.items.remove(value.typeId, value.paramparam);
+				UI.notify("containerChange");
+			}
+			handleNextEvent();
 		}
 		break;
 	case "putToContainer":
 		if (onGlobalMap) {
 			throw new Error("Character "+value.characterId+" puts an item "+items[value.typeId][0]+" to container on global map!");
 		} else {
-			characters[value.characterId].showPutToContainer(value.typeId, value.param, value.x, value.y);
+			if (value.characterId == player.characterId) {
+				Global.container.items.addItem(value.typeId, value.param);
+				UI.notify("containerChange");
+			}
+			handleNextEvent();
 		}
 		break;
 	case "meleeAttack":
@@ -160,7 +187,7 @@ function handleNextEvent() {
 		} else {
 			Terrain.cells[value.x][value.y].removeItem(value.typeId, value.param);
 			if (value.x == player.x && value.y == player.y) {
-				player.showLoot();
+				UI.notify("lootChange");
 			}
 		}
 		handleNextEvent();
@@ -170,6 +197,23 @@ function handleNextEvent() {
 			throw new Error("Cast spell on global map!");
 		} else {
 			characters[value.characterId].showCastSpell(value.spellId, value.x, value.y);
+			console["log"](characters[value.characterId].name+" casts spell "+value.spellId+" to "+x+","+y);
+			UI.notify("spellCast");
+			
+			if (value.characterId == player.characterId) {
+				player.unselectSpell();
+				player.spellAimId=-1;
+				player.spellX=-1;
+				player.spellY=-1;
+			}
+//			new effectTypes.confuse(this.x, this.y, this.x, this.y,  1000, 1000, 1000, 1000, function() {
+//				handleNextEvent();
+//			});
+			handleNextEvent();
+//			weatherEffect = new effectTypes.rain(
+//				this.x, this.y, this.x, this.y, 
+//				UI.width/2+100, UI.height/2+100, 
+//				UI.width/2+100, UI.height/2+100);			
 		}
 		break;
 	case "missileFlight":
@@ -222,7 +266,7 @@ function handleNextEvent() {
 		handleNextEvent();
 		break;
 	case "useObject":
-		characters[value.characterId].showUseObject(value.x, value.y);
+		handleNextEvent();
 		break;
 	case "sound":
 		showSound(value.x, value.y, value.type);
@@ -237,7 +281,7 @@ function handleNextEvent() {
 		break;
 	case "dialoguePoint":
 		if (value.playerId == player.characterId) {
-			player.showDialoguePoint(value.characterId, {phrase:value.phrase, answers:value.answers});
+			UI.notify("dialoguePointRecieve", {phrase:value.phrase, answers:value.answers});
 		}
 		handleNextEvent();
 		break;

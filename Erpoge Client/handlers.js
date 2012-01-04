@@ -528,7 +528,7 @@ handlers={
 			keyMode: "always"
 		});
 	},
-	initInterface : function() {
+	initInterface : function _() {
 	// First panels are initiated, then windows,
 	// then other elements.
 		UI.addPanel({
@@ -577,6 +577,13 @@ handlers={
 			type: "minimap",
 			hAlign: "left",
 			vAlign: "top",
+			displayMode: "in location",
+			panel: null
+		});
+		UI.addElement({
+			type: "actionsPanel",
+			hAlign: "center",
+			vAlign: "bottom",
 			displayMode: "in location",
 			panel: null
 		});
