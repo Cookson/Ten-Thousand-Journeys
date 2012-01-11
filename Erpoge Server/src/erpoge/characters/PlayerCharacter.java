@@ -50,9 +50,8 @@ public class PlayerCharacter extends Character {
 			"demonology", "mental", "magicItems", "craft", "traps",
 			"effraction", "mechanics", "alchemy"};
 	public WebSocket connection;
-	public PlayerCharacter(String type, String name, int race, String cls, Location location,
-			int x, int y) {
-		super(type, name, x, y);
+	public PlayerCharacter(String name, int race, String cls, int x, int y) {
+		super("player", name, x, y);
 		this.cls = cls;
 		this.race = race;
 		maxHp = 100000;
@@ -69,10 +68,7 @@ public class PlayerCharacter extends Character {
 
 	/* Getters */
 	public String toString() {
-		return "Player character "+name+" the "+cls;
-	}
-	public int hashCode() {
-		return characterId;
+		return name+" the "+cls;
 	}
 	public String getCls() {
 		return cls;
@@ -83,7 +79,6 @@ public class PlayerCharacter extends Character {
 		if (this.isOnGlobalMap()) {
 			// World message
 			Chat.worldMessage(this, message);
-			Main.console(message);
 			world.flushEvent(new EventChatMessage(characterId, message));
 		} else {
 			// location message
@@ -105,14 +100,98 @@ public class PlayerCharacter extends Character {
 			}
 		}
 	}
-
+	public void startConversation(int characterId) {
+		dialoguePartner = (NonPlayerCharacter) location.characters
+				.get(characterId);
+		if (dialoguePartner.hasDialogue()) {
+			dialoguePartner.applyConversationStarting(this);
+			location.flushEvents(Location.TO_LOCATION, this);
+		}
+	}
+	/* Travelling */
+	public void leaveLocation() {
+		worldX = location.worldX;
+		worldY = location.worldY;
+		actionPoints = 0;
+		location.removeCharacter(this);
+		this.location = null;
+	}
+	public void enterLocation(Location location) {
+		if (this.location != null) {
+			throw new Error("Character can enter location only from world map");
+		}
+		this.location = location;
+		location.addCharacter(this);
+		notifyNeighborsVisiblilty();
+	}
+	public void enterLocation(Location location, Portal portal) {
+		if (this.location != null) {
+			throw new Error("Character can enter location only from world map");
+		}
+		this.location = location;
+		location.addCharacter(this, portal);
+		notifyNeighborsVisiblilty();
+	}
+	public void goToAnotherLevel(Portal portal) {
+	/**
+	 * Transports character to another level of current location.
+	 */
+		leaveLocation();
+		enterLocation(portal.location, portal);
+	}
+	public Portal getNearbyPortal() {
+	/**
+	 * Returns Portal if character stand next to one.
+	 * Otherwise returns null
+	 */
+		for (Portal portal : location.portals) {
+			if (portal.isNear(x, y) || portal.x == x && portal.y == y) {
+				return portal;
+			}
+		}
+		return null;
+	}
+	public void worldTravel(int x, int y) {
+		worldX = x;
+		worldY = y;
+		world.flushEvent(new EventWorldTravel(x, y, characterId));
+//		world.addEvent();
+//		world.flushEvents(Location.TO_WORLD, this);
+	}
+	private boolean canTravelTo(int x, int y) {
+		return true;
+	}
+	private void flushEvents() {
+		if (isOnGlobalMap()) {
+			world.flushEvents(Location.TO_WORLD, this);
+		} else {
+			location.flushEvents(Location.TO_LOCATION, this);
+		}
+	}
 	
+	public void dialogueAnswer(int answerIndex) {
+		say(dialoguePartner.dialogues.get(this).getAnswerText(answerIndex));
+		dialoguePartner.proceedToNextDialoguePoint(this, answerIndex);
+		moveTime(500);
+		location.flushEvents(Location.TO_LOCATION, this);
+	}
+	
+	/* Data */
+	public String jsonGetWorldTravel(int x, int y) {
+		if (canTravelTo(x, y)) {
+			return "{\"x\":" + x + ",\"y\":" + y + "}";
+		} else {
+			return "{\"x\":" + worldX + ",\"y\":" + worldY + "}";
+		}
+	}
 	public String jsonGetEnteringData(boolean isWorld) {
-		/**The same data is used for entering both global and local map
+		/**
+		 * The same data is used for entering both global and local map
+		 * 
 		 * @param isWorld Is character in world. If it is false, then location
 		 * 		data is formed. Location data differs from world data only by cell 
 		 * 		contents structure.
-		*/
+		 */
 		/* In world:
 		 * {
 		 * 		onGlobalMap: true, 
@@ -315,78 +394,5 @@ public class PlayerCharacter extends Character {
 		// entering
 		answer.append("\"en\":false}");
 		return answer.toString();
-	}
-	public void leaveLocation() {
-		worldX = location.worldX;
-		worldY = location.worldY;
-		actionPoints = 0;
-		hp = maxHp;
-		mp = maxMp;
-		location.removeCharacter(this);
-	}
-	public void goToAnotherLevel(Portal portal) {
-	/**
-	 * Transports character to another level of current location.
-	 */
-		actionPoints = 0;
-		location.removeCharacter(this);
-		portal.location.addCharacter(this, portal);
-	}
-	public Portal getNearbyPortal() {
-	/**
-	 * Returns Portal if character stand next to one.
-	 * Otherwise returns null
-	 */
-		for (Portal portal : location.portals) {
-			if (portal.isNear(x, y) || portal.x == x && portal.y == y) {
-				return portal;
-			}
-		}
-		return null;
-	}
-	public void worldTravel(int x, int y) {
-		worldX = x;
-		worldY = y;
-		world.flushEvent(new EventWorldTravel(x, y, characterId));
-//		world.addEvent();
-//		world.flushEvents(Location.TO_WORLD, this);
-	}
-	public String jsonGetWorldTravel(int x, int y) {
-		if (canTravelTo(x, y)) {
-			return "{\"x\":" + x + ",\"y\":" + y + "}";
-		} else {
-			return "{\"x\":" + worldX + ",\"y\":" + worldY + "}";
-		}
-	}
-	private boolean canTravelTo(int x, int y) {
-		return true;
-	}
-	private void flushEvents() {
-		if (isOnGlobalMap()) {
-			world.flushEvents(Location.TO_WORLD, this);
-		} else {
-			location.flushEvents(Location.TO_LOCATION, this);
-		}
-	}
-	public boolean isAuthorized() {
-		return isAuthorized;
-	}
-	
-	public void setConnection(WebSocket connection) {
-		this.connection = connection;
-	}
-	public void dialogueAnswer(int answerIndex) {
-		say(dialoguePartner.dialogues.get(this).getAnswerText(answerIndex));
-		dialoguePartner.proceedToNextDialoguePoint(this, answerIndex);
-		moveTime(500);
-		location.flushEvents(Location.TO_LOCATION, this);
-	}
-	public void startConversation(int characterId) {
-		dialoguePartner = (NonPlayerCharacter) location.characters
-				.get(characterId);
-		if (dialoguePartner.dialogue != null) {
-			dialoguePartner.applyConversationStarting(this);
-			location.flushEvents(Location.TO_LOCATION, this);
-		}
 	}
 }

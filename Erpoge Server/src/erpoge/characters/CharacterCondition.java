@@ -5,5 +5,5 @@ public abstract class CharacterCondition<ResultClass> {
 	public CharacterCondition(ResultClass... results) {
 		this.results = results;
 	}
-	public abstract ResultClass test(Character opponent);
+	public abstract ResultClass check(Character opponent);
 }

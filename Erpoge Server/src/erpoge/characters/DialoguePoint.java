@@ -41,7 +41,7 @@ public class DialoguePoint {
 	public DialoguePoint getNextPoint(int answerIndex, Character opponent) {
 		DialoguePoint nextPoint = nextPoints.get(answerIndex);
 		if (nextPoint.condition != null) {
-			nextPoint = nextPoint.condition.test(opponent);
+			nextPoint = nextPoint.condition.check(opponent);
 		}
 		return nextPoint;
 	}

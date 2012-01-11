@@ -27,6 +27,7 @@ import erpoge.inventory.ItemPile;
 import erpoge.inventory.UniqueItem;
 import erpoge.itemtypes.Attribute;
 import erpoge.objects.Sound;
+import erpoge.objects.SoundType;
 import erpoge.serverevents.*;
 
 public class Location extends TerrainBasics {
@@ -39,6 +40,7 @@ public class Location extends TerrainBasics {
 	
 	private ArrayList<PlayerCharacter> players = new ArrayList<PlayerCharacter>();
 	protected ArrayList<Ceiling> ceilings = new ArrayList<Ceiling>();
+	public HashSet<NonPlayerCharacter> nonPlayerCharacters = new HashSet<NonPlayerCharacter>();
 	private ArrayList<Sound> soundSources = new ArrayList<Sound>();
 	/**
 	 * serverEvents - a core of the mechanism of asynchronous server-side data sending.
@@ -199,7 +201,6 @@ public class Location extends TerrainBasics {
 		return answer.toString();
 	}
 	public Coordinate getStartCoord() {
-		Main.console(startArea);
 		for (int i=startArea.x;i<startArea.x+startArea.width;i++) {
 			for (int j=startArea.y;j<startArea.y+startArea.height;j++) {
 				if (passability[i][j] == PASSABILITY_FREE) {
@@ -209,40 +210,31 @@ public class Location extends TerrainBasics {
 		}
 		throw new Error("Cannot get start coord");
 	}	
-	public PlayerCharacter createCharacter(String type, String name, int race,
-			String cls, int sx, int sy) {
-		PlayerCharacter ch = new PlayerCharacter(type, name, race, cls, this, sx, sy);
-		cells[sx][sy].character(ch);
+	public NonPlayerCharacter createCharacter(String type, String name, int sx, int sy, int fraction) {
+		NonPlayerCharacter ch = new NonPlayerCharacter(type, name, this, sx, sy);
+		ch.setFraction(fraction);
 		characters.put(ch.characterId, ch);
-		players.add(ch);
-		return ch;
-	}
-	
-	public Character createCharacter(String type, String name, int sx, int sy) {
-		Character ch = new NonPlayerCharacter(type, name, this, sx, sy);
-		characters.put(ch.characterId, ch);
+		nonPlayerCharacters.add(ch);
 		cells[sx][sy].character(ch);
 		addEvent(new EventCharacterAppear(
 				ch.characterId, ch.x, ch.y, ch.type, ch.name,
 				ch.getAttribute(Attribute.MAX_HP), ch.getAttribute(Attribute.HP),
 				ch.getAttribute(Attribute.MAX_MP), ch.getAttribute(Attribute.MP),
-				ch.getEffects(), ch.getAmmunition()));
+				ch.getEffects(), ch.getAmmunition(), ch.getFraction()));
 		ch.getVisibleEntities();
 		return ch;
 	}	
 	
-	public void addCharacter(Character ch) {
+	public void addCharacter(PlayerCharacter ch) {
 		Coordinate spawn = getStartCoord();
 		cells[spawn.x][spawn.y].character(ch);
 		ch.x = spawn.x;
 		ch.y = spawn.y;
 		characters.put(ch.characterId, ch);
 		ch.location = this;
-		if (ch instanceof PlayerCharacter) {
-			players.add((PlayerCharacter)ch);
-		}
+		players.add(ch);
 	}
-	public void addCharacter(Character ch, Portal portal) {
+	public void addCharacter(PlayerCharacter ch, Portal portal) {
 	/**
 	 * Adds character near portal. Portal is portal object
 	 * not in this location, but in location character came from.
@@ -252,7 +244,7 @@ public class Location extends TerrainBasics {
 		both:
 		for (int dx = -1; dx<2; dx++) {
 		/**
-		 * Search for a free space near portal
+		 * Search for free space near portal
 		 */
 			for (int dy = -1; dy<2; dy++) {
 				if (passability[spawn.x+dx][spawn.y+dy] == PASSABILITY_FREE) {
@@ -285,16 +277,13 @@ public class Location extends TerrainBasics {
 	}
 	
 	public void setFloor(int x, int y, int type) {
-//		throw new Error("BAKA");
-		Main.console(type);
 		super.setFloor(x, y, type);
 		addEvent(new EventFloorChange(type, x ,y));
 	}
-	
 	public void setObject(int x, int y, int type) {
 		super.setObject(x, y, type);
 		addEvent(new EventObjectAppear(type, x ,y));
-		for (Character ch : characters.values()) {
+		for (NonPlayerCharacter ch : nonPlayerCharacters) {
 			if (ch.initialCanSee(x,y)) {
 				ch.getVisibleEntities();
 			}
@@ -307,13 +296,12 @@ public class Location extends TerrainBasics {
 	public void removeObject(int x, int y) {
 		super.removeObject(x, y);
 		addEvent(new EventObjectDisappear(x, y));
-		for (Character ch : characters.values()) {
+		for (NonPlayerCharacter ch : nonPlayerCharacters) {
 			if (ch.initialCanSee(x,y)) {
 				ch.getVisibleEntities();
 			}
 		}
 	}
-	
 	public void addItem(UniqueItem item, int x, int y) {
 		super.addItem(item, x, y);
 		addEvent(new EventItemAppear(item.getType().getTypeId(), item.getItemId(), x ,y));
@@ -321,10 +309,7 @@ public class Location extends TerrainBasics {
 	public void addItem(ItemPile pile, int x, int y) {
 		super.addItem(pile, x, y);
 		addEvent(new EventItemAppear(pile.getType().getTypeId(), pile.getAmount(), x ,y));
-	}
-	
-	
-	
+	}	
 	public void removeItem(ItemPile pile, int x, int y) {
 		super.removeItem(pile, x, y);
 		addEvent(new EventItemDisappear(pile.getType().getTypeId(), pile.getAmount(), x ,y));
@@ -334,7 +319,7 @@ public class Location extends TerrainBasics {
 		addEvent(new EventItemDisappear(item.getType().getTypeId(), item.getItemId(), x ,y));
 	}
 	public void setCharacter(int x, int y, String t, int fraction) {
-		createCharacter(t, "", x, y);
+		createCharacter(t, "", x, y, 0);
 	}
 	
 	
@@ -382,12 +367,12 @@ public class Location extends TerrainBasics {
 			setObject(x,y,doorId+1);
 		}
 	}
-	public void fireSound(int x, int y, int type) {
-		addEvent(new EventSound(type, x, y));
+	public void makeSound(int x, int y, SoundType type) {
+		addEvent(new EventSound(type.type2int(), x, y));
 	}
-	public void createSoundSource(int x, int y, int type) {
+	public void createSoundSource(int x, int y, SoundType type) {
 		soundSources.add(new Sound(x, y, type));
-		addEvent(new EventSoundSourceAppear(type, x, y));
+		addEvent(new EventSoundSourceAppear(type.type2int(), x, y));
 	}
 	public void removeSoundSource(int x, int y) {
 		int size = soundSources.size();

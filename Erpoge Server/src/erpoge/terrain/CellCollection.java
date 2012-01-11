@@ -31,34 +31,34 @@ public class CellCollection {
 	public int size() {
 		return cells.size();
 	}
-	public void placeCharacters(ArrayList<GeneratorCharacterGroup> chs) {
-		/*
-		 * ���������� � ������� ���������� characters - ������ �� ���������,
-		 * ������� ����� ����� ���� �� ���� �����: 1. "type" - ��� ������������
-		 * ��������� 2. ["type",amount(,fraction)] - ��� � ����������
-		 * ����������� ����������, � ����� ������� � ������ ������ ���������
-		 * ������ ���� ��������. ������ �������� ����������� �� ���������
-		 * ������.
-		 */
-		for (GeneratorCharacterGroup ch : chs) {
-			// �������� �� ���� ����������
-			for (int i = 0; i < ch.amount; i++) {
-				if (!hasCells) {
-					// ���� � ������� ������ �� �������� ������ �� �����
-					// ��������� ������, ����� �� ���������� �������
-					// (������ ��������� ����� �������, ��� ��������� ��������
-					// this->cells[0] (��. ����� unsetCell))
-					throw new Error(
-							"� cellCollection �� �������� ����� ��� ����� ���������� - ��������� ������");
-				}
-				int cellIndex = Chance.rand(0, cells.size()-1);
-				Coordinate cell = cells.get(cellIndex);
-				// ��������� ���������
-				location.createCharacter(ch.type, ch.name, cell.x, cell.y);
-				unsetCell(cellIndex);
-			}
-		}
-	}
+//	public void placeCharacters(ArrayList<GeneratorCharacterGroup> chs) {
+//		/*
+//		 * ���������� � ������� ���������� characters - ������ �� ���������,
+//		 * ������� ����� ����� ���� �� ���� �����: 1. "type" - ��� ������������
+//		 * ��������� 2. ["type",amount(,fraction)] - ��� � ����������
+//		 * ����������� ����������, � ����� ������� � ������ ������ ���������
+//		 * ������ ���� ��������. ������ �������� ����������� �� ���������
+//		 * ������.
+//		 */
+//		for (GeneratorCharacterGroup ch : chs) {
+//			// �������� �� ���� ����������
+//			for (int i = 0; i < ch.amount; i++) {
+//				if (!hasCells) {
+//					// ���� � ������� ������ �� �������� ������ �� �����
+//					// ��������� ������, ����� �� ���������� �������
+//					// (������ ��������� ����� �������, ��� ��������� ��������
+//					// this->cells[0] (��. ����� unsetCell))
+//					throw new Error(
+//							"� cellCollection �� �������� ����� ��� ����� ���������� - ��������� ������");
+//				}
+//				int cellIndex = Chance.rand(0, cells.size()-1);
+//				Coordinate cell = cells.get(cellIndex);
+//				// ��������� ���������
+//				location.createCharacter(ch.type, ch.name, cell.x, cell.y);
+//				unsetCell(cellIndex);
+//			}
+//		}
+//	}
 	public void removeCellsCloseTo(int x, int y, int distance) {
 		int size = cells.size();
 		for (int i=0;i<size;i++) {
@@ -218,15 +218,15 @@ public class CellCollection {
 		unsetCell(cellIndex);
 		return cell;
 	}
-	public Character setCharacter(String type, String name) {
-		if (!hasCells) {
-			throw new Error("No more cells");
-		}
-		int cellIndex = Chance.rand(0, cells.size()-1);
-		Coordinate cell = cells.get(cellIndex);
-		unsetCell(cellIndex);
-		return location.createCharacter(type, name, cell.x, cell.y);
-	}
+//	public Character setCharacter(String type, String name) {
+//		if (!hasCells) {
+//			throw new Error("No more cells");
+//		}
+//		int cellIndex = Chance.rand(0, cells.size()-1);
+//		Coordinate cell = cells.get(cellIndex);
+//		unsetCell(cellIndex);
+//		return location.createCharacter(type, name, cell.x, cell.y);
+//	}
 	public static ArrayList<Coordinate> rectangleToCellsList(Rectangle r) {
 		ArrayList<Coordinate> answer = new ArrayList<Coordinate>();
 		for (int i=r.x;i<r.x+r.width;i++) {

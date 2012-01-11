@@ -6,9 +6,15 @@ function handleNextEvent() {
 		return;
 	}
 	var value = serverAnswer[serverAnswerIterator++];
-//	console["log"](serverAnswer);
-	switch (value.e) {
-	case "wt":
+	if (serverAnswerHandlers[value.e]) {
+		serverAnswerHandlers[value.e](value);
+	} else {
+		throw new Error("Unknown type of non-synchronized answer: "+value.e);
+	}
+//	console["log"](serverAnswer);	
+}
+var serverAnswerHandlers = {
+	wt: function _(value) {
 		// Character travels in the world
 		var worldPlayer = worldPlayers[value.characterId];
 		worldPlayer.move(value.x, value.y);
@@ -16,8 +22,8 @@ function handleNextEvent() {
 			centerWorldCamera(value.x, value.y);
 		}
 		handleNextEvent();
-		break;
-	case "we":
+	},
+	we: function _(value) {
 		// Character enters world (on global map)
 		if (!player.characterId) {
 		// If the world is not loaded for this client (Character stub instead player Character, see variables2.js)
@@ -28,27 +34,27 @@ function handleNextEvent() {
 		);
 		new WorldPlayer(value.worldX, value.worldY, characters[value.characterId]);
 		handleNextEvent();
-		break;
-	case "deauth":
+	},
+	deauth: function _(value) {
 		// Deauthorization
 		delete characters[value.characterId];
 		worldPlayers[value.characterId].remove();
 		handleNextEvent();
-		break;
-	case "chm":
+	},
+	chm: function _(value) {
 		// Chat message
 		if (onGlobalMap) {
-//			addMessageToChat(worldPlayers[value.characterId].name, value.text);
+//				addMessageToChat(worldPlayers[value.characterId].name, value.text);
 			chat.push([characters[value.characterId].name, value.text]);
 		} else {
 			characters[value.characterId].showSpeech(value.text);
 			chat.push([characters[value.characterId].name, value.text]);
-//			addMessageToChat(characters[value.characterId].name, value.text);
+//				addMessageToChat(characters[value.characterId].name, value.text);
 		}
 		UI.notify("chatMessage");
 		handleNextEvent();
-		break;
-	case "move":
+	},
+	move: function _(value) {
 		if (characters[value.characterId] == player && (player.destX != value.x || player.destY != value.y)) {
 		// ������� ������ ���� ����� showMove - � showMove ���������� check out (��������, ��� ���������� ���������)
 			player.addActionToQueue(player.sendMove);
@@ -60,8 +66,8 @@ function handleNextEvent() {
 		if (value.characterId == player.characterId) {
 			UI.notify("lootChange");
 		}
-		break;
-	case "putOn":
+	},
+	putOn: function _(value) {
 		// Put on item
 		if (onGlobalMap) {
 			if (value.characterId == player.characterId) {
@@ -79,8 +85,8 @@ function handleNextEvent() {
 			}
 			handleNextEvent();
 		}
-		break;
-	case "takeOff":
+	},
+	takeOff: function _(value) {
 		if (onGlobalMap) {
 			if (value.characterId == player.characterId) {
 				player.takeOff(value.itemId);
@@ -97,8 +103,8 @@ function handleNextEvent() {
 			}
 			handleNextEvent();
 		}
-		break;
-	case "drop":
+	},
+	drop: function _(value) {
 		if (onGlobalMap) {
 			throw new Error("Character "+value.characterId+" drops an item "+items[value.typeId][0]+" on global map!");
 		} else {
@@ -106,8 +112,8 @@ function handleNextEvent() {
 			UI.notify("inventoryChange");
 			handleNextEvent();
 		}
-		break;
-	case "pickUp":
+	},
+	pickUp: function _(value) {
 		if (onGlobalMap) {
 			throw new Error("Character "+value.characterId+" picks up an item "+items[value.typeId][0]+" on global map!");
 		} else {
@@ -115,8 +121,8 @@ function handleNextEvent() {
 			UI.notify("lootChange");
 			handleNextEvent();
 		}
-		break;
-	case "openContainer":
+	},
+	openContainer: function _(value) {
 		UI.setMode(UI.MODE_CONTAINER);
 		Global.container.items.empty();
 		for (var i in value.items) {
@@ -124,8 +130,8 @@ function handleNextEvent() {
 		}
 		UI.notify("containerOpen");
 		handleNextEvent();
-		break;
-	case "takeFromContainer":
+	},
+	takeFromContainer: function _(value) {
 		if (onGlobalMap) {
 			throw new Error("Character "+value.characterId+" takes an item "+items[value.typeId][0]+" from container on global map!");
 		} else {
@@ -135,8 +141,8 @@ function handleNextEvent() {
 			}
 			handleNextEvent();
 		}
-		break;
-	case "putToContainer":
+	},
+	putToContainer: function _(value) {
 		if (onGlobalMap) {
 			throw new Error("Character "+value.characterId+" puts an item "+items[value.typeId][0]+" to container on global map!");
 		} else {
@@ -146,30 +152,30 @@ function handleNextEvent() {
 			}
 			handleNextEvent();
 		}
-		break;
-	case "meleeAttack":
+	},
+	meleeAttack: function _(value) {
 		if (onGlobalMap) {
 			throw new Error("Character "+value.attackerId+" attacks on global map!");
 		} else {
 			characters[value.attackerId].showAttack(value.aimId, false);
 		}
-		break;
-	case "damage":
+	},
+	damage: function _(value) {
 		if (onGlobalMap) {
 			throw new Error("Character "+value.characterId+" was damaged on global map!");
 		} else {
 		// handleNextEvent() is inside showDamage
 			characters[value.characterId].showDamage(value.amount, value.type);
 		}
-		break;
-	case "death":
+	},
+	death: function _(value) {
 		if (onGlobalMap) {
 			throw new Error("Character "+value.characterId+" had an attempt to die on global map!");
 		} else {
 			characters[value.characterId].showDeath();
 		}
-		break;
-	case "itemAppear":
+	},
+	itemAppear: function _(value) {
 		if (onGlobalMap) {
 			throw new Error("Item appear on global map!");
 		} else {
@@ -180,8 +186,8 @@ function handleNextEvent() {
 			}				
 		}
 		handleNextEvent();
-		break;
-	case "itemDisappear":
+	},
+	itemDisappear: function _(value) {
 		if (onGlobalMap) {
 			throw new Error("Item appear on global map!");
 		} else {
@@ -191,13 +197,11 @@ function handleNextEvent() {
 			}
 		}
 		handleNextEvent();
-		break;
-	case "castSpell":
+	},
+	castSpell: function _(value) {
 		if (onGlobalMap) {
 			throw new Error("Cast spell on global map!");
 		} else {
-			characters[value.characterId].showCastSpell(value.spellId, value.x, value.y);
-			console["log"](characters[value.characterId].name+" casts spell "+value.spellId+" to "+x+","+y);
 			UI.notify("spellCast");
 			
 			if (value.characterId == player.characterId) {
@@ -206,104 +210,102 @@ function handleNextEvent() {
 				player.spellX=-1;
 				player.spellY=-1;
 			}
-//			new effectTypes.confuse(this.x, this.y, this.x, this.y,  1000, 1000, 1000, 1000, function() {
-//				handleNextEvent();
-//			});
+//				new effectTypes.confuse(this.x, this.y, this.x, this.y,  1000, 1000, 1000, 1000, function() {
+//					handleNextEvent();
+//				});
 			handleNextEvent();
-//			weatherEffect = new effectTypes.rain(
-//				this.x, this.y, this.x, this.y, 
-//				UI.width/2+100, UI.height/2+100, 
-//				UI.width/2+100, UI.height/2+100);			
+//				weatherEffect = new effectTypes.rain(
+//					this.x, this.y, this.x, this.y, 
+//					UI.width/2+100, UI.height/2+100, 
+//					UI.width/2+100, UI.height/2+100);			
 		}
-		break;
-	case "missileFlight":
+	},
+	missileFlight: function _(value) {
 		if (onGlobalMap) {
 			throw new Error("Missile flight on global map!");
 		} else {
 			Character.prototype.showMissileFlight(value.fromX, value.fromY, value.toX, value.toY, value.missile);
 		}
-		break;
-	case "loseItem":
+	},
+	loseItem: function _(value) {
 		if (onGlobalMap) {
 			throw new Error("Missile flight on global map!");
 		} else if (value.characterId == player.characterId) {
 			player.loseItem(value.typeId, value.param);
 		}
 		handleNextEvent();
-		break;
-	case "getItem":
+	},
+	getItem: function _(value) {
 		if (onGlobalMap) {
 			throw new Error("Missile flight on global map!");
 		} else if (value.characterId == player.characterId) {
 			player.getItem(value.typeId, value.param);
 		}
 		handleNextEvent();
-		break;
-	case "objectAppear":
+	},
+	objectAppear: function _(value) {
 		new GameObject(value.x, value.y, value.object).show();
 		player.updateVisibility();
 		handleNextEvent();
-		break;
-	case "objectDisappear":
+	},
+	objectDisappear: function _(value) {
 		Terrain.cells[value.x][value.y].object.remove();
 		player.updateVisibility();
 		handleNextEvent();
-		break;	
-	case "characterAppear":
+	},	
+	characterAppear: function _(value) {
 		characters[value.characterId] = new Character(value.characterId, value.type, value.x, value.y, value.fraction);
+		characters[value.characterId].display();
 		handleNextEvent();
-		break;	
-	case "nextTurn":
+	},	
+	nextTurn: function _(value) {
 		if (value.characterId == player.characterId) {
 			if (player.actionQueue.length > 0) {
 				player.doActionFromQueue();
 			}
 		}
 		// Here must be no handleNextEvent()
-		break;	
-	case "worldTravel":
+	},	
+	worldTravel: function _(value) {
 		worldPlayers[value.characterId].move(value.x, value.y);
 		handleNextEvent();
-		break;
-	case "useObject":
+	},
+	useObject: function _(value) {
 		handleNextEvent();
-		break;
-	case "sound":
+	},
+	sound: function _(value) {
 		showSound(value.x, value.y, value.type);
-		break;
-	case "soundSourceAppear":
+	},
+	soundSourceAppear: function _(value) {
 		new SoundSource(value.x, value.y, value.type);
 		handleNextEvent();
-		break;
-	case "soundSourceDisappear":
+	},
+	soundSourceDisappear: function _(value) {
 		Terrain.cells[value.x][value.y].soundSource.remove();
 		handleNextEvent();
-		break;
-	case "dialoguePoint":
+	},
+	dialoguePoint: function _(value) {
 		if (value.playerId == player.characterId) {
 			UI.notify("dialoguePointRecieve", {phrase:value.phrase, answers:value.answers});
 		}
 		handleNextEvent();
-		break;
-	case "dialogueEnd":
+	},
+	dialogueEnd: function _(value) {
 		if (value.characterId == player.characterId) {
 			UI.notify("dialogueEnd");
 		}
 		handleNextEvent();
-		break;
-	case "effectStart":
+	},
+	effectStart: function _(value) {
 		characters[value.characterId].showEffectStart(value.effectId);
 		handleNextEvent();
-		break;
-	case "effectEnd":
+	},
+	effectEnd: function _(value) {
 		characters[value.characterId].showEffectEnd(value.effectId);
 		handleNextEvent();
-		break;
-	case "attrChange":
+	},
+	attrChange: function _(value) {
 		characters[value.characterId].changeAttribute(value.attrId, value.value);
 		handleNextEvent();
-		break;
-	default:
-		throw new Error("Unknown type of non-synchronized answer: "+value.e);
 	}
-} 
+};

@@ -2,10 +2,14 @@ package erpoge.characters;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 
 import erpoge.Chance;
 import erpoge.Coordinate;
 import erpoge.Main;
+import erpoge.Side;
+import erpoge.Utils;
 import erpoge.charactereffects.CharacterEffect;
 import erpoge.inventory.AmmunitionMap;
 import erpoge.inventory.Item;
@@ -15,13 +19,14 @@ import erpoge.inventory.UniqueItem;
 import erpoge.itemtypes.Attribute;
 import erpoge.itemtypes.ItemType;
 import erpoge.magic.Spells;
+import erpoge.objects.SoundType;
 import erpoge.serverevents.*;
 import erpoge.terrain.Container;
 import erpoge.terrain.Location;
 import erpoge.terrain.TerrainBasics;
 import erpoge.terrain.World;
 
-public abstract class Character extends Seer {
+public abstract class Character extends Coordinate {
 	public final static int DAMAGE_PLAIN = 1,
 		DAMAGE_FIRE = 2,
 		DAMAGE_COLD = 3,
@@ -40,7 +45,6 @@ public abstract class Character extends Seer {
 		FRACTION_PLAYER = 1,
 		FRACTION_AGRESSIVE = 0;
 	
-	public static final Character DUMMY = new NonPlayerCharacter(false);
 	public static final String DEFAULT_NAME = "Default Name";
 	public static final double VISION_RANGE = 8;
 	
@@ -59,6 +63,7 @@ public abstract class Character extends Seer {
 	protected int acidRes = 0;
 	protected int actionPoints = 0;
 	protected int fraction;
+	public Location location;
 	public final String name;
 	public final String type;
 	public final HashMap<Integer, Character.Effect> effects = new HashMap<Integer, Character.Effect>();
@@ -72,62 +77,25 @@ public abstract class Character extends Seer {
 	public final int characterId = Chance.rand(0, Integer.MAX_VALUE);
 	public final ItemMap inventory = new ItemMap();
 	public final AmmunitionMap ammunition = new AmmunitionMap();
-
-	public Character(String t, String n, Location l, int x, int y) {
+	public HashSet<NonPlayerCharacter> observers = new HashSet<NonPlayerCharacter>();
+	
+	protected CharacterState state = CharacterState.DEFAULT;
+	
+	
+	public Character(String t, String n, int x, int y) {
 	// Common character creation: with all attributes, in location
-		super(x, y, l);
+		super(x, y);
 		name = n;
 		type = t;
-		location = l;
-		hp = CharacterTypes.getType(type).hp;
-		mp = CharacterTypes.getType(type).mp;
-		ep = 100;
-		maxHp = CharacterTypes.getType(type).hp;
-		maxMp = CharacterTypes.getType(type).mp;
-		maxEp = 100;
 		fraction = 0;
-		location.passability[x][y] = TerrainBasics.PASSABILITY_SEE;
-	}
-	public Character(String t, String n, int x, int y) {
-		// Common character creation: with all attributes, in location
-			super(x, y, Location.ABSTRACT_LOCATION);
-			name = n;
-			type = t;
-			hp = 10;
-			mp = 100;
-			maxHp = 10;
-			maxMp = 100;
-			fraction = 0;
-		}
-	public Character(int x, int y, String t, int f) {
-		super(x, y, World.ABSTRACT_LOCATION);
-		type = t;
-		fraction = f;
-		name = "Generator character "+type;
-		location.passability[x][y] = 3;
-	}
-	public Character() {
-		super(0,0, World.ABSTRACT_LOCATION);
-		type = "Dummy";
-		name = DEFAULT_NAME;
-	}
-	public Character(boolean b) {
-		/**
-		 * Create an empty character, used for constants
-		 */
-		super(0, 0, World.ABSTRACT_LOCATION);
-		type = "Abstract";
-		name = "Abstract Character";
-
-	}
-	
-	/* Actions */	
-	public void attack(Character aim) {
+	}	
+	/* Actions */
+	protected void attack(Character aim) {
 		location.addEvent(new EventMeleeAttack(characterId, aim.characterId));
 		aim.getDamage(1 , DAMAGE_PLAIN);
 		moveTime(500);
 	}
-	public void shootMissile(int toX, int toY, ItemPile missile) {
+	protected void shootMissile(int toX, int toY, ItemPile missile) {
 		loseItem(missile);
 		Coordinate end = getRayEnd(toX, toY);
 		location.addEvent(new EventMissileFlight(x, y, end.x, end.y, 1));
@@ -136,7 +104,7 @@ public abstract class Character extends Seer {
 			location.cells[end.x][end.y].character().getDamage(10, DAMAGE_PLAIN);
 		}
 	}
-	public void castSpell(int spellId, int x, int y) {
+	protected void castSpell(int spellId, int x, int y) {
 		location.addEvent(new EventCastSpell(characterId, spellId, x, y));
 		Spells.cast(this, spellId, x, y);
 		moveTime(500);
@@ -144,12 +112,14 @@ public abstract class Character extends Seer {
 	public void learnSpell(int spellId) {
 		spells.add(spellId);
 	}
-	public void die() {
-		excludeFromSeers();
+	protected void die() {
+		for (NonPlayerCharacter character : observers) {
+			character.discoverDeath(this);
+		}
 		location.removeCharacter(this);
 		location.addEvent(new EventDeath(characterId));
 	}
-	public void putOn(UniqueItem item, boolean omitEvent) {
+	protected void putOn(UniqueItem item, boolean omitEvent) {
 	// Main put on function
 		int cls = item.getType().getCls();
 		int slot = item.getType().getSlot();
@@ -175,8 +145,7 @@ public abstract class Character extends Seer {
 		addItemBonuses(item);
 		moveTime(500);
 	}
-	public void takeOff(UniqueItem item) {
-	// Main take off function
+	protected void takeOff(UniqueItem item) {
 		ammunition.removeSlot(item.getType().getSlot());
 		inventory.add(item);
 		if (!this.isOnGlobalMap()) {
@@ -186,82 +155,491 @@ public abstract class Character extends Seer {
 		removeItemBonuses(item);
 		moveTime(500);
 	}
-	public void pickUp(ItemPile pile) {
-		/*
-		 * Pick up an item lying on the same cell where the character stands.
-		 */
+	protected void pickUp(ItemPile pile) {
+	/**
+	 * Pick up an item lying on the same cell where the character stands.
+	 */
 		location.addEvent(new EventPickUp(characterId, pile.getType().getTypeId(), pile.getAmount()));
 		getItem(pile);
 		location.removeItem(pile, x, y);
 		moveTime(500);
 	}
-	public void pickUp(UniqueItem item) {
-		/*
-		 * Pick up an item lying on the same cell where the character stands.
-		 */
+	protected void pickUp(UniqueItem item) {
+	/**
+	 * Pick up an item lying on the same cell where the character stands.
+	 */
 		location.addEvent(new EventPickUp(characterId, item.getTypeId(), item.getItemId()));
 		getItem(item);
 		location.removeItem(item, x, y);
 		moveTime(500);
 	}
-	public void drop(UniqueItem item) {
+	protected void drop(UniqueItem item) {
 		loseItem(item);
 		location.addItem(item, x, y);
 		location.addEvent(new EventDropItem(characterId, item.getTypeId(), item.getItemId()));
 		moveTime(500);
 	}
-	public void drop(ItemPile pile) {
+	protected void drop(ItemPile pile) {
 		loseItem(pile);
 		location.addItem(pile, x, y);
 		location.addEvent(new EventDropItem(characterId, pile.getType().getTypeId(), pile.getAmount()));
 		moveTime(500);
 	}
-	public void takeFromContainer(ItemPile pile, Container container) {
+	protected void takeFromContainer(ItemPile pile, Container container) {
 		getItem(pile);
 		container.removePile(pile);
 		location.addEvent(new EventTakeFromContainer(characterId, pile.getTypeId(), pile.getAmount(), x, y));
 		moveTime(500);
 	}
-	public void takeFromContainer(UniqueItem item, Container container) {
+	protected void takeFromContainer(UniqueItem item, Container container) {
 		getItem(item);
 		container.removeUnique(item);
 		location.addEvent(new EventTakeFromContainer(characterId, item.getTypeId(), item.getItemId(), x, y));
 		moveTime(500);
 	}
-	public void putToContainer(ItemPile pile, Container container) {
+	protected void putToContainer(ItemPile pile, Container container) {
 		loseItem(pile);
 		container.add(pile);
 		location.addEvent(new EventPutToContainer(characterId, pile.getTypeId(), pile.getAmount(), x, y));
 		moveTime(500);
 	}
-	public void putToContainer(UniqueItem item, Container container) {
+	protected void putToContainer(UniqueItem item, Container container) {
 		loseItem(item);
 		container.add(item);
 		location.addEvent(new EventPutToContainer(characterId, item.getTypeId(), item.getItemId(), x, y));
 		moveTime(500);
 	}
-	public void useObject(int x, int y) {
+	protected void useObject(int x, int y) {
 			if (location.isDoor(x, y)) {
 				location.openDoor(x,y);
 			}
 			location.addEvent(new EventUseObject(characterId, x, y));
 			moveTime(500);
 		}
-	public void idle() {
+	protected void idle() {
 		moveTime(500);
 	}
-	public void move(int nx, int ny) {
-		location.passability[x][y] = 0;
-		location.cells[x][y].character(false);
-		x = nx;
-		y = ny;
-		location.cells[nx][ny].character(this);
-		location.passability[nx][ny] = 3;
-		location.addEvent(new EventMove(characterId, x, y));
+	protected void step(int x, int y) {
+		move(x,y);
 		moveTime(500);
-		getVisibleEntities();
+	} 
+	protected void makeSound(SoundType type) {
+		location.makeSound(x,y,type);
+	}
+	/* Special actions */
+	protected void push(Character character, Side side) {
+	/**
+	 * Pushes another character so he moves
+	 */
+		int[] d = side.side2d();
+		int nx = character.x+d[0];
+		int ny = character.y+d[1];
+		if (location.passability[nx][ny] == TerrainBasics.PASSABILITY_FREE) {
+			int bufX = character.x;
+			int bufY = character.y;
+			character.move(nx, ny);
+			if (!isNear(nx, ny)) {
+				move(bufX, bufY);
+			}
+		}
+		moveTime(500);
+	}
+	protected void changePlaces(Character character) {
+		int prevX = x;
+		int prevY = y;
+		move(character.x, character.y);
+		character.move(prevX,prevY);
+		moveTime(500);
+	}
+	protected void scream() {
+		makeSound(SoundType.SCREAM);
+	}
+	/* Vision */
+	protected void notifyNeighborsVisiblilty() {
+	/**
+	 * This method's name sucks, but I don't know how to call it : (
+	 * 
+	 * Tell every nearby character about this character's new position,
+	 * so nearby characters can update status of this character as
+	 * seen / unseen.
+	 */
+		for (NonPlayerCharacter character : getNearbyNonPlayerCharacters()) {
+			character.tryToSee(this);
+		}
+		notifyObservers();
+		HashSet<NonPlayerCharacter> observersCopy = new HashSet<NonPlayerCharacter>(observers);
+		for (NonPlayerCharacter character : observersCopy) {
+			character.tryToUnsee(this);
+		}
+	}
+	public HashSet<NonPlayerCharacter> getNearbyNonPlayerCharacters() {
+	/**
+	 * Get character that are near this character 
+	 * in square with VISION_RANGE*2+1 side length.
+	 */
+		HashSet<NonPlayerCharacter> answer = new HashSet<NonPlayerCharacter>();
+		for (NonPlayerCharacter character : location.nonPlayerCharacters) {
+		// Quickly select characters that could be seen (including this Seer itself)
+			if (
+				Math.abs(character.x - x) <= Character.VISION_RANGE && 
+				Math.abs(character.y - y) <= Character.VISION_RANGE
+			) {
+				answer.add(character);
+			}
+		}
+		answer.remove(this);
+		return answer;
+	}
+	public boolean initialCanSee(int x, int y) {
+	// ���������, ��������� �� ������ ������ �� ����� ���������
+		if (this.isNear(x,y) || this.x==x && this.y==y) {
+		// ���� ������ ����� ��� �������� �� ��� ����� - �� � ����� �����
+			return true;
+		}
+		if (Math.floor(this.distance(x, y))>Character.VISION_RANGE) {
+			return false;
+		}
+		// �������� ������������� ��������� ������� ��������� ������������ ��������� � ������� ������, 
+		// ��������� � ������������ ����� ������� ������ ����� ���������. �������� ��� ������ ������ ��������������� ���������.
+		if (x==this.x || y==this.y) {
+			// ��� ������, ����� ������� ������ (������� �����������) ����� ������������� ��� 0 
+			// (�.�. ����� � ����� � else ����� ���� ������� �� ����, �.�. ������� ��� �������� ����� � ������ �����)
+			// � ���� ������ ������� ������� ������ ���� �������� �� ����� (�� ����� �������, ��� � else ��� ������ � tg!=0 � tg!=1)
+			if (x==this.x) {
+			// ��� ������������ �����
+				int dy=Math.abs(y-this.y)/(y-this.y);
+				for (int i=this.y+dy; i!=y; i+=dy) {
+					if (location.passability[x][i] == 1) {
+						return false;
+					}
+				}
+			} else {
+			// ��� �������������� �����
+				int dx=Math.abs(x-this.x)/(x-this.x);
+				for (int i=this.x+dx; i!=x; i+=dx) {
+					if (location.passability[i][y]==1) {
+						return false;
+					}
+				}
+			}
+			return true;
+		} else if (Math.abs(x-this.x)==1) {
+		// ��� ������, ����� ���������� ����� � ������ ��������� �� ���� �������� ������������ ������
+			int yMin=Math.min(y,this.y);
+			int yMax=Math.max(y,this.y);
+			for (int i=yMin+1; i<yMax; i++) {
+				if (location.passability[x][i]==1) {
+					break;
+				}
+				if (i==yMax-1) {
+					return true;
+				}
+			}
+			for (int i=yMin+1;i<yMax;i++) {
+				if (location.passability[this.x][i]==1) {
+					break;
+				}
+				if (i==yMax-1) {
+					return true;
+				}
+			}
+			return false;
+		} else if (Math.abs(y-this.y)==1) {
+		// ��� �� ������, ��� � ����������, �� ��� �������������� �����
+			int xMin=Math.min(x,this.x);
+			int xMax=Math.max(x,this.x);
+			for (int i=xMin+1;i<xMax;i++) {
+				if (location.passability[i][y]==1) {
+					break;
+				}
+				if (i==xMax-1) {
+					return true;
+				}
+			}
+			for (int i=xMin+1;i<xMax;i++) {
+				if (location.passability[i][this.y]==1) {
+					break;
+				}
+				if (i==xMax-1) {
+					return true;
+				}
+			}
+			return false;
+		} 
+		else if (Math.abs(x-this.x) == Math.abs(y-this.y)) {
+		// ������, ����� ����� �������� � ����� ���� 45 �������� (abs(tg)==1)
+			int dMax=Math.abs(x-this.x);
+			int dx=x>this.x ? 1 : -1;
+			int dy=y>this.y ? 1 : -1;
+			int cx=this.x;
+			int cy=this.y;
+			for (int i=1;i<dMax;i++) {
+				cx+=dx;
+				cy+=dy;
+				if (location.passability[cx][cy]==1) {
+					return false;
+				}
+				
+			}
+			return true;
+		} 
+		else {
+		// ����� ������
+			double[][] start = new double[2][2];
+			double[] end = new double[4];
+			// x � y ������ ������������� x � y ������ ������ ��� � ���������� ���� (�������� ������������ � ����� �� k ������ � ������)
+			end[0]=(x>this.x)? x-0.5 : x+0.5;
+			end[1]=(y>this.y)? y-0.5 : y+0.5;
+			end[2]=x;
+			end[3]=y;
+			start[0][0]=(x>this.x)? this.x+0.5 : this.x-0.5;
+			start[0][1]=(y>this.y)? this.y+0.5 : this.y-0.5;
+			start[1][0]=(x>this.x)? this.x+0.5 : this.x-0.5;
+			// start[0][1]=this.y;
+			// start[1][0]=this.x;
+			start[1][1]=(y>this.y)? this.y+0.5 : this.y-0.5;
+			Coordinate[] rays=rays(this.x,this.y,x,y);
+			jump:
+			for (int k=0;k<3;k++) {
+				int endNumX=(k==0 || k==1)?0:2;
+				int endNumY=(k==0 || k==2)?1:3;
+				for (int j=0;j<1;j++) {
+				// ����� �������� ������� ��������� �������� �� ���, ���� �� �����, 
+				// ������� ��������� �����, ��� �� 0.5 ������ �� ������ - ��������� ������� ����, ��� ������ ���������� ��������.
+				// �������� � ���� ������ ��������� ������������ � R=0.5 
+				// ��� �� ������ ������� ��������� �� ������ ������ �� �����������.
+				// � ���� ������ ����� ������� �������� ����� �������� (3 ����� �� k - ����� ����� - � ��� �� j - ����� ������)
+					if (start[j][0]==this.x && start[j][1]==this.y) {
+						continue;
+					}
+					double xEnd = end[endNumX];
+					double yEnd = end[endNumY];
+					double xStart=start[j][0];
+					double yStart=start[j][1];
+					for (Coordinate c : rays) {
+						try {
+							if (location.passability[c.x][c.y]==1) {
+							// ��������� ������ ������
+								if (c.x==x && c.y==y || c.x==x && c.y==y) {
+									continue;
+								}
+								if (Math.abs(((yStart-yEnd)*c.x+(xEnd-xStart)*c.y+(xStart*yEnd-yStart*xEnd))/Math.sqrt(Math.abs((xEnd-xStart)*(xEnd-xStart)+(yEnd-yStart)*(yEnd-yStart))))<=0.5) {
+								// ���� ���������� �� ����� �� ������ 0.5, ��������� ��������� �� 6 �����
+									continue jump;
+								}
+							}
+						} catch (Exception e) {
+							throw new Error();
+						}
+					}
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+	public Coordinate getRayEnd(int endX, int endY) {
+		// ���������, ��������� �� ������ ������ �� ����� ���������
+		if (this.isNear(endX,endY) || this.x==endX && this.y==endY) {
+		// ���� ������ ����� ��� �������� �� ��� ����� - �� � ����� �����
+			return new Coordinate(endX, endY);
+		}
+		// �������� ������������� ��������� ������� ��������� ������������ ��������� � ������� ������, 
+		// ��������� � ������������ ����� ������� ������ ����� ���������. �������� ��� ������ ������ ��������������� ���������.
+		if (endX==this.x || endY==this.y) {
+			// ��� ������, ����� ������� ������ (������� �����������) ����� ������������� ��� 0 
+			// (�.�. ����� � ����� � else ����� ���� ������� �� ����, �.�. ������� ��� �������� ����� � ������ �����)
+			// � ���� ������ ������� ������� ������ ���� �������� �� ����� (�� ����� �������, ��� � else ��� ������ � tg!=0 � tg!=1)
+			if (endX==this.x) {
+			// ��� ������������ �����
+				int dy=Math.abs(endY-this.y)/(endY-this.y);
+				for (int i=this.y+dy; i!=endY+dy; i+=dy) {
+					if (location.passability[endX][i] != TerrainBasics.PASSABILITY_FREE) {
+						return new Coordinate(endX, i-dy);
+					}
+				}
+			} else {
+			// ��� �������������� �����
+				int dx=Math.abs(endX-this.x)/(endX-this.x);
+				for (int i=this.x+dx; i!=endX+dx; i+=dx) {
+					if (location.passability[i][endY] != TerrainBasics.PASSABILITY_FREE) {
+						return new Coordinate(i-dx, endY);
+					}
+				}
+			}
+			return new Coordinate(endX, endY);
+		} else if (Math.abs(endX-this.x)==1) {
+		// ��� ������, ����� ���������� ����� � ������ ��������� �� ���� �������� ������������ ������
+			int dy=Math.abs(endY-this.y)/(endY-this.y);
+			int y1 = endY, y2 = endY;
+			for (int i=this.y+dy; i!=endY+dy; i+=dy) {
+				if (location.passability[endX][i] != TerrainBasics.PASSABILITY_FREE) {
+					y1 = i-dy;
+					break;
+				}
+				if (i==endY) {
+					return new Coordinate(endX, endY);
+				}
+			}
+			for (int i=this.y+dy; i!=endY+dy; i+=dy) {
+				if (location.passability[this.x][i] != TerrainBasics.PASSABILITY_FREE) {
+					y2 = i-dy;
+					break;
+				}
+			}
+			Coordinate answer;
+			if (distance(endX, y1) > distance(this.x, y2)) {
+				answer = new Coordinate(endX, y1);
+			} else {
+				answer = new Coordinate(this.x, y2);
+			}
+			if (answer.x == this.x && answer.y == y2 && location.passability[endX][endY] == TerrainBasics.PASSABILITY_FREE) {
+			// If answer is the furthest cell on the same line, but {endX:endY} is free
+				answer.x = endX;
+				answer.y = endY;
+			} else if (answer.x == this.x && answer.y == y2 && location.passability[endX][endY] == TerrainBasics.PASSABILITY_NO) {
+			// If answer is the furthest cell on the same line, and {endX:endY} has no passage 
+				answer.y = endY-dy;
+			}
+			return answer;
+		} else if (Math.abs(endY-this.y)==1) {
+		// ��� �� ������, ��� � ����������, �� ��� �������������� �����
+			int dx=Math.abs(endX-this.x)/(endX-this.x);
+			int x1 = endX, x2 = endX;
+			for (int i=this.x+dx;i!=endX+dx;i+=dx) {
+				if (location.passability[i][endY] != TerrainBasics.PASSABILITY_FREE) {
+					x1 = i-dx;
+					break;
+				}
+				if (i==endX) {
+					return new Coordinate(endX, endY);
+				}
+			}
+			for (int i=this.x+dx;i!=endX+dx;i+=dx) {
+				if (location.passability[i][this.y] != TerrainBasics.PASSABILITY_FREE) {
+					x2 = i-dx;
+					break;
+				}
+			}
+			Coordinate answer;
+			if (distance(x1, endY) > distance(x2, this.y)) {
+				answer = new Coordinate(x1, endY);
+			} else {
+				answer = new Coordinate(x2, this.y);
+			}
+			if (answer.x == x2 && answer.y == this.y && location.passability[endX][endY] == TerrainBasics.PASSABILITY_FREE) {
+			// If answer is the furthest cell on the same line, but {endX:endY} is free
+				answer.x = endX;
+				answer.y = endY;
+			} else if (answer.x == x2 && answer.y == this.y && location.passability[endX][endY] == TerrainBasics.PASSABILITY_NO) {
+			// If answer is the furthest cell on the same line, and {endX:endY} has no passage 
+				answer.x = endX-dx;
+			}
+			
+			return answer;
+		} 
+		else if (Math.abs(endX-this.x) == Math.abs(endY-this.y)) {
+		// ������, ����� ����� �������� � ����� ���� 45 �������� (abs(tg)==1)
+			int dMax=Math.abs(endX-this.x);
+			int dx=endX>this.x ? 1 : -1;
+			int dy=endY>this.y ? 1 : -1;
+			int cx=this.x;
+			int cy=this.y;
+			for (int i=1;i<=dMax;i++) {
+				cx+=dx;
+				cy+=dy;
+				if (location.passability[cx][cy]==1) {
+					return new Coordinate(cx-dx, cy-dy);
+				}
+				
+			}
+			return new Coordinate(endX, endY);
+		} 
+		else {
+		// ����� ������
+			double[][] start = new double[2][2];
+			double[] end = new double[4];
+			// x � y ������ ������������� x � y ������ ������ ��� � ���������� ���� (�������� ������������ � ����� �� k ������ � ������)
+			end[0]=(endX>this.x)? endX-0.5 : endX+0.5;
+			end[1]=(endY>this.y)? endY-0.5 : endY+0.5;
+			end[2]=endX;
+			end[3]=endY;
+			start[0][0]=(endX>this.x)? this.x+0.5 : this.x-0.5;
+			start[0][1]=(endY>this.y)? this.y+0.5 : this.y-0.5;
+			start[1][0]=(endX>this.x)? this.x+0.5 : this.x-0.5;
+			// start[0][1]=this.y;
+			// start[1][0]=this.x;
+			start[1][1]=(endY>this.y)? this.y+0.5 : this.y-0.5;
+			Coordinate[] rays=rays(this.x,this.y,endX,endY);
+			int breakX=this.x, breakY=this.y;
+			jump:
+			for (int k=0;k<3;k++) {
+				int endNumX=(k==0 || k==1)?0:2;
+				int endNumY=(k==0 || k==2)?1:3;
+				for (int j=0;j<1;j++) {
+				// ����� �������� ������� ��������� �������� �� ���, ���� �� �����, 
+				// ������� ��������� �����, ��� �� 0.5 ������ �� ������ - ��������� ������� ����, ��� ������ ���������� ��������.
+				// �������� � ���� ������ ��������� ������������ � R=0.5 
+				// ��� �� ������ ������� ��������� �� ������ ������ �� �����������.
+				// � ���� ������ ����� ������� �������� ����� �������� (3 ����� �� k - ����� ����� - � ��� �� j - ����� ������)
+					if (start[j][0]==this.x && start[j][1]==this.y) {
+						continue;
+					}
+					double xEnd = end[endNumX];
+					double yEnd = end[endNumY];
+					double xStart = start[j][0];
+					double yStart = start[j][1];
+					for (Coordinate c : rays) {
+						try {
+							if (location.passability[c.x][c.y]==1) {
+							// ��������� ������ ������
+								
+								if (Math.abs(((yStart-yEnd)*c.x+(xEnd-xStart)*c.y+(xStart*yEnd-yStart*xEnd))/Math.sqrt(Math.abs((xEnd-xStart)*(xEnd-xStart)+(yEnd-yStart)*(yEnd-yStart))))<=0.5) {
+								// ���� ���������� �� ����� �� ������ 0.5, ��������� ��������� �� 6 �����
+									continue jump;
+								}
+								
+							} else {
+								breakX = c.x;
+								breakY = c.y;
+							}
+						} catch (Exception e) {
+							throw new Error();
+						}
+					}
+					return new Coordinate(endX, endY);
+				}
+			}
+			return new Coordinate(breakX, breakY);
+		}
+	}
+	public Coordinate[] rays (int startX, int startY, int endX, int endY) {
+	// ��������������� ������� ��� this->canSee
+	// ���������� ����� ��������� ������, ������� ���������� ��������� ��� �������� ���������
+		return Utils.concatAll(
+			location.vector(startX, startY, endX, endY),
+			location.vector(startX,startY+(endY>startY ? 1 : -1),endX+(endX>startX ? -1 : 1),endY),
+			location.vector(startX+(endX>startX ? 1 : -1),startY,endX,endY+(endY>startY ? -1 : 1))
+		);
 	}
 	
+	/* Character state observing */
+	// NonPlayerCharacters may observe Characters and so track 
+	// their coordinates.
+	public void addObserver(NonPlayerCharacter character) {
+		observers.add(character);
+	}
+	public void removeObserver(NonPlayerCharacter character) {
+		observers.remove(character);
+	}
+	private void notifyObservers() {
+	/**
+	 * Send this character's coordinate data to observers
+	 */
+		for (NonPlayerCharacter character : observers) {
+			character.updateObservation(this,x,y);
+		}
+	}
 	/* Getters */
 	public int getAttribute(Attribute attribute) {
 		switch (attribute) {
@@ -269,6 +647,8 @@ public abstract class Character extends Seer {
 		case EVASION:     return evasion;
 		case MAX_HP:      return maxHp;
 		case MAX_MP:      return maxMp;
+		case HP:          return hp;
+		case MP:          return mp;
 		default:
 			throw new Error("Unknown attribute");
 		}
@@ -276,11 +656,35 @@ public abstract class Character extends Seer {
 	public Location location() {
 		return location;
 	}
-	
+	public int hashCode() {
+		return characterId;
+	}
+	public int getFraction() {
+		return fraction;
+	}
 	/* Setters */
+	public void move(int x, int y) {
+	/**
+	 * Changes character's position.
+	 * 
+	 * Note that this is not a character action, this method is
+	 * also called when character blinks, being pushed and so on.
+	 * For action method, use Character.step.
+	 */
+		location.passability[this.x][this.y] = TerrainBasics.PASSABILITY_FREE;
+		location.cells[this.x][this.y].character(false);
+		this.x = x;
+		this.y = y;
+		location.cells[x][y].character(this);
+		location.passability[x][y] = TerrainBasics.PASSABILITY_SEE;
+		location.addEvent(new EventMove(characterId, x, y));
+		notifyNeighborsVisiblilty();
+	}
+	protected void setLocation(Location location) {
+		this.location = location;
+	}
 	public void getDamage(int amount, int type) {
 		hp -= amount;
-		Main.console(type+" now has "+hp+" hp");
 		location.addEvent(new EventDamage(characterId, amount, type));
 		if (hp <= 0) {
 			die();
@@ -294,16 +698,22 @@ public abstract class Character extends Seer {
 	}
 	public void getItem(UniqueItem item) {
 		inventory.add(item);
-		location.addEvent(new EventGetUniqueItem(characterId, item.getTypeId(), item.getItemId()));
+		if (isInLocation()) {
+			location.addEvent(new EventGetUniqueItem(characterId, item.getTypeId(), item.getItemId()));
+		}
 	}
 	public void getItem(ItemPile pile) {
 		inventory.add(pile);
-		location.addEvent(new EventGetItemPile(characterId, pile.getTypeId(), pile.getAmount()));
+		if (isInLocation()) {
+			location.addEvent(new EventGetItemPile(characterId, pile.getTypeId(), pile.getAmount()));
+		}
 	}
 	public void loseItem(UniqueItem item) {
 		if (inventory.hasUnique(item.getItemId())) {
 			inventory.removeUnique(item);
-			location.addEvent(new EventLoseItem(characterId, item.getType().getTypeId(), item.getItemId()));
+			if (isInLocation()) {
+				location.addEvent(new EventLoseItem(characterId, item.getType().getTypeId(), item.getItemId()));
+			}
 		} else {
 			throw new Error("An attempt to lose an item width id " + item.getItemId()
 					+ " that is neither in inventory nor in ammunition");
@@ -311,10 +721,12 @@ public abstract class Character extends Seer {
 	}
 	public void loseItem(ItemPile pile) {
 		inventory.removePile(pile);
-		location.addEvent(new EventLoseItem(characterId, pile.getType().getTypeId(), pile.getAmount()));
+		if (isInLocation()) {
+			location.addEvent(new EventLoseItem(characterId, pile.getType().getTypeId(), pile.getAmount()));
+		}
 	}
-	public void setFraction(int f) {
-		fraction = f;
+	public void setFraction(int fraction) {
+		this.fraction = fraction;
 	}
 	public void addEffect(int effectId, int duration, int modifier) {
 		if (effects.containsKey(effectId)) {
@@ -374,7 +786,7 @@ public abstract class Character extends Seer {
 		return inventory.hasPile(typeId, amount);
 	}
 	public boolean isOnGlobalMap() {
-		return location == Location.ABSTRACT_LOCATION;
+		return location == null;
 	}
 	public boolean isEnemy(Character ch) {
 		if (fraction == FRACTION_NEUTRAL) {
@@ -382,7 +794,9 @@ public abstract class Character extends Seer {
 		}
 		return ch.fraction != fraction;
 	}
-	
+	public boolean isInLocation() {
+		return location != null;
+	}
 	/* Data */
 	public String jsonGetEffects() {
 		return "[]";

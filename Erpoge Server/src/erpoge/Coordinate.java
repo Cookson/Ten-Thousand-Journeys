@@ -39,11 +39,9 @@ public class Coordinate extends Point{
 		return false;
 	}
 	public int distance(int x, int y) {
-	// ���������� ����� ����� �������
 		return (int)Math.sqrt(Math.pow(this.x-x, 2)+Math.pow(this.y-y, 2));
 	}
 	public int distance(Coordinate e) {
-	// ���������� ����� ����� �������
 		return (int)Math.sqrt(Math.pow(this.x-e.x, 2)+Math.pow(this.y-e.y, 2));
 	}
 	public Coordinate moveToSide(Side side, int distance) {

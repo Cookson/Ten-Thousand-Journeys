@@ -14,8 +14,8 @@ public final class Chat {
 	private HashMap<Location, ArrayList<Message>> locationChats = new HashMap<Location, ArrayList<Message>>();
 	private ArrayList<Message> worldChat = new ArrayList<Chat.Message>();
 
-	Chat() {
-		worldChat.add(0, new Message(Character.DUMMY, "Hello there"));
+	public Chat() {
+		
 	}
 
 	public static void locationMessage(PlayerCharacter player, String message) {
@@ -39,7 +39,7 @@ public final class Chat {
 		}
 	}
 	public static Message[] getMessagesAfter(Location location, long time) {
-		// Код рабочий, но не работает
+		// пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 //		int length=0;
 //		ArrayList<Message> locationMessages = instance.locationChats.get(location);
 //		while (locationMessages.get(length).timestamp < time) {

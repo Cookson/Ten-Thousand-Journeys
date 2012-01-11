@@ -53,7 +53,7 @@ public class Forest extends LocationGenerator {
 		
 		ArrayList<GeneratorCharacterGroup> listcs = new ArrayList<GeneratorCharacterGroup>();
 		listcs.add(new GeneratorCharacterGroup("bear", "�����", width * height / 150, 0));
-		mobsSpace.placeCharacters(listcs);
+//		mobsSpace.placeCharacters(listcs);
 		
 		mobsSpace.forest(Chance.rand(5, 12));
 		ArrayList<Integer> objtypes = new ArrayList<Integer>();

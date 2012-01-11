@@ -110,9 +110,10 @@ Character.prototype.hideModel=function() {
 	}
 };
 Character.prototype.showAttackResult=function(res) {
-	 this.graphicEffect("blood",function() {
-		 handleNextEvent();
-	 });
+	handleNextEvent();
+//	this.graphicEffect("blood",function() {
+//		
+//	});
 };
 Character.prototype.redrawDoll=function() {
 //Отобразить амуницию
@@ -771,6 +772,12 @@ Character.prototype.meleeAttack=function(x,y) {
 	});
 };
 Character.prototype.showMove = function(nextCellX, nextCellY) {
+	if (this.destX == this.x && this.destY == this.y) {
+	// If player moves not by his will, then destX/Y may remain the same,
+	// so destX/Y should be changed
+		this.destX = nextCellX;
+		this.destY = nextCellY;
+	}
 	var top = 0;
 	var left = 0;
 	Terrain.cells[this.x][this.y].character = undefined;
@@ -1066,7 +1073,7 @@ function Player(data) {
 	UI.notify("inventoryChange");
 }
 Player.prototype = new Character(-1);
-Player.prototype.actions = ["jmp","rndAtk","shAtk","jpAtk","wlSm","push","shBsh","rn","snk"];
+Player.prototype.actions = ["psh","chp","mks"];
 Player.prototype.display = function () {
 	this.doll = new Doll(this);
 	this.doll.draw();
@@ -1137,9 +1144,6 @@ Player.prototype.sendCastSpell = function(spellId, x, y) {
 	Net.send({a:Net.CAST_SPELL, spellId:spellId, x:x, y:y});
 };
 Player.prototype.sendMove = function() {
-Player.prototype.idle=function() {	
-	Net.send({a:Net.IDLE});
-};// Графическая и логическая обработка движения
 	if (this.x<0) {
 		throw new Error("dest x < 0");
 	}
@@ -1254,6 +1258,9 @@ Player.prototype.idle=function() {
 		}
 	}
 };
+Player.prototype.idle = function() {	
+	Net.send({a:Net.IDLE});
+};
 Player.prototype.leaveLocation = function() {
 	Net.send({leaveLocation:1},function(data) {
 		onGlobalMap=true;
@@ -1283,6 +1290,10 @@ Player.prototype.sendPutOn = function(itemId) {
 // Send putting on data to server
 	Net.send({a:Net.PUT_ON,itemId:itemId});
 };
+/* Send methods of special actions */
+Player.prototype.sendPush = function () {
+	
+}
 /* Interface methods */
 Player.prototype.selectMissile = function() {
 // Enter missile mode

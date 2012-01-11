@@ -3,12 +3,14 @@ package erpoge.terrain;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 import erpoge.Chance;
 import erpoge.Coordinate;
 import erpoge.Main;
 import erpoge.Side;
+import erpoge.characters.NonPlayerCharacter;
 import erpoge.terrain.settlements.Building;
 import erpoge.terrain.settlements.BuildingPlace;
 
@@ -17,7 +19,7 @@ public class LocationGenerator extends TerrainGenerator {
 	protected String name;
 	protected final World world;
 	public final HashMap<Integer, Location> levels = new HashMap<Integer, Location>();
-	
+	public HashSet<NonPlayerCharacter> nonPlayerCharacters = new HashSet<NonPlayerCharacter>();
 
 	public LocationGenerator(Location location) {
 		super(location);
@@ -30,6 +32,7 @@ public class LocationGenerator extends TerrainGenerator {
 	private void linkFieldsToLocationsFields(Location location) {
 		cells = location.cells;
 		characters = location.characters;
+		nonPlayerCharacters = location.nonPlayerCharacters;
 		containers = location.containers;
 		ceilings = location.ceilings;
 		passability = location.passability;
@@ -54,6 +57,13 @@ public class LocationGenerator extends TerrainGenerator {
 	}
 	public void makePeaceful() {
 		location.isPeaceful = true;
+	}
+	public NonPlayerCharacter createCharacter(String type, String name, int sx, int sy) {
+		NonPlayerCharacter ch = new NonPlayerCharacter(type, name, (Location)location, sx, sy);
+		characters.put(ch.characterId, ch);
+		nonPlayerCharacters.add(ch);
+		location.cells[sx][sy].character(ch);
+		return ch;
 	}
 	public void selectLevel(int level) {
 		location = levels.get(level);

@@ -19,7 +19,7 @@ public class Main {
 	public static final int DEFAULT_PORT = 8787;
 	public static int[][] arr;
 	public final static boolean DEBUG = true;
-	public static final String TEST_LOCATION_TYPE = "BuildingTest";
+	public static final String TEST_LOCATION_TYPE = "Empty";
 	public static final int DEFAULT_LOCATION_WIDTH = 60;
 	public static final int DEFAULT_LOCATION_HEIGHT = 40;
 	public static <T> void out(T string) {
@@ -59,7 +59,7 @@ public class Main {
 //		Location loc = world.createLocation(0, 0, 60, 40, TEST_LOCATION_TYPE, "New Location");
 //		loc.showLocation();	
 		
-		PlayerCharacter burok = world.createCharacter("palyer", "Alvoi", 2, "Warrior", 13, 26);
+		PlayerCharacter burok = world.createPlayer("Alvoi", 2, "Warrior", 13, 26);
 		burok.getItem(new UniqueItem(ItemType.CLASS_SWORD * ItemsTypology.CLASS_LENGTH));
 		burok.getItem(new ItemPile(ItemType.CLASS_AMMO * ItemsTypology.CLASS_LENGTH,200));
 		burok.getItem(new UniqueItem(ItemType.CLASS_BLUNT * ItemsTypology.CLASS_LENGTH));
@@ -67,6 +67,7 @@ public class Main {
 		burok.getItem(new UniqueItem(1204));
 		burok.getItem(new UniqueItem(1102));
 		burok.learnSpell(9);
+		burok.learnSpell(10);
 		
 		Accounts.addAccount(new Account("1","1"));
 		Accounts.addAccount(new Account("Billy","1"));

@@ -71,6 +71,9 @@ public class Cell {
 	public Character character() {
 		return character;
 	}
+	public boolean hasCharacter() {
+		return character != null;
+	}
 	public void character(boolean f) {
 		character = null;
 	}

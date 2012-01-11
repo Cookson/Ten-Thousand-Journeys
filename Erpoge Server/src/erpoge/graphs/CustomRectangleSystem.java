@@ -11,7 +11,6 @@ import erpoge.Direction;
 import erpoge.Main;
 import erpoge.RectangleArea;
 import erpoge.Side;
-import erpoge.terrain.Location;
 import erpoge.terrain.TerrainBasics;
 
 public class CustomRectangleSystem extends Graph<RectangleArea> {

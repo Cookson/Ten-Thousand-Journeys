@@ -125,12 +125,7 @@ public class TerrainGenerator extends TerrainBasics {
 		}
 		return answer;
 	}
-	public NonPlayerCharacter createCharacter(String type, String name, int sx, int sy) {
-		NonPlayerCharacter ch = new NonPlayerCharacter(type, name, (Location)location, sx, sy);
-		characters.put(ch.characterId, ch);
-		location.cells[sx][sy].character(ch);
-		return ch;
-	}
+	
 	public void fillWithCells(int f, int o) {
 		for (int i = 0; i < width; i++) {
 			for (int j = 0; j < height; j++) {

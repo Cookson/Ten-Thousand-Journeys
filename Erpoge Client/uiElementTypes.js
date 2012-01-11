@@ -2419,7 +2419,6 @@ UIElementTypes.attributeList = {
 UIElementTypes.actionsPanel = {
 	onInit: function _() {
 		for (var i in Player.prototype.actions) {
-			console.log(Player.prototype.actions[i])
 			var nDiv = document.createElement("div");
 			this.addCustomClass(nDiv,"Action");
 			nDiv.appendChild(document.createTextNode(Player.prototype.actions[i]));

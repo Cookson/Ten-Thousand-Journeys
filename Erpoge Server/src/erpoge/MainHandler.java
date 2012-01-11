@@ -59,7 +59,12 @@ public class MainHandler extends WebSocketServer {
 	LOAD_PASSIVE_CONTENTS	= 27,
 	ACCOUNT_REGISTER		= 28,
 	PLAYER_CREATE			= 29,
-	IDLE                    = 30;
+	IDLE                    = 30,
+	
+	/* Player special actions */
+	PUSH                    = 201,
+	CHANGE_PLACES           = 202,
+	MAKE_SOUND              = 203;
 	public static final int MAX_NUM_OF_PLAYERS = 16;
 	public static final Gson gson = new Gson();
 	public static final Gson gsonIncludesStatic = new GsonBuilder()
@@ -152,16 +157,16 @@ public class MainHandler extends WebSocketServer {
 	}
 	/* Listeners */
 	public void onClientOpen(WebSocket conn) {
-		Main.console("Client open");
+//		Main.console("Client open");
 	}
 	public void onClientClose(WebSocket conn) {
-		Main.console("Client close");
+//		Main.console("Client close");
 		if (conn.character != null && conn.character.isAuthorized()) {
 			conn.character.deauthorize();
 		}
 	}
 	public void onClientMessage(WebSocket conn, String message) {
-		Main.console(message);
+//		Main.console(message);
 		int action = gson.fromJson(message, ClientMessageAction.class).a;
 		try {
 			switch (action) {
@@ -184,7 +189,7 @@ public class MainHandler extends WebSocketServer {
 				conn.character.aAttack(message);
 				break;
 			case MOVE:
-				conn.character.aMove(message);
+				conn.character.aStep(message);
 				break;
 			case PUT_ON:
 				conn.character.aPutOn(message);

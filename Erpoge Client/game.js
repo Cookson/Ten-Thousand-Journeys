@@ -137,7 +137,7 @@ function playerClick(x, y, shiftKey) {
 			player.spellY=y;
 			player.spellAimId=-1;			
 		}
-	} else if ((aim = Terrain.cells[x][y].character) && !player.isEnemy(aim)) {
+	} else if ((aim = Terrain.cells[x][y].character) && player != Terrain.cells[x][y].character && !player.isEnemy(aim)) {
 		player.sendStartConversation(aim.characterId);
 	} else if (
 			Terrain.cells[x][y].object && isDoor(Terrain.cells[x][y].object.type) && 

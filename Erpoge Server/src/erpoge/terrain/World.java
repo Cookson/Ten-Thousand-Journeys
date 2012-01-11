@@ -58,10 +58,9 @@ public class World extends Location {
 			new TestWorld(this);
 		}
 	}
-	public PlayerCharacter createCharacter(String type, String name, int race,
+	public PlayerCharacter createPlayer(String name, int race,
 			String cls, int x, int y) {
-		PlayerHandler ch = new PlayerHandler(type, name, race, cls, Location.ABSTRACT_LOCATION,
-				x, y);
+		PlayerHandler ch = new PlayerHandler(name, race, cls, x, y);
 		addPlayer(ch, x, y);
 		ch.learnSpell(Spells.SPELL_FIREBALL);
 		return ch;
@@ -381,7 +380,7 @@ public class World extends Location {
 			}
 		}
 		
-		// Form the json string
+		// Form a json string
 		String data = "["+MainHandler.gsonIncludesStatic.toJson(event,event.getClass())+"]";
 		// Send data to all players
 		for (WebSocket conn : targetConnections) {
@@ -391,7 +390,6 @@ public class World extends Location {
 				Main.outln("Data sending error");
 			}
 		}
-		Main.console("flush "+data);
 	}
 	public void addPlayer(PlayerHandler player, int x, int y) {
 		players.put(player.characterId, player);

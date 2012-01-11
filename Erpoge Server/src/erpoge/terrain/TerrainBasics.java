@@ -127,8 +127,6 @@ public abstract class TerrainBasics {
 	protected boolean isContainer(int id) {
 		return id >= 60 && id <= 63;
 	}
-	protected abstract Character createCharacter(String type, String name,
-			int x, int y);
 	protected void createContainer(int x, int y, int capacity) {
 		containers.put(getNum(x, y), new Container(capacity));
 	}

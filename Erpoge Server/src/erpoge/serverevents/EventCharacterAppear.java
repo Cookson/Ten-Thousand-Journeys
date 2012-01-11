@@ -13,8 +13,9 @@ public class EventCharacterAppear extends ServerEvent {
 	public int mp;
 	public int[] effects;
 	public int[][] ammunition;
+	public int fraction;
 	public EventCharacterAppear(int characterId, int x, int y, String type, String name, int maxHp,
-			int hp, int maxMp, int mp, int[] effects, int[][] ammunition) {
+			int hp, int maxMp, int mp, int[] effects, int[][] ammunition, int fraction) {
 		this.characterId = characterId;
 		this.x = x;
 		this.y = y;
@@ -26,5 +27,6 @@ public class EventCharacterAppear extends ServerEvent {
 		this.mp = mp;
 		this.effects = effects;
 		this.ammunition = ammunition;
+		this.fraction = fraction;
 	}
 }
