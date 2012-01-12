@@ -2422,12 +2422,23 @@ UIElementTypes.actionsPanel = {
 			var nDiv = document.createElement("div");
 			this.addCustomClass(nDiv,"Action");
 			nDiv.appendChild(document.createTextNode(Player.prototype.actions[i]));
+			this.addEventListener(nDiv,"click", "push");
 			this.rootElement.appendChild(nDiv);
 		}
 	},
 	listeners: {},
 	keysActions: {},
-	handlers: {},
+	handlers: {
+		push: function _() {
+			CellCursor.enterSelectionMode(function (startX, startY) {
+				CellCursor.enterSelectionMode(function(endX, endY) {
+					console.log(startX, startY, endX, endY)
+					var direction = Side.d2side(endX-startX, endY-startY);
+					player.sendPush(startX, startY, direction);
+				}, window, 1, {x:startX,y:startY});
+			}, window, 1);
+		}
+	},
 	cssRules: function _() {
 		return "					\
 		div.$type$ {				\

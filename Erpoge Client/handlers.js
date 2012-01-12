@@ -60,17 +60,19 @@ handlers={
 		},
 		selectMissile: {
 			action: function _() {
-				player.selectMissile();
+				CellCursor.enterSelectionMode(Player.prototype.sendShootMissile, player,11);
 			},
 			context: window
 		},
-		shootMissile: {
+		unselectCellAction: {
 			action: function _() {
-				if (player.ammunition.getItemInSlot(0) && isRanged(player.ammunition.getItemInSlot(0).typeId)) {
-					player.cellChooseAction();
-				} else {
-					gAlert("Игрок не держит в руках оружия дальнего боя!");
-				}
+				CellCursor.exitSelectionMode();
+			},
+			context: window
+		},
+		chooseCell: {
+			action: function _() {
+				CellCursor.chooseCurrentCell();
 			},
 			context: window
 		},
@@ -107,6 +109,13 @@ handlers={
 		idle: {
 			action: function () {
 				player.idle();
+			},
+			context: window
+		},
+		cursorMove:  {
+			action: function (side) {
+				var d = side.side2d();
+				CellCursor.move(CellCursor.x+d[0], CellCursor.y+d[1]);
 			},
 			context: window
 		}
@@ -397,7 +406,7 @@ handlers={
 			showLoadingScreen();
 			if (data.onGlobalMap) {
 			// World loading
-				isLocationPeaceful = false;
+				Terrain.isPeaceful = false;
 				onGlobalMap = true;
 				prepareArea();
 				readWorld(data.w);
@@ -425,7 +434,7 @@ handlers={
 				onlinePlayers=[];
 				width=data.l.w;
 				height=data.l.h;
-				isLocationPeaceful = data.l.p;
+				Terrain.isPeaceful = data.l.p;
 				areaId=data.l.locationId;
 				onlinePlayers=[];
 				prepareArea();

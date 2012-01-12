@@ -11,6 +11,7 @@ var Keys = {
 		"Enter"			: 13,
 		"Pause"			: 19,
 		"Esc"			: 27,
+		"Space"         : 32,
 		"PageUp"		: 33,
 		"PageDown"		: 34,
 		"End"			: 35,
@@ -136,7 +137,7 @@ Keys.formReverseKeyCodesTable = function _() {
 		KEYNAMES[KEYCODES[i]] = i;
 	}
 };
-Keys.assign = function _(action) {
+Keys.assign = function _(params) {
 /* Assign action to key combination.
  * First argument as assigned function.
  * Other arguments are usual keys or modifier keys (ctrl, alt or shift).
@@ -144,26 +145,36 @@ Keys.assign = function _(action) {
  * The last argument must be key mode (see Keys.KEY_MODE_ section)
  * Usage example: Keys.assign(help, "Ctrl", "Alt", "H")
  */
-	if (!handlers.keysActions[action]) {
-		throw new Error("No action "+action+" is registered");
+	if (!handlers.keysActions[params.action]) {
+		throw new Error("No action "+params.action+" is registered");
 	}
 	var ctrl = 0;
 	var alt = 0;
 	var shift = 0;
-	var key = Keys.KEYCODES[arguments[arguments.length-2]];
-	var keyMode = arguments[arguments.length-1];
+	var key = null;
+	var keyMode = params.mode;
 	
-	for (var i=1; i<arguments.length-2; i++) {
-		if (arguments[i] == "Ctrl") {
+	for (var i=0; i<params.keys.length; i++) {
+		if (params.keys[i] == "Ctrl") {
 			ctrl = 1;
-		} else if (arguments[i] == "Alt") {
+		} else if (params.keys[i] == "Alt") {
 			alt = 1;
-		} else if (arguments[i] == "Shift") {
+		} else if (params.keys[i] == "Shift") {
 			shift = 1;
+		} else if (key == null) {
+			key = Keys.KEYCODES[params.keys[i]];
+		} else {
+			throw new Error("Multiple non-modifier keys in assignation; action "+params.action+", keys: "+params.keys);
 		}
 	}
-//	console["log"]("assign ", action, "to ",keyMode, ctrl, alt, shift, key);
-	Keys.keyActions[keyMode][ctrl][alt][shift][key] = handlers.keysActions[action];
+	if (key == null) {
+		throw new Error("Key is not given; action "+params.action+", keys: "+params.keys);
+	}
+	if (params.arguments === undefined) {
+		params.arguments = [];
+	}
+	console["log"]("assign ", params.action, "to ",keyMode, ctrl, alt, shift, key);
+	Keys.keyActions[keyMode][ctrl][alt][shift][key] = [handlers.keysActions[params.action], params.arguments];
 };
 Keys.universalKeyDownHandler = function _(e) {
 // The function in document.addEventListener("keyDown")
@@ -176,25 +187,25 @@ Keys.universalKeyDownHandler = function _(e) {
 	var shift = e.shiftKey ? 1 : 0;
 	var key = e.keyCode;
 	var keyMode = UI.mode;
-//	console["log"](keyMode, ctrl, alt, shift, key);
-	var registeredAction;
+	console["log"](keyMode, ctrl, alt, shift, key);
+	var registeredActionHolder;
 	if (
 		(keyMode == UI.MODE_ON_GLOBAL_MAP || 
 		keyMode == UI.MODE_IN_LOCATION) &&
 		Keys.keyActions[UI.MODE_ALWAYS][ctrl][alt][shift][key]
 	) {
 	// Apply "default" action
-		registeredAction = Keys.keyActions[UI.MODE_ALWAYS][ctrl][alt][shift][key];
+		registeredActionHolder = Keys.keyActions[UI.MODE_ALWAYS][ctrl][alt][shift][key];
 	} else {
-		registeredAction = Keys.keyActions[keyMode][ctrl][alt][shift][key];
+		registeredActionHolder = Keys.keyActions[keyMode][ctrl][alt][shift][key];
 	}
-	if (registeredAction) {
+	if (registeredActionHolder) {
 		e.preventDefault();
-		if (registeredAction.context instanceof UIElement && UI.disabled) {
+		if (registeredActionHolder[0].context instanceof UIElement && UI.disabled) {
 		// If this is action of UIElement and UI is disabled, return
 			return;
 		}
-		registeredAction.action.apply(registeredAction.context);		
+		registeredActionHolder[0].action.apply(registeredActionHolder[0].context,registeredActionHolder[1]);		
 	}	
 };
 Keys.registerKeyAction = function _(action, name, context) {
@@ -208,7 +219,7 @@ Keys.registerKeyAction = function _(action, name, context) {
 	if (handlers.keysActions[name]) {
 		throw new Error("Another action under name "+name+" is already registred");
 	}
-	if (!context) {
+	if (context === undefined) {
 		context = window;
 	}
 	handlers.keysActions[name] = {

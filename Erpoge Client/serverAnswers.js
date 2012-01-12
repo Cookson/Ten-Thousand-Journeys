@@ -13,7 +13,7 @@ function handleNextEvent() {
 	}
 //	console["log"](serverAnswer);	
 }
-var serverAnswerHandlers = {
+serverAnswerHandlers = {
 	wt: function _(value) {
 		// Character travels in the world
 		var worldPlayer = worldPlayers[value.characterId];
@@ -183,7 +183,10 @@ var serverAnswerHandlers = {
 				Terrain.cells[value.x][value.y].addItem(new UniqueItem(value.typeId, value.param));
 			} else {
 				Terrain.cells[value.x][value.y].addItem(new ItemPile(value.typeId, value.param));
-			}				
+			}
+			if (player.x == value.x && player.y == value.y) {
+				UI.notify("lootChange");
+			}
 		}
 		handleNextEvent();
 	},
@@ -306,6 +309,13 @@ var serverAnswerHandlers = {
 	},
 	attrChange: function _(value) {
 		characters[value.characterId].changeAttribute(value.attrId, value.value);
+		handleNextEvent();
+	},
+	changePlaces: function _(value) {
+		var character1 = characters[value.character1Id];
+		var character2 = characters[value.character2Id];
+		Terrain.cells[character1.x][character1.y].character = character1;
+		Terrain.cells[character2.x][character2.y].character = character2;
 		handleNextEvent();
 	}
 };

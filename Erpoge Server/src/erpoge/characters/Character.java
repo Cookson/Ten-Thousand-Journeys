@@ -249,7 +249,10 @@ public abstract class Character extends Coordinate {
 		int prevY = y;
 		move(character.x, character.y);
 		character.move(prevX,prevY);
-		moveTime(500);
+		// This event is needed for client to correctly 
+		// handle characters' new positions in Terrain.cells
+		location.addEvent(new EventChangePlaces(characterId, character.characterId));
+		moveTime(500);		
 	}
 	protected void scream() {
 		makeSound(SoundType.SCREAM);

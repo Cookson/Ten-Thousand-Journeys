@@ -116,6 +116,8 @@ function playerClick(x, y, shiftKey) {
 	) {
 	// Attack
 		player.sendAttack(aim.characterId, !(player.isBareHanded() || player.ammunition.getItemInSlot(0).isMelee()));
+	} else if (UI.mode == UI.MODE_CURSOR_ACTION) {
+		CellCursor.chooseCurrentCell();
 	} else if (player.spellId!=-1) {
 	// Spell
 		var spell = spells[player.spellId];
@@ -162,8 +164,6 @@ function playerClick(x, y, shiftKey) {
 		} else {
 			return;
 		}
-	} else if (UI.mode == UI.MODE_CURSOR_ACTION) {
-		player.cellChooseAction();
 	} else {
 	// If player goes to cell
 		player.destX=x;
@@ -207,7 +207,7 @@ function renderView() {
 	var shaded=0;
 	var unshaded=0;
 	var shadedD="";
-	if (!isLocationPeaceful) {		
+	if (!Terrain.isPeaceful) {		
 		for (var i=0;i<=maxX-startX;i++) {
 			for (var j=0;j<=maxY-startY;j++) {
 			// Переделать на циклы по x и y, как исправлю

@@ -257,6 +257,15 @@ public class MainHandler extends WebSocketServer {
 			case IDLE:
 				conn.character.aIdle(message);
 				break;
+			case PUSH:
+				conn.character.aPush(message);
+				break;
+			case CHANGE_PLACES:
+				conn.character.aChangePlaces(message);
+				break;
+			case MAKE_SOUND:
+				conn.character.aMakeSound(message);
+				break;
 			default:
 				throw new Error("Unhandlable action code "+action+" came from a client");
 			}

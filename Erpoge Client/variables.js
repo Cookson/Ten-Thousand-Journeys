@@ -1,6 +1,6 @@
 ﻿/* Основные глобальные игровые переменные */
 // Системные константы
-Global = {
+var Global = {
 	container: {
 		items: new ItemMap(),
 		x: -1,
@@ -36,7 +36,7 @@ Global = {
 	playerLogin: null,
 	playerPassword: null	
 };
-Terrain = {
+var Terrain = {
 // Passability constants
 	PASS_FREE    : -1,
 	PASS_BLOCKED :  1,
@@ -52,6 +52,7 @@ Terrain = {
 	cameraOrientation : 1,
 	cssSideX : "left",
 	cssSideY : "top",
+	isPeaceful: false,
 	
 	getViewIndentation: function _(x,y,scale) {
 		if (Terrain.cameraOrientation == Terrain.SIDE_N) {
@@ -93,6 +94,7 @@ Terrain = {
 		}
 	}	
 };
+
 var player ={};
 // Переменные соединения
 var servers=[[]]; // Список всех серверов с логинами и паролями к персонажу на них, берётся из localStorage
@@ -209,7 +211,6 @@ var	windowSkills, 	// Конкретные окна: навыки
 	windowLogin;	// Содержимое контейнеров
 var worldPlayers = [];	// Объекты для отображения игроков на карте мира.
 var weatherEffect;
-var isLocationPeaceful;
 var tiles = [];
 var serverAnswer;
 var serverAnswerIterator;

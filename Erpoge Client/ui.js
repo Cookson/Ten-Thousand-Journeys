@@ -356,6 +356,18 @@ UI.getPanelWidth = function _(side) {
 		throw new Error("Unknown side "+side);
 	}
 };
+UI.getViewCellBounds = function _() {
+/**
+ * Gets coordinate of left top cell in game window
+ * and game windows' width and height in cells
+ */
+	return [
+	        Math.floor(-parseInt(gameField.style.left)/32),
+	        Math.floor(-parseInt(gameField.style.top)/32),
+	        Math.floor(parseInt(this.visibleWidth)/32),
+	        Math.floor(parseInt(this.visibleHeight)/32),
+	       ];
+};
 UI.addWindow = function _(properties) {
 	properties.place = null;
 	var uiWindow = new UIWindow(properties.type);

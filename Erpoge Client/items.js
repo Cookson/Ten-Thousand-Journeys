@@ -84,6 +84,9 @@ function isUsable(typeId) {
 	}
 	return false;
 }
+function isMissile(typeId) {
+	return typeId == 2300;
+}
 function isUnique(typeId) {
 	return !isUsable(typeId);
 }
@@ -165,8 +168,8 @@ ItemMap.prototype.hasItem = function(item) {
 	}
 	
 };
-ItemMap.prototype.PILE = 90834579;
-ItemMap.prototype.UNIQUE = 158752563;
+ItemMap.prototype.PILE = 0xB00B1E5;
+ItemMap.prototype.UNIQUE = 0xFA1105E5;
 ItemMap.prototype.getValues = function() {
 	var answer = [];
 	for (var i in this.uniqueItems) {

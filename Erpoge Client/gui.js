@@ -64,10 +64,18 @@
 var CellCursor = {
 // Класс контролирует отображение различных курсоров - квадратных прямоугольников, которыми выделяется активная клетка
 // Всего в игре два курсора: стандартный и для дальних атак/заклинаний
-// Все объекты курсоров хранятся в прототипе класса курсоров в массиве cursors
 	x:-1,
 	y:-1,
+	callback: null,
+	context: null,
+	zoneCenter: null,
+	isSelectionMode: false,
+	maximumDistance: 9000,
+	shadedCells: [],
 	move: function _(x,y) {
+		if (this.isSelectionMode && Math.floor(distance(this.zoneCenter.x,this.zoneCenter.y,x,y))>this.maximumDistance) {
+			return;
+		}
 		var viewIndent = Terrain.getViewIndentation(x,y,1);
 		
 		mapCursorX=x;
@@ -91,7 +99,7 @@ var CellCursor = {
 		this.elem.appendChild(this.bg);
 		gameField.appendChild(this.elem);
 		this.changeStyle("Main");
-		this.move(0,0); // Убираем курсор за границы видимости, чтобы не висел в углу изначально
+		this.move(0,0);
 	},
 	invoke: function _(x,y) {
 		if (x==undefined) {
@@ -113,6 +121,90 @@ var CellCursor = {
 	},
 	changeStyle: function _(className) {
 		this.bg.className = "cellCursor"+className;
+	},
+	enterSelectionMode: function _(callback, context, maximumDistance, zoneCenter) {
+	/**
+	 * Enters cell selection mode.
+	 * Exit from selection mode and callback call
+	 * are in handlers object.
+	 * 
+	 * Also shades cells if needed, so player can see the 
+	 * maximum range of his action.
+	 * 
+	 * callback - function to call after cell was chosen
+	 * context - context of that function (or leave undefined 
+	 * 		so the window object will be the context)
+	 * maximumDistance - radius of selection area (or leave 
+	 * 		undefined so distance will be unlimited)
+	 * zoneCenter - object with fields object.x and object.y; 
+	 * 		this may be a Character, GameObject or simply {x:int,y:int}.
+	 * 		Area of applicable cells will be made around th zoneCenter
+	 * 		(or leave zone center undefined so it will be the player)
+	 */
+		if (context === undefined) {
+			context = window;
+		}
+		this.context = context;
+		if (maximumDistance === undefined) {
+			maximumDistance = 9000;
+		}
+		this.maximumDistance = maximumDistance;
+		if (zoneCenter === undefined) {
+			zoneCenter = player;
+		}
+		this.zoneCenter = zoneCenter;
+		this.isSelectionMode = true;
+		this.callback = callback;
+		
+		
+		UI.setMode(UI.MODE_CURSOR_ACTION);
+		this.changeStyle("CellAction");
+		// Shade cells
+		this.shadedCells = [];
+		var startX, startY, endX, endY;
+		if (Terrain.isPeaceful) {
+			var bounds = UI.getViewCellBounds();
+			startX = bounds[0];
+			startY = bounds[1];
+			endX = startX+bounds[2];
+			endY = startY+bounds[3];
+		} else {
+			startX = zoneCenter.x-player.VISION_RANGE;
+			startY = zoneCenter.y-player.VISION_RANGE;
+			endX = zoneCenter.x+player.VISION_RANGE;
+			endY = zoneCenter.y+player.VISION_RANGE;
+		}
+		for (var x = startX; x<=endX; x++) {
+			for (var y = startY; y<=endY; y++) {
+//				console.log(x,y)
+				if (player.visibleCells[x][y] && Math.floor(distance(zoneCenter.x,zoneCenter.y,x,y)) > maximumDistance) {
+					this.shadedCells.push(Terrain.cells[x][y]);
+					Terrain.cells[x][y].shade();
+				}
+			}
+		}
+	},
+	chooseCurrentCell: function _() {
+	/**
+	 * Exits selection mode and calls the callback
+	 */
+		if (this.callback === null) {
+			throw new Error("No callback assigned");
+		}
+		
+		this.exitSelectionMode();
+		this.callback.apply(this.context, [CellCursor.x, CellCursor.y]);
+	},
+	exitSelectionMode: function _() {
+	/**
+	 * Exits selection mode without calling the callback
+	 */
+		this.isSelectionMode = false;
+		UI.setMode(UI.MODE_DEFAULT);
+		this.changeStyle("Main");
+		for (var i in this.shadedCells) {
+			this.shadedCells[i].unshade();
+		}
 	}
 };
 

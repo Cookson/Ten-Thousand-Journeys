@@ -134,10 +134,10 @@ Character.prototype.initHpBar=function() {
 	this.refreshHpBar();
 };
 Character.prototype.hideHpBar=function() {
-	this.nHpBar.display="none";
+	this.nHpBar.display = "none";
 };
 Character.prototype.showHpBar=function() {
-	this.nHpBar.display="block";
+	this.nHpBar.display = "block";
 };
 Character.prototype.refreshHpBar = function () {
 //Adjusts HP bar length and color.
@@ -222,7 +222,7 @@ Character.prototype.showEffectEnd = function(effectId) {
 Character.prototype.canSee = function (x, y, setVisibleCells, test) {
 	// Проверяет, находится ли данная клетка на линии видимости
 //	return true;
-	if (this.isNear(x,y) || this.x==x && this.y==y || isLocationPeaceful) {
+	if (this.isNear(x,y) || this.x==x && this.y==y || Terrain.isPeaceful) {
 	// Если клетка рядом или персонаж на ней стоит - то её точно видно
 		if (setVisibleCells) {
 			this.visibleCells[x][y] = true;
@@ -482,7 +482,7 @@ Character.prototype.distance=function(x,y) {
 };
 Character.prototype.getVisibleCells=function() {
 // Получить видимые клетки
-	if (isLocationPeaceful) {
+	if (Terrain.isPeaceful) {
 		return;
 	}
 	this.prevVisibleCells=this.visibleCells;
@@ -607,7 +607,7 @@ Character.prototype.getPath=function(destX,destY) {
 	return path.reverse();
 };
 Character.prototype.updateVisibility = function() {
-	if (isLocationPeaceful) {
+	if (Terrain.isPeaceful) {
 		return;
 	}
 	this.getVisibleCells();
@@ -636,7 +636,7 @@ Character.prototype.initVisibility = function() {
 			}
 		}
 	}
-	if (isLocationPeaceful) {
+	if (Terrain.isPeaceful) {
 		for (var i=0;i<width;i++) {
 			for (var j=0;j<height;j++) {
 				if (!Terrain.cells[i][j].visible) {
@@ -943,51 +943,7 @@ Character.prototype.changeAttribute = function _(attrId, value) {
 	this.attributes[attrId] = value;
 	UI.notify("attributeChange", [attrId, value]);
 };
-/* Interface */
-Character.prototype.cellChooseAction = function() {
-// Совершить действие на координате под курсором
-	var x=CellCursor.x;
-	var y=CellCursor.y;
-	if (!player.canSee(x,y)) {
-		gAlert("Игрок не видит целевой клетки!");
-	} else {
-		if (player.spellId!=-1) {
-		// Spell
-			player.sendCastSpell(player.spellId, x, y);
-		} else {
-		// Ranged attack
-			var aim = Character.prototype.findCharacterByCoords(x,y);
-			if (aim) {
-			// On character
-				player.sendAttack(aim.characterId, !player.ammunition.getItemInSlot(0).isMelee());
-			} else {
-			// On cell
-				player.sendShootMissile(x, y, 2300);
-			}
-		}
-		CellCursor.character=Character.prototype.findCharacterByCoords(x,y);
-		UI.setMode(UI.MODE_DEFAULT);
-	}
-};
-Character.prototype.addActionToQueue = function(func, params) {
-// Add a function to the queue. When the client is informed by server that it is client's turn,
-// the client will do the first queued action, if it has any.
-// params: array of arguments
-	if (!(params instanceof Array)) {
-		if (params === undefined) {
-			params = [];
-		} else {
-			throw new Error("Incorrect params for queued action: "+params+" , queued action:",func);
-		}
-	}
-	this.actionQueue.push(func);
-	this.actionQueueParams.push(params);
-};
-Character.prototype.doActionFromQueue = function() {
-	this.actionQueue[0].apply(player, this.actionQueueParams[0]);
-	this.actionQueue.splice(0, 1);
-	this.actionQueueParams.splice(0, 1);
-};
+
 function Player(data) {
 /*	
 	data : [(0)characterId, (1)worldX, (2)worldY, (3)isLead, (4)name, (5)race, (6)class, 
@@ -1068,12 +1024,14 @@ function Player(data) {
 		player.skills.push(data[20][i*2]);
 		player.skills.push(data[20][i*2+1]);
 	}
+	this.missileType = null;
+	this.autoSetMissileType();
 	UI.notify("attributesInit");
 	UI.notify("lootChange");
 	UI.notify("inventoryChange");
 }
 Player.prototype = new Character(-1);
-Player.prototype.actions = ["psh","chp","mks"];
+Player.prototype.actions = ["push","chp","mks"];
 Player.prototype.display = function () {
 	this.doll = new Doll(this);
 	this.doll.draw();
@@ -1098,6 +1056,23 @@ Player.prototype.takeOff = function (itemId) {
 	// consider changing server output for takeOff event
 	// to slot information, not itemId information.	
 };
+Player.prototype.autoSetMissileType = function () {
+	if (this.missileType != null) {
+		return;
+	}
+	for (var i in this.items.itemPiles) {
+		if (isMissile(this.items.itemPiles[i].typeId)) {
+			this.missileType = this.items.itemPiles[i].typeId;
+			return;
+		}
+	}
+	for (var i in this.items.uniqueItems) {
+		if (isMissile(this.items.itemPiles[i].typeId)) {
+			this.missileType = this.items.itemPiles[i].typeId;
+			return;
+		}
+	}
+};
 /* Send methods */
 // These methods don't change internal state, only send data to server
 Player.prototype.sendStartConversation = function(characterId) {
@@ -1107,7 +1082,7 @@ Player.prototype.sendAnswer = function(answerId) {
 	Net.send({a:Net.ANSWER,answerId:answerId});
 };
 Player.prototype.sendTakeOff = function(item) {
-	Net.send({a:Net.TAKE_OFF,itemId:item.itemId});
+	Net.send({a:Net.TAKE_OFF, itemId:item.itemId});
 };
 Player.prototype.sendUseObject = function(x,y) {
 	Net.send({a:Net.USE_OBJECT,x:x,y:y});
@@ -1121,9 +1096,8 @@ Player.prototype.sendTakeFromContainer = function(typeId, param) {
 		y:Global.container.y
 	});
 };
-Player.prototype.sendShootMissile = function(x, y, missile) {
-	this.unselectMissile();
-	Net.send({a:Net.SHOOT_MISSILE,x:x,y:y,missile:missile});
+Player.prototype.sendShootMissile = function(x, y) {
+	Net.send({a:Net.SHOOT_MISSILE,x:x,y:y,missile:this.missileType});
 };
 Player.prototype.sendOpenContainer = function() {
 	Net.send({a:Net.OPEN_CONTAINER,x:Global.container.x,y:Global.container.y});
@@ -1288,13 +1262,17 @@ Player.prototype.sendPickUp = function(item) {
 };
 Player.prototype.sendPutOn = function(itemId) {
 // Send putting on data to server
-	Net.send({a:Net.PUT_ON,itemId:itemId});
+	Net.send({a:Net.PUT_ON, itemId:itemId});
 };
 /* Send methods of special actions */
-Player.prototype.sendPush = function () {
-	
-}
+Player.prototype.sendPush = function (x,y,direction) {
+	console.log(x,y,direction);
+	Net.send({a:Net.PUSH, x:x, y:y, direction:direction.getInt()});
+};
 /* Interface methods */
+Player.prototype.selectMissileType = function(type) {
+	this.missileType = type || null;
+}
 Player.prototype.selectMissile = function() {
 // Enter missile mode
 	if (player.ammunition.getItemInSlot(0) && player.ammunition.getItemInSlot(0).isRanged()) {
@@ -1304,9 +1282,9 @@ Player.prototype.selectMissile = function() {
 		} else {
 			CellCursor.move(player.x,player.y);
 		}
-		UI.setMode(UI.MODE_CURSOR_ACTION);
+		
 		UI.notify("missileSelect");
-		CellCursor.changeStyle("CellAction");
+		
 	} else {
 		UI.notify("alert","Игрок не держит в руках оружия дальнего боя!");
 	}
@@ -1330,4 +1308,48 @@ Player.prototype.unselectSpell = function() {
 	this.spellId = -1;
 	UI.setMode(UI.MODE_DEFAULT);
 	CellCursor.changeStyle("Main");
+};
+Player.prototype.cellChooseAction = function() {
+// Совершить действие на координате под курсором
+	var x = CellCursor.x;
+	var y = CellCursor.y;
+	if (!player.canSee(x,y)) {
+		gAlert("Игрок не видит целевой клетки!");
+	} else {
+		if (player.spellId!=-1) {
+		// Spell
+			player.sendCastSpell(player.spellId, x, y);
+		} else {
+		// Ranged attack
+			var aim = Character.prototype.findCharacterByCoords(x,y);
+			if (aim) {
+			// On character
+				player.sendAttack(aim.characterId, !player.ammunition.getItemInSlot(0).isMelee());
+			} else {
+			// On cell
+				player.sendShootMissile(x, y, 2300);
+			}
+		}
+		CellCursor.character=Character.prototype.findCharacterByCoords(x,y);
+		UI.setMode(UI.MODE_DEFAULT);
+	}
+};
+Player.prototype.addActionToQueue = function(func, params) {
+// Add a function to the queue. When the client is informed by server that it is client's turn,
+// the client will do the first queued action, if it has any.
+// params: array of arguments
+	if (!(params instanceof Array)) {
+		if (params === undefined) {
+			params = [];
+		} else {
+			throw new Error("Incorrect params for queued action: "+params+" , queued action:",func);
+		}
+	}
+	this.actionQueue.push(func);
+	this.actionQueueParams.push(params);
+};
+Player.prototype.doActionFromQueue = function() {
+	this.actionQueue[0].apply(player, this.actionQueueParams[0]);
+	this.actionQueue.splice(0, 1);
+	this.actionQueueParams.splice(0, 1);
 };
