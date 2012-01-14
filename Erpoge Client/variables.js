@@ -1,5 +1,4 @@
-﻿/* Основные глобальные игровые переменные */
-// Системные константы
+﻿/** @class */
 var Global = {
 	container: {
 		items: new ItemMap(),
@@ -36,58 +35,61 @@ var Global = {
 	playerLogin: null,
 	playerPassword: null	
 };
+/** @class */
 var Terrain = {
 // Passability constants
 	PASS_FREE    : -1,
 	PASS_BLOCKED :  1,
 	PASS_SEE     :  3,
-// Cardinal directions
-	SIDE_N       :  1,
-	SIDE_E       :  2,
-	SIDE_S       :  3,
-	SIDE_W       :  4,
 	
 	cells : null,
 	ceilings: [],
-	cameraOrientation : 1,
+	/**
+	 * @field 
+	 */
+	cameraOrientation : Side.N,
 	cssSideX : "left",
 	cssSideY : "top",
 	isPeaceful: false,
 	
 	getViewIndentation: function _(x,y,scale) {
-		if (Terrain.cameraOrientation == Terrain.SIDE_N) {
+		if (this.cameraOrientation == Side.N) {
 			return {left: x*scale, top: y*scale};
-		} else if (Terrain.cameraOrientation == Terrain.SIDE_E) {
+		} else if (this.cameraOrientation == Side.E) {
 			return {left: (height-y-1)*scale, top: x*scale};
-		} else if (Terrain.cameraOrientation == Terrain.SIDE_S) {
+		} else if (this.cameraOrientation == Side.S) {
 			return {left: (width-x-1)*scale, top: (height-y-1)*scale};
-		} else if (Terrain.cameraOrientation == Terrain.SIDE_W) {
+		} else if (this.cameraOrientation == Side.W) {
 			return {left: y*scale, top: (width-x-1)*scale};
+		} else {
+			throw new Error("Unknown camera orientation: "+this.cameraOrientation);
 		}
 	},
 	getNormalView: function (x,y) {
-		if (Terrain.cameraOrientation == Terrain.SIDE_N) {
+		if (this.cameraOrientation == Side.N) {
 			return {x: x, y: y};
-		} else if (Terrain.cameraOrientation == Terrain.SIDE_E) {
+		} else if (this.cameraOrientation == Side.E) {
 			return {x: y, y: (height-x-1)};
-		} else if (Terrain.cameraOrientation == Terrain.SIDE_S) {
+		} else if (this.cameraOrientation == Side.S) {
 			return {x: (width-x-1), y: (height-y-1)};
-		} else if (Terrain.cameraOrientation == Terrain.SIDE_W) {
+		} else if (this.cameraOrientation == Side.W) {
 			return {x: (width-y-1), y: x};
+		} else {
+			throw new Error("Unknown camera orientation: "+this.cameraOrientation);
 		}
 	},
 	isOrientationVertical: function _() {
-		return this.cameraOrientation == this.SIDE_N || this.cameraOrientation == this.SIDE_S;
+		return this.cameraOrientation == Side.N || this.cameraOrientation == Side.S;
 	},
 	getHorizontalDimension: function _() {
-		if (this.cameraOrientation == this.SIDE_N || this.cameraOrientation == this.SIDE_S) {
+		if (this.cameraOrientation == Side.N || this.cameraOrientation == Side.S) {
 			return width;
 		} else {
 			return height;
 		}
 	},
 	getVerticalDimension: function _() {
-		if (this.cameraOrientation == this.SIDE_N || this.cameraOrientation == this.SIDE_S) {
+		if (this.cameraOrientation == Side.N || this.cameraOrientation == Side.S) {
 			return height;
 		} else {
 			return width;
@@ -104,19 +106,16 @@ var currentCharacterId=0; // Id текущего персонажа. Испол�
 var hasQueuedAction=false; // Есть ли у игрока действия, поставленные в очередь 
 					   //(например, автоматическое движение, когда персонаж отправлен на несколько клеток, а не на соседнюю)
 var turns=null; // Очерёдность ходов (дублируется из каждого запроса в эту переменную)
-// Переменные интерфейса
 var BARwidth=20;
 var fps=60; // Так как в javascript нельзя организовать паузу в том же "потоке", то понятие FPS является относительным 
 		// и обозначает коэффициент для рассчёта количества кадров. При нормальной производительности реальный fps анимации стремится к переменной.
 var gameField=null;
-var lastEffectId=0;
 var effectData=[]; // Сюда функции эффектов сохраняют временные данные, в основном объекты jQuery
 // Переменные для проверки необходимости скрытия интерфейса при диалогах/alert/confirm
 
 // Переменные путей
 var width=0;
 var height=0;
-var areaId=null;
 var rendW=0;
 var rendH=0;
 var rendCX=-1;
@@ -128,35 +127,13 @@ var onGlobalMap=false;
 // var maxReports=6;
 // Разное
 var characters={};
-var world=null;
-var area={
-	floor:[],
-	objects:[],
-	items:[],
-	characters:[],
-	paths:[]
-};
-var onLoadEvents=[]; // Массив для функций, которые выполняются при загрузке
-// var quickAccessSlots=[null,null,null,null,null,null,null,null,null];
-// var hasSeenStartNewWindowOffer=false;
-// var enableVisibility=true;
-var dialOrder={
-// Порядок расстановки персонажей в окне диалога
-	main:[11,6,16,10,1,21,5,15,0,20],
-	second:[13,8,18,14,3,23,9,19,4,24]
-};
-// Переменные персонажей
-var deadCharacters=[]; // Мёртвые (оттуда же)
-var killedByAttackCharacters=[]; // Персонажи, убитые какой-либо прямой атакой, а не эффектом или чем-нибудь ещё
+var onLoadEvents = []; // Массив для функций, которые выполняются при загрузке
 
-// Здесь хранятся изученные создаваемым игроком навыки перед передачей серверу
-var newPlayerLearnedSkills=[];
 var newPlayerClass="";
 var onlinePlayers=[];
 var inviterPlayerId=0;
 var mapCursorX=0; // dfffffffff
 var mapCursorY=0;
-var gAlertTimeout=null;
 var actionsList=null;
 // var charDollItemsIndents={
 	// 50:[2,13]
@@ -187,14 +164,6 @@ var projectileTypesNames=["","arrow","bolt","fireball","icebolt"];
 var projectileEffectsNames=["","blood","blood","firesparks","iceshivers"];
 var keyChars="qwertyasdfghzxcvbn";	// Порядок присвоения горячих клавиш для предметов в рюкзаке, лута
 var spellsKeyChars="asdfghzxcvbn";	// Порядок присвоения горячих клавиш для заклинаний
-var keysMode=0; 	/*	Режим, в котором работают клавиши. 
-						0 - обычный, 
-						1 - выбор предметов из рюкзака, 
-						2 - выбор амуниции
-						3 - выбор заклинаний
-						4 - выбор предметов с пола 
-						5 - чат
-						6 - выбор клетки, дальняя атака	*/
 var keysCharElements=[];	// Сюда сохраняются элементы с буквами для клавиш на иконкахs
 var pressedArrow=0; // keyCode последней нажатой стрелки, для диагонального движения
 var arrowPressTimer;// Таймер для обработки нажатия двух стрелок для диагонального движения

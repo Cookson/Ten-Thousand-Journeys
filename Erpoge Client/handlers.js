@@ -8,7 +8,7 @@ handlers={
 		leaveLocation: {
 			action: function _() {
 				if (onGlobalMap) {
-					gAlert("Вы уже на глобальной карте");
+					UI.notify("alert", "Вы уже на глобальной карте");
 					return;
 				}
 				leaveLocation();
@@ -18,12 +18,12 @@ handlers={
 		enterLocation: {
 			action: function _() {
 				if (!onGlobalMap) {
-					gAlert("Вы уже в локации");
+					UI.notify("alert", "Вы уже в локации");
 					return;
 				}
 				if (!player.isPartyLeader) {
 				// Если игрок - не лидер группы (и состоит в группе, то он не может входить в локацию сам
-					gAlert("Вы не лидер партии!");
+					UI.notify("alert", "Вы не лидер партии!");
 				} else if (onGlobalMap) {
 					enterArea();
 				}
@@ -94,21 +94,21 @@ handlers={
 		},
 		rotateCamera: {
 			action: function _() {
-				if (Terrain.cameraOrientation == Terrain.SIDE_N) {
-					rotateCamera(Terrain.SIDE_E);
-				} else if (Terrain.cameraOrientation == Terrain.SIDE_E) {
-					rotateCamera(Terrain.SIDE_S);
-				} else if (Terrain.cameraOrientation == Terrain.SIDE_S) {
-					rotateCamera(Terrain.SIDE_W);
-				} else if (Terrain.cameraOrientation == Terrain.SIDE_W) {
-					rotateCamera(Terrain.SIDE_N);
+				if (Terrain.cameraOrientation == Side.N) {
+					rotateCamera(Side.E);
+				} else if (Terrain.cameraOrientation == Side.E) {
+					rotateCamera(Side.S);
+				} else if (Terrain.cameraOrientation == Side.S) {
+					rotateCamera(Side.W);
+				} else if (Terrain.cameraOrientation == Side.W) {
+					rotateCamera(Side.N);
 				}
 			},
 			context: window		
 		},
 		idle: {
 			action: function () {
-				player.idle();
+				player.sendIdle();
 			},
 			context: window
 		},
@@ -128,6 +128,7 @@ handlers={
 	},
 	gameField: {
 		click:function _(e) {
+			
 			var elementCoord=getOffsetRect(gameField);
 			var xPx = Math.floor((e.clientX-elementCoord.left)/32);
 			var yPx = Math.floor((e.clientY-elementCoord.top)/32);
@@ -142,17 +143,13 @@ handlers={
 					if (player.isPartyLeader) {
 						worldTravel(x,y);
 					} else {
-						gAlert("Когда вы в группе, только лидер группы может перемещать группу по карте");
+						UI.notify("alert", "Когда вы в группе, только лидер группы может перемещать группу по карте")
 					}
 				}
 			} else {
 			// На карте области
 				var shiftKey=e.shiftKey;
-				if (player.spellId != -1) {
-					player.cellChooseAction();
-				} else {
-					playerClick(x, y, shiftKey);
-				}
+				playerClick(x, y, shiftKey);
 			}
 		},
 		mousemove:function _(e) {
@@ -435,7 +432,6 @@ handlers={
 				width=data.l.w;
 				height=data.l.h;
 				Terrain.isPeaceful = data.l.p;
-				areaId=data.l.locationId;
 				onlinePlayers=[];
 				prepareArea();
 				readLocation(data.l);
@@ -474,65 +470,72 @@ handlers={
 			keyMode: "always"
 		});
 		UI.addWindow({
+			type: "windowInfo",
+			hAlign: "center",
+			vAlign: "bottom",
+			displayMode: "always",
+			keyMode: "always"
+		});
+		UI.addWindow({
 			type: "windowLogin",
 			hAlign: "center",
-			vAlign: "center",
+			vAlign: "middle",
 			displayMode: "always",
 			keyMode: "always"
 		});
 		UI.addWindow({
 			type: "windowAccountCharacters",
 			hAlign: "center",
-			vAlign: "center",
+			vAlign: "middle",
 			displayMode: "always",
 			keyMode: "always"
 		});
 		UI.addWindow({
 			type: "windowSkills",
 			hAlign: "center",
-			vAlign: "center",
+			vAlign: "middle",
 			displayMode: "always",
 			keyMode: "always"
 		});
 		UI.addWindow({
 			type: "windowDeath",
 			hAlign: "center",
-			vAlign: "center",
+			vAlign: "middle",
 			displayMode: "always",
 			keyMode: "always"
 		});
 		UI.addWindow({
 			type: "windowSettings",
 			hAlign: "center",
-			vAlign: "center",
+			vAlign: "middle",
 			displayMode: "always",
 			keyMode: "always"
 		});
 		UI.addWindow({
 			type: "windowDialogue",
 			hAlign: "center",
-			vAlign: "center",
+			vAlign: "middle",
 			displayMode: "always",
 			keyMode: "always"
 		});
 		UI.addWindow({
 			type: "windowContainer",
 			hAlign: "center",
-			vAlign: "center",
+			vAlign: "middle",
 			displayMode: "always",
 			keyMode: "always"
 		});
 		UI.addWindow({
 			type: "windowAccountCreate",
 			hAlign: "center",
-			vAlign: "center",
+			vAlign: "middle",
 			displayMode: "always",
 			keyMode: "always"
 		});
 		UI.addWindow({
 			type: "windowPlayerCreate",
 			hAlign: "center",
-			vAlign: "center",
+			vAlign: "middle",
 			displayMode: "always",
 			keyMode: "always"
 		});
@@ -558,14 +561,22 @@ handlers={
 			panel: "main"
 		});
 		UI.addElement({
-			type: "attributeList",
-			panel: "main"
-		});
-
-		UI.addElement({
 			type: "mpBar",
 			panel: "main"
 		});
+		UI.addElement({
+			type: "epBar",
+			panel: "main"
+		});
+		UI.addElement({
+			type: "attributeList",
+			panel: "main"
+		});
+		UI.addElement({
+			type: "iconMissileType",
+			panel: "main"
+		});
+		
 		UI.addElement({
 			type: "iconsSpells",
 			panel: "main"

@@ -38,8 +38,10 @@ Net = {
 	IDLE					: 30,
 	/* Special actions */
 	PUSH                    : 201,
-	ChANGE_PLACES           : 202,
+	CHANGE_PLACES           : 202,
 	MAKE_SOUND              : 203,
+	JUMP                    : 204,
+	SHIELD_BASH             : 205,
 	serverAddress : "ws://"+window.location.host+":8787",
 	websocket : null,
 	send : function _(data, onmessage, callback) {

@@ -64,7 +64,9 @@ public class MainHandler extends WebSocketServer {
 	/* Player special actions */
 	PUSH                    = 201,
 	CHANGE_PLACES           = 202,
-	MAKE_SOUND              = 203;
+	MAKE_SOUND              = 203,
+	JUMP                    = 204,
+	SHIELD_BASH             = 205;
 	public static final int MAX_NUM_OF_PLAYERS = 16;
 	public static final Gson gson = new Gson();
 	public static final Gson gsonIncludesStatic = new GsonBuilder()
@@ -265,6 +267,12 @@ public class MainHandler extends WebSocketServer {
 				break;
 			case MAKE_SOUND:
 				conn.character.aMakeSound(message);
+				break;
+			case JUMP:
+				conn.character.aJump(message);
+				break;
+			case SHIELD_BASH:
+				conn.character.aShieldBash(message);
 				break;
 			default:
 				throw new Error("Unhandlable action code "+action+" came from a client");

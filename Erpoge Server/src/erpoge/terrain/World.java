@@ -15,6 +15,7 @@ import erpoge.MainHandler;
 import erpoge.PlayerHandler;
 import erpoge.Side;
 import erpoge.characters.PlayerCharacter;
+import erpoge.characters.Race;
 import erpoge.graphs.RectangleSystem;
 import erpoge.magic.Spells;
 import erpoge.serverevents.EventChatMessage;
@@ -58,7 +59,7 @@ public class World extends Location {
 			new TestWorld(this);
 		}
 	}
-	public PlayerCharacter createPlayer(String name, int race,
+	public PlayerCharacter createPlayer(String name, Race race,
 			String cls, int x, int y) {
 		PlayerHandler ch = new PlayerHandler(name, race, cls, x, y);
 		addPlayer(ch, x, y);

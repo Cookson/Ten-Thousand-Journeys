@@ -1,15 +1,13 @@
-﻿if (window.console===undefined) {
-	window.console={
-		log:function() {
-			return false;
-		}
-	};
-}
-HTMLElement.prototype.applyStyle = function _(style) {
+﻿HTMLElement.prototype.applyStyle = function _(style) {
 	for (var i in style) {
 		this.style[i] = style[i];
 	}
 };
+/**
+ * Adds a CSS class to this element. This method may ne used to make multiclass
+ * HTMLElements
+ * @param {String} className
+ */
 HTMLElement.prototype.addClass = function(className) {
 	if (this.className == "") {
 		this.className = className;
@@ -17,12 +15,29 @@ HTMLElement.prototype.addClass = function(className) {
 		this.className += " "+className;
 	}
 };
+/**
+ * Use HTMLElement as hash map to bind some data to it.
+ * 
+ * @see HTMLElement#getData
+ * @param {string} key String or number; unlike java, for example, objects 
+ * can't be keys.
+ * 
+ * @param {mixed} value
+ * @return {mixed} Returns parameter value.
+ */
 HTMLElement.prototype.setData = function _(key, value) {
 	if (typeof this.data === "undefined") {
 		this.data = {};
 	}
 	return this.data[key] = value;
 };
+/**
+ * Use HTMLElement as hash map to get some previouslu added data.
+ * 
+ * @see HTMLElement#setData
+ * @param {string} key
+ * @return {mixed} Value at that key
+ */
 HTMLElement.prototype.getData = function _(key) {
 	if (typeof this.data === "undefined" || typeof this.data[key] === "undefined") {
 		throw new Error("No data at key "+key+" in element");

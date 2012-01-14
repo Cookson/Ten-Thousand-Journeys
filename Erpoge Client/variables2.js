@@ -1,1 +1,0 @@
-//var player = new Character(-1); // Объект игрока

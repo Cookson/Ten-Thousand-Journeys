@@ -31,9 +31,42 @@ UIElementTypes.panel = {
 		
 	}
 };
+UIElementTypes.windowInfo = {
+	onInit: function _() {
+	
+	},
+	listeners: {
+		infoShow: function _(structure) {
+		/**
+		 * %structure% is either a div containing a single-level sequence of 
+		 * DOM nodes, or DocumentFragment.
+		 */
+			while (this.rootElement.children.length > 0) {
+				this.rootElement.removeChild(this.rootElement.children[0]);
+			}
+			this.rootElement.appendChild(structure);
+			this.show();
+		},
+		infoHide: function _() {
+			this.hide();
+		}
+	},
+	handlers: {},
+	cssRules: function () {
+		return "					\
+		div.$type$ {				\
+			width: 120px;			\
+			padding: 5px;			\
+			border-radius: 6px;		\
+			background-color: #333;	\
+		}							\
+		";
+	}
+};
 UIElementTypes.windowGameAlert = {
 	onInit: function _() {
 		var nText = document.createElement("div");
+		var nStructure = document.createElement("div");
 		var nOkWrap = document.createElement("div");
 		var nOk = document.createElement("div");
 		var nTextText = document.createTextNode("");
@@ -47,16 +80,34 @@ UIElementTypes.windowGameAlert = {
 		nOk.appendChild(document.createTextNode("Ok"));
 		nOkWrap.appendChild(nOk);
 		this.rootElement.appendChild(nText);
+		this.rootElement.appendChild(nStructure);
 		this.rootElement.appendChild(nOkWrap);
 		this.rootElement.appendChild(nOk);
 		this.rootElement.appendChild(document.createElement("br"));
 		
 		this.setData("textNodeText", nTextText);
+		this.setData("structureNode", nStructure);
 	},
 	listeners: {
 		alert: function _(data) {
+			var nStructure = this.getData("structureNode");
+			while (nStructure.children.length > 0) {
+			// In any case, we need to remove contents of this
+				nStructure.removeChild(nStructure.children[0]);
+			}
+			if (data instanceof DocumentFragment) {
+			// Show DOM nodes structures
+				this.getData("textNodeText").nodeValue = "";
+				console.log(data.children);
+				nStructure.appendChild(data);		
+				console.log(data.children);
+				nStructure.appendChild(data);				
+			} else {
+			// Show plain text	
+				this.getData("textNodeText").nodeValue = data;
+			}
+			
 			this.show();
-			this.getData("textNodeText").nodeValue = data;
 		}
 	},
 	keysActions: {},
@@ -770,6 +821,42 @@ UIElementTypes.chat = {
 		";
 	}
 };
+UIElementTypes.iconMissileType = {
+	onInit: function () {
+		var nBg = document.createElement("div");
+		var nImg = document.createElement("img");
+		
+		this.addCustomClass(nBg,"Bg");
+		this.addCustomClass(nBg,"Img");
+		
+		this.rootElement.appendChild(nBg);
+		this.rootElement.appendChild(nImg);
+		
+		this.setData("imgNode",nImg);
+	},
+	listeners: {
+		missileTypeChange: function _() {
+			if (player.missileType == null) {
+				this.getData("imgNode").setAttribute("src", "./images/intf/nothing.png");
+			} else {
+				this.getData("imgNode").setAttribute("src", "./images/items/"+player.missileType+".png");
+			}
+		}
+	},
+	handlers: {},
+	cssRules: function _() {
+		return "					\
+		div.$type$Bg {				\
+			min-width: 32px;		\
+			min-height: 32px;		\
+			background-image: url('./images/intf/ammunitionBg.png');	\
+		}							\
+		div.$type$Img {				\
+			position: absolute;		\
+		}							\
+		";
+	}
+};
 UIElementTypes.ammunition = {
 	onInit: function _() {
 		var nDivProto = document.createElement("div");
@@ -785,7 +872,6 @@ UIElementTypes.ammunition = {
 			this.addEventListener(nImg, "click", "click");
 			this.addEventListener(nImg, "contextmenu", "contextmenu");
 			this.addEventListener(nImg, "mouseout", "mouseout");
-			this.addEventListener(nImg, "mousemove", "mousemove");
 			
 			nDiv.appendChild(nImg);
 			this.rootElement.appendChild(nDiv);
@@ -848,29 +934,23 @@ UIElementTypes.ammunition = {
 			
 			// Получаем информацию о предмете
 			if (isWeapon(itemId)) {
+				UI.notify("infoShow", UI.getStaticDOMStructure("item"+itemId, function () {
+					return new MarkupMaker()
+						.add("b").text(items[itemId][0])
+						.add("div").text("Урон: "+items[itemId][4])
+						.add("div").text("Скорость: "+items[itemId][6])
+						.getWrappedContents();
+				}));
 				nItemInfo.innerHTML="<b>"+items[itemId][0]+"</b>Урон:&nbsp;"+items[itemId][4]+",<br /> Скорость:&nbsp;"+itemArr[6];
 			} else if (isEquipment(itemId)) {
 				nItemInfo.innerHTML="<b>"+items[itemId][0]+"</b>Защита:&nbsp;"+items[itemId][4]+",<br /> Тяжесть:&nbsp;"+items[itemId][5];
 			} else {
 				nItemInfo.innerHTML="<b>"+items[itemId][0]+"</b>";
 			}
-			// Выводим информацию о предмете
-			nItemInfo.style.display="block";
-			// nItemInfo.contents().filter("td.eff").css({textAlign:"right"});
-			nItemInfo.style.top=(e.clientY-nItemInfo.clientHeight-20)+"px";
-			nItemInfo.style.left=(e.clientX-nItemInfo.clientWidth/2)+"px";
-			
 			return false;
 		},
 		mouseout: function _(e) {
-			var nItemInfo=document.getElementById("itemInfo");
-			nItemInfo.style.display="none";
-		},
-		mousemove: function _(e) {
-		// Передвижение блока с информацией по мере перемещения мышки
-			var nItemInfo=document.getElementById("itemInfo");
-			nItemInfo.style.top=(e.clientY-nItemInfo.clientHeight-20)+"px";
-			nItemInfo.style.left=(e.clientX-nItemInfo.clientWidth/2)+"px";
+//			UI.notify("infoHide");
 		}
 	},
  	cssRules: function _() {
@@ -1102,7 +1182,7 @@ UIElementTypes.iconsSpells = {
 			} else {
 				player.selectSpell(spellId);
 				if (spells[spellId].onlyOnSelf) {
-					player.sendCastSpell(player.spellId, player.x, player.y);
+					player.sendCastSpell(player.x, player.y);
 				} else {
 					this.applyStyle({
 						opacity: "0.5"
@@ -1285,6 +1365,82 @@ UIElementTypes.hpBar = {
  		}								\
  		div.$type$Strip {				\
  			background-color: #4a4;		\
+ 			height: 20px;				\
+ 			position: absolute;			\
+ 			top: 0px;					\
+ 			left: 0px;					\
+ 			border-radius: 4px;			\
+ 		}								\
+ 		div.$type$Value {				\
+ 			font-size: 13px;			\
+ 			color: #fff;				\
+ 			text-align: center;			\
+ 			vertical-align: middle;		\
+ 			line-height: 20px;			\
+ 			height: 20px;				\
+ 			width: 240px;				\
+ 		}								\
+ 		div.$type$ > div.wrap {			\
+ 			position: absolute;			\
+ 			top: 0px;					\
+ 			left: 0px;					\
+ 		}								\
+ 		";
+ 	}
+};
+UIElementTypes.epBar = {
+    onInit: function _() {
+    	var nMainWrap = document.createElement("div");
+    	var nWrap1 = document.createElement("div");
+    	var nWrap2 = document.createElement("div");
+    	var nBg = document.createElement("div");
+    	var nStrip = document.createElement("div");
+    	var nValue = document.createElement("div");
+    	var nValueTextNode = document.createTextNode("");
+    	
+    
+    	this.addCustomClass(nBg, "Bg");
+    	this.addCustomClass(nStrip, "Strip");
+    	this.addCustomClass(nValue, "Value");
+    	
+    	nWrap1.addClass("wrap");
+    	nWrap2.addClass("wrap");
+    	
+    	nValue.appendChild(nValueTextNode);
+    	this.rootElement.appendChild(nBg);
+    	this.rootElement.appendChild(nStrip);
+    	nWrap2.appendChild(nValue);
+    	nValueTextNode.nodeValue = "blablabla";
+    	this.rootElement.appendChild(nWrap2);
+    	
+    	this.setData("stripNode", nStrip);
+    	this.setData("valueTextNode", nValueTextNode);    	
+    }, 
+    listeners: {
+    	energyChange: function _() {
+    	
+	    	this.getData("valueTextNode").nodeValue = player.ep+"/"+player.maxEp;
+	    	this.getData("stripNode").style.width = (240*player.ep/player.maxEp)+"px";
+    	},
+    	locationLoad: "energyChange"
+    },
+    keysActions: {},
+ 	handlers: {},
+ 	cssRules: function _() {
+ 		return "						\
+ 		div.$type$ {					\
+ 			height: 20px;				\
+ 		}								\
+ 		div.$type$Bg {					\
+ 			display: inline-block;		\
+ 			background-color: #722;		\
+ 			width: 240px;				\
+ 			height: 20px;				\
+ 			text-align: left;			\
+ 			border-radius: 4px;			\
+ 		}								\
+ 		div.$type$Strip {				\
+ 			background-color: #a44;		\
  			height: 20px;				\
  			position: absolute;			\
  			top: 0px;					\
@@ -2338,7 +2494,6 @@ UIElementTypes.windowAccountCreate = {
 };
 UIElementTypes.attributeList = {
 	onInit: function _() {
-		var nHeader = document.createElement("div");
 		var nArmorName = document.createElement("div");
 		var nArmorValue = document.createElement("div");
 		var nlAttributes = [];
@@ -2348,9 +2503,6 @@ UIElementTypes.attributeList = {
 		var nEvasionText = document.createTextNode("");
 		var attributeList = ["str", "dex", "wis", "itl", "armor", "evasion", "fireRes", "coldRes", "poisonRes"];
 		
-		this.addCustomClass(nHeader, "Header");
-		nHeader.appendChild(document.createTextNode("Атрибуты"));
-		this.rootElement.appendChild(nHeader);
 		for (var i in attributeList) {
 			var nName = document.createElement("div");
 			var nValue = document.createElement("div");
@@ -2373,6 +2525,8 @@ UIElementTypes.attributeList = {
 			switch (data[0]) {
 			case 1:
 				this.getData("armorText").nodeValue = data[1];
+			case 2:
+				this.getData("evasionText").nodeValue = data[1];
 			}
 		},
 		attributesInit: function _() {
@@ -2396,12 +2550,6 @@ UIElementTypes.attributeList = {
 			width: 200px;			\
 			color: #fff;			\
 		}							\
-		div.$type$Header {			\
-			text-align: center;		\
-			color:#fff;				\
-			font-weight: bold;		\
-			font-size: 18px;		\
-		}							\
 		div.$type$Attr {			\
 			width: 100%;			\
 		}							\
@@ -2421,8 +2569,8 @@ UIElementTypes.actionsPanel = {
 		for (var i in Player.prototype.actions) {
 			var nDiv = document.createElement("div");
 			this.addCustomClass(nDiv,"Action");
-			nDiv.appendChild(document.createTextNode(Player.prototype.actions[i]));
-			this.addEventListener(nDiv,"click", "push");
+			nDiv.appendChild(document.createTextNode(Player.prototype.actions[i].substring(0,3)));
+			this.addEventListener(nDiv,"click", Player.prototype.actions[i]);
 			this.rootElement.appendChild(nDiv);
 		}
 	},
@@ -2432,11 +2580,28 @@ UIElementTypes.actionsPanel = {
 		push: function _() {
 			CellCursor.enterSelectionMode(function (startX, startY) {
 				CellCursor.enterSelectionMode(function(endX, endY) {
-					console.log(startX, startY, endX, endY)
 					var direction = Side.d2side(endX-startX, endY-startY);
 					player.sendPush(startX, startY, direction);
 				}, window, 1, {x:startX,y:startY});
 			}, window, 1);
+		},
+		changePlaces: function _() {
+			CellCursor.enterSelectionMode(function (x,y) {
+				player.sendChangePlaces(x,y);
+			}, window, 1);
+		},
+		makeSound: function () {
+			player.sendMakeSound(1);
+		},
+		shieldBash: function() {
+			CellCursor.enterSelectionMode(function(x, y) {
+				player.sendShieldBash(x,y);
+			}, window, 1);
+		},
+		jump: function _() {
+			CellCursor.enterSelectionMode(function(x, y) {
+				player.sendJump(x,y);
+			}, window, 2);
 		}
 	},
 	cssRules: function _() {

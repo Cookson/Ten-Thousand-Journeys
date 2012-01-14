@@ -47,7 +47,7 @@ public class NonPlayerCharacter extends Character {
 		pathTable = new int[location.width][location.height];
 		destX = x;
 		destY = y;
-		this.characterType = CharacterTypes.getType(type);
+		characterType = CharacterTypes.getType(type);
 		notifyNeighborsVisiblilty();
 		getVisibleEntities();
 	}
@@ -269,7 +269,7 @@ public class NonPlayerCharacter extends Character {
 			} else if (canCast()) {
 				castSpell(characterType.spells.get(0), activeEnemy.x, activeEnemy.y);
 			} else if (isNear(activeEnemy.x, activeEnemy.y)) {
-				changePlaces(activeEnemy);
+//				changePlaces(activeEnemy);
 //				push(activeEnemy, Side.d2side(activeEnemy.x-x, activeEnemy.y-y));				
 				attack(activeEnemy);
 			} else if (canComeTo(activeEnemy)) {

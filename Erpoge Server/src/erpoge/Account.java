@@ -75,7 +75,7 @@ public class Account {
 			answer += 	"["+values[i].characterId+
 						",\""+values[i].name+
 						"\",\""+values[i].getCls()+
-						"\","+values[i].race+",[";
+						"\","+values[i].race.race2int()+",[";
 			int[] ammunition = values[i].ammunition.getIntArray();
 			int j=ammunition.length-1;
 			for (;j>=0;j--) {

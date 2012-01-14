@@ -3,7 +3,6 @@ package erpoge.characters;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 
 import erpoge.Chance;
 import erpoge.Coordinate;
@@ -20,26 +19,34 @@ import erpoge.itemtypes.Attribute;
 import erpoge.itemtypes.ItemType;
 import erpoge.magic.Spells;
 import erpoge.objects.SoundType;
-import erpoge.serverevents.*;
+import erpoge.serverevents.EventAttributeChange;
+import erpoge.serverevents.EventCastSpell;
+import erpoge.serverevents.EventChangeEnergy;
+import erpoge.serverevents.EventChangeMana;
+import erpoge.serverevents.EventChangePlaces;
+import erpoge.serverevents.EventDamage;
+import erpoge.serverevents.EventDeath;
+import erpoge.serverevents.EventDropItem;
+import erpoge.serverevents.EventEffectEnd;
+import erpoge.serverevents.EventEffectStart;
+import erpoge.serverevents.EventGetItemPile;
+import erpoge.serverevents.EventGetUniqueItem;
+import erpoge.serverevents.EventJump;
+import erpoge.serverevents.EventLoseItem;
+import erpoge.serverevents.EventMeleeAttack;
+import erpoge.serverevents.EventMissileFlight;
+import erpoge.serverevents.EventMove;
+import erpoge.serverevents.EventPickUp;
+import erpoge.serverevents.EventPutOn;
+import erpoge.serverevents.EventPutToContainer;
+import erpoge.serverevents.EventTakeFromContainer;
+import erpoge.serverevents.EventTakeOff;
+import erpoge.serverevents.EventUseObject;
 import erpoge.terrain.Container;
 import erpoge.terrain.Location;
 import erpoge.terrain.TerrainBasics;
-import erpoge.terrain.World;
 
 public abstract class Character extends Coordinate {
-	public final static int DAMAGE_PLAIN = 1,
-		DAMAGE_FIRE = 2,
-		DAMAGE_COLD = 3,
-		DAMAGE_POISON = 4,
-		DAMAGE_MENTAL = 5,
-		DAMAGE_ELECTRICITY = 6,
-		DAMAGE_ACID = 7,
-		
-		RACE_HUMAN = 0,
-		RACE_ELF = 1,
-		RACE_DWARF = 2,
-		RACE_ORC = 3;
-	
 	public final static int
 		FRACTION_NEUTRAL = -1,
 		FRACTION_PLAYER = 1,
@@ -80,8 +87,6 @@ public abstract class Character extends Coordinate {
 	public HashSet<NonPlayerCharacter> observers = new HashSet<NonPlayerCharacter>();
 	
 	protected CharacterState state = CharacterState.DEFAULT;
-	
-	
 	public Character(String t, String n, int x, int y) {
 	// Common character creation: with all attributes, in location
 		super(x, y);
@@ -92,7 +97,7 @@ public abstract class Character extends Coordinate {
 	/* Actions */
 	protected void attack(Character aim) {
 		location.addEvent(new EventMeleeAttack(characterId, aim.characterId));
-		aim.getDamage(1 , DAMAGE_PLAIN);
+		aim.getDamage(7 , DamageType.PLAIN);
 		moveTime(500);
 	}
 	protected void shootMissile(int toX, int toY, ItemPile missile) {
@@ -101,12 +106,13 @@ public abstract class Character extends Coordinate {
 		location.addEvent(new EventMissileFlight(x, y, end.x, end.y, 1));
 		location.addItem(missile, end.x, end.y);
 		if (location.cells[end.x][end.y].character() != null) {
-			location.cells[end.x][end.y].character().getDamage(10, DAMAGE_PLAIN);
+			location.cells[end.x][end.y].character().getDamage(10, DamageType.PLAIN);
 		}
 	}
 	protected void castSpell(int spellId, int x, int y) {
 		location.addEvent(new EventCastSpell(characterId, spellId, x, y));
 		Spells.cast(this, spellId, x, y);
+		changeMana(-25);
 		moveTime(500);
 	}
 	public void learnSpell(int spellId) {
@@ -122,6 +128,7 @@ public abstract class Character extends Coordinate {
 	protected void putOn(UniqueItem item, boolean omitEvent) {
 	// Main put on function
 		int cls = item.getType().getCls();
+		
 		int slot = item.getType().getSlot();
 		if (cls == ItemType.CLASS_RING) {
 			// ����������� ������, ����� �������� ������ (�� ����� ����
@@ -249,6 +256,7 @@ public abstract class Character extends Coordinate {
 		int prevY = y;
 		move(character.x, character.y);
 		character.move(prevX,prevY);
+		changeEnergy(-30);
 		// This event is needed for client to correctly 
 		// handle characters' new positions in Terrain.cells
 		location.addEvent(new EventChangePlaces(characterId, character.characterId));
@@ -256,6 +264,29 @@ public abstract class Character extends Coordinate {
 	}
 	protected void scream() {
 		makeSound(SoundType.SCREAM);
+	}
+	protected void jump(int x, int y) {
+		move(x,y);
+		location.addEvent(new EventJump(characterId));
+		changeEnergy(-40);
+		moveTime(500);
+	}
+	protected void shieldBash(Character character) {
+		if (!ammunition.hasPiece(ItemType.SLOT_LEFT_HAND)) {
+			throw new Error(name+" doesn't have a shield");
+		}
+		character.getDamage(5, DamageType.PLAIN);
+		changeEnergy(7);
+		location.makeSound(character.x, character.y, SoundType.CRASH);
+		moveTime(500);
+	}
+	protected void shieldBash(int x, int y) {
+		if (!ammunition.hasPiece(ItemType.SLOT_LEFT_HAND)) {
+			throw new Error(name+" doesn't have a shield");
+		}
+		changeEnergy(7);
+		location.makeSound(x, y, SoundType.CRASH);
+		moveTime(500);
 	}
 	/* Vision */
 	protected void notifyNeighborsVisiblilty() {
@@ -686,15 +717,29 @@ public abstract class Character extends Coordinate {
 	protected void setLocation(Location location) {
 		this.location = location;
 	}
-	public void getDamage(int amount, int type) {
+	public void getDamage(int amount, DamageType type) {
 		hp -= amount;
-		location.addEvent(new EventDamage(characterId, amount, type));
+		location.addEvent(new EventDamage(characterId, amount, type.type2int()));
 		if (hp <= 0) {
 			die();
 		}
 	}
-	protected void increaseHp(int value) {
-		hp = (hp + value > maxHp) ? maxHp : hp + value;
+	protected void increaseHp(int amount) {
+		hp = (hp + amount > maxHp) ? maxHp : hp + amount;
+	}
+	protected void changeEnergy(int amount) {
+		amount = Math.min(amount, maxEp-ep);
+		if (amount != 0) {
+			ep += amount;
+			location.addEvent(new EventChangeEnergy(characterId, ep));
+		}
+	}
+	protected void changeMana(int amount) {
+		amount = Math.min(amount, maxMp-mp);
+		if (amount != 0) {
+			mp += amount;
+			location.addEvent(new EventChangeMana(characterId, mp));
+		}
 	}
 	protected void removeEffect(CharacterEffect effect) {
 		effects.remove(effect);
@@ -750,6 +795,7 @@ public abstract class Character extends Coordinate {
 				removeEffect(e.effectId);
 			}
 		}
+		changeEnergy(10);
 	}
 	private void addItemBonuses(Item item) {
 	/**
@@ -779,6 +825,7 @@ public abstract class Character extends Coordinate {
 		default:
 			throw new Error("Unknown attribute");
 		}
+		Main.console("change "+attribute+" to "+resultValue);
 		location.addEvent(new EventAttributeChange(characterId, attribute.attr2int(), resultValue));
 	}
 	/* Checks */

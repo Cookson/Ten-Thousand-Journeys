@@ -242,7 +242,6 @@ Wall.prototype.show = function() {
 				wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) && 
 				Terrain.cells[x][y-1].wall.type==Terrain.cells[x][y].wall.type) ||
 			this.doorSides[0])
-			// !player.canSee(x,y-1)
 			) ? "1" : "0";
 	
 	var postfixE = (x<width-1&&(Terrain.cells[x+1][y].wall
@@ -251,7 +250,6 @@ Wall.prototype.show = function() {
 				wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) && 
 				Terrain.cells[x+1][y].wall.type==Terrain.cells[x][y].wall.type) ||
 			this.doorSides[1]) 
-			//!player.canSee(x+1,y)
 			) ? "1" : "0";
 	var postfixS = (y<height-1&&(Terrain.cells[x][y+1].wall
 			&& (!wallConnectsOnlyWithItself(Terrain.cells[x][y+1].wall.type) &&
@@ -259,7 +257,6 @@ Wall.prototype.show = function() {
 				wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) && 
 				Terrain.cells[x][y+1].wall.type == Terrain.cells[x][y].wall.type)||
 			this.doorSides[2])
-			// !player.canSee(x,y+1)
 			) ? "1" : "0";
 	var postfixW = (x>0&&(Terrain.cells[x-1][y].wall
 			&& (!wallConnectsOnlyWithItself(Terrain.cells[x-1][y].wall.type) &&
@@ -267,16 +264,15 @@ Wall.prototype.show = function() {
 				wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) && 
 				Terrain.cells[x-1][y].wall.type == Terrain.cells[x][y].wall.type) ||
 			this.doorSides[3])
-			// !player.canSee(x-1,y)
 			) ? "1" : "0";
 	var postfix;
-	if (Terrain.cameraOrientation == Terrain.SIDE_N) {
+	if (Terrain.cameraOrientation == Side.N) {
 		postfix = postfixN+postfixE+postfixS+postfixW;
-	} else if (Terrain.cameraOrientation == Terrain.SIDE_E) {
+	} else if (Terrain.cameraOrientation == Side.E) {
 		postfix = postfixW+postfixN+postfixE+postfixS;
-	} else if (Terrain.cameraOrientation == Terrain.SIDE_S) {
+	} else if (Terrain.cameraOrientation == Side.S) {
 		postfix = postfixS+postfixW+postfixN+postfixE;
-	} else if (Terrain.cameraOrientation == Terrain.SIDE_W) {
+	} else if (Terrain.cameraOrientation == Side.W) {
 		postfix = postfixE+postfixS+postfixW+postfixN;
 	}
 	var viewIndent = Terrain.getViewIndentation(x,y,1);
@@ -296,11 +292,11 @@ Wall.prototype.newDoorSide = function(side) {
 	// Создать изображение стороны стены, обёрнутое во wrap
 	// side - сторона стены (0-3 по часовой стрелке)
 	var initialSide = side;
-	if (Terrain.cameraOrientation == Terrain.SIDE_E) {
+	if (Terrain.cameraOrientation == Side.E) {
 		side = (side+1)%4;
-	} else if (Terrain.cameraOrientation == Terrain.SIDE_S) {
+	} else if (Terrain.cameraOrientation == Side.S) {
 		side = (side+2)%4;
-	} else if (Terrain.cameraOrientation == Terrain.SIDE_W) {
+	} else if (Terrain.cameraOrientation == Side.W) {
 		side = (side+3)%4;
 	}
 	var viewIndent = Terrain.getViewIndentation(this.x,this.y,1);
@@ -415,20 +411,20 @@ Floor.prototype.show = function(noForceNeighbourReshow) {
 				: (Terrain.cells[this.x-1][y].floor==null||Terrain.cells[this.x-1][y].wall) ? this.type
 						: Terrain.cells[this.x-1][this.y].floor.type;
 		
-		if (Terrain.cameraOrientation == Terrain.SIDE_E) {
+		if (Terrain.cameraOrientation == Side.E) {
 			var leftBuf = left;
 			left = down;
 			down = right;
 			right = up;
 			up = leftBuf;
-		} else if (Terrain.cameraOrientation == Terrain.SIDE_S) {
+		} else if (Terrain.cameraOrientation == Side.S) {
 			var upBuf = up;
 			var leftBuf = left;
 			up = down;
 			left = right;
 			right = leftBuf;
 			down = upBuf;
-		} else if (Terrain.cameraOrientation == Terrain.SIDE_W) {
+		} else if (Terrain.cameraOrientation == Side.W) {
 			var upBuf = up;
 			up = right;
 			right = down;
@@ -604,7 +600,7 @@ GameObject.prototype.show = function() {
 		var vertical = isDoor(this.type)
 				&&(1+this.y<height&&Terrain.cells[this.x][1+this.y].wall
 						&&this.y-1>0&&Terrain.cells[this.x][this.y-1].wall);
-		if (isDoor(this.type) && (Terrain.cameraOrientation == Terrain.SIDE_E || Terrain.cameraOrientation == Terrain.SIDE_W)) {
+		if (isDoor(this.type) && (Terrain.cameraOrientation == Side.E || Terrain.cameraOrientation == Side.W)) {
 			vertical = !vertical;
 		}
 		this.image.style.position = "absolute";

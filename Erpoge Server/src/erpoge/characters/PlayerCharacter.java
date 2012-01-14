@@ -25,7 +25,7 @@ import erpoge.terrain.World;
 
 public class PlayerCharacter extends Character {
 	protected final String cls;
-	public final int race;
+	public final Race race;
 	
 	private int str;
 	private int dex;
@@ -50,7 +50,7 @@ public class PlayerCharacter extends Character {
 			"demonology", "mental", "magicItems", "craft", "traps",
 			"effraction", "mechanics", "alchemy"};
 	public WebSocket connection;
-	public PlayerCharacter(String name, int race, String cls, int x, int y) {
+	public PlayerCharacter(String name, Race race, String cls, int x, int y) {
 		super("player", name, x, y);
 		this.cls = cls;
 		this.race = race;
@@ -232,7 +232,7 @@ public class PlayerCharacter extends Character {
 /* 2 */		.append(isWorld ? worldY : y).append(",")
 /* 3 */		.append(true).append(",\"")
 /* 4 */		.append(name).append("\",")
-/* 5 */		.append(race).append(",\"")
+/* 5 */		.append(race.race2int()).append(",\"")
 /* 6 */		.append(cls).append("\",")
 /* 7 */		.append(maxHp).append(",")
 /* 8 */		.append(maxMp).append(",")
@@ -293,7 +293,7 @@ public class PlayerCharacter extends Character {
 						.append(player.characterId).append(",\"")
 						.append(player.name).append("\",\"")
 						.append(player.cls).append("\",")
-						.append(player.race).append(",")
+						.append(player.race.race2int()).append(",")
 						.append(player.party).append(",")
 						.append(player.worldX).append(",")
 						.append(player.worldY).append("],");
@@ -304,7 +304,7 @@ public class PlayerCharacter extends Character {
 					.append(player.characterId).append(",\"")
 					.append(player.name).append("\",\"")
 					.append(player.cls).append("\",")
-					.append(player.race).append(",")
+					.append(player.race.race2int()).append(",")
 					.append(player.party).append(",")
 					.append(player.worldX).append(",")
 					.append(player.worldY).append("]");
@@ -330,7 +330,7 @@ public class PlayerCharacter extends Character {
 						answer
 							.append(",\"")
 							.append(player.cls).append("\",")
-							.append(player.race).append("],");
+							.append(player.race.race2int()).append("],");
 					} else {
 						answer
 							.append(",\"")
@@ -357,7 +357,7 @@ public class PlayerCharacter extends Character {
 					answer
 						.append(",\"")
 						.append(player.cls).append("\",")
-						.append(player.race).append("]");
+						.append(player.race.race2int()).append("]");
 				} else {
 					answer
 						.append(",\"")

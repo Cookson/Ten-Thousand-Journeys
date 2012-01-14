@@ -13,7 +13,7 @@ window.onload = function _() {
 		onLoadEvents['storage']();
 		onLoadEvents['ajax']();
 		onLoadEvents['keys']();
-	},1);
+	}, 1);
 };
 onLoadEvents['game'] = function _() {
 	if (!document.head) {
@@ -21,7 +21,6 @@ onLoadEvents['game'] = function _() {
 	}
 	cacheImages();
 	saveParticlesImageData();
-//	rotateCamera(Terrain.SIDE_E);
 };
 function moveGameField(x,y,initiate) {
 // Центрировать камеру на клетке x;y
@@ -110,35 +109,16 @@ function playerClick(x, y, shiftKey) {
 	var shiftX = dx == 0 ? player.x : player.x+dx/Math.abs(dx);
 	var dy = y-player.y;
 	var shiftY = dy == 0 ? player.y : player.y+dy/Math.abs(dy);
-	if (
+	if (UI.mode == UI.MODE_CURSOR_ACTION) {
+		CellCursor.chooseCurrentCell();
+	} else if (x == player.x && y == player.y) {
+		player.sendIdle();
+	} else if (
 		(aim = Terrain.cells[shiftX][shiftY].character) &&
 		player.isEnemy(aim)
 	) {
 	// Attack
 		player.sendAttack(aim.characterId, !(player.isBareHanded() || player.ammunition.getItemInSlot(0).isMelee()));
-	} else if (UI.mode == UI.MODE_CURSOR_ACTION) {
-		CellCursor.chooseCurrentCell();
-	} else if (player.spellId!=-1) {
-	// Spell
-		var spell = spells[player.spellId];
-		if (!spell.onCell && Terrain.cells[x][y].passability != Terrain.PASS_SEE || spell.onCell && !spell.onOccupiedCell && Terrain.cells[x][y].passability!=Terrain.PASS_FREE) {
-			player.unselectSpell(player.spellId);
-			return false;
-		}
-		if (spells[player.spellId].onCell && spells[player.spellId].onCharacter) {
-			if (spells[player.spellId].onOccupiedCell) {
-			
-			}
-		}
-		if (spells[player.spellId].onCharacter && player.aimcharacter.x==x && player.aimcharacter.y==y) {
-			player.spellX=-1;
-			player.spellY=-1;
-			player.spellAimId=player.aimcharacter.characterId;
-		} else if (spells[player.spellId].onCell) {
-			player.spellX=x;
-			player.spellY=y;
-			player.spellAimId=-1;			
-		}
 	} else if ((aim = Terrain.cells[x][y].character) && player != Terrain.cells[x][y].character && !player.isEnemy(aim)) {
 		player.sendStartConversation(aim.characterId);
 	} else if (
@@ -254,6 +234,9 @@ function renderView() {
 	
 }
 function rotateCamera(side) {
+	if (!(side instanceof Side)) {
+		throw new Error("This function must get instance of Side as parameter!");
+	}
 	Terrain.cameraOrientation = side;
 	for (var y=0; y<height; y++) {
 		for (var x=0; x<width; x++) {
@@ -314,14 +297,16 @@ in : [[
 		
 		var isPlayer = data[i].length == 13;
 		new Character(
-			data[i][0], 
+			data[i][0],
 			isPlayer ? "player" : data[i][11], 
 			data[i][1], 
 			data[i][2], 
-			data[i][4], 
-			data[i][12]
+			data[i][4],
+			data[i][6],
+			data[i][5]
 		);
-		characters[data[i][0]].display();
+		var character = characters[data[i][0]];
+		character.display();
 	}
 }
 function worldMapRenderView() {

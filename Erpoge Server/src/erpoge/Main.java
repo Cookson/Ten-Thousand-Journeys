@@ -3,6 +3,7 @@ import java.awt.Rectangle;
 
 import erpoge.characters.CharacterTypes;
 import erpoge.characters.PlayerCharacter;
+import erpoge.characters.Race;
 import erpoge.gui.Window;
 import erpoge.inventory.ItemPile;
 import erpoge.inventory.UniqueItem;
@@ -28,7 +29,6 @@ public class Main {
 	public static <T> void outln(T string) {
 		System.out.println(string);
 	}
-
 	public static <T> void outln() {
 		System.out.println("");
 	}
@@ -59,16 +59,16 @@ public class Main {
 //		Location loc = world.createLocation(0, 0, 60, 40, TEST_LOCATION_TYPE, "New Location");
 //		loc.showLocation();	
 		
-		PlayerCharacter burok = world.createPlayer("Alvoi", 2, "Warrior", 13, 26);
+		PlayerCharacter burok = world.createPlayer("Alvoi", Race.ELF, "Warrior", 13, 26);
 		burok.getItem(new UniqueItem(ItemType.CLASS_SWORD * ItemsTypology.CLASS_LENGTH));
 		burok.getItem(new ItemPile(ItemType.CLASS_AMMO * ItemsTypology.CLASS_LENGTH,200));
 		burok.getItem(new UniqueItem(ItemType.CLASS_BLUNT * ItemsTypology.CLASS_LENGTH));
 		burok.getItem(new UniqueItem(ItemType.CLASS_BOW * ItemsTypology.CLASS_LENGTH));
+		burok.getItem(new UniqueItem(ItemType.CLASS_SHIELD * ItemsTypology.CLASS_LENGTH));
 		burok.getItem(new UniqueItem(1204));
 		burok.getItem(new UniqueItem(1102));
 		burok.learnSpell(9);
 		burok.learnSpell(10);
-		
 		Accounts.addAccount(new Account("1","1"));
 		Accounts.addAccount(new Account("Billy","1"));
 		Accounts.account("1").addCharacter(burok);

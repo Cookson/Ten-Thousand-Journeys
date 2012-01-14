@@ -615,6 +615,12 @@ div.cellCursorCellAction {
 	background-color: yellow;
 	opacity: 0.3;
 }
+div.cellCursorUnavailable {
+	width: 30px;
+	height: 30px;
+	border: 1px solid red;
+	opacity: 1;
+}
 
 div.cellCursorMain {
 	border: 1px dotted yellow;

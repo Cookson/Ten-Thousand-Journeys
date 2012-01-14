@@ -1,5 +1,4 @@
 /* language.js: Core code for language settings
- * 
  */
 var Language = {
 	currentLanguage : null

@@ -168,6 +168,20 @@ serverAnswerHandlers = {
 			characters[value.characterId].showDamage(value.amount, value.type);
 		}
 	},
+	changeMana: function _(value) {
+		characters[value.characterId].mp = value.value;
+		if (value.characterId == player.characterId) {
+			UI.notify("manaChange");
+		}
+		handleNextEvent();
+	},
+	changeEnergy: function _(value) {
+		characters[value.characterId].ep = value.value;
+		if (value.characterId == player.characterId) {
+			UI.notify("energyChange");
+		}
+		handleNextEvent();
+	},
 	death: function _(value) {
 		if (onGlobalMap) {
 			throw new Error("Character "+value.characterId+" had an attempt to die on global map!");
@@ -208,7 +222,6 @@ serverAnswerHandlers = {
 			UI.notify("spellCast");
 			
 			if (value.characterId == player.characterId) {
-				player.unselectSpell();
 				player.spellAimId=-1;
 				player.spellX=-1;
 				player.spellY=-1;
@@ -257,7 +270,7 @@ serverAnswerHandlers = {
 		handleNextEvent();
 	},	
 	characterAppear: function _(value) {
-		characters[value.characterId] = new Character(value.characterId, value.type, value.x, value.y, value.fraction);
+		characters[value.characterId] = new Character(value.characterId, value.type, value.x, value.y, value.fraction, value.hp, value.maxHp);
 		characters[value.characterId].display();
 		handleNextEvent();
 	},	
@@ -316,6 +329,12 @@ serverAnswerHandlers = {
 		var character2 = characters[value.character2Id];
 		Terrain.cells[character1.x][character1.y].character = character1;
 		Terrain.cells[character2.x][character2.y].character = character2;
+		handleNextEvent();
+	},
+	jump: function _(value) {
+		var character = characters[value.characterId];
+		character.destX = character.x;
+		character.destY = character.y;
 		handleNextEvent();
 	}
 };

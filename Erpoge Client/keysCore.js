@@ -173,7 +173,7 @@ Keys.assign = function _(params) {
 	if (params.arguments === undefined) {
 		params.arguments = [];
 	}
-	console["log"]("assign ", params.action, "to ",keyMode, ctrl, alt, shift, key);
+//	console["log"]("assign ", params.action, "to ",keyMode, ctrl, alt, shift, key);
 	Keys.keyActions[keyMode][ctrl][alt][shift][key] = [handlers.keysActions[params.action], params.arguments];
 };
 Keys.universalKeyDownHandler = function _(e) {
@@ -187,7 +187,7 @@ Keys.universalKeyDownHandler = function _(e) {
 	var shift = e.shiftKey ? 1 : 0;
 	var key = e.keyCode;
 	var keyMode = UI.mode;
-	console["log"](keyMode, ctrl, alt, shift, key);
+//	console["log"](keyMode, ctrl, alt, shift, key);
 	var registeredActionHolder;
 	if (
 		(keyMode == UI.MODE_ON_GLOBAL_MAP || 

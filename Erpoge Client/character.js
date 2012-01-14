@@ -1,4 +1,4 @@
-﻿function Character(id, type, x, y, fraction) {
+﻿function Character(id, type, x, y, fraction, hp, maxHp) {
 	if (id == -1) {
 	// For Player.prototype
 		return;
@@ -8,6 +8,7 @@
 	this.y=y;
 	this.isClientPlayer = false;
 	Terrain.cells[x][y].character = this;
+	Terrain.cells[x][y].passability = Terrain.PASS_SEE;	
 	this.characterId=id;
 	this.destX=this.x;
 	this.destY=this.y;
@@ -21,11 +22,8 @@
 	this.aimcharacter=-1;
 	this.cls = null;
 	if (this.type!="player") {
-		this.maxHp=(this.type=="player")?30:characterTypes[this.type][1];
-		this.maxMp=this.mp;
-		this.maxEp=this.ep;
-		this.hp=this.maxHp;
-		this.mp=this.maxHp;
+		this.hp = hp;
+		this.maxHp=maxHp;
 	}
 	
 	this.VISION_RANGE=8;
@@ -219,10 +217,16 @@ Character.prototype.showEffectEnd = function(effectId) {
 	delete this.effects[effectId];
 };
 /* Calculations */
-Character.prototype.canSee = function (x, y, setVisibleCells, test) {
-	// Проверяет, находится ли данная клетка на линии видимости
+Character.prototype.canSee = function (x, y, setVisibleCells, forceCompute) {
+/**
+ * Checks if the cell is on line of sight
+ * 
+ * setVisibleCells - sets this.visibleCells[x][y] to true if can see,
+ * 		to false otherwise.
+ * forceCompute - compute visibility even if it is a peaceful location.
+ */
 //	return true;
-	if (this.isNear(x,y) || this.x==x && this.y==y || Terrain.isPeaceful) {
+	if (this.isNear(x,y) || this.x==x && this.y==y || Terrain.isPeaceful && !forceCompute) {
 	// Если клетка рядом или персонаж на ней стоит - то её точно видно
 		if (setVisibleCells) {
 			this.visibleCells[x][y] = true;
@@ -423,7 +427,7 @@ Character.prototype.rays = function(startX,startY,endX,endY) {
 		this.ray(startX+(endX>startX ? 1 : -1),startY,endX,endY+(endY>startY ? -1 : 1))
 	);
 };
-Character.prototype.getPathTable=function(ignorecharacters) {
+Character.prototype.getPathTable = function(ignorecharacters) {
 // Получает таблицу путей по волновому алгоритму
 	// Отключено для возможности использования объектов
 	// if (Terrain.cells[this.destX][this.destY].passability==Terrain.PASS_BLOCKED) {
@@ -464,7 +468,12 @@ Character.prototype.getPathTable=function(ignorecharacters) {
 				if (thisNumX==this.destX && thisNumY==this.destY) {
 					isPathFound = null;
 				}
-				if (Terrain.cells[thisNumX][thisNumY].passability!=Terrain.PASS_BLOCKED && Terrain.cells[thisNumX][thisNumY].passability!=Terrain.PASS_SEE || Terrain.cells[thisNumX][thisNumY].object && isDoor(Terrain.cells[thisNumX][thisNumY].object.type)/* */ /* && this.seenCells[thisNumX][thisNumY]!=undefined */) {
+				if (
+					Terrain.cells[thisNumX][thisNumY].passability!=Terrain.PASS_BLOCKED 
+					&& Terrain.cells[thisNumX][thisNumY].passability!=Terrain.PASS_SEE 
+					|| Terrain.cells[thisNumX][thisNumY].object 
+					&& isDoor(Terrain.cells[thisNumX][thisNumY].object.type
+				)/* */ /* && this.seenCells[thisNumX][thisNumY]!=undefined */) {
 					this.pathTable[thisNumX][thisNumY]=t+1;
 					newFront[newFront.length]={x:thisNumX,y:thisNumY};
 				}
@@ -477,10 +486,10 @@ Character.prototype.getPathTable=function(ignorecharacters) {
 	} while (newFront.length>0 && !isPathFound && t<900);
 	return t;
 };
-Character.prototype.distance=function(x,y) {
+Character.prototype.distance = function(x,y) {
 	return Math.sqrt(Math.pow(this.x-x, 2)+Math.pow(this.y-y, 2));
 };
-Character.prototype.getVisibleCells=function() {
+Character.prototype.getVisibleCells = function() {
 // Получить видимые клетки
 	if (Terrain.isPeaceful) {
 		return;
@@ -500,7 +509,7 @@ Character.prototype.getVisibleCells=function() {
 		}
 	}
 };
-Character.prototype.comeTo=function(x,y) {
+Character.prototype.comeTo = function(x,y) {
 // Функция следования за character
 // Устанавливает номер клетки, в которую этот character должен идти, чтобы прийти к aimcharacter
 	if (this.isNear(x, y)) {
@@ -552,7 +561,7 @@ Character.prototype.comeTo=function(x,y) {
 	}
 	return atLeastOnePath;
 };
-Character.prototype.getPath=function(destX,destY) {
+Character.prototype.getPath = function(destX,destY) {
 // Получить путь до клетки в виде массива координат (0 - первый шаг и т. д.)
 	if (destX==undefined || destY==undefined) {
 		destX=this.destX;
@@ -650,7 +659,7 @@ Character.prototype.initVisibility = function() {
 		
 	}
 };
-Character.prototype.findEnemy=function(r) {
+Character.prototype.findEnemy = function(r) {
 // Находит ближайшего противника
 	var enemy=false;
 //		for (var i in characters) {
@@ -660,7 +669,7 @@ Character.prototype.findEnemy=function(r) {
 //		}
 	return enemy;
 };
-Character.prototype.findCharacterByCoords=function(x,y) {
+Character.prototype.findCharacterByCoords =  function(x,y) {
 	for (var i in characters) {
 		if (characters[i].x==x && characters[i].y==y) {
 			return characters[i];
@@ -672,7 +681,7 @@ Character.prototype.findCharacterByCoords=function(x,y) {
 Character.prototype.isBareHanded = function () {
 	return this.ammunition.getItemInSlot(0) === undefined;
 };
-Character.prototype.hasItem=function(typeId, param) {
+Character.prototype.hasItem = function(typeId, param) {
 // Имеет пресонаж предмет или заданное кол-во предметов
 	if (isUnique(typeId)) {
 		
@@ -688,7 +697,7 @@ Character.prototype.hasItem=function(typeId, param) {
 		return false;
 	}
 };
-Character.prototype.hasEffect=function(effectId) {
+Character.prototype.hasEffect = function(effectId) {
 // Проверка, имеет ли персонаж определённый эффект
 	for (var i in this.effects) {
 		if (this.effects[i]==effectId) {
@@ -697,7 +706,7 @@ Character.prototype.hasEffect=function(effectId) {
 	}
 	return false;
 };
-Character.prototype.isEnemy=function(aim) {
+Character.prototype.isEnemy = function(aim) {
 	var isAlly=false;
 	for (var i in area[1]) {
 		if (inArray(this.fraction, diplomacy) && inArray(aim.fraction, diplomacy)) {
@@ -821,7 +830,7 @@ Character.prototype.showMove = function(nextCellX, nextCellY) {
 		handleNextEvent();
 	}	
 };
-Character.prototype.graphicEffect=function(name, callback) {
+Character.prototype.graphicEffect = function(name, callback) {
 // Графический эффект
 	// if (!+localStorage.getItem(1)) {
 	// // Если графические эффекты отключены, ничего не делать
@@ -1031,7 +1040,7 @@ function Player(data) {
 	UI.notify("inventoryChange");
 }
 Player.prototype = new Character(-1);
-Player.prototype.actions = ["push","chp","mks"];
+Player.prototype.actions = ["push","changePlaces","makeSound","shieldBash","jump"];
 Player.prototype.display = function () {
 	this.doll = new Doll(this);
 	this.doll.draw();
@@ -1062,16 +1071,20 @@ Player.prototype.autoSetMissileType = function () {
 	}
 	for (var i in this.items.itemPiles) {
 		if (isMissile(this.items.itemPiles[i].typeId)) {
-			this.missileType = this.items.itemPiles[i].typeId;
+			this.setMissileType(this.items.itemPiles[i].typeId);
 			return;
 		}
 	}
 	for (var i in this.items.uniqueItems) {
 		if (isMissile(this.items.itemPiles[i].typeId)) {
-			this.missileType = this.items.itemPiles[i].typeId;
+			this.setMissileType(this.items.itemPiles[i].typeId);
 			return;
 		}
 	}
+};
+Player.prototype.setMissileType = function _(type) {
+	this.missileType = type;
+	UI.notify("missileTypeChange");
 };
 /* Send methods */
 // These methods don't change internal state, only send data to server
@@ -1114,8 +1127,8 @@ Player.prototype.sendPutToContainer = function(typeId, param) {
 Player.prototype.sendAttack = function(aimId, ranged) {
 	Net.send({a:Net.ATTACK, aimId:aimId, ranged:ranged});
 };
-Player.prototype.sendCastSpell = function(spellId, x, y) {
-	Net.send({a:Net.CAST_SPELL, spellId:spellId, x:x, y:y});
+Player.prototype.sendCastSpell = function(x, y) {
+	Net.send({a:Net.CAST_SPELL, spellId:this.spellId, x:x, y:y});
 };
 Player.prototype.sendMove = function() {
 	if (this.x<0) {
@@ -1232,7 +1245,7 @@ Player.prototype.sendMove = function() {
 		}
 	}
 };
-Player.prototype.idle = function() {	
+Player.prototype.sendIdle = function() {	
 	Net.send({a:Net.IDLE});
 };
 Player.prototype.leaveLocation = function() {
@@ -1265,14 +1278,28 @@ Player.prototype.sendPutOn = function(itemId) {
 	Net.send({a:Net.PUT_ON, itemId:itemId});
 };
 /* Send methods of special actions */
-Player.prototype.sendPush = function (x,y,direction) {
-	console.log(x,y,direction);
+Player.prototype.sendPush = function(x,y,direction) {
+/**
+ * Direction is Side object
+ */
 	Net.send({a:Net.PUSH, x:x, y:y, direction:direction.getInt()});
+};
+Player.prototype.sendChangePlaces = function(x,y) {
+	Net.send({a:Net.CHANGE_PLACES, x:x, y:y});
+};
+Player.prototype.sendMakeSound = function(type) {
+	Net.send({a:Net.MAKE_SOUND, type:type});
+};
+Player.prototype.sendShieldBash = function (x,y) {
+	Net.send({a:Net.SHIELD_BASH, x:x, y:y});
+};
+Player.prototype.sendJump = function (x,y) {
+	Net.send({a:Net.JUMP, x:x, y:y});
 };
 /* Interface methods */
 Player.prototype.selectMissileType = function(type) {
 	this.missileType = type || null;
-}
+};
 Player.prototype.selectMissile = function() {
 // Enter missile mode
 	if (player.ammunition.getItemInSlot(0) && player.ammunition.getItemInSlot(0).isRanged()) {
@@ -1289,36 +1316,29 @@ Player.prototype.selectMissile = function() {
 		UI.notify("alert","Игрок не держит в руках оружия дальнего боя!");
 	}
 };
-Player.prototype.unselectMissile = function() {
-// Exit missile mode
-	UI.notify("missileUnselect");
-	UI.setMode(UI.MODE_DEFAULT);
-	CellCursor.changeStyle("Main");
-};
 Player.prototype.selectSpell = function(spellId) {
 // Enter spell casting mode
 	this.spellId = spellId;
-	UI.setMode(UI.MODE_CURSOR_ACTION);
-	UI.notify("spellSelect");
-	CellCursor.changeStyle("CellAction");
+	CellCursor.enterSelectionMode(player.sendCastSpell, this);
+	UI.notify("spellSelect");	
 };
 Player.prototype.unselectSpell = function() {
 // Exit spell casting mode
 	UI.notify("spellUnselect");
 	this.spellId = -1;
 	UI.setMode(UI.MODE_DEFAULT);
-	CellCursor.changeStyle("Main");
+	CellCursor.exitSelectionMode();
 };
 Player.prototype.cellChooseAction = function() {
 // Совершить действие на координате под курсором
 	var x = CellCursor.x;
 	var y = CellCursor.y;
 	if (!player.canSee(x,y)) {
-		gAlert("Игрок не видит целевой клетки!");
+		UI.notify("alert","Игрок не видит целевой клетки!");
 	} else {
 		if (player.spellId!=-1) {
 		// Spell
-			player.sendCastSpell(player.spellId, x, y);
+			player.sendCastSpell(x, y);
 		} else {
 		// Ranged attack
 			var aim = Character.prototype.findCharacterByCoords(x,y);
