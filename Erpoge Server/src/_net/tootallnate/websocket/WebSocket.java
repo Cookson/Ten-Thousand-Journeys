@@ -160,7 +160,7 @@ public final class WebSocket {
   }
 
   /**
-   * @return True if all of the text was sent to the client by this thread.
+   * @returns True if all of the text was sent to the client by this thread.
    *         False if some of the text had to be buffered to be sent later.
    */
   public boolean send(String text) throws IOException {
@@ -244,7 +244,7 @@ public final class WebSocket {
   }
 
   /**
-   * @return True if all data has been sent to the client, false if there is
+   * @returns True if all data has been sent to the client, false if there is
    *         still some buffered.
    */
   boolean handleWrite() throws IOException {

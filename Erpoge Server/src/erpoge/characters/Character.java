@@ -10,7 +10,7 @@ import erpoge.Main;
 import erpoge.Side;
 import erpoge.Utils;
 import erpoge.charactereffects.CharacterEffect;
-import erpoge.inventory.AmmunitionMap;
+import erpoge.inventory.EquipmentMap;
 import erpoge.inventory.Item;
 import erpoge.inventory.ItemMap;
 import erpoge.inventory.ItemPile;
@@ -83,7 +83,7 @@ public abstract class Character extends Coordinate {
 	 */
 	public final int characterId = Chance.rand(0, Integer.MAX_VALUE);
 	public final ItemMap inventory = new ItemMap();
-	public final AmmunitionMap ammunition = new AmmunitionMap();
+	public final EquipmentMap equipment = new EquipmentMap();
 	public HashSet<NonPlayerCharacter> observers = new HashSet<NonPlayerCharacter>();
 	
 	protected CharacterState state = CharacterState.DEFAULT;
@@ -138,12 +138,12 @@ public abstract class Character extends Coordinate {
 				throw new Error("Character " + name
 						+ " is trying to put on more than 2 rings");
 			}
-		} else if (ammunition.hasPiece(slot)) {
+		} else if (equipment.hasPiece(slot)) {
 			// ���� ����� ������� ���� �� ����
 			throw new Error("Character " + name
 					+ " is trying to put on a piece he is already wearing");
 		}
-		ammunition.add(item);
+		equipment.add(item);
 		inventory.removeUnique(item);
 		if (!this.isOnGlobalMap() && !omitEvent) {
 		// Sending for mobs. Sending for players is in PlayerCharacter.putOn()
@@ -153,7 +153,7 @@ public abstract class Character extends Coordinate {
 		moveTime(500);
 	}
 	protected void takeOff(UniqueItem item) {
-		ammunition.removeSlot(item.getType().getSlot());
+		equipment.removeSlot(item.getType().getSlot());
 		inventory.add(item);
 		if (!this.isOnGlobalMap()) {
 		// Sending for mobs. Sending for players is in PlayerCharacter.putOn()
@@ -272,7 +272,7 @@ public abstract class Character extends Coordinate {
 		moveTime(500);
 	}
 	protected void shieldBash(Character character) {
-		if (!ammunition.hasPiece(ItemType.SLOT_LEFT_HAND)) {
+		if (!equipment.hasPiece(ItemType.SLOT_LEFT_HAND)) {
 			throw new Error(name+" doesn't have a shield");
 		}
 		character.getDamage(5, DamageType.PLAIN);
@@ -281,7 +281,7 @@ public abstract class Character extends Coordinate {
 		moveTime(500);
 	}
 	protected void shieldBash(int x, int y) {
-		if (!ammunition.hasPiece(ItemType.SLOT_LEFT_HAND)) {
+		if (!equipment.hasPiece(ItemType.SLOT_LEFT_HAND)) {
 			throw new Error(name+" doesn't have a shield");
 		}
 		changeEnergy(7);
@@ -764,7 +764,7 @@ public abstract class Character extends Coordinate {
 			}
 		} else {
 			throw new Error("An attempt to lose an item width id " + item.getItemId()
-					+ " that is neither in inventory nor in ammunition");
+					+ " that is neither in inventory nor in equipment");
 		}
 	}
 	public void loseItem(ItemPile pile) {
@@ -851,13 +851,13 @@ public abstract class Character extends Coordinate {
 	public String jsonGetEffects() {
 		return "[]";
 	}
-	public String jsonGetAmmunition() {
-		return ammunition.jsonGetAmmunition();
+	public String jsonGetEquipment() {
+		return equipment.jsonGetEquipment();
 	}
 	public int[] getEffects() {
 		return new int[0];
 	}
-	public int[][] getAmmunition() {
+	public int[][] getEquipment() {
 		return new int[0][2];
 	}
 	

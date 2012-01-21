@@ -1,23 +1,17 @@
-﻿
-
-
-// Список изображений для кеширования
-
-// Амуниция для куклы персонажа
-imageNames = [ [] ];
-for ( var i in NUM_OF_TILES) {
+﻿var imageNames = [[]];
+for (var i in NUM_OF_TILES) {
 	var floorNum = getFloorNum(i);
 	tiles[floorNum] = [];
-	for ( var j = 0; j < NUM_OF_TILES[i]; j++) {
+	for ( var j = 0; j<NUM_OF_TILES[i]; j++) {
 		tiles[floorNum][j] = new Image();
-		tiles[floorNum][j].src = "./images/terrain/" + i + "_" + j + ".png";
+		tiles[floorNum][j].src = "./images/terrain/"+i+"_"+j+".png";
 	}
 }
-var imageNums = [ 2, 34, 58, 59, 60, 61, 600, 601,
+var imageNums = [2, 34, 58, 59, 60, 61, 600, 601,
 		700, 1201, 1202, 1300, 1302, 100, 1304, 1402, 1505, 1501, 1504, 104, 1401, 403, 402, 1301];
-bufCanvas = -1;
-bufContext = -1;
-bufImageData = -1;
+var bufCanvas = -1;
+var bufContext = -1;
+var bufImageData = -1;
 var particleTypes = ["shiver1", "shiver2", "blood1", "spark1", "spark2", "yellow_spark1", "yellow_spark2"];
 var particlesImageData = {};
 // Установку и получение пикселя пришлось сделать функцией, а не методом
@@ -211,55 +205,67 @@ function Doll(character) {
 	this.DOMNode.width = 32;
 	this.DOMNode.height = 32;
 	this.ctx = this.DOMNode.getContext("2d");
-	this.hands = [ [ 6, 14 ] ];
+	this.hands = [[6, 14]];
 	this.drawn = false; // Кукла уже была отрисована как минимум один раз
 	this.items = {
 		weapon : 50
-	};
-	this.drawBody = function() {
-		this.ctx.drawImage(images[(this.character) ? 58 + this.character.race : 58], 0, 0);
-	};
-	this.drawAmmunition = function(typeId) {
-		this.ctx.drawImage(images[typeId], 0, 0);
-	};
-	this.draw = function() {
-		this.ctx.clearRect(0, 0, 32, 32);
-		this.drawBody();
-		if (
-			this.character && this.character.ammunition &&
-			this.character.ammunition.getItemInSlot(6)
-		) {
-			this.drawAmmunition(this.character.ammunition.getItemInSlot(6).typeId);
-		}
-		if (!onGlobalMap || this.character.characterId == player.characterId) {
-			for ( var i = 0; i < Ammunition.prototype.NUMBER_OF_SLOTS; i++) {
-				if (!this.character.ammunition.hasItemInSlot(i)) {
-					continue;
-				}
-				if (!images[this.character.ammunition.getItemInSlot(i).typeId]) {
-					continue;
-				}
-				if (i == 6) {
-					continue;
-				}
-				if (
-					this.character && this.character.ammunition &&
-					this.character.ammunition.getItemInSlot(i)
-				) {
-					this.drawAmmunition(this.character.ammunition.getItemInSlot(i).typeId);
-				}
-			}
-		} else if (onGlobalMap && !this.character.characterId == player.characterId) {
-			this.drawAmmunition(342);
-			this.drawAmmunition(344);
-		}
-		
-		this.drawn = true;
-	};
+	};	
 }
+/**
+ * @private
+ * Draw body of character's race.
+ */
+Doll.prototype.drawBody = function() {
+	this.ctx.drawImage(images[(this.character) ? 58 + this.character.race : 58], 0, 0);
+};
+/**
+ * @private
+ * Draw piece of equimpent on character.
+ * @param {Number} typeId Item typeId
+ */
+Doll.prototype.drawEquipment = function(typeId) {
+	this.ctx.drawImage(images[typeId], 0, 0);
+};
+/**
+ * Redraws the doll: its body and equipment worn.
+ */
+Doll.prototype.draw = function() {
+	this.ctx.clearRect(0, 0, 32, 32);
+	this.drawBody();
+	if (
+		this.character && this.character.equipment &&
+		this.character.equipment.getItemInSlot(6)
+	) {
+		this.drawEquipment(this.character.equipment.getItemInSlot(6).typeId);
+	}
+	if (!Terrain.onGlobalMap || this.character.characterId == player.characterId) {
+		for (var i=0; i < Equipment.prototype.NUMBER_OF_SLOTS; i++) {
+			if (!this.character.equipment.hasItemInSlot(i)) {
+				continue;
+			}
+			if (!images[this.character.equipment.getItemInSlot(i).typeId]) {
+				continue;
+			}
+			if (i == 6) {
+				continue;
+			}
+			if (
+				this.character && this.character.equipment &&
+				this.character.equipment.getItemInSlot(i)
+			) {
+				this.drawEquipment(this.character.equipment.getItemInSlot(i).typeId);
+			}
+		}
+	} else if (Terrain.onGlobalMap && !this.character.characterId == player.characterId) {
+		this.drawEquipment(342);
+		this.drawEquipment(344);
+	}
+	
+	this.drawn = true;
+};
 function Minimap(elem) {
-	this.w = width;
-	this.h = height;
+	this.w = Terrain.width;
+	this.h = Terrain.height;
 	this.scale = 2; // Размер клетки на карте в пикселях
 	this.ctx;
 	this.elem = elem;
@@ -287,10 +293,13 @@ Minimap.prototype.init = function() {
 	this.ctx.fillRect(0, 0, this.w * this.scale, this.h * this.scale);
 	this.draw();
 };
+/**
+ * Redraw minimap.
+ */
 Minimap.prototype.draw = function() {
 	// Отрисовка миникарты
-	var charactersCoords = [];
-	for ( var i in characters) {
+	var charactersCoords = {};
+	for (var i in characters) {
 		// Нахождение координат всех видимых мобов
 		var x = characters[i].x;
 		var y = characters[i].y;
@@ -299,7 +308,7 @@ Minimap.prototype.draw = function() {
 		}
 	}
 	var obj;
-	for ( var x = 0; x < this.w; x++) {
+	for (var x = 0; x < this.w; x++) {
 		for ( var y = 0; y < this.h; y++) {
 			if (!player.visibleCells[x][y]) {
 				if (player.seenCells[x][y]) {
@@ -321,7 +330,7 @@ Minimap.prototype.draw = function() {
 			}
 		}
 	}
-	for ( var i in charactersCoords) {
+	for (var i in charactersCoords) {
 		if (characters[i].isClientPlayer) {
 			this.drawCell(charactersCoords[i][0], charactersCoords[i][1], "clientPlayer");
 		} else if (!player.isEnemy(characters[i])) {
@@ -331,11 +340,19 @@ Minimap.prototype.draw = function() {
 		}
 	}
 };
+/**
+ * @private
+ * Draw a single cell on minimap.
+ * 
+ * @param {Number} x
+ * @param {Number} y
+ * @param fillStyle
+ */
 Minimap.prototype.drawCell = function(x, y, fillStyle) {
 	// Отрисовывает ячейку миникарты. fillStyle - название стиля заполнения
 	// клетки (из Minimap.prototype.fillStyles)
 	if (this.cells[x][y] == this.cellTypes[fillStyle]) {
-		return false;
+		return;
 	}
 	this.ctx.fillStyle = this.fillStyles[fillStyle];
 	var viewIndent = Terrain.getViewIndentation(x, y, this.scale);
@@ -352,9 +369,14 @@ Minimap.prototype.fillStyles = {
 	seenFloor : "rgb(40,40,40)",
 	seenWall : "rgb(100,100,100)"
 };
-Minimap.prototype.changeDimensions = function(newWidth, newHeight) {
-	this.w = newWidth;
-	this.h = newHeight;
+/**
+ * Changes width and height of Minimap (in cells, not in pixels).
+ * @param {Number} width
+ * @param {Number} height
+ */
+Minimap.prototype.changeDimensions = function(width, height) {
+	this.w = width;
+	this.h = height;
 	this.init();
 };
 Minimap.prototype.cellTypes = {

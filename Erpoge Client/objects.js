@@ -4,7 +4,7 @@
 	this.wall;
 	this.object;
 	this.ceiling;
-	this.items = new ItemMap();
+	this.items = new ItemSet();
 	this.floor;
 	this.character;
 	this.path;
@@ -12,7 +12,7 @@
 	this.y = y;
 	this.visible = false;
 	this.passability = Terrain.PASS_FREE;
-	if (onGlobalMap) {
+	if (Terrain.onGlobalMap) {
 		this.worldPlayers = [];
 	}
 	// Свойства ячейки мира
@@ -24,7 +24,7 @@
 	this.forest;
 }
 Cell.prototype.show = function() {
-	if (!onGlobalMap) {
+	if (!Terrain.onGlobalMap) {
 		this.floor.show();
 	}
 	if (this.object!=null) {
@@ -49,7 +49,7 @@ Cell.prototype.show = function() {
 	this.visible = true;
 };
 Cell.prototype.hide = function() {
-	if (!onGlobalMap) {
+	if (!Terrain.onGlobalMap) {
 		this.floor.hide();
 	}
 	if (this.object!=null) {
@@ -154,14 +154,17 @@ Cell.prototype.hasItem = function(typeId, param) {
 	return false;
 };
 Cell.prototype.addItem = function(item) {
-	if (item.isUnique || !this.items.hasPile(item.typeId, item.amount)) {
-		(this.items.addItem(item).itemImage = new CellItemImage(this, item)).show();
+	if (item instanceof UniqueItem || !this.items.hasPile(item.typeId, item.amount)) {
+		this.items.addItem(item);
+		item.itemImage = new CellItemImage(this, item);
+		item.itemImage.show();
 	} else {
 		this.items.addItem(item);
 	}
 };
 Cell.prototype.addItemWithoutShowing = function(item) {
-	this.items.addItem(item).itemImage = new CellItemImage(this, item);
+	this.items.addItem(item);
+	item.itemImage = new CellItemImage(this, item);
 };
 Cell.prototype.removeItem = function(typeId, param) {
 	var item = this.items.getItem(typeId, param);
@@ -221,12 +224,12 @@ Wall.prototype.show = function() {
 			&&( !Terrain.cells[x][y-2].floor||Terrain.cells[x][y-2].wall)) {
 		this.newDoorSide(0);
 	}
-	if (x<width-1&&Terrain.cells[x+1][y].object
+	if (x<Terrain.width-1&&Terrain.cells[x+1][y].object
 			&&isDoor(Terrain.cells[x+1][y].object.type)
 			&&( !Terrain.cells[x+2][y].floor||Terrain.cells[x+2][y].wall)) {
 		this.newDoorSide(1);
 	}
-	if (y<height-1&&Terrain.cells[x][y+1].object
+	if (y<Terrain.height-1&&Terrain.cells[x][y+1].object
 			&&isDoor(Terrain.cells[x][y+1].object.type)
 			&&( !Terrain.cells[x][y+2].floor||Terrain.cells[x][y+2].wall)) {
 		this.newDoorSide(2);
@@ -244,14 +247,14 @@ Wall.prototype.show = function() {
 			this.doorSides[0])
 			) ? "1" : "0";
 	
-	var postfixE = (x<width-1&&(Terrain.cells[x+1][y].wall
+	var postfixE = (x<Terrain.width-1&&(Terrain.cells[x+1][y].wall
 			&& (!wallConnectsOnlyWithItself(Terrain.cells[x+1][y].wall.type) &&
 			!wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type)	|| 
 				wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) && 
 				Terrain.cells[x+1][y].wall.type==Terrain.cells[x][y].wall.type) ||
 			this.doorSides[1]) 
 			) ? "1" : "0";
-	var postfixS = (y<height-1&&(Terrain.cells[x][y+1].wall
+	var postfixS = (y<Terrain.height-1&&(Terrain.cells[x][y+1].wall
 			&& (!wallConnectsOnlyWithItself(Terrain.cells[x][y+1].wall.type) &&
 			!wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) || 
 				wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) && 
@@ -390,8 +393,8 @@ Floor.prototype.show = function(noForceNeighbourReshow) {
 
 	}
 	var viewIndent = Terrain.getViewIndentation(this.x,this.y,32);
-	if (this.x+1<width&&Terrain.cells[this.x+1][this.y].floor.type!=this.type||this.x-1>0
-			&&Terrain.cells[this.x-1][this.y].floor.type!=this.type||this.y+1<height
+	if (this.x+1<Terrain.width&&Terrain.cells[this.x+1][this.y].floor.type!=this.type||this.x-1>0
+			&&Terrain.cells[this.x-1][this.y].floor.type!=this.type||this.y+1<Terrain.height
 			&&Terrain.cells[this.x][this.y+1].floor.type!=this.type||this.y-1>0
 			&&Terrain.cells[this.x][this.y-1].floor.type!=this.type) {
 		// Если этот тайл граничит с тайлом другого типа
@@ -401,10 +404,10 @@ Floor.prototype.show = function(noForceNeighbourReshow) {
 		var up = (y==0) ? this.type
 				: (Terrain.cells[this.x][this.y-1].floor==null||Terrain.cells[this.x][this.y-1].wall) ? this.type
 						: Terrain.cells[this.x][this.y-1].floor.type;
-		var right = (x==width-1) ? this.type
+		var right = (x==Terrain.width-1) ? this.type
 				: (Terrain.cells[this.x+1][this.y].floor==null||Terrain.cells[this.x+1][this.y].wall) ? this.type
 						: Terrain.cells[x+1][y].floor.type;
-		var down = (y==height-1) ? this.type
+		var down = (y==Terrain.height-1) ? this.type
 				: (Terrain.cells[this.x][this.y+1].floor==null||Terrain.cells[this.x][this.y+1].wall) ? this.type
 						: Terrain.cells[this.x][this.y+1].floor.type;
 		var left = (x==0) ? this.type
@@ -598,7 +601,7 @@ GameObject.prototype.show = function() {
 		var viewIndent = Terrain.getViewIndentation(this.x, this.y, 1);
 		// разобраться
 		var vertical = isDoor(this.type)
-				&&(1+this.y<height&&Terrain.cells[this.x][1+this.y].wall
+				&&(1+this.y<Terrain.height&&Terrain.cells[this.x][1+this.y].wall
 						&&this.y-1>0&&Terrain.cells[this.x][this.y-1].wall);
 		if (isDoor(this.type) && (Terrain.cameraOrientation == Side.E || Terrain.cameraOrientation == Side.W)) {
 			vertical = !vertical;
@@ -652,8 +655,8 @@ Forest.prototype.show = function() {
 		// Особый спрайт леса выбирается в том случае, если на той же клетке
 		// есть река
 		postfix += (y>0&&Terrain.cells[x][y-1].path) ? "1" : "0";
-		postfix += (x<width-1&&Terrain.cells[x+1][y].path) ? "1" : "0";
-		postfix += (y<height-1&&Terrain.cells[x][y+1].path) ? "1" : "0";
+		postfix += (x<Terrain.width-1&&Terrain.cells[x+1][y].path) ? "1" : "0";
+		postfix += (y<Terrain.height-1&&Terrain.cells[x][y+1].path) ? "1" : "0";
 		postfix += (x>0&&Terrain.cells[x-1][y].path) ? "1" : "0";
 	} else {
 		// Иначе используется обычный спрайт
@@ -701,9 +704,9 @@ Path.prototype.show = function() {
 	var y = this.y;
 	postfix += (y>0&&Terrain.cells[x][y-1].path&&Terrain.cells[x][y-1].path.type==this.type) ? "1"
 			: "0";
-	postfix += (x<width-1&&Terrain.cells[x+1][y].path&&Terrain.cells[x+1][y].path.type==this.type) ? "1"
+	postfix += (x<Terrain.width-1&&Terrain.cells[x+1][y].path&&Terrain.cells[x+1][y].path.type==this.type) ? "1"
 			: "0";
-	postfix += (y<height-1&&Terrain.cells[x][y+1].path&&Terrain.cells[x][y+1].path.type==this.type) ? "1"
+	postfix += (y<Terrain.height-1&&Terrain.cells[x][y+1].path&&Terrain.cells[x][y+1].path.type==this.type) ? "1"
 			: "0";
 	postfix += (x>0&&Terrain.cells[x-1][y].path&&Terrain.cells[x-1][y].path.type==this.type) ? "1"
 			: "0";
@@ -736,7 +739,7 @@ Path.prototype.unshade = function() {
 	this.image.getElementsByTagName("img")[0].style.opacity = "1";
 	// this.image.getElementsByTagName("img")[0].style.display="inline-block";
 };
-function WorldPlayer(characterId, name, cls, race, party, x, y) {
+function WorldPlayer(characterId, name, cls, race, party, x, y, equipment) {
 	this.image = null;
 	this.x = x;
 	this.y = y;
@@ -744,6 +747,7 @@ function WorldPlayer(characterId, name, cls, race, party, x, y) {
 	this.characterId = characterId;
 	this.race = race;
 	this.visible = false;
+	this.equipment = new Equipment();
 	this.doll = new Doll(this);
 	this.doll.draw();
 	// Индекс объекта в массиве с игроками в его ячейке
@@ -995,17 +999,17 @@ Ceiling.prototype.show = function _() {
 function visToNum(x, y) {
 	// Возвращает 1, если клетка видима, и 0, если клетка невидима или находится
 	// за пределами карты
-	return +(x>=0&&x<width&&y>0&&y<height /*&& !!player.visibleCells[x][y]*/);
+	return +(x>=0&&x<Terrain.width&&y>0&&y<Terrain.height /*&& !!player.visibleCells[x][y]*/);
 }
 function seenToNum(x, y) {
 	// Возвращает 1, если клетка уже была увидена, и 0, если клетка не была
 	// увидена или находится за пределами карты
-	return +(x>=0&&x<width&&y>0&&y<height&& ! !player.seenCells[x][y]);
+	return +(x>=0&&x<Terrain.width&&y>0&&y<Terrain.height&& ! !player.seenCells[x][y]);
 }
 function wallToNum(x, y) {
 	// Возвращает 1, если на клетке есть стена, и 0, если на клетке нет стены
 	// или нет такой клетки
-	return +(x>=0&&x<width&&y>0&&y<height&&( ! !Terrain.cells[x][y].wall|| ! !(Terrain.cells[x][y].object&&isDoor(Terrain.cells[x][y].object.type))));
+	return +(x>=0&&x<Terrain.width&&y>0&&y<Terrain.height&&( ! !Terrain.cells[x][y].wall|| ! !(Terrain.cells[x][y].object&&isDoor(Terrain.cells[x][y].object.type))));
 }
 function anyItemsInCell(x, y) {
 	// Проверяет, есть ли в клетке предметы

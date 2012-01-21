@@ -4,121 +4,8 @@ handlers={
 	/* Registered actions. Now there are universal action that are
 	 * registered by default. UI elements save their actions and
 	 * contexts there when constructed.
-	 */	
-		leaveLocation: {
-			action: function _() {
-				if (onGlobalMap) {
-					UI.notify("alert", "Вы уже на глобальной карте");
-					return;
-				}
-				leaveLocation();
-			},
-			context: window
-		},
-		enterLocation: {
-			action: function _() {
-				if (!onGlobalMap) {
-					UI.notify("alert", "Вы уже в локации");
-					return;
-				}
-				if (!player.isPartyLeader) {
-				// Если игрок - не лидер группы (и состоит в группе, то он не может входить в локацию сам
-					UI.notify("alert", "Вы не лидер партии!");
-				} else if (onGlobalMap) {
-					enterArea();
-				}
-			},
-			context: window
-		},
-		quickRefresh : {
-			action: function _() {
-				Net.quickRefresh();
-			},
-			context: window			
-		},
-		disableUI: {
-			action:function _() {
-				UI.disable();
-			},
-			context: window
-		},
-		enableUI: {
-			action:function _() {
-				UI.enable();
-			},
-			context: window
-		},
-		toggleUI: {
-			action:function _() {
-				if (UI.disabled) {
-					UI.enable();
-				} else {
-					UI.disable();
-				}
-			},
-			context: window
-		},
-		selectMissile: {
-			action: function _() {
-				CellCursor.enterSelectionMode(Player.prototype.sendShootMissile, player,11);
-			},
-			context: window
-		},
-		unselectCellAction: {
-			action: function _() {
-				CellCursor.exitSelectionMode();
-			},
-			context: window
-		},
-		chooseCell: {
-			action: function _() {
-				CellCursor.chooseCurrentCell();
-			},
-			context: window
-		},
-		takeAllFromContainer: {
-			action: function _() {
-				var itemValues = Global.container.items.getValues();
-				for (var i in itemValues) {
-					player.addActionToQueue(
-						player.sendTakeFromContainer, 
-						[
-						 	itemValues[i].typeId, 
-						 	itemValues[i][itemValues[i].amount ? "amount" : "itemId"]
-						]
-					);
-				}
-				player.doActionFromQueue();
-			},
-			context: window
-		},
-		rotateCamera: {
-			action: function _() {
-				if (Terrain.cameraOrientation == Side.N) {
-					rotateCamera(Side.E);
-				} else if (Terrain.cameraOrientation == Side.E) {
-					rotateCamera(Side.S);
-				} else if (Terrain.cameraOrientation == Side.S) {
-					rotateCamera(Side.W);
-				} else if (Terrain.cameraOrientation == Side.W) {
-					rotateCamera(Side.N);
-				}
-			},
-			context: window		
-		},
-		idle: {
-			action: function () {
-				player.sendIdle();
-			},
-			context: window
-		},
-		cursorMove:  {
-			action: function (side) {
-				var d = side.side2d();
-				CellCursor.move(CellCursor.x+d[0], CellCursor.y+d[1]);
-			},
-			context: window
-		}
+	 */
+		
 	},
 	document: {
 		keydown: Keys.universalKeyDownHandler,
@@ -135,7 +22,7 @@ handlers={
 			var normal = Terrain.getNormalView(xPx, yPx);
 			var x=normal.x;
 			var y=normal.y;
-			if (onGlobalMap) {
+			if (Terrain.onGlobalMap) {
 			// На глобальной карте
 				if (e.shiftKey || inMenu) {
 					centerWorldCamera(x,y);
@@ -207,51 +94,51 @@ handlers={
 //				// var nCurrentCell=document.getElementById("cellCursorPri");
 //				// nCurrentCell.style.top=y*32+"px";
 //				// nCurrentCell.style.left=x*32+"px";
-//				// if (onGlobalMap || player.seenCells[x][y]) {
+//				// if (Terrain.onGlobalMap || player.seenCells[x][y]) {
 //					// nCurrentCell.style.borderColor="#ff0";
 //				// } else {
 //					// nCurrentCell.style.borderColor="#f00";
 //				// }
 //			}
 			// Запрозрачивание горизонтального ряда объектов, закрывающих обзор
-			var objUnderCursor=getObject(x,y);
-			for (var dy=1;!getObject(x,y+dy-1) && Terrain.cells[x][y+dy];dy++) {
-				if (hiddenBotheringObjects.indexOf(getNum(x,y+dy))==-1 && player.seenCells[x][y] && (!objUnderCursor || objectProperties[objUnderCursor.type][2]==1)) {
-				// Если при движении мыши скрывается один и тот же ряд объектов, то ничего не делать, 
-				// иначе запрозрачить предыдущие распрозраченные объекты
-					var objectLower=getObject(x,y+dy);
-					if (objectLower && objectProperties[objectLower.type][1]>dy*32) {
-					// Если есть мешающий объект и он закрывает своей высотой обзор
-						// var obj=Terrain.cells[mapCursorX][mapCursorY+1].wall || Terrain.cells[mapCursorX][mapCursorY+1].object;
-						// obj.hide();
-						// obj.show();
-						// if (!player.canSee(mapCursorX,mapCursorY+1)) {
-							// obj.shade();
-						// }
-						// От мешающего объекта идём влево. Если объект слева тоже мешающий, то продолжаем, иначе останавливаемся
-						var leftestObject=objectLower;
-						var i=x;
-						while ((leftestObject=getObject(--i,y+dy)) &&  leftestObject.image && objectProperties[leftestObject.type][1]>32 && !objectProperties[leftestObject.type][2] && player.seenCells[i][y] && (!getObject(i,y) || objectProperties[getObject(i,y).type][2]==1)) { 
-						// Получаем объект слева так же, как и objectLower
-						}
-						// Теперь в i мы получили x-координату левейшего мешающего объекта.
-						// Идём от этого объекта направо и скрываем все мешающие объекты
-						var obj;
-						while ((obj=getObject(++i,y+dy)) &&  obj.image && objectProperties[obj.type][1]>32 && !objectProperties[obj.type][2] && player.seenCells[i][y] && (!getObject(i,y) || objectProperties[getObject(i,y).type][2]==1)) {
-							try {
-								obj.cursorShade();
-								// obj.image.style.opacity="0.3";
-							} catch (e) {
-								
-							}
-							hiddenBotheringObjects.push(getNum(i,y+dy));
-						}
-					}
-				}
-			}
+//			var objUnderCursor=getObject(x,y);
+//			for (var dy=1;!getObject(x,y+dy-1) && Terrain.cells[x][y+dy];dy++) {
+//				if (hiddenBotheringObjects.indexOf(getNum(x,y+dy))==-1 && player.seenCells[x][y] && (!objUnderCursor || objectProperties[objUnderCursor.type][2]==1)) {
+//				// Если при движении мыши скрывается один и тот же ряд объектов, то ничего не делать, 
+//				// иначе запрозрачить предыдущие распрозраченные объекты
+//					var objectLower=getObject(x,y+dy);
+//					if (objectLower && objectProperties[objectLower.type][1]>dy*32) {
+//					// Если есть мешающий объект и он закрывает своей высотой обзор
+//						// var obj=Terrain.cells[mapCursorX][mapCursorY+1].wall || Terrain.cells[mapCursorX][mapCursorY+1].object;
+//						// obj.hide();
+//						// obj.show();
+//						// if (!player.canSee(mapCursorX,mapCursorY+1)) {
+//							// obj.shade();
+//						// }
+//						// От мешающего объекта идём влево. Если объект слева тоже мешающий, то продолжаем, иначе останавливаемся
+//						var leftestObject=objectLower;
+//						var i=x;
+//						while ((leftestObject=getObject(--i,y+dy)) &&  leftestObject.image && objectProperties[leftestObject.type][1]>32 && !objectProperties[leftestObject.type][2] && player.seenCells[i][y] && (!getObject(i,y) || objectProperties[getObject(i,y).type][2]==1)) { 
+//						// Получаем объект слева так же, как и objectLower
+//						}
+//						// Теперь в i мы получили x-координату левейшего мешающего объекта.
+//						// Идём от этого объекта направо и скрываем все мешающие объекты
+//						var obj;
+//						while ((obj=getObject(++i,y+dy)) &&  obj.image && objectProperties[obj.type][1]>32 && !objectProperties[obj.type][2] && player.seenCells[i][y] && (!getObject(i,y) || objectProperties[getObject(i,y).type][2]==1)) {
+//							try {
+//								obj.cursorShade();
+//								// obj.image.style.opacity="0.3";
+//							} catch (e) {
+//								
+//							}
+//							hiddenBotheringObjects.push(getNum(i,y+dy));
+//						}
+//					}
+//				}
+//			}
 		},
 		contextmenu:function _(e) {
-			if (e.shiftKey || !onGlobalMap) {
+			if (e.shiftKey || !Terrain.onGlobalMap) {
 				return;
 			}
 			var elementCoord=getOffsetRect(gameField);
@@ -337,7 +224,7 @@ handlers={
 					l: String login,
 					p: String password,
 				}
-				out: {players:[{characterId, name, race, class, level, ammunition}xN]}
+				out: {players:[{characterId, name, race, class, level, equipment}xN]}
 			*/
 			if (data.error !== undefined) {
 			// If there is an error
@@ -359,7 +246,7 @@ handlers={
 		 *  		characterId, name, race, class, level, 
 		 *  		maxHp, maxMp, 
 		 *  		str, dex, wis, itl, 
-		 *  		items, ammunition, spells, skills, 
+		 *  		items, equipment, spells, skills, 
 		 *  		worldX, worldY
 		 *  	],
 		 *  	islead : boolean,
@@ -374,11 +261,11 @@ handlers={
 		 *  		characterId, name, race, class, level,
 		 *  		maxHp, maxMp, 
 		 *  		str, dex, wis, itl, 
-		 *  		items, ammunition, spells, skills,
+		 *  		items, equipment, spells, skills,
 		 *  		x, y
 		 *  	],
 		 *  	islead : boolean,
-		 *		online : [[characterId,x,y,name,maxHp,hp,maxMp,mp,effects,ammunition(,cls,race)|(,type)]xM],
+		 *		online : [[characterId,x,y,name,maxHp,hp,maxMp,mp,effects,equipment(,cls,race)|(,type)]xM],
 		 *  }
 		 */
 			if (data.error === 0) {
@@ -390,25 +277,18 @@ handlers={
 			} else if (data.error == 4) {
 				throw new Error("No such character on account");
 			}
-			player={
-				name:data.name,
-				characterId:data.characterId,
-				isPartyLeader:((data.party == 0 || data.party == data.characterId) ? true : false),
-				partyId:data.party,
-				worldX:data.worldX,
-				worldY:data.worldY				
-			};	// Создадим неполный объект игрока 
-				// (чтобы не создавать новую переменную для сохранения имени 
-				// и брать её из естественного источника - объекта player)
 			showLoadingScreen();
 			if (data.onGlobalMap) {
 			// World loading
 				Terrain.isPeaceful = false;
-				onGlobalMap = true;
+				Terrain.onGlobalMap = true;
 				prepareArea();
 				readWorld(data.w);
+				if (player == null) {
+					new Player(data.p);
+				}
 				readOnlinePlayers(data.online);
-				new Player(data.p);
+				
 				centerWorldCamera(player.worldX,player.worldY,true);
 				readChatMessages(data.chat);
 				data.inv && readInvite(data.inv);
@@ -426,16 +306,21 @@ handlers={
 					delete characters[1];
 				}
 				characters = {};
-				onGlobalMap=false;
+				Terrain.onGlobalMap=false;
 				showLoadingScreen();
-				onlinePlayers=[];
-				width=data.l.w;
-				height=data.l.h;
+				onlinePlayers = [];
+				Terrain.width = data.l.w;
+				height = data.l.h;
 				Terrain.isPeaceful = data.l.p;
-				onlinePlayers=[];
+				onlinePlayers = [];
 				prepareArea();
 				readLocation(data.l);
-				new Player(data.p);
+				if (player == null) {
+					new Player(data.p);
+					
+				} else {
+					console.log(player)
+				}
 				player.display();
 				moveGameField(player.x, player.y, true);
 				player.initVisibility();
@@ -448,10 +333,10 @@ handlers={
 			hideLoadingScreen();
 		},
 		loadPassiveContents : function _(data) {
-			onGlobalMap = true;
+			Terrain.onGlobalMap = true;
 			readWorld(data);
 			recountWindowSize();
-			centerWorldCamera(width/2, height/2, true);
+			centerWorldCamera(Terrain.width/2, Terrain.height/2, true);
 			hideLoadingScreen();
 		},
 		authComplete : function _() {
@@ -471,7 +356,7 @@ handlers={
 		});
 		UI.addWindow({
 			type: "windowInfo",
-			hAlign: "center",
+			hAlign: "right",
 			vAlign: "bottom",
 			displayMode: "always",
 			keyMode: "always"
@@ -545,7 +430,7 @@ handlers={
 	// then other elements.
 		UI.addPanel({
 			name: "main",
-			width: 240,
+			width: 204,
 			side: "right"
 		});
 		handlers.initWindows();
@@ -576,13 +461,12 @@ handlers={
 			type: "iconMissileType",
 			panel: "main"
 		});
-		
 		UI.addElement({
 			type: "iconsSpells",
 			panel: "main"
 		});
 		UI.addElement({
-			type: "ammunition",
+			type: "iconsEquipment",
 			panel: "main"
 		});
 		UI.addElement({

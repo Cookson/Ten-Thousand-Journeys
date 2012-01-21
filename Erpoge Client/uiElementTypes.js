@@ -1,5 +1,5 @@
 UIElementTypes = {};
-/* 
+/*
  * UIElementTypes object contains description objects for 
  * UI elements that can be created in game. Each type has 4
  * properties:
@@ -7,7 +7,7 @@ UIElementTypes = {};
  * onRefresh - function that determines the behavior of UI element:
  * 		how it changes when something happens in game. 
  * keysActions - object containing functions that may be bind
- * 		to keypad keys (see keysCore.js/Keys.registerKeyAction
+ * 		to keypad keys (see UI.registerAction
  * 		for information how exactly this works).
  * handlers - object containing functions that are bound to 
  * 		this UI element's HTML nodes when object is constructed
@@ -33,7 +33,7 @@ UIElementTypes.panel = {
 };
 UIElementTypes.windowInfo = {
 	onInit: function _() {
-	
+		
 	},
 	listeners: {
 		infoShow: function _(structure) {
@@ -98,9 +98,7 @@ UIElementTypes.windowGameAlert = {
 			if (data instanceof DocumentFragment) {
 			// Show DOM nodes structures
 				this.getData("textNodeText").nodeValue = "";
-				console.log(data.children);
-				nStructure.appendChild(data);		
-				console.log(data.children);
+				nStructure.appendChild(data);
 				nStructure.appendChild(data);				
 			} else {
 			// Show plain text	
@@ -181,7 +179,7 @@ UIElementTypes.windowAccountCharacters = {
 	listeners: {
 		accountPlayersRecieve: function _(data) {
 			// Clear players list
-			// data: [[characterId, name, class, race, ammunition]xN]
+			// data: [[characterId, name, class, race, equipment]xN]
 			var nPlayersList = this.getData("playersListNode");
 			while (nPlayersList.children.length>0) {
 				nPlayersList.children[0].parentNode.removeChild(nPlayersList.children[0]);
@@ -444,93 +442,84 @@ UIElementTypes.windowLogin = {
 //		};
 	}
 };
-
 UIElementTypes.iconsInventory = {
  	onInit: function _() {
- 		
+ 		this.setData("itemViewCache", new ItemViewCache("Inventory"));
+ 		this.setData("displayedNullViews",[]);
  	},
  	listeners: {
  		inventoryChange: function _(notifier) {
-	 		var nDivWrap = document.createElement("div");
-	 		var nImg = document.createElement("img");
-	 		var nNum = document.createElement("div");
-	 		var nWrap = document.createElement("div");
-	 		
-	 		this.addCustomClass(nDivWrap,"DivWrap");
-	 		this.addCustomClass(nImg,"ItemImg");
-	 		nNum.addClass("itemAmount");
-	 		
-	 		nWrap.addClass("wrap");
-	 		nWrap.style.zIndex = "2";
-	 		
-	 		var nlInvItems = this.rootElement.children; 
-	 		while (nlInvItems.length>0) {
-	 			this.rootElement.removeChild(nlInvItems[0]);
-	 		}
-	 		var length = player.items.length;
 	 		var count = 0;
 	 		var items = player.items.getValues();
-	 		for (var i in items) {
-	 			var item = items[i];
-	 			count++;
-	 			
-	 			var nInvItemImg = nImg.cloneNode(true);
-	 			var nItemWrap = nDivWrap.cloneNode(true);
-	 			nInvItemImg.setAttribute("src", "./images/items/"+item.typeId+".png");
-	 			
-	 			nItemWrap.setData("typeId", item.typeId);
-	 			if (item.isUnique) {
-	 				nItemWrap.setData("param", item.itemId);
-	 			} else {
-	 				nItemWrap.setData("param", item.amount);
-	 				if (item.amount > 1) {
-	 					var nItemNum = nNum.cloneNode(true);
-	 					var nItemNumWrap = nWrap.cloneNode(true);
-	 					
-	 					nItemNum.appendChild(document.createTextNode(item.amount));
-	 					nItemNumWrap.appendChild(nItemNum);
-	 					nItemWrap.appendChild(nItemNumWrap);
-	 				}
-	 			}
-	 			
-	 			this.addEventListener(nItemWrap, "click", "itemClick");
-	 			this.addEventListener(nItemWrap, "contextmenu", "itemContextmenu");
-	 			this.addEventListener(nItemWrap, "mousemove", "itemMousemove");
-	 			this.addEventListener(nItemWrap, "mouseout", "itemMouseout"); 	
-	 			
-	 			nItemWrap.appendChild(nInvItemImg);
-	 			this.rootElement.appendChild(nItemWrap);
+	 		var cache = this.getData("itemViewCache");
+	 		var displayedNullViews = this.getData("displayedNullViews");
+	 		while (displayedNullViews.length > 0) {
+	 			this.rootElement.removeChild(displayedNullViews[0]);
+	 			displayedNullViews.shift();
 	 		}
+ 			var itemChanges = getSetsDifferences(player.items, cache);
+ 			for (var i=0; i<itemChanges[0].length; i++) {
+ 			// New items
+ 				count++;
+ 				var nWrap = cache.createItemView(itemChanges[0][i]).getNode();
+ 				this.addEventListener(nWrap, "click", "click");
+	 			this.addEventListener(nWrap, "contextmenu", "contextmenu");
+	 			this.addEventListener(nWrap, "mouseout", "mouseout");
+	 			this.rootElement.appendChild(nWrap);
+ 			}
+ 			for (var i=0; i<itemChanges[1].length; i++) {
+ 			// Removing items
+ 				var itemView = cache.getItemView(itemChanges[1][i]);
+ 				if (itemView.isDisplayed()) {
+ 					this.rootElement.removeChild(itemView.getNode());
+ 				}
+ 			}
+ 			for (var i=0; i<itemChanges[2].length; i++) {
+ 			// Rest of items may be displayed or cached
+ 				count++;
+ 				var item = itemChanges[2][i];
+ 				var itemView = cache.getItemView(item);
+ 				if (itemView.isDisplayed()) {
+ 				// If displayed - only refresh amount of pile items 					
+	 				if (item instanceof ItemPile) {
+	 					itemView.changeAmount(item.amount);
+	 				}
+ 				} else {
+ 				// If cached - display ItemView
+ 					this.rootElement.appendChild(itemView.getNode());
+ 				}
+ 			}
 	 		while (count%6 != 0) {
-	 			var nInvItemImg = nImg.cloneNode(true);
-	 			nInvItemImg.setData("typeId", -1);
-	 			nInvItemImg.setAttribute("src", "./images/intf/itemBg.png");
-	 			var nItemWrap = nDivWrap.cloneNode(true);
-	 			nItemWrap.appendChild(nInvItemImg);
-	 			this.rootElement.appendChild(nItemWrap);
+	 			var nullView = NullItemViewCache.queryItemView("Inventory").getNode();
+	 			this.rootElement.appendChild(nullView);
+	 			displayedNullViews.push(nullView);
 	 			count++;
 	 		}
  		},
  		locationLoad: "inventoryChange",
  		worldLoad: "inventoryChange"
  	},
- 	keysActions: {},
+ 	keysActions: {
+ 		startMissileSelect: function () {
+			
+		} 
+ 	},
  	handlers: {
-		itemClick: function _(e) {
+		click: function _(e) {
 			var typeId = this.getData("typeId");
 			var param = this.getData("param");
-			if (onGlobalMap && isEquipment(typeId)) {
+			if (Terrain.onGlobalMap && isEquipment(typeId)) {
 			// На глобальной карте
 				var slot = getSlotFromClass(items[typeId][1]);
-				if (!player.ammunition.hasItemInSlot(slot)) {
+				if (!player.equipment.hasItemInSlot(slot)) {
 					player.sendPutOn(param);
 				} else {
-					player.sendTakeOff(player.ammunition.getItemInSlot(slot));
+					player.sendTakeOff(player.equipment.getItemInSlot(slot));
 				}
 			} else if (UI.mode == UI.MODE_CONTAINER) {
 			// Положить в контейнер
 				player.sendPutToContainer(typeId, (e.shiftKey ? 1 : param));
-			} else if (!onGlobalMap && e.shiftKey) {
+			} else if (!Terrain.onGlobalMap && e.shiftKey) {
 			// Выкинуть предмет (шифт-клик)
 				if (isUnique(typeId)) {
 					player.sendDrop(player.items.getUnique(param));
@@ -543,80 +532,54 @@ UIElementTypes.iconsInventory = {
 			} else if (isEquipment(typeId)) {
 			// Если предмет можно надеть, то надеть его
 				var slot = getSlotFromClass(items[typeId][1]);
-				if (!player.ammunition.hasItemInSlot(slot)) {
+				if (!player.equipment.hasItemInSlot(slot)) {
 					player.sendPutOn(param);
 				} else {
-					player.sendTakeOff(player.ammunition.getItemInSlot(slot));
+					player.sendTakeOff(player.equipment.getItemInSlot(slot));
 				}
 			}
 		},
-		itemContextmenu: function _(e) {
-			var itemId = this.getData("typeId");
-			if (itemId==-1) {
+		contextmenu: function _(e) {
+			var typeId = this.getData("typeId");
+			if (typeId == -1) {
 				return;
 			}
-			var slot; // Номер слота амуниции (см. items.js/items.php)
-			var itemInfo; // Информация о предмете
-			var itemNum=this.getAttribute("itemNum");
-			var nItemInfo=document.getElementById("itemInfo");
-			if (nItemInfo.style.display=="block") {
-			// Повторный двойной клик
-				nItemInfo.style.display="none";
-				return false;
-			}
 			
-			// Получаем информацию о предмете
-			if (items[itemId]===undefined) {
-			// Если такого предмета нет в игре
-				itemInfo="Неизвестный предмет";
+			// Get item information
+			if (isWeapon(typeId)) {
+				UI.notify("infoShow", UI.getStaticDOMStructure("item"+typeId, function () {
+					return new MarkupMaker()
+						.add("b").text(items[typeId][0])
+						.add("div").text("Урон: "+items[typeId][4])
+						.add("div").text("Скорость: "+items[typeId][6])
+						.getWrappedContents();
+				}));
+			} else if (isEquipment(typeId)) {
+				UI.notify("infoShow", UI.getStaticDOMStructure("item"+typeId, function () {
+					return new MarkupMaker()
+						.add("b").text(items[typeId][0])
+						.add("div").text("Защита: "+items[typeId][4])
+						.add("div").text("Тяжесть: "+items[typeId][5])
+						.getWrappedContents();
+				}));
 			} else {
-				itemInfo=items[itemId][0]+", "+itemNum+" шт.";
+				UI.notify("infoShow", UI.getStaticDOMStructure("item"+typeId, function () {
+					return new MarkupMaker()
+						.add("b").text(items[typeId][0])
+						.getWrappedContents();
+				}));
 			}
-			
-			// Выводим информацию о предмете
-			nItemInfo.style.display="block";
-			
-			if (isWeapon(itemId)) {
-				nItemInfo.innerHTML="<b>"+items[itemId][0]+"</b>Урон:&nbsp;"+items[itemId][4]+",<br /> Скорость:&nbsp;"+items[itemId][6];
-			} else if (isEquipment(itemId)) {
-				nItemInfo.innerHTML="<b>"+items[itemId][0]+"</b>Защита:&nbsp;"+items[itemId][4]+",<br /> Тяжесть:&nbsp;"+items[itemId][5];
-			} else {
-				nItemInfo.innerHTML="<b>"+items[itemId][0]+"</b>";
-			}
-			nItemInfo.style.top=(e.clientY-nItemInfo.clientHeight-20)+"px";
-			nItemInfo.style.left=(e.clientX-nItemInfo.clientWidth/2)+"px";
 			return false;
 		},
-		itemMouseout: function _(e) {
-			document.getElementById("itemInfo").style.display="none";
-		},
-		itemMousemove: function _(e) {
-		// Передвижение блока с информацией по мере перемещения мышки
-			var nItemInfo=document.getElementById("itemInfo");
-			nItemInfo.style.top=(e.clientY-nItemInfo.clientHeight-20)+"px";
-			nItemInfo.style.left=(e.clientX-nItemInfo.clientWidth/2)+"px";
+		mouseout: function _(e) {
+			UI.notify("infoHide");
 		}
 	},
 	cssRules: function _() {
 		return "						\
 		div.$type$ {					\
-			cursor: pointer;			\
-			max-width: 240px;			\
-			width: 240px;				\
-		}								\
-		div.$type$DivWrap {				\
-			display: inline-block;		\
-			width: 32px;				\
-			height: 32px;				\
-			background-image: url('./images/intf/itemBg.png');	\
-			border: 1px solid #534511;	\
-			margin: 3px;				\
-		}								\
-		img.$type$ItemImg {				\
-			width: 32px;				\
-			height: 32px;				\
-			cursor: pointer;			\
-			z-index: 1;					\
+			max-width: 204px;			\
+			width: 204px;				\
 		}								\
  		";		
 	}
@@ -641,7 +604,7 @@ UIElementTypes.minimap = {
 	 		this.getData("minimap").init();		
 	 	},
 	 	locationLoad: function _() {
-	 		this.getData("minimap").changeDimensions(width, height);
+	 		this.getData("minimap").changeDimensions(Terrain.width, Terrain.height);
 	 	},
 	 	worldLoad: "locationLoad"
 	},
@@ -823,16 +786,9 @@ UIElementTypes.chat = {
 };
 UIElementTypes.iconMissileType = {
 	onInit: function () {
-		var nBg = document.createElement("div");
-		var nImg = document.createElement("img");
-		
-		this.addCustomClass(nBg,"Bg");
-		this.addCustomClass(nBg,"Img");
-		
-		this.rootElement.appendChild(nBg);
-		this.rootElement.appendChild(nImg);
-		
-		this.setData("imgNode",nImg);
+		var itemView = new ItemView(new UniqueItem(2300,1), "Equipment");
+		this.rootElement.appendChild(itemView.getNode());
+		this.setData("imgNode",itemView.getImg());
 	},
 	listeners: {
 		missileTypeChange: function _() {
@@ -845,80 +801,59 @@ UIElementTypes.iconMissileType = {
 	},
 	handlers: {},
 	cssRules: function _() {
-		return "					\
-		div.$type$Bg {				\
-			min-width: 32px;		\
-			min-height: 32px;		\
-			background-image: url('./images/intf/ammunitionBg.png');	\
-		}							\
-		div.$type$Img {				\
-			position: absolute;		\
-		}							\
-		";
+		
 	}
 };
-UIElementTypes.ammunition = {
-	onInit: function _() {
-		var nDivProto = document.createElement("div");
-		var nImgProto = document.createElement("img");
-		
-		this.addCustomClass(nDivProto, "ItemDiv");
-		this.addCustomClass(nImgProto, "ItemImg");
-		
+UIElementTypes.iconsEquipment = {
+	onInit: function _() {	
+		this.setData("itemViews", []);
+		var itemViews = this.getData("itemViews");
 		for (var i=0; i<10; i++) {
-			var nDiv = nDivProto.cloneNode(true);
-			var nImg = nImgProto.cloneNode(true);
-			
+			var itemView = new ItemView(UniqueItem, "Equipment");
+			itemViews.push(itemView);
+			var nImg = itemView.getImg();
 			this.addEventListener(nImg, "click", "click");
 			this.addEventListener(nImg, "contextmenu", "contextmenu");
 			this.addEventListener(nImg, "mouseout", "mouseout");
-			
-			nDiv.appendChild(nImg);
-			this.rootElement.appendChild(nDiv);
+			this.rootElement.appendChild(itemView.getNode());
 		}
 	}, 
 	listeners: {
-		ammunitionChange: function _() {
-			var nlAmmunition=this.rootElement.getElementsByTagName("img");
-			for (var i=0;i<nlAmmunition.length;i++) {
-				nlAmmunition[i].setAttribute("src","./images/intf/nothing.png");
-			}
-			for (var i=0;i<nlAmmunition.length;i++) {
-				var nSlot=nlAmmunition[i];
-				var src = "./images/";
-				var typeId, itemId;
-				var item = player.ammunition.getItemInSlot(i);
-				if (player.ammunition.hasItemInSlot(i)) {
+		equipmentChange: function _() {
+			var itemViews = this.getData("itemViews");
+			for (var i=0; i<itemViews.length; i++) {
+				var nImg = itemViews[i].getImg();
+				var src, typeId, itemId;
+				var item = player.equipment.getItemInSlot(i);
+				if (item === null) {
+					src = "./images/intf/nothing.png";
+					typeId = -1;
+					itemId = -1;
+				} else {
 					src = "./images/items/"+item.typeId+".png";
 					typeId = item.typeId;
 					itemId = item.itemId;
-				} else {
-					src = "./images/intf/ammunitionBg.png";
-					typeId = -1;
-					itemId = -1;
 				}
-				
-				
-				nSlot.setAttribute("src", src);
-				nSlot.setAttribute("typeId", typeId);
-				nSlot.setAttribute("itemId", itemId);
+				nImg.setAttribute("src", src);
+				nImg.setData("typeId", typeId);
+				nImg.setData("itemId", itemId);
 			}
 		},
-		locationLoad: "ammunitionChange",
-		worldLoad: "ammunitionChange"
+		locationLoad: "equipmentChange",
+		worldLoad: "equipmentChange"
 	},
 	keysActions: {},
  	handlers: {
 		click: function _() {
-			var itemId = +this.getAttribute("itemId");
+			var itemId = this.getData("itemId");
 			if (itemId != -1) {
 			// If a piece of armor is put on, take if off.
-				player.sendTakeOff(player.ammunition.getItemById(itemId));
+				player.sendTakeOff(player.equipment.getItemById(itemId));
 			}
 		},
 		contextmenu: function _(e) {
-			var itemId=this.getAttribute("typeId");
-			if (itemId==-1) {
+			var itemId = this.getData("typeId");
+			if (itemId == -1) {
 				return;
 			}
 			var slot; // Номер слота амуниции (см. items.js/items.php)
@@ -932,7 +867,7 @@ UIElementTypes.ammunition = {
 				return false;
 			}
 			
-			// Получаем информацию о предмете
+			// Get item information
 			if (isWeapon(itemId)) {
 				UI.notify("infoShow", UI.getStaticDOMStructure("item"+itemId, function () {
 					return new MarkupMaker()
@@ -941,104 +876,90 @@ UIElementTypes.ammunition = {
 						.add("div").text("Скорость: "+items[itemId][6])
 						.getWrappedContents();
 				}));
-				nItemInfo.innerHTML="<b>"+items[itemId][0]+"</b>Урон:&nbsp;"+items[itemId][4]+",<br /> Скорость:&nbsp;"+itemArr[6];
 			} else if (isEquipment(itemId)) {
-				nItemInfo.innerHTML="<b>"+items[itemId][0]+"</b>Защита:&nbsp;"+items[itemId][4]+",<br /> Тяжесть:&nbsp;"+items[itemId][5];
+				UI.notify("infoShow", UI.getStaticDOMStructure("item"+itemId, function () {
+					return new MarkupMaker()
+						.add("b").text(items[itemId][0])
+						.add("div").text("Защита: "+items[itemId][4])
+						.add("div").text("Тяжесть: "+items[itemId][5])
+						.getWrappedContents();
+				}));
 			} else {
-				nItemInfo.innerHTML="<b>"+items[itemId][0]+"</b>";
+				UI.notify("infoShow", UI.getStaticDOMStructure("item"+itemId, function () {
+					return new MarkupMaker()
+						.add("b").text(items[itemId][0])
+						.getWrappedContents();
+				}));
 			}
 			return false;
 		},
 		mouseout: function _(e) {
-//			UI.notify("infoHide");
+			UI.notify("infoHide");
 		}
 	},
  	cssRules: function _() {
  		return "						\
  		div.$type$ {					\
- 			width: 240px;				\
+ 			width: 204px;				\
  			font-size: 0px;				\
  			text-align: center;			\
- 		}								\
- 		div.$type$ * {					\
- 			cursor: pointer;			\
- 		}								\
- 		div.$type$ItemDiv {				\
- 			display: inline-block;		\
- 			width: 32px;				\
- 			height: 32px;				\
- 			background-image: url('./images/intf/ammunitionBg.png');	\
- 			border: 1px solid #534511;	\
- 			margin: 3px;				\
- 		}								\
- 		img.$type$ItemImg {				\
- 			width: 32px;				\
- 			height: 32px;				\
- 			z-index: 1;					\
- 			cursor: pointer;			\
  		}								\
  		";
  	}
 };
 UIElementTypes.iconsLoot = {
 	onInit: function _() {
-		
+		this.setData("itemViewCache", new ItemViewCache("Loot"));
+		this.setData("displayedNullViews",[]);
 	},
 	listeners: {
 		lootChange: function _() {
-			var lootSlotsNum = 0;
-			while (this.rootElement.children.length>0) {
-				this.rootElement.removeChild(this.rootElement.children[0]);
+	 		var count = 0;
+	 		var items = Terrain.cells[player.x][player.y].items.getValues();
+	 		var cache = this.getData("itemViewCache");
+	 		var displayedNullViews = this.getData("displayedNullViews");
+	 		while (displayedNullViews.length > 0) {
+	 			this.rootElement.removeChild(displayedNullViews[0]);
+	 			displayedNullViews.shift();
+	 		}
+			var itemChanges = getSetsDifferences(Terrain.cells[player.x][player.y].items, cache);
+			for (var i=0; i<itemChanges[0].length; i++) {
+			// New items
+				count++;
+				var nWrap = cache.createItemView(itemChanges[0][i]).getNode();
+				this.addEventListener(nWrap, "click", "click");
+	 			this.addEventListener(nWrap, "contextmenu", "contextmenu");
+	 			this.addEventListener(nWrap, "mouseout", "mouseout");
+	 			this.rootElement.appendChild(nWrap);
 			}
-			var cellItems = Terrain.cells[player.x][player.y].items.getValues();
-			for (var i in cellItems) {
-				lootSlotsNum++;
-				var item = cellItems[i];
-				
-				var nImg = document.createElement("img");
-				nImg.setAttribute("src", "./images/items/"+item.typeId+".png");			
-				
-				var nInvSlot=document.createElement("div");
-				nInvSlot.setData("typeId", item.typeId);
-				
-				if (cellItems[i].isUnique) {
-					nInvSlot.setData("param", item.itemId);
-				} else {
-					nInvSlot.setData("param", item.amount);
-					if (item.amount > 1) {
-						var nWrap = document.createElement("div");
-						var nItemNum = document.createElement("div");
-						
-						nItemNum.addClass("itemAmount");
-						nWrap.addClass("wrap");
-						nWrap.style.zIndex = "2";
-						
-						nItemNum.appendChild(document.createTextNode(item.amount));
-						nWrap.appendChild(nItemNum);
-						nInvSlot.appendChild(nWrap);
-					}
+			for (var i=0; i<itemChanges[1].length; i++) {
+			// Removing items
+				var itemView = cache.getItemView(itemChanges[1][i]);
+				if (itemView.isDisplayed()) {
+					this.rootElement.removeChild(itemView.getNode());
 				}
-				
-				this.addCustomClass(nInvSlot, "InvSlot");
-				nInvSlot.style.backgroundImage="";
-				
-				this.addEventListener(nInvSlot, "click", "click");
-				this.addEventListener(nInvSlot, "contextmenu", "contextmenu");
-				this.addEventListener(nInvSlot, "mousemove", "mousemove");
-				this.addEventListener(nInvSlot, "mouseout", "mouseout");
-				
-				nInvSlot.appendChild(nImg);
-				this.rootElement.appendChild(nInvSlot);
 			}
-			while (lootSlotsNum%6 != 0) {
-			// Add emly slots to loot block
-				var nInvSlot = document.createElement("div");
-				var nImg = document.createElement("img");
-				nImg.src = "./images/intf/lootBg.png";
-				nInvSlot.appendChild(nImg);
-				this.rootElement.appendChild(nInvSlot);
-				lootSlotsNum++;
+			for (var i=0; i<itemChanges[2].length; i++) {
+			// Rest of items may be displayed or cached
+				count++;
+				var item = itemChanges[2][i];
+				var itemView = cache.getItemView(item);
+				if (itemView.isDisplayed()) {
+				// If displayed - only refresh amount of pile items 					
+ 				if (item instanceof ItemPile) {
+ 					itemView.changeAmount(item.amount);
+ 				}
+				} else {
+				// If cached - display ItemView
+					this.rootElement.appendChild(itemView.getNode());
+				}
 			}
+	 		while (count%6 != 0) {
+	 			var nullView = NullItemViewCache.queryItemView("Loot").getNode();
+	 			this.rootElement.appendChild(nullView);
+	 			displayedNullViews.push(nullView);
+	 			count++;
+	 		}
 		},
 		locationLoad: "lootChange"
 	},
@@ -1057,67 +978,43 @@ UIElementTypes.iconsLoot = {
 			player.sendPickUp(item);
 		},
 		contextmenu:function _(e) {
-			var nItemInfo=document.getElementById("itemInfo");
-			if (nItemInfo.style.display=="block") {
-			// Повторный правый клик
-				nItemInfo.style.display="none";
-				return false;
-			}
-			var itemInfo; // Информация о предмете
-			var itemId = this.getData("typeId");
+			var typeId = this.getData("typeId");
 			var itemNum = this.getData("param");
-			var itemArr = items[itemId];
-			// Выводим информацию о предмете
-			nItemInfo.style.display = "block";
-			if (!itemArr) {
-				return false;
-			} else if (isWeapon(itemId)) {
-				nItemInfo.innerHTML = "<b>"+itemArr[0]+"</b>Урон:&nbsp;"+itemArr[4]+",<br /> Скорость:&nbsp;"+itemArr[6];
-			} else if (isAmmunition(itemId)) {
-				nItemInfo.innerHTML = "<b>"+itemArr[0]+"</b>Защита:&nbsp;"+itemArr[4]+",<br /> Тяжесть:&nbsp;"+itemArr[5];
+			var itemArr = items[typeId];
+			// Get item information
+			if (isWeapon(typeId)) {
+				UI.notify("infoShow", UI.getStaticDOMStructure("item"+typeId, function () {
+					return new MarkupMaker()
+						.add("b").text(items[typeId][0])
+						.add("div").text("Урон: "+items[typeId][4])
+						.add("div").text("Скорость: "+items[typeId][6])
+						.getWrappedContents();
+				}));
+			} else if (isEquipment(itemId)) {
+				UI.notify("infoShow", UI.getStaticDOMStructure("item"+itemId, function () {
+					return new MarkupMaker()
+						.add("b").text(items[typeId][0])
+						.add("div").text("Защита: "+items[typeId][4])
+						.add("div").text("Тяжесть: "+items[typeId][5])
+						.getWrappedContents();
+				}));
 			} else {
-				nItemInfo.innerHTML = "<b>"+itemArr[0]+"</b>";
+				UI.notify("infoShow", UI.getStaticDOMStructure("item"+itemId, function () {
+					return new MarkupMaker()
+						.add("b").text(items[typeId][0])
+						.getWrappedContents();
+				}));
 			}
-			nItemInfo.style.top=(e.clientY-nItemInfo.clientHeight-50)+"px";
-			nItemInfo.style.left=(e.clientX-nItemInfo.clientWidth/2)+"px";
-			
 			return false;
 		},
-		mousemove:function _(e) {
-		// Передвижение блока с информацией по мере перемещения мышки
-			var nItemInfo=document.getElementById("itemInfo");
-			nItemInfo.style.top=(e.clientY-nItemInfo.clientHeight-20)+"px";
-			nItemInfo.style.left=(e.clientX-nItemInfo.clientWidth/2)+"px";
-		},
 		mouseout:function _(e) {
-			document.getElementById("itemInfo").style.display="none";
+			UI.notify("infoHide");
 		}
 	},
  	cssRules: function _() {
  		return "						\
  		div.$type$ {					\
- 			font-size: 0px;				\
- 			text-align: center;			\
  			width:240px;				\
- 		}								\
- 		div.$type$ * {				\
- 			cursor: pointer;			\
- 		}								\
- 		div.$type$ > div {			\
- 			display: inline-block;		\
- 			width: 32px;				\
- 			height: 32px;				\
- 			text-align: left;			\
- 			background-image: url('./images/intf/lootBg.png');	\
- 			border: 1px solid #534511;	\
- 			margin: 3px;				\
- 		}								\
- 		div.$type$ img {				\
- 			width: 32px;				\
- 			height: 32px;				\
- 		}								\
- 		div.$type$InvSlot {				\
- 			background-image: url('./images/intf/lootBg.png');	\
  		}								\
  		";
  	}
@@ -1149,10 +1046,9 @@ UIElementTypes.iconsSpells = {
         		var nSpellImg = document.createElement("img");
         		var nSpellWrap=document.createElement("div");
         		
-        		this.addEventListener(nSpellImg, "click", "spellClick");
-        		this.addEventListener(nSpellImg, "contextmenu", "spellContextmenu");
-        		this.addEventListener(nSpellImg, "mousemove", "spellMousemove");
-        		this.addEventListener(nSpellImg, "mouseout",  "spellMouseout");
+        		this.addEventListener(nSpellImg, "click", "click");
+        		this.addEventListener(nSpellImg, "contextmenu", "contextmenu");
+        		this.addEventListener(nSpellImg, "mouseout",  "mouseout");
         		nSpellImg.setData("spellId", ((i<player.spells.length)?player.spells[i]:-1));
         		nSpellImg.setAttribute("src", "./images/"+((i<player.spells.length)?"spells/"+player.spells[i]:"intf/spellBg")+".png");
         		
@@ -1170,7 +1066,7 @@ UIElementTypes.iconsSpells = {
     	}
     },
  	handlers: {
-    	spellClick:function _() {
+    	click:function _() {
 			document.getElementById("itemInfo").style.display="none";
 			var spellId = this.getData("spellId");
 			if (player.spellId == spellId) {
@@ -1188,7 +1084,6 @@ UIElementTypes.iconsSpells = {
 						opacity: "0.5"
 					});
 					player.selectSpell(spellId);
-					
 					// Spell cursor positioning
 					var spell = spells[player.spellId];
 					var aimcharacter;
@@ -1202,42 +1097,17 @@ UIElementTypes.iconsSpells = {
 				}
 			}
 		},
-		spellContextmenu:function _(e) {
-			var nItemInfo=document.getElementById("itemInfo");
-			if (nItemInfo.style.display=="block") {
-			// Повторный двойной клик
-				nItemInfo.applyStyle({
-					display: "none"
-				});
-				return false;
-			}
-			var spellInfo; // Информация о предмете
+		contextmenu:function _(e) {
 			var spellId=this.getData("spellId");
-			// Получаем информацию о предмете
-			if (spells[spellId] === undefined) {
-			// Если такого предмета нет в игре
-				return false;
-				spellInfo="Неизвестный предмет";
-			} else {
-				spellInfo=spells[spellId].name;
-			}
-			// Выводим информацию о предмете
-			nItemInfo.applyStyle({
-				display: "block",
-				top: (e.clientY-nItemInfo.clientHeight-20)+"px",
-				left: (e.clientX-nItemInfo.clientWidth/2)+"px"
-			});
-			nItemInfo.innerHTML="<b>"+spellInfo+"</b>";
+			UI.notify("infoShow", UI.getStaticDOMStructure("spell"+spellId, function () {
+				return new MarkupMaker()
+					.add("b").text(spells[spellId].name)
+					.getWrappedContents();
+			}));
 			return false;
 		},
-		spellMouseout:function _() {
-			document.getElementById("itemInfo").style.display="none";
-		},
-		spellMousemove:function _(e) {
-		// Передвижение блока с информацией по мере перемещения мышки
-			var nItemInfo=document.getElementById("itemInfo");
-			nItemInfo.style.top=(e.clientY-nItemInfo.clientHeight-20)+"px";
-			nItemInfo.style.left=(e.clientX-nItemInfo.clientWidth/2)+"px";
+		mouseout:function _() {
+			UI.notify("infoHide");
 		}
     },
     cssRules: function _() {
@@ -1246,7 +1116,7 @@ UIElementTypes.iconsSpells = {
     		-webkit-box-sizing: border-box;	\
     		-moz-box-sizing: border-box;	\
     		padding: 0px 0px 0px 0px;		\
-    		width: 240px;				\
+    		width: 204px;				\
     	}								\
     	div.$type$ > div {				\
     		display: inline-block;		\
@@ -1254,7 +1124,7 @@ UIElementTypes.iconsSpells = {
     		height: 32px;				\
     		background-image: url('./images/intf/spellBg.png');	\
     		border: 1px solid #534511;	\
-    		margin: 3px;				\
+    		vertical-align: middle;		\
     	}								\
     	div.$type$ > img {				\
     		width: 32px;				\
@@ -1344,7 +1214,7 @@ UIElementTypes.hpBar = {
     listeners: {
     	healthChange: function _() {
 	    	this.getData("valueTextNode").nodeValue = player.hp+"/"+player.maxHp;
-	    	this.getData("stripNode").style.width = (240*player.hp/player.maxHp)+"px";
+	    	this.getData("stripNode").style.width = (204*player.hp/player.maxHp)+"px";
     	},
     	locationLoad: "healthChange"
     },
@@ -1358,7 +1228,7 @@ UIElementTypes.hpBar = {
  		div.$type$Bg {					\
  			display: inline-block;		\
  			background-color: #272;		\
- 			width: 240px;				\
+ 			width: 204px;				\
  			height: 20px;				\
  			text-align: left;			\
  			border-radius: 4px;			\
@@ -1378,7 +1248,7 @@ UIElementTypes.hpBar = {
  			vertical-align: middle;		\
  			line-height: 20px;			\
  			height: 20px;				\
- 			width: 240px;				\
+ 			width: 204px;				\
  		}								\
  		div.$type$ > div.wrap {			\
  			position: absolute;			\
@@ -1420,7 +1290,7 @@ UIElementTypes.epBar = {
     	energyChange: function _() {
     	
 	    	this.getData("valueTextNode").nodeValue = player.ep+"/"+player.maxEp;
-	    	this.getData("stripNode").style.width = (240*player.ep/player.maxEp)+"px";
+	    	this.getData("stripNode").style.width = (204*player.ep/player.maxEp)+"px";
     	},
     	locationLoad: "energyChange"
     },
@@ -1434,7 +1304,7 @@ UIElementTypes.epBar = {
  		div.$type$Bg {					\
  			display: inline-block;		\
  			background-color: #722;		\
- 			width: 240px;				\
+ 			width: 204px;				\
  			height: 20px;				\
  			text-align: left;			\
  			border-radius: 4px;			\
@@ -1454,7 +1324,7 @@ UIElementTypes.epBar = {
  			vertical-align: middle;		\
  			line-height: 20px;			\
  			height: 20px;				\
- 			width: 240px;				\
+ 			width: 204px;				\
  		}								\
  		div.$type$ > div.wrap {			\
  			position: absolute;			\
@@ -1495,7 +1365,7 @@ UIElementTypes.mpBar = {
     listeners: {
     	manaChange: function _() {
 	    	this.getData("valueTextNode").nodeValue = player.mp+"/"+player.maxMp;
-	    	this.getData("stripNode").style.width = (240*player.mp/player.maxMp)+"px";
+	    	this.getData("stripNode").style.width = (204*player.mp/player.maxMp)+"px";
     	},
     	locationLoad: "manaChange"
     },
@@ -1510,7 +1380,7 @@ UIElementTypes.mpBar = {
  		div.$type$Bg {					\
  			display: inline-block;		\
  			background-color: #237;		\
- 			width: 240px;				\
+ 			width: 204px;				\
  			height: 20px;				\
  			text-align: left;			\
  			border-radius: 4px;			\
@@ -1530,7 +1400,7 @@ UIElementTypes.mpBar = {
  			vertical-align: middle;		\
  			line-height: 20px;			\
  			height: 20px;				\
- 			width: 240px;				\
+ 			width: 204px;				\
  		}								\
  		div.$type$ > div.wrap {			\
  			position: absolute;			\
@@ -1912,7 +1782,7 @@ UIElementTypes.windowContainer = {
 				nImg.setAttribute("src","./images/items/"+itemValues[i].typeId+".png");
 				nSlot.addClass("containerItem");
 				
-				if (itemValues[i].isUnique) {
+				if (itemValues[i] instanceof UniqueItem) {
 					nSlot.setAttribute("typeId",itemValues[i].typeId);
 					nSlot.setAttribute("param",itemValues[i].itemId);
 				} else {
@@ -2547,7 +2417,7 @@ UIElementTypes.attributeList = {
 		return "					\
 		div.$type$ {				\
 			background-color: #333;	\
-			width: 200px;			\
+			width: 204px;			\
 			color: #fff;			\
 		}							\
 		div.$type$Attr {			\
@@ -2587,7 +2457,7 @@ UIElementTypes.actionsPanel = {
 		},
 		changePlaces: function _() {
 			CellCursor.enterSelectionMode(function (x,y) {
-				player.sendChangePlaces(x,y);
+				player.sendChangePlaces(x, y);
 			}, window, 1);
 		},
 		makeSound: function () {

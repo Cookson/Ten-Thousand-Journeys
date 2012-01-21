@@ -17,7 +17,7 @@ interface WebSocketListener {
    * connection is a valid WebSocket connection.
    * @param conn The <tt>WebSocket</tt> instance this event is occuring on.
    * @param handshake The entire UTF-8 decoded handshake from the connection.
-   * @return <var>true</var> if the handshake is valid, and <var>onOpen</var>
+   * @returns <var>true</var> if the handshake is valid, and <var>onOpen</var>
    *         should be immediately called afterwards. <var>false</var> if the
    *         handshake was invalid, and the connection should be terminated.
    * @throws NoSuchAlgorithmException 

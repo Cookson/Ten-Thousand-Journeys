@@ -6,6 +6,7 @@
 	cursor: default;
 	font-family: Garamond !important, Calibri, sans-serif, arial;
 	font-size: 13px;
+	color: #fff;
 	margin: 0px;
 	padding: 0px;
 	border: 0px solid black;
@@ -16,6 +17,7 @@ input {
 	-moz-user-select: text !important;
 	-webkit-user-select: text;
 	user-select: text;
+	color: #000;
 }
 
 table {
@@ -690,18 +692,7 @@ div.speechBubbleText {
 	-moz-border-bottom-right-radius: 6px;
 }
 
-div.itemAmount {
-	z-index: 2;
-	display: inline-block;
-	background-color: #000;
-	font-family: sans-serif;
-	font-size: 9px;
-	color: #fff;
-	border-radius: 2px;
-	padding: 1px;
-	margin: 18px 0px 0px 1px;
-	line-height: 11px;
-}
+
 
 #panel1 {
 	width: 200px;
@@ -713,3 +704,44 @@ div.itemAmount {
 	top: 0px;
 	left: 0px;
 }
+/* UI.createItemView() */
+div.itemAmount {
+	position: absolute;
+	z-index: 2;
+	display: inline-block;
+	background-color: #000;
+	font-family: sans-serif;
+	font-size: 9px;
+	color: #fff;
+	border-radius: 2px;
+	padding: 1px;
+	margin: 18px 0px 0px 1px;
+	line-height: 11px;
+}
+img.itemImg {
+	position: absolute;
+	z-index: 1;
+	cursor: pointer;
+	top: 0px;
+	left: 0px;
+}
+div.itemView {
+	display: inline-block;
+	position: relative;
+	width: 32px;
+	height: 32px;
+	vertical-align: middle;
+}
+div.itemViewInventory {
+	background-image: url('./images/intf/itemBg.png');
+	border: 1px solid #534511;
+}
+div.itemViewEquipment {
+	background-image: url('./images/intf/equipmentBg.png');
+ 	border: 1px solid #534511;
+}
+div.itemViewLoot {
+	background-image: url('./images/intf/lootBg.png');
+ 	border: 1px solid #534511;
+}
+

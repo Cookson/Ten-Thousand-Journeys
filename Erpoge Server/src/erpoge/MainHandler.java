@@ -23,6 +23,9 @@ import erpoge.terrain.World;
 import net.tootallnate.websocket.Draft;
 import net.tootallnate.websocket.WebSocket;
 import net.tootallnate.websocket.WebSocketServer;
+import net.tootallnate.websocket.drafts.Draft_10;
+import net.tootallnate.websocket.drafts.Draft_17;
+import net.tootallnate.websocket.drafts.Draft_75;
 import net.tootallnate.websocket.drafts.Draft_76;
 
 
@@ -75,7 +78,7 @@ public class MainHandler extends WebSocketServer {
 	public static World world;
 
 	public MainHandler(int port) {
-		super(port, new Draft_76());
+		super(port, new Draft_75());
 		Main.outln("Start listening on port " + port);
 	}
 	public static void assignWorld(World world) {
@@ -96,6 +99,7 @@ public class MainHandler extends WebSocketServer {
 	private void aServerInfo(String message, WebSocket conn) throws IOException {
 		// ping
 		conn.send("{\"a\":"+MainHandler.SERVER_INFO+",\"serverName\":\"Erpoge Server\",\"online\":106}");
+		Main.console("{\"a\":"+MainHandler.SERVER_INFO+",\"serverName\":\"Erpoge Server\",\"online\":106}");
 	}
 	private void aLoadPassiveContents(String message, WebSocket conn) throws IOException {
 	/**
@@ -103,13 +107,14 @@ public class MainHandler extends WebSocketServer {
 	 * Used, for example, in world preview in client.
 	 */
 		conn.send("{\"a\":"+MainHandler.SERVER_INFO+","+world.jsonPartGetWorldContents()+"}");
+		Main.console("{\"a\":"+MainHandler.SERVER_INFO+","+world.jsonPartGetWorldContents()+"}");
 	}
 	private void aLogin(String message, WebSocket conn) throws IOException {
 		/* 	in: {
 				l: String login,
 				p: String password,
 			}
-			out: [[characterId, name, race, class, level, maxHp, maxMp, str, dex, wis, itl, items, ammunition, spells]xN]
+			out: [[characterId, name, race, class, level, maxHp, maxMp, str, dex, wis, itl, items, equipment, spells]xN]
 		*/
 		ClientMessageLogin data = gson.fromJson(message, ClientMessageLogin.class);
 		if (data.l.equals("")) {
@@ -168,7 +173,7 @@ public class MainHandler extends WebSocketServer {
 		}
 	}
 	public void onClientMessage(WebSocket conn, String message) {
-//		Main.console(message);
+		Main.console(message);
 		int action = gson.fromJson(message, ClientMessageAction.class).a;
 		try {
 			switch (action) {

@@ -1,7 +1,7 @@
 ﻿/** @class */
 var Global = {
 	container: {
-		items: new ItemMap(),
+		items: new ItemSet(),
 		x: -1,
 		y: -1
 	},
@@ -51,14 +51,15 @@ var Terrain = {
 	cssSideX : "left",
 	cssSideY : "top",
 	isPeaceful: false,
+	onGlobalMap: false,
 	
 	getViewIndentation: function _(x,y,scale) {
 		if (this.cameraOrientation == Side.N) {
 			return {left: x*scale, top: y*scale};
 		} else if (this.cameraOrientation == Side.E) {
-			return {left: (height-y-1)*scale, top: x*scale};
+			return {left: (Terrain.height-y-1)*scale, top: x*scale};
 		} else if (this.cameraOrientation == Side.S) {
-			return {left: (width-x-1)*scale, top: (height-y-1)*scale};
+			return {left: (Terrain.width-x-1)*scale, top: (Terrain.height-y-1)*scale};
 		} else if (this.cameraOrientation == Side.W) {
 			return {left: y*scale, top: (width-x-1)*scale};
 		} else {
@@ -69,11 +70,11 @@ var Terrain = {
 		if (this.cameraOrientation == Side.N) {
 			return {x: x, y: y};
 		} else if (this.cameraOrientation == Side.E) {
-			return {x: y, y: (height-x-1)};
+			return {x: y, y: (Terrain.height-x-1)};
 		} else if (this.cameraOrientation == Side.S) {
-			return {x: (width-x-1), y: (height-y-1)};
+			return {x: (Terrain.width-x-1), y: (Terrain.height-y-1)};
 		} else if (this.cameraOrientation == Side.W) {
-			return {x: (width-y-1), y: x};
+			return {x: (Terrain.width-y-1), y: x};
 		} else {
 			throw new Error("Unknown camera orientation: "+this.cameraOrientation);
 		}
@@ -83,21 +84,21 @@ var Terrain = {
 	},
 	getHorizontalDimension: function _() {
 		if (this.cameraOrientation == Side.N || this.cameraOrientation == Side.S) {
-			return width;
+			return Terrain.width;
 		} else {
-			return height;
+			return Terrain.height;
 		}
 	},
 	getVerticalDimension: function _() {
 		if (this.cameraOrientation == Side.N || this.cameraOrientation == Side.S) {
-			return height;
+			return Terrain.height;
 		} else {
-			return width;
+			return Terrain.width;
 		}
 	}	
 };
 
-var player ={};
+var player = null;
 // Переменные соединения
 var servers=[[]]; // Список всех серверов с логинами и паролями к персонажу на них, берётся из localStorage
 var session="";
@@ -114,15 +115,12 @@ var effectData=[]; // Сюда функции эффектов сохраняю�
 // Переменные для проверки необходимости скрытия интерфейса при диалогах/alert/confirm
 
 // Переменные путей
-var width=0;
-var height=0;
 var rendW=0;
 var rendH=0;
 var rendCX=-1;
 var rendCY=-1;
 var prevRendCX=-1;
 var prevRendCY=-1;
-var onGlobalMap=false;
 // var rendcharacters=[];
 // var maxReports=6;
 // Разное
@@ -134,7 +132,6 @@ var onlinePlayers=[];
 var inviterPlayerId=0;
 var mapCursorX=0; // dfffffffff
 var mapCursorY=0;
-var actionsList=null;
 // var charDollItemsIndents={
 	// 50:[2,13]
 // }; 

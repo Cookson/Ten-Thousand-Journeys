@@ -1,6 +1,6 @@
 function handleNextEvent() {
 	if (serverAnswerIterator >= serverAnswer.length) {
-		if (!onGlobalMap) {
+		if (!Terrain.onGlobalMap) {
 			Net.send({a:Net.CHECK_OUT});
 		}
 		return;
@@ -43,7 +43,7 @@ serverAnswerHandlers = {
 	},
 	chm: function _(value) {
 		// Chat message
-		if (onGlobalMap) {
+		if (Terrain.onGlobalMap) {
 //				addMessageToChat(worldPlayers[value.characterId].name, value.text);
 			chat.push([characters[value.characterId].name, value.text]);
 		} else {
@@ -69,11 +69,11 @@ serverAnswerHandlers = {
 	},
 	putOn: function _(value) {
 		// Put on item
-		if (onGlobalMap) {
+		if (Terrain.onGlobalMap) {
 			if (value.characterId == player.characterId) {
 				player.putOn(value.itemId);
 				UI.notify("inventoryChange");
-				UI.notify("ammunitionChange");
+				UI.notify("equipmentChange");
 			} else {
 			// Someone else on world map put on an item
 			}
@@ -81,17 +81,17 @@ serverAnswerHandlers = {
 			characters[value.characterId].putOn(value.itemId);
 			if (value.characterId == player.characterId) {
 				UI.notify("inventoryChange");
-				UI.notify("ammunitionChange");
+				UI.notify("equipmentChange");
 			}
 			handleNextEvent();
 		}
 	},
 	takeOff: function _(value) {
-		if (onGlobalMap) {
+		if (Terrain.onGlobalMap) {
 			if (value.characterId == player.characterId) {
 				player.takeOff(value.itemId);
 				UI.notify("inventoryChange");
-				UI.notify("ammunitionChange");
+				UI.notify("equipmentChange");
 			} else {
 			// Someone else on world map puts an item on
 			}
@@ -99,69 +99,69 @@ serverAnswerHandlers = {
 			characters[value.characterId].takeOff(value.itemId);
 			if (value.characterId == player.characterId) {
 				UI.notify("inventoryChange");
-				UI.notify("ammunitionChange");
+				UI.notify("equipmentChange");
 			}
 			handleNextEvent();
 		}
 	},
 	drop: function _(value) {
-		if (onGlobalMap) {
-			throw new Error("Character "+value.characterId+" drops an item "+items[value.typeId][0]+" on global map!");
-		} else {
-			UI.notify("lootChange");
-			UI.notify("inventoryChange");
+//		if (Terrain.onGlobalMap) {
+//			throw new Error("Character "+value.characterId+" drops an item "+items[value.typeId][0]+" on global map!");
+//		} else {
+//			UI.notify("lootChange");
+//			UI.notify("inventoryChange");
 			handleNextEvent();
-		}
+//		}
 	},
 	pickUp: function _(value) {
-		if (onGlobalMap) {
-			throw new Error("Character "+value.characterId+" picks up an item "+items[value.typeId][0]+" on global map!");
-		} else {
-			UI.notify("inventoryChange");
-			UI.notify("lootChange");
+//		if (Terrain.onGlobalMap) {
+//			throw new Error("Character "+value.characterId+" picks up an item "+items[value.typeId][0]+" on global map!");
+//		} else {
+//			UI.notify("inventoryChange");
+//			UI.notify("lootChange");
 			handleNextEvent();
-		}
+//		}
 	},
 	openContainer: function _(value) {
 		UI.setMode(UI.MODE_CONTAINER);
 		Global.container.items.empty();
 		for (var i in value.items) {
-			Global.container.items.addItem(value.items[i][0], value.items[i][1]);
+			Global.container.items.addNewItem(value.items[i][0], value.items[i][1]);
 		}
 		UI.notify("containerOpen");
 		handleNextEvent();
 	},
 	takeFromContainer: function _(value) {
-		if (onGlobalMap) {
+		if (Terrain.onGlobalMap) {
 			throw new Error("Character "+value.characterId+" takes an item "+items[value.typeId][0]+" from container on global map!");
 		} else {
 			if (value.characterId == player.characterId) {
-				Global.container.items.remove(value.typeId, value.paramparam);
+				Global.container.items.remove(value.typeId, value.param);
 				UI.notify("containerChange");
 			}
 			handleNextEvent();
 		}
 	},
 	putToContainer: function _(value) {
-		if (onGlobalMap) {
+		if (Terrain.onGlobalMap) {
 			throw new Error("Character "+value.characterId+" puts an item "+items[value.typeId][0]+" to container on global map!");
 		} else {
 			if (value.characterId == player.characterId) {
-				Global.container.items.addItem(value.typeId, value.param);
+				Global.container.items.addNewItem(value.typeId, value.param);
 				UI.notify("containerChange");
 			}
 			handleNextEvent();
 		}
 	},
 	meleeAttack: function _(value) {
-		if (onGlobalMap) {
+		if (Terrain.onGlobalMap) {
 			throw new Error("Character "+value.attackerId+" attacks on global map!");
 		} else {
 			characters[value.attackerId].showAttack(value.aimId, false);
 		}
 	},
 	damage: function _(value) {
-		if (onGlobalMap) {
+		if (Terrain.onGlobalMap) {
 			throw new Error("Character "+value.characterId+" was damaged on global map!");
 		} else {
 		// handleNextEvent() is inside showDamage
@@ -183,14 +183,14 @@ serverAnswerHandlers = {
 		handleNextEvent();
 	},
 	death: function _(value) {
-		if (onGlobalMap) {
+		if (Terrain.onGlobalMap) {
 			throw new Error("Character "+value.characterId+" had an attempt to die on global map!");
 		} else {
 			characters[value.characterId].showDeath();
 		}
 	},
 	itemAppear: function _(value) {
-		if (onGlobalMap) {
+		if (Terrain.onGlobalMap) {
 			throw new Error("Item appear on global map!");
 		} else {
 			if (isUnique(value.typeId)) {
@@ -205,7 +205,7 @@ serverAnswerHandlers = {
 		handleNextEvent();
 	},
 	itemDisappear: function _(value) {
-		if (onGlobalMap) {
+		if (Terrain.onGlobalMap) {
 			throw new Error("Item appear on global map!");
 		} else {
 			Terrain.cells[value.x][value.y].removeItem(value.typeId, value.param);
@@ -216,7 +216,7 @@ serverAnswerHandlers = {
 		handleNextEvent();
 	},
 	castSpell: function _(value) {
-		if (onGlobalMap) {
+		if (Terrain.onGlobalMap) {
 			throw new Error("Cast spell on global map!");
 		} else {
 			UI.notify("spellCast");
@@ -237,14 +237,14 @@ serverAnswerHandlers = {
 		}
 	},
 	missileFlight: function _(value) {
-		if (onGlobalMap) {
+		if (Terrain.onGlobalMap) {
 			throw new Error("Missile flight on global map!");
 		} else {
 			Character.prototype.showMissileFlight(value.fromX, value.fromY, value.toX, value.toY, value.missile);
 		}
 	},
 	loseItem: function _(value) {
-		if (onGlobalMap) {
+		if (Terrain.onGlobalMap) {
 			throw new Error("Missile flight on global map!");
 		} else if (value.characterId == player.characterId) {
 			player.loseItem(value.typeId, value.param);
@@ -252,7 +252,7 @@ serverAnswerHandlers = {
 		handleNextEvent();
 	},
 	getItem: function _(value) {
-		if (onGlobalMap) {
+		if (Terrain.onGlobalMap) {
 			throw new Error("Missile flight on global map!");
 		} else if (value.characterId == player.characterId) {
 			player.getItem(value.typeId, value.param);

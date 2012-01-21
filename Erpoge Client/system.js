@@ -19,11 +19,11 @@ HTMLElement.prototype.addClass = function(className) {
  * Use HTMLElement as hash map to bind some data to it.
  * 
  * @see HTMLElement#getData
- * @param {string} key String or number; unlike java, for example, objects 
+ * @param {String} key String or number; unlike java, for example, objects 
  * can't be keys.
  * 
  * @param {mixed} value
- * @return {mixed} Returns parameter value.
+ * @returns {mixed} Returns parameter value.
  */
 HTMLElement.prototype.setData = function _(key, value) {
 	if (typeof this.data === "undefined") {
@@ -35,8 +35,8 @@ HTMLElement.prototype.setData = function _(key, value) {
  * Use HTMLElement as hash map to get some previouslu added data.
  * 
  * @see HTMLElement#setData
- * @param {string} key
- * @return {mixed} Value at that key
+ * @param {String} key
+ * @returns {mixed} Value at that key
  */
 HTMLElement.prototype.getData = function _(key) {
 	if (typeof this.data === "undefined" || typeof this.data[key] === "undefined") {
@@ -44,8 +44,38 @@ HTMLElement.prototype.getData = function _(key) {
 	}
 	return this.data[key];
 };
-window.onresize=recountWindowSize;
-window.onunload=function () {
+/**
+ * Checks if there is any object in an array that is equal to %object% 
+ * we pass in the second argument. Objects must be comparable, i.e. %object%
+ * and all objects in %array% must implement method .equals() in their 
+ * prototypes.
+ * 
+ * @param {Object[]} array Array of objects where we search for an object
+ * equal to another particular object.
+ * @param {Object} object Objects that we compare to each member of array.
+ * @param {Function} comparator 
+ * @throws {Error} If object is not comparable, i.e. its prototype doesn't
+ * implement method .compare();
+ */
+var System = {};
+System.hasEqualObject = function (array, object, comparator) {
+	var c = comparator || object.equals;
+	if (!(c instanceof Function)) {
+		if (comparator === undefined) {
+			throw new Error("Objects of type "+object.__proto__.constructor.name+" are not comparable");
+		} else {
+			throw new Error("Comparator must be function!");
+		}
+	}
+	for (var i=0; i<array.length; i++) {
+		if (c(array[i], object)) {
+			return true;
+		}
+	}
+	return false;
+};
+window.onresize = recountWindowSize;
+window.onunload = function () {
 // Разлогинивание персонажа при перезагрузке, если перезагрузка - не quickRefresh
 	if (localStorage.getItem(101)=="0") {
 		Net.send({a:Net.DEAUTH});
@@ -91,7 +121,7 @@ function recountWindowSize() {
 	}
 }
 function blank2dArray(i) {
-	var w = (i==undefined) ? width : i;
+	var w = (i==undefined) ? Terrain.width : i;
 	var arr = [];
 	for (var i=0; i<w; i++) {
 		arr[i] = [];
@@ -102,13 +132,13 @@ function distance(startX, startY, endX, endY) {
 	return Math.sqrt(Math.pow(startX-endX, 2)+Math.pow(startY-endY, 2));
 }
 function getNum(x, y) {
-	return parseInt(y)*width+parseInt(x);
+	return parseInt(y)*Terrain.width+parseInt(x);
 }
 function getX(num) {
-	return num%width;
+	return num%Terrain.width;
 }
 function getY(num) {
-	return (num-num%width)/width;
+	return (num-num%Terrain.width)/Terrain.width;
 }
 function startTimer() {
 	clearConsole();
@@ -204,19 +234,13 @@ function getNumFromSeed(a,b,max) {
 	// Получить число от нуля до max из двух заданых чисел и константы SEED
 	return Math.round(Math.abs(Math.sin(Math.pow(a%20+0.2,b%20+0.2)+Math.cos(a))*max))%max;
 }
-function arrIndexOf(subj, array) {
-	for (var i in array) {
-		if (array[i] == subj) {
-			return i;
-		}
-	}
-	return -1;
-}
 function isInRendRange(x,y) {
-	if (x>=rendCX-(rendW-1)/2 && x<=rendCX+(rendW-1)/2 
-	&& x>=0 && x<width
-	&& y>=rendCY-(rendH-1)/2 && y<=rendCY+(rendH-1)/2 
-	&& y>=0 && y<height) {
+	if (
+		x>=rendCX-(rendW-1)/2 && x<=rendCX+(rendW-1)/2 
+		&& x>=0 && x<Terrain.width
+		&& y>=rendCY-(rendH-1)/2 && y<=rendCY+(rendH-1)/2 
+		&& y>=0 && y<Terrain.height
+	) {
 		return true;
 	}
 	return false;
@@ -225,10 +249,12 @@ function isInPrevRendRange(x,y) {
 	if (prevRendCX==-1) {
 		return false;
 	}
-	if (x>=prevRendCX-(rendW-1)/2 && x<=prevRendCX+(rendW-1)/2 
-	&& x>=0 && x<width
-	&& y>=prevRendCY-(rendH-1)/2 && y<=prevRendCY+(rendH-1)/2 
-	&& y>=0 && y<height) {
+	if (
+		x>=prevRendCX-(rendW-1)/2 && x<=prevRendCX+(rendW-1)/2 
+		&& x>=0 && x<Terrain.width
+		&& y>=prevRendCY-(rendH-1)/2 && y<=prevRendCY+(rendH-1)/2 
+		&& y>=0 && y<Terrain.height
+	) {
 		return true;
 	}
 	return false;
@@ -328,4 +354,45 @@ function getOffsetRect(elem) {
     var top=box.top+scrollTop-clientTop;
     var left=box.left+scrollLeft-clientLeft;
     return { top: Math.round(top), left: Math.round(left) };
+}
+/**
+ * Returns array of three arrays: array[0] - elements that are only in set1;
+ * array[1] - elements that are only in set2; array[2] - elements that are in
+ * both set1 and set2. If set1 or set2 are objects, then their prototypes must 
+ * have method .getValues() that returns an array of values to compare, and all 
+ * the returned elements' prototypes must have method .equals() to check if one
+ * object satisfies the conditions to be equal to another. 
+ * 
+ * @param {Object[]} set1 Array or Object that implements method .getValues. 
+ * This array may contain any values: both objects and primitives.
+ * @param {Object[]} set2 Same as set1. Set1 and set2 may be even of different
+ * prototypes, but if their .getValues() returns objects of the same type,
+ * it will work fine.
+ * @returns {Object[3][]}
+ */
+function getSetsDifferences(set1, set2) {
+	if (set1.getValues instanceof Function) {
+	// If set1 implements interface Set
+		set1 = set1.getValues();
+	}
+	if (set2.getValues instanceof Function) {
+	// If set2 implements interface Set
+		set2 = set2.getValues();
+	}
+	var inFirst = [];
+	var inBoth = [];
+	var inSecond = [];
+	for (var i=0; i<set1.length; i++) {
+		if (!System.hasEqualObject(set2, set1[i])) {
+			inFirst.push(set1[i]);
+		} else {
+			inBoth.push(set1[i]);
+		}
+	}
+	for (var i=0; i<set2.length; i++) {
+		if (!System.hasEqualObject(set1, set2[i])) {
+			inSecond.push(set2[i]);
+		}
+	}
+	return [inFirst, inSecond, inBoth];
 }

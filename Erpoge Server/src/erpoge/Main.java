@@ -21,8 +21,8 @@ public class Main {
 	public static int[][] arr;
 	public final static boolean DEBUG = true;
 	public static final String TEST_LOCATION_TYPE = "Empty";
-	public static final int DEFAULT_LOCATION_WIDTH = 60;
-	public static final int DEFAULT_LOCATION_HEIGHT = 40;
+	public static final int DEFAULT_LOCATION_WIDTH = 30;
+	public static final int DEFAULT_LOCATION_HEIGHT = 30;
 	public static <T> void out(T string) {
 		System.out.print(string);
 	}
@@ -53,13 +53,13 @@ public class Main {
 //		ItemsTypology.showTypology();
 //		ItemsTypology.jsonTypology();
 		
-		World world = new World(40,40,"TestWorld", "Erpoge World");
+		World world = new World(20,20,"TestWorld", "Erpoge World");
 //		world.showWorld();
 		
 //		Location loc = world.createLocation(0, 0, 60, 40, TEST_LOCATION_TYPE, "New Location");
 //		loc.showLocation();	
 		
-		PlayerCharacter burok = world.createPlayer("Alvoi", Race.ELF, "Warrior", 13, 26);
+		PlayerCharacter burok = world.createPlayer("Alvoi", Race.ELF, "Warrior", 6, 9);
 		burok.getItem(new UniqueItem(ItemType.CLASS_SWORD * ItemsTypology.CLASS_LENGTH));
 		burok.getItem(new ItemPile(ItemType.CLASS_AMMO * ItemsTypology.CLASS_LENGTH,200));
 		burok.getItem(new UniqueItem(ItemType.CLASS_BLUNT * ItemsTypology.CLASS_LENGTH));

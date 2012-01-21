@@ -32,32 +32,32 @@ var Keys = {
 		"7"				: 55,
 		"8"				: 56,
 		"9"				: 57,
-		"A"				: 65,
-		"B"				: 66,
-		"C"				: 67,
-		"D"				: 68,
-		"E"				: 69,
-		"F"				: 70,
-		"G"				: 71,
-		"H"				: 72,
-		"I"				: 73,
-		"J"				: 74,
-		"K"				: 75,
-		"L"				: 76,
-		"M"				: 77,
-		"N"				: 78,
-		"O"				: 79,
-		"P"				: 80,
-		"Q"				: 81,
-		"R"				: 82,
-		"S"				: 83,
-		"T"				: 84,
-		"U"				: 85,
-		"V"				: 86,
-		"W"				: 87,
-		"X"				: 88,
-		"Y"				: 89,
-		"Z"				: 90,
+		"a"				: 65,
+		"b"				: 66,
+		"c"				: 67,
+		"d"				: 68,
+		"e"				: 69,
+		"f"				: 70,
+		"g"				: 71,
+		"h"				: 72,
+		"i"				: 73,
+		"j"				: 74,
+		"k"				: 75,
+		"l"				: 76,
+		"m"				: 77,
+		"n"				: 78,
+		"o"				: 79,
+		"p"				: 80,
+		"q"				: 81,
+		"r"				: 82,
+		"s"				: 83,
+		"t"				: 84,
+		"u"				: 85,
+		"v"				: 86,
+		"w"				: 87,
+		"x"				: 88,
+		"y"				: 89,
+		"z"				: 90,
 		"Num 0"			: 96,
 		"Num 1"			: 97,
 		"Num 2"			: 98,
@@ -91,140 +91,444 @@ var Keys = {
 		"-"				: 189,
 		"."				: 190,
 		"/"				: 191,
-		"~"				: 192,
+		"`"				: 192,
 		"["				: 219,
 		"\\"			: 220,
 		"]"				: 221,
 		"'"				: 222
 	},
+	SHIFTKEYCODES: {
+		")": 48,
+		"!": 49,
+		"@": 50,
+		"#": 51,
+		"$": 52,
+		"%": 53,
+		"^": 54,
+		"&": 55,
+		"*": 56,
+		"(": 57,
+		"A": 65,
+		"B": 66,
+		"C": 67,
+		"D": 68,
+		"E": 69,
+		"F": 70,
+		"G": 71,
+		"H": 72,
+		"I": 73,
+		"J": 74,
+		"K": 75,
+		"L": 76,
+		"M": 77,
+		"N": 78,
+		"O": 79,
+		"P": 80,
+		"Q": 81,
+		"R": 82,
+		"S": 83,
+		"T": 84,
+		"U": 85,
+		"V": 86,
+		"W": 87,
+		"X": 88,
+		"Y": 89,
+		"Z": 90,
+		":": 186,
+		"+": 187,
+		"<": 188,
+		"_": 189,
+		">": 190,
+		"?": 191,
+		"~": 192,
+		"{": 219,
+		"|": 220,
+		"}": 221,
+		"\"": 222		
+	},
 // Public changable properties
-	mode 					: -1,
-	keyActions : {
-		0: {
-			0:{0:{0:{},1:{}},1:{0:{},1:{}}},
-			1:{0:{0:{},1:{}},1:{0:{},1:{}}}
-		},
-		1: {
-			0:{0:{0:{},1:{}},1:{0:{},1:{}}},
-			1:{0:{0:{},1:{}},1:{0:{},1:{}}}
-		},
-		2: {
-			0:{0:{0:{},1:{}},1:{0:{},1:{}}},
-			1:{0:{0:{},1:{}},1:{0:{},1:{}}}
-		},
-		3: {
-			0:{0:{0:{},1:{}},1:{0:{},1:{}}},
-			1:{0:{0:{},1:{}},1:{0:{},1:{}}}
-		}, 
-		4: {
-			0:{0:{0:{},1:{}},1:{0:{},1:{}}},
-			1:{0:{0:{},1:{}},1:{0:{},1:{}}}
-		},
-		5: {
-			0:{0:{0:{},1:{}},1:{0:{},1:{}}},
-			1:{0:{0:{},1:{}},1:{0:{},1:{}}}
-		},
-		6: {
-			0:{0:{0:{},1:{}},1:{0:{},1:{}}},
-			1:{0:{0:{},1:{}},1:{0:{},1:{}}}
-		}
-	}	
+	mode 				: -1,
+	keyMapping: null
 };
-Keys.formReverseKeyCodesTable = function _() {
-// Form array "keyCode => keyName" from constant KEYCODES 
-// (that contains reverse array "keyName => keyCode")
-	for (var i in KEYCODES) {
-		KEYNAMES[KEYCODES[i]] = i;
-	}
-};
-Keys.assign = function _(params) {
-/* Assign action to key combination.
- * First argument as assigned function.
- * Other arguments are usual keys or modifier keys (ctrl, alt or shift).
- * The second last argument must not be modifier key.
- * The last argument must be key mode (see Keys.KEY_MODE_ section)
- * Usage example: Keys.assign(help, "Ctrl", "Alt", "H")
+/**
+ * Form array "keyCode => keyName" from constant KEYCODES (that contains 
+ * reverse array "keyName => keyCode")
  */
-	if (!handlers.keysActions[params.action]) {
-		throw new Error("No action "+params.action+" is registered");
+Keys.formReverseKeyCodesTable = function _() {
+	for (var i in this.KEYCODES) {
+		this.KEYNAMES[this.KEYCODES[i]] = i;
 	}
-	var ctrl = 0;
-	var alt = 0;
-	var shift = 0;
-	var key = null;
-	var keyMode = params.mode;
-	
-	for (var i=0; i<params.keys.length; i++) {
-		if (params.keys[i] == "Ctrl") {
-			ctrl = 1;
-		} else if (params.keys[i] == "Alt") {
-			alt = 1;
-		} else if (params.keys[i] == "Shift") {
-			shift = 1;
-		} else if (key == null) {
-			key = Keys.KEYCODES[params.keys[i]];
-		} else {
-			throw new Error("Multiple non-modifier keys in assignation; action "+params.action+", keys: "+params.keys);
-		}
-	}
-	if (key == null) {
-		throw new Error("Key is not given; action "+params.action+", keys: "+params.keys);
-	}
-	if (params.arguments === undefined) {
-		params.arguments = [];
-	}
-//	console["log"]("assign ", params.action, "to ",keyMode, ctrl, alt, shift, key);
-	Keys.keyActions[keyMode][ctrl][alt][shift][key] = [handlers.keysActions[params.action], params.arguments];
+};
+/**
+ * Sets cuurent keymapping.
+ * 
+ * @see UIKeymapping
+ */
+Keys.setKeyMapping = function(keymapping) {
+	this.keyMapping = keymapping;
 };
 Keys.universalKeyDownHandler = function _(e) {
 // The function in document.addEventListener("keyDown")
 // Handles all the key presses in game. 
-	if (UI.mode == UI.MODE_MENU) {
-		return true;
-	}
 	var ctrl = e.ctrlKey ? 1 : 0;
 	var alt = e.altKey ? 1 : 0;
 	var shift = e.shiftKey ? 1 : 0;
 	var key = e.keyCode;
-	var keyMode = UI.mode;
 //	console["log"](keyMode, ctrl, alt, shift, key);
-	var registeredActionHolder;
-	if (
-		(keyMode == UI.MODE_ON_GLOBAL_MAP || 
-		keyMode == UI.MODE_IN_LOCATION) &&
-		Keys.keyActions[UI.MODE_ALWAYS][ctrl][alt][shift][key]
-	) {
-	// Apply "default" action
-		registeredActionHolder = Keys.keyActions[UI.MODE_ALWAYS][ctrl][alt][shift][key];
-	} else {
-		registeredActionHolder = Keys.keyActions[keyMode][ctrl][alt][shift][key];
+	
+//	console.log(Keys.keyMapping.handlers)
+	var uiAction = Keys.keyMapping.handlers[ctrl][alt][shift][key];
+	if (uiAction === undefined) {
+		return;
 	}
-	if (registeredActionHolder) {
-		e.preventDefault();
-		if (registeredActionHolder[0].context instanceof UIElement && UI.disabled) {
-		// If this is action of UIElement and UI is disabled, return
+	uiAction.handler.apply(uiAction.context, uiAction.arguments);
+};
+/**
+ * UIKeymapping class represents link with key combinations and actions
+ * performed by pressing them. First argument must be a name of keymapping, 
+ * all the next arguments are arrays, in which the last element is the name of
+ * action (String), and all the elements before are names of keys (also 
+ * Strings). For example,
+ * new UIKeymapping("Test",["k","kick"],["Alt","p","punch"])
+ * 
+ * @see UI#registerAction
+ * @constructor
+ * @param {String} name Just to indentify this keymapping.
+ */
+function UIKeymapping(name) {
+	this.handlers = {
+		0:{0:{0:{},1:{}},1:{0:{},1:{}}},
+		1:{0:{0:{},1:{}},1:{0:{},1:{}}}
+	};
+	this.arguments = {
+		0:{0:{0:{},1:{}},1:{0:{},1:{}}},
+		1:{0:{0:{},1:{}},1:{0:{},1:{}}}
+	};
+	this.name = name;
+	for (var i=1; i<arguments.length; i++) {
+		this.addHandler.apply(this, arguments[i]);
+	}
+}
+/**
+ * Adds action for a key combination. Last argument in a name of registered 
+ * action, all the arguments before are names of keys. For example,
+ * keymapping.addHandler("Ctrl","h","showHelp"); or
+ * keymapping.addHandler("Num 8","move",[Side.N]); 
+ * 
+ * @see UI#registerAction
+ */
+UIKeymapping.prototype.addHandler = function() {
+	var ctrl = 0, alt = 0, shift = 0, keyCode, actionName, args = [];
+	var namePosition = arguments.length-1;
+	if (arguments[namePosition] instanceof Array) {
+	// If the last argument is not a UIAction's name, but an array, then this
+	// is arguments array.
+		args = arguments[namePosition];
+		namePosition = arguments.length-2;
+	} 
+	actionName  = arguments[namePosition];
+	for (var i=0; i<namePosition; i++) {
+		if (arguments[i] in Keys.SHIFTKEYCODES) {
+		// Shift
+			if (shift) {
+				var keys = arguments.pop();
+				throw new Error("Incorrect keys because of extra shift (use uppercase letters here only when you don't use shift): "+keys);
+			}
+			shift = 1;
+			keyCode = Keys.SHIFTKEYCODES[arguments[i]];
+		} else if (arguments[i] == "Shift") {
+		// Shift
+			if (shift) {
+				var keys = arguments.pop();
+				throw new Error("Incorrect keys because of extra shift (use uppercase letters here only when you don't use shift): "+keys);
+			}
+			shift = 1;
+		} else if (arguments[i] == "Ctrl") {
+		// Ctrl
+			if (ctrl) {
+				var keys = arguments.pop();
+				throw new Error("Incorrect keys because of extra ctrl: "+keys);
+			}
+			ctrl = 1;
+		} else if (arguments[i] == "Alt") {
+		// Alt
+			if (alt) {
+				var keys = arguments.pop();
+				throw new Error("Incorrect keys because of extra alt: "+keys);
+			}
+			alt = 1;
+		} else if (keyCode) {
+		// Error: extra key.
+			throw new Error("Incorrect keys because of extra non-modifier key: "+keys);
+		} else {
+			keyCode = Keys.KEYCODES[arguments[i]];
+		}
+	}
+	this.handlers[ctrl][alt][shift][keyCode] = UI.registeredActions[actionName];
+	this.arguments[ctrl][alt][shift][keyCode] = args;
+};
+/**
+ * Same as addhandler, but usage of this is more strict. This is not for 
+ * general use.
+ * 
+ * @see UIKeymapping#addHandler
+ * @see UIAction#name
+ * @private
+ * @param {Boolean} ctrl
+ * @param {Boolean} alt
+ * @param {Boolean} shift
+ * @param {Number} keyCode
+ * @param {String} actionName Name of UIAction.
+ * @param {Array} [args=[]] Arguments for UIAction. By default it is an empty 
+ * array.
+ */
+UIKeymapping.prototype.strictAddHandler = function(ctrl, alt, shift, keyCode, actionName, args) {
+	this.handlers[ctrl][alt][shift][keyCode] = Keys.UI[actionName];
+	this.arguments[ctrl][alt][shift][keyCode] = args;
+};
+/**
+ * Unbind action from certain key combination.
+ * 
+ * @private
+ * @param ctrl
+ * @param alt
+ * @param shift
+ * @param keyCode
+ */
+UIKeymapping.strictRemoveHandler = function(ctrl, alt, shift, keyCode) {
+	delete this.handlers[ctrl][alt][shift][keyCode];
+	delete this.arguments[ctrl][alt][shift][keyCode];
+};
+/**
+ * 
+ * UIAction class represents any action performed by game user. For example, 
+ * "open a door", "open inventory window", "attack closest monster". Objects
+ * of this class are not for modder usage, Keys object works with these.
+ * 
+ * @contsructor
+ * @param {Function} handler Function that handles user's command.
+ * @param {Object} context Context in which handler works. This may be the
+ * window object (by default) or any other object.
+ */
+function UIAction(handler, context) {
+	this.handler = handler;
+	this.context = context || window;
+}
+/**
+ * Class represents a key mapping which links certain objects with their keys,
+ * for example item objects or spell objects. This class allows automatic
+ * assigning and reassigning of keys.
+ * 
+ * @extends UIKeumapping
+ * @param {String} name Just a name to identify this object.
+ * @return
+ */
+function UIPersistentKeymapping(name, actionName) {
+	UIKeymapping.apply(this, arguments);
+/** 
+ * Keys — object.__proto__.constructor.name (names of objects' constructor 
+ * functions), values — [[ objects, where keys — hash codes of objects, and 
+ * values — reverse ASCII codes of letters ]].
+ * 
+ * @private 
+ * @type Object
+ */
+	this.categories = {};
+/** @private @type Boolean */
+	this.allLowercaseOccupied = false;
+/** @private @type String */
+	this.actionName = actionName;
+/**
+ * Keys — reverse ASCII codes, values: {c:{String} constructor function name, 
+ * h:{Number} hashCode}.
+ * 
+ * @private 
+ * @type Object 
+ */
+	this.bookedLetters = {};
+/** 
+ * Keys — object.__proto__.constructor.name (names of objects' constructor 
+ * functions), values — [[ objects, where keys — hash codes of objects, and 
+ * values — reverse ASCII codes of letters ]].
+ * 
+ * @private 
+ * @type Object[] 
+ */
+	this.bookedObjects = {};
+}
+/**
+ * Links object with letter. Letter is chosen automatically, though may be
+ * pre-assigned (see {@link UIPersistentKeymapping#bookLetterForObject}). 
+ * Object must be hashable, i.e. implement method .hashCode() in prototype.
+ * 
+ * @see UIAction#name
+ * @public
+ * @param {Object} object
+ * @param {String} actionName Name of registered UIAction
+ */
+UIPersistentKeymapping.prototype.addObjectHandler = function(object) {
+	if (!(object.hashCode instanceof Function)) {
+		throw new Error(object.__proto__.constructor.name+" class is not hashable!");
+	}
+	
+	var category = object.__proto__.constructor.name;
+	if (!(category in this.categories)) {
+		this.categories[category] = {};
+	} else if (object.hashCode() in this.categories[category]) {
+		throw new Error("Object "+object.__proto__.constructor.name+" with hash\
+ code "+object.hashCode()+" already registered in keymapping"+this.name);
+	}
+	var newKeyCode = this.hasBookedLetter(object);
+	if (newKeyCode != -1) {
+	// If the letter for this object is booked.
+		var objectToReassign = null;
+		if (this.isOccupiedKey(newKeyCode)) {
+		// If booked letter is already assigned, reassign it.
+			objectToReassign = this.getObjectAtLetter(newKeyCode);
+			this.removeObjectHandler(objectToReassign);
+		}
+		this.strictAddHandler(0,0,shift,newKeyCode,this.actionName,[object]);
+		this.categories[category][object.hashCode()] = [shift,newKeyCode];
+		if (objectToReassign !== null) {
+			this.addObjectHandler(objectToReassign);
+		}
+	} else {
+	// If the letter for this object is not booked.
+		var newKeyCode = this.getUnoccupiedCharacter();
+	}
+	var shift = 0;
+	if (newKeyCode > 90) {
+	// If added letter is uppercase
+		shift = 1;
+		newKeyCode -= 32;
+	} else if (!this.hasFreeLowercase()) {
+	// If added letter is lowercase
+		this.allLowercaseOccupied = false;
+	}
+	
+	this.strictAddHandler(0,0,shift,newKeyCode,this.actionName,[object]);
+	this.categories[category][object.hashCode()] = [shift,newKeyCode];
+};
+/**
+ * Unlink object and its letter.
+ * 
+ * @public
+ * @param {Object} object
+ */
+UIPersistentKeymapping.prototype.removeObjectHandler = function(object) {
+	var keyCode = this.categories[object.__proto__.constructor.name][object.hashCode()];
+	var shift = 0;
+	if (keyCode > 90) {
+	// If removed letter is uppercase
+		shift = 1;
+		keyCode -= 32;
+	} else {
+	// If removed letter is lowercase
+		this.allLowercaseOccupied = false;
+	}
+	this.strictRemoveHandler(0, 0, shift, keyCode);
+	delete this.categories[object.__proto__.constructor.name][object.hashCode()];
+};
+/**
+ * Dedicates certain letter for an object, so every time you add this object (
+ * or identical object with the same hashCode) in this keymapping, that object
+ * will be assigned for the same letter. Other objects still can occupy the
+ * letter, but if this object will be added, they will be reassigned. 
+ * 
+ * @see UIPersistentKeymapping#unbookLetterForObject
+ * @param {Number} keyCode Reverse ASCII code of letter (65—90 for lowercase,
+ * 97—122 for uppercase).
+ */
+UIPersistentKeymapping.prototype.bookLetterForObject = function(keyCode, object) {
+	this.bookedLetters[keyCode] = [object.__proto__.constructor.name][object.hashCode()];
+};
+/**
+ * Undedicate a letter for the object.
+ * 
+ * @param {Object} object
+ */
+UIPersistentKeymapping.prototype.unbookLetterForObject = function(object) {
+	var hashCode = object.hashCode();
+	var constructorName = object.__proto__.constructor.name;
+	for (var i in this.bookedLetters) {
+		if (
+			this.bookedLetters[i].h == hashCode 
+			&& this.bookedLetters[i].c == constructorName
+		) {
+			delete this.bookedLetters[i];
 			return;
 		}
-		registeredActionHolder[0].action.apply(registeredActionHolder[0].context,registeredActionHolder[1]);		
-	}	
+	}
+	throw new Error("No booked letter for object "+hashCode+" of "+constructorName);
 };
-Keys.registerKeyAction = function _(action, name, context) {
-/* Add action to keysActions list under name $name.
- * Before assigning any action to any key we should register this action
- * so action obtanis name and context.
- * Context determines which object function $action applies to
- * (by default it is window)
+/**
+ * Checks if this key already has an action.
+ * 
+ * @param {Number} keyCode Reverse ASCII code of letter.
+ * @returns {Boolean}
  */
-//	console["log"]("register key action ",name," in ",context);
-	if (handlers.keysActions[name]) {
-		throw new Error("Another action under name "+name+" is already registred");
+UIPersistentKeymapping.prototype.isOccupiedKey = function(keyCode) {
+	var shift = 0;
+	if (keyCode > 90) {
+		shift = 1;
+		keyCode -= 32;
 	}
-	if (context === undefined) {
-		context = window;
-	}
-	handlers.keysActions[name] = {
-		action : action,
-		context: context
-	};
+	return this.handlers[0][0][shift][keyCode] !== undefined;
 };
-
+/**
+ * 
+ * @returns {Number} Reverse ASCII code, if the letter is booked, -1 otherwise.
+ */
+UIPersistentKeymapping.prototype.getBookedLetter = function(object) {
+	var hashCode = object.hashCode();
+	var constructorName = object.__proto__.constructor.name;
+	for (var i in this.bookedLetters) {
+		if (
+			this.bookedLetters[i].h == hashCode 
+			&& this.bookedLetters[i].c == constructorName
+		) {
+			return i;
+		}
+	}
+	return -1;
+};
+/**
+ * Checks if this keymapping has free lowercase letters to assign. We need to
+ * track free lowercase letters, because it is easier for player to use 
+ * lowercase letters, so uppercase letters shouldn't be assigned until all the
+ * lowercase letters are assigned.
+ * 
+ * @returns {Boolean}
+ */
+UIPersistentKeymapping.prototype.hasFreeLowercase = function() {
+	for (var i=65; i<=90; i++) {
+		if (this.handlers[0][0][0][i] === undefined) {
+			return true;
+		}
+	}
+	return false;
+};
+/**
+ * Returns ASCII code of the firse unoccupied character. Uppercase character
+ * codes are lowwercase character codes plus 32 (just as in ASCII).
+ * @private
+ * @returns {Number} Key code of character for lowercase caharacter, keyCode*2
+ * for uppercase character.
+ */
+UIPersistentKeymapping.prototype.getUnoccupiedCharacter = function() {
+	if (!this.allLowercaseOccupied) {
+	// Try to get lowercase character.
+		for (var i=65; i<=90; i++) {
+			if (this.handlers[0][0][0][i] === undefined) {
+				return i;
+			}
+		}
+	}
+	for (var i=65; i<=90; i++) {
+	// Try to get uppercase character.
+		if (this.handlers[0][0][1][i] === undefined) {
+			return i+32;
+		}
+	}
+	throw new Error("All the characters, both lower- and uppercase, are occupied.");
+};

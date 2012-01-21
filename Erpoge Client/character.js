@@ -17,16 +17,16 @@
 		this.name = characterTypes[type][0];
 	}
 	
-	this.fraction=(fraction==undefined)?(this.characterId==0)?1:0:fraction;
+	this.fraction = (fraction==undefined) ? (this.characterId==0)?1:0:fraction;
 	
-	this.aimcharacter=-1;
+	this.aimcharacter = -1;
 	this.cls = null;
-	if (this.type!="player") {
+	if (this.type != "player") {
 		this.hp = hp;
 		this.maxHp=maxHp;
 	}
 	
-	this.VISION_RANGE=8;
+	this.VISION_RANGE = 8;
 	this.visible;
 	
 	// Ячейка
@@ -41,8 +41,9 @@
 	this.cellWrap.style.zIndex=this.y*2+2;
 	
 	// Массивы	
-	this.ammunition = new Ammunition();	
-	this.effects={};
+	this.equipment = new Equipment();	
+	
+	this.effects = {};
 	
 	// Заклинания
 	this.spellId=-1;
@@ -115,7 +116,7 @@ Character.prototype.showAttackResult=function(res) {
 };
 Character.prototype.redrawDoll=function() {
 //Отобразить амуницию
-//prevAmmunition - предыдущее значение this.ammunition
+//prevEquipment - предыдущее значение this.equipment
 	if (player.canSee(this.x,this.y)) {
 		this.doll.draw();
 	}
@@ -441,7 +442,7 @@ Character.prototype.getPathTable = function(ignorecharacters) {
 	var oldFront=[];
 	var newFront=[];
 	newFront[0]={x:this.x,y:this.y}; // От какой  клетки начинать отсчёт; было так: newFront[0]=[this.coord];
-	for (var i=0;i<height;i++) {
+	for (var i=0;i<Terrain.height;i++) {
 		this.pathTable[i]=[];
 	}
 	this.pathTable[this.x][this.y]=0;
@@ -462,7 +463,7 @@ Character.prototype.getPathTable = function(ignorecharacters) {
 				var thisNumX=adjactentX[j];
 				var thisNumY=adjactentY[j];
 				
-				if (thisNumX<0 || thisNumX>=width || thisNumY<0 || thisNumY>=height || this.pathTable[thisNumX][thisNumY]!=undefined) {
+				if (thisNumX<0 || thisNumX>=Terrain.width || thisNumY<0 || thisNumY>=Terrain.height || this.pathTable[thisNumX][thisNumY]!=undefined) {
 					continue;
 				}
 				if (thisNumX==this.destX && thisNumY==this.destY) {
@@ -500,8 +501,8 @@ Character.prototype.getVisibleCells = function() {
 	
 	var minX = Math.max(this.x-this.VISION_RANGE, 0);
 	var minY = Math.max(this.y-this.VISION_RANGE, 0);
-	var maxX = Math.min(this.x+this.VISION_RANGE, width-1);
-	var maxY = Math.min(this.y+this.VISION_RANGE, height-1);
+	var maxX = Math.min(this.x+this.VISION_RANGE, Terrain.width-1);
+	var maxY = Math.min(this.y+this.VISION_RANGE, Terrain.height-1);
 	
 	for (var i=minX;i<=maxX;i++) {
 		for (var j=minY;j<=maxY;j++) {
@@ -561,7 +562,7 @@ Character.prototype.comeTo = function(x,y) {
 	}
 	return atLeastOnePath;
 };
-Character.prototype.getPath = function(destX,destY) {
+Character.prototype.getPath = function(destX, destY) {
 // Получить путь до клетки в виде массива координат (0 - первый шаг и т. д.)
 	if (destX==undefined || destY==undefined) {
 		destX=this.destX;
@@ -584,21 +585,21 @@ Character.prototype.getPath = function(destX,destY) {
 	var currentNumY=destY;
 	var x=currentNumX;
 	var y=currentNumY;
-	/* */var diff=[-width, 1, width, -1];
+	/* */var diff=[-Terrain.width, 1, Terrain.width, -1];
 	var t=0;
 	for (var j=this.pathTable[currentNumX][currentNumY];j>0;j=this.pathTable[currentNumX][currentNumY]) {
 	// Счётчик: от кол-ва шагов до клетки dest до начальной клетки (шаг 1)
 		path.push({x:currentNumX,y:currentNumY});
-		var diff=[-width, 1, width, -1, width+1, -width+1, width-1, -width-1];
+		var diff=[-Terrain.width, 1, Terrain.width, -1, Terrain.width+1, -Terrain.width+1, Terrain.width-1, -Terrain.width-1];
 		var adjactentX=[x, x+1, x, x-1, x+1, x+1, x-1, x-1];
 		var adjactentY=[y-1, y, y+1, y, y+1, y-1, y+1, y-1];
 		for (var i=0;i<8;i++) {
 		// Для каждой из доступных сторон (С, Ю, З, В)
 			var thisNumX=adjactentX[i];
-			if (thisNumX<0 || thisNumX>=width) { continue; }
+			if (thisNumX<0 || thisNumX>=Terrain.width) { continue; }
 			var thisNumY=adjactentY[i];
-			if (thisNumY<0 || thisNumY>=height) { continue; }
-			if (this.pathTable[thisNumX][thisNumY]==j-1 && !(currentNumX==0 && thisNumX==currentNumX-1 || currentNumX==width-1 && thisNumX==currentNumX+1)) {
+			if (thisNumY<0 || thisNumY>=Terrain.height) { continue; }
+			if (this.pathTable[thisNumX][thisNumY]==j-1 && !(currentNumX==0 && thisNumX==currentNumX-1 || currentNumX==Terrain.width-1 && thisNumX==currentNumX+1)) {
 			// Если клетка в этой стороне является предыдущим шагом, перейти на неё
 				currentNumX=adjactentX[i];
 				currentNumY=adjactentY[i];
@@ -620,8 +621,8 @@ Character.prototype.updateVisibility = function() {
 		return;
 	}
 	this.getVisibleCells();
-	for (var i=0;i<width;i++) {
-		for (var j=0;j<height;j++) {
+	for (var i=0;i<Terrain.width;i++) {
+		for (var j=0;j<Terrain.height;j++) {
 			if (this.visibleCells[i][j] && !this.prevVisibleCells[i][j]) {
 				if (this.seenCells[i][j]) {
 					Terrain.cells[i][j].unshade();
@@ -637,8 +638,8 @@ Character.prototype.updateVisibility = function() {
 };
 Character.prototype.initVisibility = function() {
 	this.getVisibleCells();
-	for (var i=0;i<width;i++) {
-		for (var j=0;j<height;j++) {
+	for (var i=0;i<Terrain.width;i++) {
+		for (var j=0;j<Terrain.height;j++) {
 			if (this.visibleCells[i][j]) {
 				Terrain.cells[i][j].show();
 				this.seenCells[i][j] = true;
@@ -646,8 +647,8 @@ Character.prototype.initVisibility = function() {
 		}
 	}
 	if (Terrain.isPeaceful) {
-		for (var i=0;i<width;i++) {
-			for (var j=0;j<height;j++) {
+		for (var i=0;i<Terrain.width;i++) {
+			for (var j=0;j<Terrain.height;j++) {
 				if (!Terrain.cells[i][j].visible) {
 					player.seenCells[i][j] = true;
 					player.visibleCells[i][j] = true;
@@ -679,7 +680,7 @@ Character.prototype.findCharacterByCoords =  function(x,y) {
 };
 /* Checks */
 Character.prototype.isBareHanded = function () {
-	return this.ammunition.getItemInSlot(0) === undefined;
+	return this.equipment.getItemInSlot(0) === null;
 };
 Character.prototype.hasItem = function(typeId, param) {
 // Имеет пресонаж предмет или заданное кол-во предметов
@@ -707,12 +708,7 @@ Character.prototype.hasEffect = function(effectId) {
 	return false;
 };
 Character.prototype.isEnemy = function(aim) {
-	var isAlly=false;
-	for (var i in area[1]) {
-		if (inArray(this.fraction, diplomacy) && inArray(aim.fraction, diplomacy)) {
-			isAlly=true;
-		}
-	}
+	var isAlly = false;
 	if (aim.fraction!=this.fraction && this.fraction!=-1 && aim.fraction!=-1 && !isAlly) {
 	// Если найденный character не союзник этому character и если они оба — не нейтральные монстры, то они враги
 		return true;
@@ -912,7 +908,7 @@ Character.prototype.loseItem = function(typeId, param) {
 	UI.notify("inventoryChange");
 };
 Character.prototype.getItem = function(typeId, param) {
-	this.items.addItem(typeId, param);
+	this.items.addNewItem(typeId, param);
 	UI.notify("inventoryChange");
 };
 Character.prototype.putOn = function(itemId) {
@@ -920,32 +916,32 @@ Character.prototype.putOn = function(itemId) {
 //	if (!this.items[itemId]) {
 //		throw new Error("Player is trying to put on item "+itemId+" that he doesn't have");
 //	}
-	// Determine the slot in ammunition for the item
+	// Determine the slot in equipment for the item
 	var item = this.items.getUnique(itemId);
 	var slot = getSlotFromClass(items[item.typeId][1]);
-	if (slot == 9 && this.ammunition.getItemInSlot(9)) {
+	if (slot == 9 && this.equipment.getItemInSlot(9)) {
 		slot = 10;
 	}
-	this.ammunition.putOn(item);
+	this.equipment.putOn(item);
 	this.redrawDoll();
 };
 Character.prototype.takeOff = function(itemId) {
 	var slot = 0;
 	// For list of slots search items.js
 	for (; slot < 10; slot++) {
-		var item = this.ammunition.getItemInSlot(slot);
+		var item = this.equipment.getItemInSlot(slot);
 		if (item && item.itemId == itemId) {
 			break;
 		}
 	}
 	if (slot == 10) {
-		throw new Error("Not found item "+itemId+" in ammunition");
+		throw new Error("Not found item "+itemId+" in equipment");
 	}
-	if (!this.ammunition.hasItemInSlot(slot)) {
+	if (!this.equipment.hasItemInSlot(slot)) {
 		throw new Error("Character "+this.name+" is trying to take off an item that he doesn't wear");
 		return false;
 	}
-	this.ammunition.takeOffFromSlot(slot);
+	this.equipment.takeOffFromSlot(slot);
 	this.redrawDoll();
 };
 Character.prototype.changeAttribute = function _(attrId, value) {
@@ -953,18 +949,23 @@ Character.prototype.changeAttribute = function _(attrId, value) {
 	UI.notify("attributeChange", [attrId, value]);
 };
 
+/**
+ * @augments Character
+ * @param {mixed[]} data
+ * @return
+ */
 function Player(data) {
 /*	
 	data : [(0)characterId, (1)worldX, (2)worldY, (3)isLead, (4)name, (5)race, (6)class, 
 			(7)maxHp, (8)maxMp, (9)maxEp, (10)hp, (11)mp, (12)ep, 
-			(13)str, (14)dex, (15)wis, (16)itl, (17)items[], (18)ammunition[], (19)spells[], (20)skills[],
+			(13)str, (14)dex, (15)wis, (16)itl, (17)items[], (18)equipment[], (19)spells[], (20)skills[],
 			(21)ac, (22)ev, (23)resistances[]] 
 */
 	Character.apply(this, [data[0],"player",data[1], data[2],1]);
 	window.player = this;
 	characters[data[0]] = this;
 	this.isClientPlayer = true;
-	if (onGlobalMap) {
+	if (Terrain.onGlobalMap) {
 		this.worldX = data[1];
 		this.worldY = data[2];
 	} else {
@@ -993,15 +994,14 @@ function Player(data) {
 	this.attributes.coldRes = data[23][1];
 	this.attributes.poisonRes = data[23][2];
 	
-
 	
-	this.pathTable=blank2dArray();
-	this.items = new ItemMap();
+	this.pathTable = blank2dArray();
+	this.items = new ItemSet();
 	this.spells = [];
-	this.visibleCells=blank2dArray();
-	this.prevVisibleCells=blank2dArray();
-	this.seenCells=blank2dArray();
-	this.skills=[];
+	this.visibleCells = blank2dArray();
+	this.prevVisibleCells = blank2dArray();
+	this.seenCells = blank2dArray();
+	this.skills = [];
 	this.actionQueue = [];
 	this.actionQueueParams = [];
 	
@@ -1015,29 +1015,21 @@ function Player(data) {
 			this.items.addItem(new ItemPile(typeId, param));
 		}
 	}
-	UI.notify("inventoryChange");
 	
-	// Ammunition
-	for (var slot in data[18]) {
-		if (slot==9 && this.ammunition.hasItemInSlot(9)) {
-			slot=10;
-		}
-		this.ammunition.putOnToSlot(slot, new UniqueItem(data[18][slot][0], data[18][slot][1]));
-	}
+	this.equipment.getFromData(data[18]);
+	
 	// Spells
-	player.spells = data[19];
+	this.spells = data[19];
 	// Skills
-	var len=data[20].length/2;
-	player.skills=[];
-	for (var i=0;i<len;i++) {
+	var len = data[20].length/2;
+	this.skills = [];
+	for (var i=0; i<len; i++) {
 		player.skills.push(data[20][i*2]);
 		player.skills.push(data[20][i*2+1]);
 	}
 	this.missileType = null;
 	this.autoSetMissileType();
 	UI.notify("attributesInit");
-	UI.notify("lootChange");
-	UI.notify("inventoryChange");
 }
 Player.prototype = new Character(-1);
 Player.prototype.actions = ["push","changePlaces","makeSound","shieldBash","jump"];
@@ -1059,7 +1051,7 @@ Player.prototype.putOn = function (itemId) {
 	this.items.removeUnique(itemId);
 };
 Player.prototype.takeOff = function (itemId) {
-	this.items.addItem(this.ammunition.getItemById(itemId));
+	this.items.addItem(this.equipment.getItemById(itemId));
 	Character.prototype.takeOff.apply(this, [itemId]);
 	// This code is also in Character.prototype.takeOff;
 	// consider changing server output for takeOff event
@@ -1076,8 +1068,8 @@ Player.prototype.autoSetMissileType = function () {
 		}
 	}
 	for (var i in this.items.uniqueItems) {
-		if (isMissile(this.items.itemPiles[i].typeId)) {
-			this.setMissileType(this.items.itemPiles[i].typeId);
+		if (isMissile(this.items.uniqueItems[i].typeId)) {
+			this.setMissileType(this.items.uniqueItems[i].typeId);
 			return;
 		}
 	}
@@ -1250,14 +1242,14 @@ Player.prototype.sendIdle = function() {
 };
 Player.prototype.leaveLocation = function() {
 	Net.send({leaveLocation:1},function(data) {
-		onGlobalMap=true;
+		Terrain.onGlobalMap = true;
 		leaveLocation();
 	});
 	this.leavesArea=false;
 };
 Player.prototype.sendDrop = function(item) {
 	if (this.items.hasItem(item)) {
-		if (item.isUnique) {
+		if (item instanceof UniqueItem) {
 			Net.send({a:Net.DROP_UNIQUE,typeId:item.typeId,itemId:item.itemId});
 		} else {
 			Net.send({a:Net.DROP_PILE,typeId:item.typeId,amount:item.amount});
@@ -1267,7 +1259,7 @@ Player.prototype.sendDrop = function(item) {
 	}
 };
 Player.prototype.sendPickUp = function(item) {
-	if (item.isUnique) {
+	if (item instanceof UniqueItem) {
 		Net.send({a:Net.PICK_UP_UNIQUE, itemId:item.itemId});
 	} else {
 		Net.send({a:Net.PICK_UP_PILE, typeId:item.typeId, amount:item.amount});
@@ -1302,7 +1294,7 @@ Player.prototype.selectMissileType = function(type) {
 };
 Player.prototype.selectMissile = function() {
 // Enter missile mode
-	if (player.ammunition.getItemInSlot(0) && player.ammunition.getItemInSlot(0).isRanged()) {
+	if (player.equipment.getItemInSlot(0) && player.equipment.getItemInSlot(0).isRanged()) {
 		var aimcharacter;
 		if (aimcharacter=player.findEnemy()) {
 			CellCursor.move(aimcharacter.x,aimcharacter.y);
@@ -1319,8 +1311,12 @@ Player.prototype.selectMissile = function() {
 Player.prototype.selectSpell = function(spellId) {
 // Enter spell casting mode
 	this.spellId = spellId;
-	CellCursor.enterSelectionMode(player.sendCastSpell, this);
+	CellCursor.enterSelectionMode(this.cellCursorSpellSelectCallback, this);
 	UI.notify("spellSelect");	
+};
+Player.prototype.cellCursorSpellSelectCallback = function() {
+	player.sendCastSpell();
+	player.unselectSpell();
 };
 Player.prototype.unselectSpell = function() {
 // Exit spell casting mode
@@ -1344,7 +1340,7 @@ Player.prototype.cellChooseAction = function() {
 			var aim = Character.prototype.findCharacterByCoords(x,y);
 			if (aim) {
 			// On character
-				player.sendAttack(aim.characterId, !player.ammunition.getItemInSlot(0).isMelee());
+				player.sendAttack(aim.characterId, !player.equipment.getItemInSlot(0).isMelee());
 			} else {
 			// On cell
 				player.sendShootMissile(x, y, 2300);

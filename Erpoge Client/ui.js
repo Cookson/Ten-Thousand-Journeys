@@ -5,50 +5,129 @@
  */
 /** @class */
 var UI = {
-/** @lends UI */
 // Constants describing alignation of UI elements in game window
-	ALIGN_LEFT 		: "LEFT",
-	ALIGN_RIGHT 	: "RIGHT",
-	ALIGN_TOP 		: "TOP",
-	ALIGN_BOTTOM	: "BOTTOM",
-	ALIGN_CENTER	: "CENTER",
-	ALIGN_MIDDLE	: "MIDDLE",
+	/** 
+	 * @constant
+	 * @see UIElement#
+	 * @type String;
+	 */
+	ALIGN_LEFT      : "LEFT",
+	/** 
+	 * @constant 
+	 * @type String;
+	 */
+	ALIGN_RIGHT     : "RIGHT",
+	/** 
+	 * @constant 
+	 * @type String;
+	 */
+	ALIGN_TOP       : "TOP",
+	/** 
+	 * @constant 
+	 * @type String;
+	 */
+	ALIGN_BOTTOM    : "BOTTOM",
+	/** 
+	 * @constant 
+	 * @type String;
+	 */
+	ALIGN_CENTER    : "CENTER",
+	/** 
+	 * @constant 
+	 * @type String;
+	 */
+	ALIGN_MIDDLE    : "MIDDLE",
 // Constants describing when to show an element: on global map, in location or always
-	IN_LOCATION		: "In location",
-	ON_GLOBAL_MAP	: "On gobal map",
-	ALWAYS			: "Always",
-// Setting mode to MODE_DEFAULT actually sets mode to 
-// MODE_ON_GLOBAL_MAP or MODE_IN_LOCATION depending on 
-// where the player currently is.
-	MODE_DEFAULT 			: 9000,
-	MODE_ALWAYS 			: 0,
-	MODE_ON_GLOBAL_MAP		: 1,
-	MODE_IN_LOCATION		: 2,
-	MODE_MISSILE			: 3,
-	MODE_CHAT				: 4,
-	MODE_CURSOR_ACTION		: 5,
-	MODE_CONTAINER			: 6,
-	MODE_MENU				: -1,
+	/** 
+	 * @constant 
+	 * @type String;
+	 */
+	IN_LOCATION     : "In location",
+	/** 
+	 * @constant 
+	 * @type String;
+	 */
+	ON_GLOBAL_MAP   : "On gobal map",
+	/** 
+	 * @constant 
+	 * @type String;
+	 */
+	ALWAYS          : "Always",
+// 
+// 
+// 
+	/**
+	 * Setting mode to MODE_DEFAULT actually sets mode to MODE_ON_GLOBAL_MAP or 
+	 * MODE_IN_LOCATION depending on where the player currently is.
+	 * @see UI#setMode
+	 * @constant 
+	 */
+	MODE_DEFAULT       : 9000,
+	/** @constant */
+	MODE_ALWAYS        : 0,
+	/** @constant */
+	MODE_ON_GLOBAL_MAP : 1,
+	/** @constant */
+	MODE_IN_LOCATION   : 2,
+	/** @constant */
+	MODE_MISSILE       : 3,
+	/** @constant */
+	MODE_CHAT          : 4,
+	/** @constant */
+	MODE_CURSOR_ACTION : 5,
+	/** @constant */
+	MODE_CONTAINER     : 6,
+	/** @constant */
+	MODE_MENU          : -1,
 // System property for generating unique field names in notifiers' objects
 	_notifiersUniqueId : 0,
 // zIndexes for sorting UI elements
+	/** @private */
 	_minLayerZIndex : 1000,
+	/** @private */
 	_maxLayerZIndex : 1000,
-	
+// itemView properties
+	/** @private */
+	_itemViewImgProto: document.createElement("img"),
+	/** @private */
+	_itemViewWrapProto: document.createElement("div"),
+	/** @private */
+	_itemViewNumProto: document.createElement("div"),
 // Public properties
 // *****************
 // width and height of game window zone in pixels. 
 // These are default values, they are overriden by 
 // values saved in storage
+	/** 
+	 * Width of UI (don't mix this up with width of game zone).
+	 * @see UI#height
+	 * @type Number
+	 * @public 
+	 */
 	width			: 1024,
+	/** 
+	 * Height of UI (don't mix this up with height of game zone).
+	 * @see UI#width
+	 * @type Number
+	 * @public 
+	 */
 	height			: 600,
+	/** 
+	 * @type HTMLElement
+	 * @public 
+	 */
 	gameZone        : null,
-// All UIElements save here when initiated
+// 
+	/** 
+	 * All UIElements save here when initiated
+	 * @public 
+	 */
 	uiElements: [],
-// Lists of UI elements that wait for certain game events to redraw
-	notifiers: {	
+// Lists of UI elements that wait for particular game events to redraw
+	/** @private */
+	_notifiers: {	
 		lootChange: {},
-		ammunitionChange: {},
+		equipmentChange: {},
 		inventoryChange: {},
 		healthChange: {},
 		manaChange: {},
@@ -85,84 +164,96 @@ var UI = {
 		login: {},
 		loginError: {},
 		accountPlayersRecieve: {}
-	},	
-// UI type automatically becomes registered when UIElement of this type is created
-// Types need to be registered so their keysActions are registered 
-// (see keysCore.js/Keys.registerKeyAction)
-// If there is key in registeredUIElementTypes that is UIElementType's name,
-// then UIElement is registered.
-	registeredUIElementTypes: {},
-/*
- * When you create DOM structure wrapped in div for one of your UIElements, you 
- * can cache it in UI.savedDOMStructures so you won't need to create it again.
- */
-	savedDOMStructures: {},
+	},
+	/** @private */
+	_savedDOMStructures: {},
 // Object CSSStyleSheet. A stylesheet for custom rules of UIElements
 // This field will be set in onLoadEvents['customStylesheets']
 	styleSheet: null,
 	mode: -1,
 // Placeholders for panels
 	panels: {},
+/** @public @type UIPanel */
 	topPanel: null,
+/** @public @type UIPanel */
 	rightPanel: null,
+/** @public @type UIPanel */
 	bottomPanel: null,
-	leftPanel: null
+/** @public @type UIPanel */
+	leftPanel: null,
+	registeredActions: {}
 };
-UI.notify = function _(groupName, data) {
+/**
+ * Fires an event and notifies all the elements which listen to that event, 
+ * passing thd data to their handlers.
+ * 
+ * @param {String} groupName Name of event,
+ * @param {mixed} data Any data object or primitive that will be passed to 
+ * UIElements' event handlers
+ * @returns {Boolean} true if has any elements, otherwise false.
+ * @memberOf UI
+ */
+UI.notify = function(groupName, data) {
 //	console["log"](groupName);
-	if (!UI.notifiers[groupName]) {
+	if (!this._notifiers[groupName]) {
 		console["log"]("Nonexistent notifier "+groupName);
 		return false;
 	}
 	var hasElements = false;
-	for (var i in UI.notifiers[groupName]) {
-//		console["log"]("redraw",UI.notifiers[groupName][i].rootElement);
-		UI.notifiers[groupName][i].update(groupName, data);
+	for (var i in this._notifiers[groupName]) {
+//		console["log"]("redraw", this._notifiers[groupName][i].rootElement);
+		this._notifiers[groupName][i].getEvent(groupName, data);
 		hasElements = true;
 	}
 	return hasElements;
 };
-UI.notifyEverything = function _() {
-	for (var i in UI.notifiers) {
-		for (var j in UI.notifiers[i]) {
-			UI.notifiers[i][j].update(UI.notifiers[i]);
+/**
+ * Show {@link UIElement}s that are only show in location, hide UIElements that
+ * are only shown on global map.
+ */
+UI.enterLocationMode = function() {
+	for (var i in this.uiElements) {
+		if (this.uiElements[i].displayMode == UI.IN_LOCATION) {
+			this.uiElements[i].show();
+		} else if (this.uiElements[i].displayMode == UI.ON_GLOBAL_MAP) {
+			this.uiElements[i].hide();
 		}
 	}
 };
-UI.enterLocationMode = function _() {
-	for (var i in this.notifiers) {
-		for (var j in this.notifiers[i]) {
-			if (this.notifiers[i][j].displayMode == UI.IN_LOCATION) {
-				this.notifiers[i][j].show();
-			} else if (this.notifiers[i][j].displayMode == UI.ON_GLOBAL_MAP) {
-				this.notifiers[i][j].hide();
-			}
+/**
+ * Show {@link UIElement}s that are only show on global map, hide UIElements 
+ * that are only shown in location map.
+ */
+UI.enterGlobalMapMode = function() {
+	for (var i in this.uiElements) {
+		if (this.uiElements[i].displayMode == UI.ON_GLOBAL_MAP) {
+			this.uiElements[i].show();
+		} else if (this.uiElements[i].displayMode == UI.IN_LOCATION) {
+			this.uiElements[i].hide();
 		}
 	}
 };
-UI.enterGlobalMapMode = function _() {
-	for (var i in this.notifiers) {
-		for (var j in this.notifiers[i]) {
-			if (this.notifiers[i][j].displayMode == UI.ON_GLOBAL_MAP) {
-				this.notifiers[i][j].show();
-			} else if (this.notifiers[i][j].displayMode == UI.IN_LOCATION) {
-				this.notifiers[i][j].hide();
-			}
+/**
+ * Show all the elements that are not permanently hidden.
+ * 
+ * @see UIElement#permanentlyHidden
+ */
+UI.showAlwaysShownElements = function() {
+	for (var i in this.uiElements) {
+		var uiElement = this.uiElements[i];
+		if (uiElement.displayMode == UI.ALWAYS && !uiElement.permanentlyHidden) {
+			this.uiElements[i].show();
 		}
 	}
 };
-UI.showAlwaysShownElements = function _() {
-	for (var i in this.notifiers) {
-		for (var j in this.notifiers[i]) {
-			var uiElement = this.notifiers[i][j];
-			if (uiElement.displayMode == UI.ALWAYS && !uiElement.permanentlyHidden) {
-				this.notifiers[i][j].show();
-			}
-		}
-	}
-};
-UI.disable = function _() {
-// Hide all UI elements and disable their keypad reactions
+/**
+ * Hides all UIElements, UIWindows and UIPanels and disables their key press
+ * reactions.
+ * 
+ * @see UI#enable
+ * @throws {Error} If UI is already disabled.
+ */
+UI.disable = function() {
 	if (this.disabled) {
 		throw new Error("UI is already disabled!");
 	}
@@ -174,19 +265,19 @@ UI.disable = function _() {
 		this.uiElements[i].hide();
 	}
 	var panelsHidden = false;
-	if (this.topPanel !== undefined) {
+	if (this.topPanel !== null) {
 		panelsHidden = true;
 		this.topPanel.hide();
 	}
-	if (this.rightPanel !== undefined) {
+	if (this.rightPanel !== null) {
 		panelsHidden = true;
 		this.rightPanel.hide();
 	}
-	if (this.bottomPanel !== undefined) {
+	if (this.bottomPanel !== null) {
 		panelsHidden = true;
 		this.bottomPanel.hide();
 	}
-	if (this.leftPanel !== undefined) {
+	if (this.leftPanel !== null) {
 		panelsHidden = true;
 		this.leftPanel.hide();
 	}
@@ -194,7 +285,14 @@ UI.disable = function _() {
 		this._updateGameZoneBounds();
 	}
 };
-UI.enable = function _() {
+/**
+ * Shows all UIElements, UIWindows and UIPanels and enables their key press
+ * reactions.
+ * 
+ * @see UI#disable
+ * @throws {Error} If UI is already enabled.
+ */
+UI.enable = function() {
 // Show all UI elements that are not permanently hidden.
 // Use this to restore UI after using UI.disable()
 	if (!this.disabled) {
@@ -204,8 +302,8 @@ UI.enable = function _() {
 	for (var i=0; i<this.uiElements.length; i++) {
 		if (
 			this.uiElements[i].permanentlyHidden || 
-			this.uiElements[i].displayMode == UI.ON_GLOBAL_MAP && !onGlobalMap ||
-			this.uiElements[i].displayMode == UI.IN_LOCATION && onGlobalMap
+			this.uiElements[i].displayMode == UI.ON_GLOBAL_MAP && !Terrain.onGlobalMap ||
+			this.uiElements[i].displayMode == UI.IN_LOCATION && Terrain.onGlobalMap
 		) {
 			continue;
 		}
@@ -217,13 +315,26 @@ UI.enable = function _() {
 	this.bottomPanel && this.bottomPanel.show();
 	this.leftPanel && this.leftPanel.show();
 };
-UI.addListener = function _(notifier, func) {
+/**
+ * Make a custom function listen to a notifier. Usually only {@link UIElement}s
+ * listen to notifiers, this method allows to bind any function on game event.
+ * 
+ * @param {String} notifier Event name.
+ * @param {Function} func Event handler.
+ */
+UI.addListener = function(notifier, func) {
 // Add custom function to listen to notifier
-	this.notifiers[notifier][UI._notifiersUniqueId++] = {update: func};
+	this._notifiers[notifier][UI._notifiersUniqueId++] = {update: func};
 };
-UI.setMode = function _(mode) {
+/**
+ * Changes UI's mode. UI mode determines a set of handlers for keypresses.
+ * 
+ * @param {Number} mode Constan
+ * @return
+ */
+UI.setMode = function(mode) {
 	if (mode == UI.MODE_DEFAULT) {
-		UI.mode = onGlobalMap ? UI.MODE_ON_GLOBAL_MAP : UI.MODE_IN_LOCATION;
+		UI.mode = Terrain.onGlobalMap ? UI.MODE_ON_GLOBAL_MAP : UI.MODE_IN_LOCATION;
 	} else {
 		UI.mode = mode;
 	}
@@ -317,7 +428,7 @@ UI._updateGameZoneBounds = function _() {
 		-this.getPanelWidth(Side.S);
 };
 /**
- * Places UIPanel from certain side. If there is already a panel from that side,
+ * Places UIPanel from particular side. If there is already a panel from that side,
  * hides that panel.
  * 
  * @param {UIPanel} panel Panel to place.
@@ -379,9 +490,9 @@ UI.setPanel = function _(panel, side) {
  *  Creates and displays a panel in user interface.
  *  
  *  @param {Object} properties Key/value list of properties.
- *  @param {string} properties.name Name at which this panel will be identified.
- *  @param {number} properties.width Width if panel in pixels
- *  @param {string} properties.side Side from which to put the panel.
+ *  @param {String} properties.name Name at which this panel will be identified.
+ *  @param {Number} properties.width Width if panel in pixels
+ *  @param {String} properties.side Side from which to put the panel.
  *  May be "top", "right", "bottom" or "left".  
  *  @throws {Error} If properties.side is not an appropriate string.
  */
@@ -409,7 +520,7 @@ UI.addPanel = function _(properties) {
 	}
 };
 /**
- * Returns visible width of panel from certain 
+ * Returns visible width of panel from particular 
  * side in pixels.
  * 
  * If there is no panel on that side or panel is 
@@ -449,8 +560,8 @@ UI.getViewCellBounds = function _() {
 	       ];
 };
 /**
- * Creates (@see {UIWindow}) and places (@see UIElement) a new UIWindow object 
- * made by list of properties.
+ * Creates (see {@link UIWindow}) and places (@ee {@link UIElement}) a new 
+ * UIWindow object made by list of properties.
  * 
  * @param {Object} properties
  * @param properties.type {Sring} - name of window type (as in uiElementTypes, 
@@ -509,20 +620,267 @@ UI.addWindow = function _(properties) {
  * If there's no key %hash% in UI.savedDOMStructures, then this structure will 
  * be generated by function %func% and saved under key %hash%.
  * Note that there is no method UI.setDOMStructure, because DOM structures are 
- * saved only when you get one with UI.getDOMStructure and there's no such saved
- * structue, so it is generated by %func% and saved in 
- * UI.savedDOMStructures[hash]
- * 
+ * saved only when 
  * @param {String} hash Key where structure is saved/must be saved.
  * @param {Function} func Function that generates and returns the structure.
  * @returns {HTMLDivElement} 
  */
 UI.getStaticDOMStructure = function _(hash, func) {
-	if (!(hash in this.savedDOMStructures)) {
-		this.savedDOMStructures[hash] = func();
+	if (!(hash in this._savedDOMStructures)) {
+		this._savedDOMStructures[hash] = func();
 	}
-	return this.savedDOMStructures[hash];
+	return this._savedDOMStructures[hash];
 };
+/**
+ * Add action to registered actions list under name %name%. Before performing 
+ * any UIAction or assigning a UIAction to a key we should register this 
+ * action, so action obtains name and context. Context determines which object 
+ * function action applies to (by default it is window)
+ * 
+ * @param {Function} handler Function that handles user's command.
+ * @param {String} name Name at which we save the action.
+ * @param {Object} [context=window] Context in which handler works.
+ */
+UI.registerAction = function _(name, context, handler) {
+	if (name in UI.registeredActions) {
+		throw new Error("Another action under name "+name+" is already registred");
+	}
+	if (context === undefined) {
+		context = window;
+	}
+	UI.registeredActions[name] = new UIAction(handler, context);
+};
+
+
+/**
+ * Creates a structure of dome nodes that represents an item image with 
+ * particular background. Top node will also have data 
+ * ({@link HTMLElement#setData}): "typeId" and "param".
+ * 
+ * @param {UniqueItem|ItemPile} item {@link UniqueItem}, or {@link ItemPile}, 
+ * or the constructor function {@link UniqueItem} itself to not set src of 
+ * image (is useful for preloading UI elements before player is loaded).
+ * @param {String} bg Standard item background class name. See style.css, they 
+ * start with div.itemBg*. E.g. for class itemBgEquipment this argument should 
+ * be "Equipment".
+ * @returns {HTMLDivElement} A div (with set data) containing other nodes.
+ */
+function ItemView (item, bg) {
+	this.item = null;
+	this.rootElement = this._itemViewWrapProto.cloneNode(true);
+	this.rootElement.addClass("itemView"+bg);
+	if (item === null) {
+	// Empty item cell
+		this.rootElement.setData("typeId", -1);
+	} else if (item === UniqueItem) {
+		this.rootElement.setData("typeId", -1);
+		this.rootElement.appendChild(this._itemViewImgProto.cloneNode(true));
+	} else if (item === ItemPile) {
+		this.rootElement.setData("typeId", -1);
+		this.rootElement.appendChild(this._itemViewImgProto.cloneNode(true));
+		this.numElement = this._itemViewNumProto.cloneNode(true);
+		this.rootElement.appendChild(this.numElement);
+	} else {
+	// UniqueItem or ItemPile instance.
+		this.item = item;
+		var nImg = this._itemViewImgProto.cloneNode(true);
+		nImg.setAttribute("src", "./images/items/"+item.typeId+".png");
+		this.rootElement.setData("typeId", item.typeId);
+		if (item instanceof UniqueItem) {
+			this.rootElement.setData("param", item.itemId);
+			this.rootElement.appendChild(nImg);
+		} else {
+			this.rootElement.appendChild(nImg);
+			this.rootElement.setData("param", item.amount);
+			this.numElement = this._itemViewNumProto.cloneNode(true);
+			this.changeAmount(item.amount);
+			this.rootElement.appendChild(this.numElement);
+			if (item.amount <= 1) {
+				this.numElement.style.display = "none";
+			}
+		}
+	}
+};
+/** @private @const */
+ItemView.prototype._itemViewImgProto = document.createElement("img");
+/** @private @const */
+ItemView.prototype._itemViewWrapProto = document.createElement("div");
+/** @private @const */
+ItemView.prototype._itemViewNumProto = document.createElement("div");
+/**
+ * Get HTMLElement containing all the nodes.
+ * 
+ * @returns {HTMLDivElement}
+ */
+ItemView.prototype.getNode = function() {
+	return this.rootElement;
+};
+/**
+ * Get HTMLImageElement of item image.
+ * 
+ * @returns {HTMLImageElement}
+ */
+ItemView.prototype.getImg = function() {
+	return this.rootElement.children[0];
+};
+/**
+ * Changes displayed amount of items. If amount was undisplayable (1 item) and
+ * become displayable (more than 1 item), display it.
+ * 
+ * @param {Number} amount
+ * @throws {Error} If this is not an ItemView of {@link ItemPile} (i.e. it is
+ * an ItemView of {@link UniqueItem}).
+ */
+ItemView.prototype.changeAmount = function(amount) {
+	if (this.numElement === undefined) {
+		throw new Error("An attempt to change amount of UniqueItem ItemView");
+	}
+	if (this.numElement.firstChild.nodeValue <= 1 && amount > 1) {
+		this.numElement.style.display = "inline-block";
+	}
+	
+	this.numElement.firstChild.nodeValue = amount;
+};
+/**
+ * Checks if the ItemView is displayed or not (not append as a child to any
+ * other elements).
+ * 
+ * @returns {Boolean}
+ */
+ItemView.prototype.isDisplayed = function() {
+	return this.rootElement.parentNode != null;
+};
+
+
+/**
+ * Data structure that creates and caches {@link ItemView}s. ItemViews
+ * created by this structure automatically get bg, so you only need to provide
+ * item object to create new ItemViews using ItemViewCache. This class behaves
+ * similar to {@link ItemSet}, but doesn't extend it and is not compatible with
+ * it (e.g. for using ItemViewCache instaed of ItemSet)
+ * 
+ * @see ItemViewCache#getItemView
+ * @see ItemSet
+ * @constructor
+ * 
+ * @param {String} bg Postfix pointing to a standard CSS class. See 
+ * {@link ItemView}
+ */
+function ItemViewCache(bg) {
+	this._uniqueViews = {};
+	this._pileViews = {};
+	this.bg = bg;
+};
+/**
+* Adds new {@link ItemView} to cache.
+ * @param {UniqueItem|ItemPile}
+ * @returns {ItemView} Created ItemView
+ */
+ItemViewCache.prototype.createItemView = function(item) {
+	if (item instanceof UniqueItem) {
+		this._uniqueViews[item.itemId] = new ItemView(item, this.bg);
+		return this._uniqueViews[item.itemId];
+	} else {
+		this._pileViews[item.typeId] = new ItemView(item, this.bg);
+		return this._pileViews[item.typeId];
+	}
+};
+/**
+ * Returns {@link ItemView} corresponding to item, or null if there's no
+ * ItemView corresponding to item.
+ * 
+ * @param {UniqueItem|ItemPile}
+ * @returns {ItemView|null} {@link ItemView} if it exists, null otherwise.
+ * @throws {Error} If item is not {@link UniqueItem} or {@link ItemPile}.
+ */
+ItemViewCache.prototype.getItemView = function(item) {
+	if (this.hasItemView(item)) {
+	// If ItemView already exists, then return existing ItemView
+		if (item instanceof UniqueItem) {
+			return this._uniqueViews[item.itemId];
+		}
+		if (item instanceof ItemPile) {
+			return this._pileViews[item.typeId];
+		}
+		throw new Error("Incorrect input: argument must be UniqueItem or ItemPile");
+	}
+	return null;
+};
+/**
+ * Checks if ItemViewCache has {@link ItemView} associated with a particular item.
+ * 
+ * @param {UniqueItem|ItemPile}
+ * @returns {Boolean} True if has, false if not.
+ */
+ItemViewCache.prototype.hasItemView = function (item) {
+	if (item instanceof UniqueItem) {
+		return item.itemId in this._uniqueViews;
+	} else {
+		return item.typeId in this._pileViews;
+	}
+};
+/**
+ * Returns {@link ItemView} corresponding to item object. If ItemView has 
+ * already been created, return cached version, otherwise create new ItemView
+ * and return it.
+ * 
+ * @param {UniqueItem|ItemPile}
+ * @returns {ItemView}
+ */
+ItemViewCache.prototype.queryItemView = function(item) {
+	if (this.hasItem(item)) {
+		return this.getItem(item);
+	} else {
+		return this.addItem(item);
+	}
+};
+/**
+ * Get array of all the item objects.
+ */
+ItemViewCache.prototype.getValues = function() {
+	var answer = [];
+	for (var i in this._uniqueViews) {
+		answer.push(this._uniqueViews[i].item);
+	}
+	for (var i in this._pileViews) {
+		answer.push(this._pileViews[i].item);
+	}
+	return answer;
+};
+
+
+/**
+ * Singleton that creates and stores {@link ItemView}s with null items, i.e. 
+ * plain backgrounds. It lets removed ItemViews not be destroyed, but used 
+ * later if needed, so in the whole life of browser game window we will only 
+ * need to have as much null ItemViews as it was maximally created at the same 
+ * time.
+ * 
+ * @class
+ */
+var NullItemViewCache = {};
+NullItemViewCache.types = {};
+/**
+ * @memberOf NullItemViewCache
+ * Gets spare cached ItemView with particular background type or creates and 
+ * caches a new one.
+ * 
+ * @param {String} bg See {@link ItemView}.
+ */
+NullItemViewCache.queryItemView = function(bg) {
+	for (var i in this.types[bg]) {
+		if (this.types[bg][i].rootElement.parentNode === null) {
+			return this.types[bg][i];
+		}
+	}
+	var newItemView = new ItemView(null,bg);
+	if (this.types[bg] === undefined) {
+		this.types[bg] = [];
+	}
+	this.types[bg].push(newItemView);
+	return newItemView;
+};
+
 
 /**
  * Class that represents a single element of user interface. 
@@ -530,7 +888,6 @@ UI.getStaticDOMStructure = function _(hash, func) {
  * @constructor
  * @param {String} type String that is equal to desired element's type name in 
  * UIElementTypes.
- * @return
  */
 function UIElement(type) {
 	if (type === -1) {
@@ -546,7 +903,7 @@ function UIElement(type) {
 	
 	for (var actionName in this.UIElementType.keysActions) {
 	// Register UIElementType's keysActions if it is still not registered
-		Keys.registerKeyAction(this.UIElementType.keysActions[actionName], actionName, this);
+		UI.registerAction(actionName, this, this.UIElementType.keysActions[actionName]);
 	}
 	if (this.UIElementType.listeners === undefined) {
 		throw new Error("Listeners are not given in UI element "+type);
@@ -554,17 +911,17 @@ function UIElement(type) {
 	for (var notifierName in this.UIElementType.listeners) {
 	// Add this element to all required notifiers
 		if (typeof this.UIElementType.listeners[notifierName] === "string") {
-			if (UI.notifiers[notifierName] === undefined || this.UIElementType.listeners[notifierName] === undefined) {
+			if (UI._notifiers[notifierName] === undefined || this.UIElementType.listeners[notifierName] === undefined) {
 				throw new Error("Can't set listener of UI element "
 						+this.type+" to nonexistent notifier "+this.UIElementType.listeners[notifierName]);
 			}
-			UI.notifiers[notifierName][UI._notifiersUniqueId++] = this;
+			UI._notifiers[notifierName][UI._notifiersUniqueId++] = this;
 		} else {
-			if (UI.notifiers[notifierName] === undefined) {
+			if (UI._notifiers[notifierName] === undefined) {
 				throw new Error("Can't set listener of UI element "
 						+this.type+" to nonexistent notifier "+notifierName);
 			}
-			UI.notifiers[notifierName][UI._notifiersUniqueId++] = this;
+			UI._notifiers[notifierName][UI._notifiersUniqueId++] = this;
 		}
 	}	
 };
@@ -601,38 +958,40 @@ UIElement.prototype.place = function (panel) {
 	}, 1);
 };
 /**
- * 
- * @param {string} notifier Name of notifier, e.g. "alert" or "healthChange"
+ * Calls function corresponding to event name 
+ * @param {String} notifier Name of notifier, e.g. "alert" or "healthChange"
  * @param data Any data that this elements' handler of notifier can handle,
  * @see UI.notify
  * @return
  */
-UIElement.prototype.update = function(notifier, data) {
-	var listener = this.UIElementType.listeners[notifier];
+UIElement.prototype.getEvent = function(name, data) {
+	var listener = this.UIElementType.listeners[name];
 	if (listener === undefined) {
-		throw new Error("Cannot update element listening non-existent notifier "+notifier);
+		throw new Error("Cannot update element listening non-existent notifier "+name);
 	}
 	if (typeof listener === "string") {
-		this.update(listener, data);
+	// UIElementType listeners may contain just a string, this means pointing 
+	// to a listener with such name.
+		this.getEvent(listener, data);
 	} else {
-		this.UIElementType.listeners[notifier].apply(this, [data]);
+		this.UIElementType.listeners[name].apply(this, [data]);
 		this.setPosition();
 	}	
 };
 UIElement.prototype.setPosition = function () {
-// Place element to certain coordinates in game window zone
+// Place element to particular coordinates in game window zone
 	if (this.panel !== undefined) {
-		throw new Error("Elements on panels cannot be placed to certain coordinates!");
+		throw new Error("Elements on panels cannot be placed to particular coordinates!");
 	}
 	// Horizontally
 	if (this.hAlign == UI.ALIGN_LEFT) {
 		this.rootElement.style.left = UI.getPanelWidth(Side.W)+"px";
 	} else if (this.hAlign == UI.ALIGN_RIGHT) {
-		this.rootElement.style.left = (UI.width-this.rootElement.clientWidth-UI.getPanelWidth(Side.E))+"px";
+		this.rootElement.style.left = (UI.width-this.rootElement.offsetWidth-UI.getPanelWidth(Side.E))+"px";
 	} else if (this.hAlign == UI.ALIGN_CENTER) {
-		this.rootElement.style.left = (UI.width-this.rootElement.clientWidth+UI.getPanelWidth(Side.W)-UI.getPanelWidth(Side.E))/2+"px";
+		this.rootElement.style.left = (UI.width-this.rootElement.offsetWidth+UI.getPanelWidth(Side.W)-UI.getPanelWidth(Side.E))/2+"px";
 	} else if (this.hAlign < 0) {
-		this.rootElement.style.left = (UI.width-this.rootElement.clientWidth-UI.getPanelWidth(Side.E)+this.hAlign)+"px";
+		this.rootElement.style.left = (UI.width-this.rootElement.offsetWidth-UI.getPanelWidth(Side.E)+this.hAlign)+"px";
 	} else {
 		this.rootElement.style.left = UI.getPanelWidth(Side.W)+this.hAlign+"px";
 	}
@@ -640,11 +999,11 @@ UIElement.prototype.setPosition = function () {
 	if (this.vAlign == UI.ALIGN_TOP) {
 		this.rootElement.style.top = UI.getPanelWidth(Side.N)+"px";
 	} else if (this.vAlign == UI.ALIGN_BOTTOM) {
-		this.rootElement.style.top = (UI.height-this.rootElement.clientHeight-UI.getPanelWidth(Side.S))+"px";
+		this.rootElement.style.top = (UI.height-this.rootElement.offsetHeight-UI.getPanelWidth(Side.S))+"px";
 	} else if (this.vAlign == UI.ALIGN_MIDDLE) {
-		this.rootElement.style.top = (UI.height-this.rootElement.clientHeight+UI.getPanelWidth(Side.N)-UI.getPanelWidth(Side.S))/2+"px";
+		this.rootElement.style.top = (UI.height-this.rootElement.offsetHeight+UI.getPanelWidth(Side.N)-UI.getPanelWidth(Side.S))/2+"px";
 	} else if (this.vAlign < 0) {
-		this.rootElement.style.top = (UI.height-this.rootElement.clientHeight-UI.getPanelWidth(Side.S)+this.vAlign)+"px";
+		this.rootElement.style.top = (UI.height-this.rootElement.offsetHeight-UI.getPanelWidth(Side.S)+this.vAlign)+"px";
 	}  else {
 		this.rootElement.style.top = UI.getPanelWidth(Side.N)+this.vAlign+"px";
 	}
@@ -709,7 +1068,7 @@ UIElement.prototype.bindHandlerToUIElementContext = function _(element, eventNam
 };
 UIElement.prototype.addEventListener = function _(element, eventName, handlerName) {
 	if (this.UIElementType.handlers[handlerName] === undefined) {
-		console["log"]("No handler "+handlerName+" in UIElementType "+this.UIElementType);
+		console["log"]("No handler "+handlerName+" in UIElementType "+this.type);
 	}
 	element.addEventListener(eventName, this.UIElementType.handlers[handlerName]);
 };
@@ -777,16 +1136,15 @@ UIElement.prototype.addCSSRules = function _(ruleSet) {
 		}
 	}
 };
+
 /**
  * @constructor
- * @extends UIElement
  */
 function UIWindow(type) {
 	UIElement.apply(this, [type]);
 };
 /**
  * @constructor
- * @extends UIElement
  */
 function UIPanel(name, width) {
 	UIElement.apply(this, ["panel", UI.ALIGN_LEFT, UI.ALIGN_TOP, {}, UI.ALWAYS]);
@@ -795,10 +1153,12 @@ function UIPanel(name, width) {
 	this.place();
 	UI.panels[name] = this;
 }
+
+
 onLoadEvents['uiWindowPrototype'] = function _() {
 	UIWindow.prototype = new UIElement("uiWindowPrototype", -1, -1, []);
 	UIWindow.prototype.chooseElementAsCloseButton = function _(element, func) {
-	// Makes certain element the button that closes this window
+	// Makes particular element the button that closes this window
 	// Also sets onClose callback
 		var uiWindow = this;
 		if (func !== undefined) {
@@ -829,6 +1189,12 @@ onLoadEvents['uiWindowPrototype'] = function _() {
 	UIPanel.prototype.addUIElement = function (uiElement) {
 		this.rootElement.appendChild(uiElement.rootElement);
 	};
+	
+	
+	ItemView.prototype._itemViewImgProto.addClass("itemImg");
+	ItemView.prototype._itemViewWrapProto.addClass("itemView");
+	ItemView.prototype._itemViewNumProto.addClass("itemAmount");
+	ItemView.prototype._itemViewNumProto.appendChild(document.createTextNode(""));
 };
 onLoadEvents['customStylesheets'] = function _() {
 	document.head.appendChild(document.createElement("style"));

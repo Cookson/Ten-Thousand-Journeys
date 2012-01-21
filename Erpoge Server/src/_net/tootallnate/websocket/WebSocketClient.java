@@ -88,7 +88,7 @@ public abstract class WebSocketClient implements Runnable, WebSocketListener {
   // PUBLIC INSTANCE METHODS /////////////////////////////////////////////////
   /**
    * Gets the URI that this WebSocketClient is connected to.
-   * @return The <tt>URI</tt> for this WebSocketClient.
+   * @returns The <tt>URI</tt> for this WebSocketClient.
    */
   public URI getURI() {
     return uri;
@@ -295,7 +295,7 @@ public abstract class WebSocketClient implements Runnable, WebSocketListener {
    * @param conn The {@link WebSocket} instance who's handshake has been recieved.
    *             In the case of <tt>WebSocketClient</tt>, this.conn == conn.
    * @param handshake The entire UTF-8 decoded handshake from the connection.
-   * @return <var>true</var> if <var>handshake</var> is a valid WebSocket server
+   * @returns <var>true</var> if <var>handshake</var> is a valid WebSocket server
    *         handshake, <var>false</var> otherwise.
    * @throws IOException When socket related I/O errors occur.
    * @throws NoSuchAlgorithmException 

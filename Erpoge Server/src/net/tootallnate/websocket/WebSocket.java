@@ -327,7 +327,7 @@ public final class WebSocket {
   }
 
   /**
-   * @return True if all of the text was sent to the client by this thread or the given data is empty
+   * @returns True if all of the text was sent to the client by this thread or the given data is empty
    *    False if some of the text had to be buffered to be sent later.
    * @throws IOException 
    */
@@ -370,7 +370,7 @@ public final class WebSocket {
   }
 
   /**
-   * @return True if all data has been sent to the client, false if there
+   * @returns True if all data has been sent to the client, false if there
    *    is still some buffered.
    */
   boolean handleWrite() throws IOException {

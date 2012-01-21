@@ -64,7 +64,7 @@ public class Account {
 	// Get json data for each character on this account to show these characters on login.
 	/*
 	 * out: {
-	 * 	"players:[{characterId, name, race, class, level, ammunition}xN]"
+	 * 	"players:[{characterId, name, race, class, level, equipment}xN]"
 	 * }
 	 */
 		String answer = "\"players\":[";
@@ -76,18 +76,18 @@ public class Account {
 						",\""+values[i].name+
 						"\",\""+values[i].getCls()+
 						"\","+values[i].race.race2int()+",[";
-			int[] ammunition = values[i].ammunition.getIntArray();
-			int j=ammunition.length-1;
+			int[] equipment = values[i].equipment.getIntArray();
+			int j=equipment.length-1;
 			for (;j>=0;j--) {
-				if (ammunition[j] != 0) {
+				if (equipment[j] != 0) {
 					break;
 				}
 			}
 			int k=0;
 			for (;k<j;k++) {
-				answer += ammunition[k]+",";
+				answer += equipment[k]+",";
 			}
-			answer += ammunition[k]+"]";
+			answer += equipment[k]+"]";
 			answer += (i == iterations) ? "]" : "],";
 		}
 		answer += "]";

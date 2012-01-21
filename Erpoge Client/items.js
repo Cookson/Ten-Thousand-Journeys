@@ -90,87 +90,213 @@ function isMissile(typeId) {
 function isUnique(typeId) {
 	return !isUsable(typeId);
 }
-function ItemMap() {
+/**
+ * Class represents a set it items that are in the same place. This may be
+ * a character's inventory, container like chest, or items lying on the floor 
+ * on the same cell.
+ * 
+ * @constructor
+ */
+function ItemSet() {
+/**
+ * @type Object
+ * @private
+ */
 	this.uniqueItems = {};
+/**
+ * @type Object
+ * @private
+ */
 	this.itemPiles = {};
 }
-ItemMap.prototype.addItem = function(item, param) {
-/* If function has 1 argument:
- * 		item: ItemPile/Unique item
- * else if function has 2 arguments:
- * 		item: typeId
- * 		param: amount/itemId
- */	
-	if (param === undefined) {
-		if (item.isUnique) {
-			this.uniqueItems[item.itemId] = item;
-		} else {
-			if (this.itemPiles[item.typeId] !== undefined) {
-				this.itemPiles[item.typeId].amount += item.amount;
-			} else {
-				this.itemPiles[item.typeId] = item;
-			}
-		}
-		return item;
+/**
+ * Add a UniqueItem or ItemPile to this ItemSet.
+ * 
+ * @param {UniqueItem|ItemPile}
+ */
+ItemSet.prototype.addItem = function(item) {
+	if (item instanceof UniqueItem) {
+		this.uniqueItems[item.itemId] = item;
 	} else {
-		if (isUnique(item)) {
-			this.addItem(new UniqueItem(item, param));
+	// If item instanceof ItemPile
+		if (this.itemPiles[item.typeId] !== undefined) {
+			this.itemPiles[item.typeId].amount += item.amount;
 		} else {
-			this.addItem(new ItemPile(item, param));
+			this.itemPiles[item.typeId] = item;
 		}
 	}
 };
-ItemMap.prototype.removeUnique = function(itemId) {
-	delete this.uniqueItems[itemId];
+/**
+ * Creates a new {@link UniqueItem} or {@link ItemPile} object and adds it to 
+ * this ItemSet. Note that you do not have to specify if you are adding an 
+ * ItemPile or a UniqueItem — methods decides itself what kind if item you are
+ * create based on typeId.
+ * 
+ * @param {Number} typeId Id of item's type.
+ * @param {Number} param If type typeId is type of UniqueItem, then this must 
+ * be itemId of this item, otherwise, if that is ItemPile type, this must be 
+ * amount of items in pile.
+ * @returns {mixed} New created {@link UniqueItem} or {@link ItemType}
+ */
+ItemSet.prototype.addNewItem = function (typeId, param) {
+	if (isUnique(typeId)) {
+		this.addItem(new UniqueItem(typeId, param));
+	} else {
+		this.addItem(new ItemPile(typeId, param));
+	}
 };
-ItemMap.prototype.removePile = function(typeId, amount) {
+/**
+ * Removes a {@link UniqueItem} with particular itemId. If ItemSet has no
+ * UniqueItem with such itemId, then method throws an Error.
+ * 
+ * @see UniqueItem
+ * @param {Number} itemId
+ * @throws {Error} If ItemSet has no {@link UniqueItem} with such itemId.
+ */
+ItemSet.prototype.removeUnique = function(itemId) {
+	if (itemId in this.uniqueItems) {
+		delete this.uniqueItems[itemId];
+	} else {
+		throw new Error("No UniqueItem with itemId "+itemId);
+	}
+};
+/**
+ * Removes a particular amount if items from an {@link ItemPile} with 
+ * particular typeId. If ItemSet has no ItemPile with such itemId, or doesn't
+ * have as many items as you want to take away, then method throws an Error.
+ * 
+ * @see ItemPile
+ * @param {Number} itemId
+ * @throws {Error} If ItemSet has no {@link UniqueItem} with such itemId, or
+ * if argument amount is bigger than ItemPile.amount.
+ */
+ItemSet.prototype.removePile = function(typeId, amount) {
 	this.itemPiles[typeId].amount -= amount;
 	if (this.itemPiles[typeId].amount == 0) {
 		delete this.itemPiles[typeId];
-	} else if (this.itemPiles[typeId].amount <= 0) {
+	} else if (this.itemPiles[typeId].amount < 0) {
 		throw new Error("Предметов отнято больше, чем есть");
 	}
 };
-ItemMap.prototype.remove = function(typeId, param) {
+/**
+ * This method works in two ways. If typeId is a type of {@link UniqueItem} 
+ * type, it removes a UniqueItem with itemId that equals %param%. Else, if
+ * typeId is a type of {@link ItemPile}, then if removes %param% items from 
+ * that Pile. 
+ * 
+ * @see UniqueItem
+ * @see ItemPile
+ * @see ItemSet#removeUnique
+ * @see ItemSet#removePile
+ * @param {Number} typeId Id of item's type.
+ * @param {Number} param If type typeId is type of UniqueItem, then this must 
+ * be itemId of this item, otherwise, if that is ItemPile type, this must be 
+ * amount of items in pile.
+ */
+ItemSet.prototype.remove = function(typeId, param) {
 	if (isUnique(typeId)) {
 		this.removeUnique(param);
 	} else {
 		this.removePile(typeId, param);
 	}
 };
-ItemMap.prototype.getUnique = function(itemId) {
-	return this.uniqueItems[itemId];
+/**
+ * Get a {@link UniqueItem} object with particular itemId from this ItemSet.
+ * Returns null if there's no UniqueItem with such itemId.
+ * 
+ * @see ItemSet#getPile
+ * @see ItemSet#getItem
+ * @param {Number} itemId
+ * @returns {UniqueItem} Returns null if there's no UniqueItem with such 
+ * itemId.
+ */
+ItemSet.prototype.getUnique = function(itemId) {
+	return this.uniqueItems[itemId] || null;
 };
-ItemMap.prototype.getPile = function(typeId) {
-	return this.itemPiles[typeId];
+/**
+ * Get a {@link ItemPile} object with particular itemId from this ItemSet. 
+ * Returns null if there's no ItemPile with such typeId.
+ * @see ItemSet#getUnique
+ * @see ItemSet#getItem
+ * @param {Number} typeId
+ * @returns {ItemPile} Returns null if there's no ItemPile with such 
+ * typeId.
+ */
+ItemSet.prototype.getPile = function(typeId) {
+	return this.itemPiles[typeId] || null;
 };
-ItemMap.prototype.getItem = function(typeId, param) {
+/**
+ * This method works in two ways. If typeId is a type of {@link UniqueItem} 
+ * type, it returns a UniqueItem with itemId that equals %param%. Else, if
+ * typeId is a type of {@link ItemPile}, then if removes %param% items from 
+ * that Pile. Returns null if there's no UniqueItem with such itemId or 
+ * ItemPile with such typeId. Try not to abuse this method, because if you know
+ * exactly if typeId is type of UniqueItem/ItemType, you better use 
+ * corresponding methods — they work much quicker.
+ * 
+ * @see ItemSet#getUnique
+ * @see ItemSet#getPile
+ * @param typeId
+ * @returns {mixed} Returns UnqiueItem/ItemPile, or returns null if there's no 
+ * UniqueItem with such itemId or ItemPile with such typeId.
+ */
+ItemSet.prototype.getItem = function(typeId, param) {
 	if (isUnique(typeId)) {
 		return this.uniqueItems[param];
 	} else {
 		return this.itemPiles[typeId];
 	}
+	return null;
 };
-ItemMap.prototype.hasUnique = function(itemId) {
+/**
+ * Checks if ItemSet has {@link UniqueItem} with particular itemId.
+ * 
+ * @param {Number} itemId
+ * @returns {Boolean} True if has such UniqueItem, false otherwise.
+ */
+ItemSet.prototype.hasUnique = function(itemId) {
 	return this.uniqueItems[itemId] != undefined;
 };
-ItemMap.prototype.hasPile = function(typeId, amount) {
+/**
+ * Checks if ItemSet has more that %amount% of items {@link ItemPile} with 
+ * particular typeId, or does it have that ItemPile at all.
+ * 
+ * @param {Number} typeId
+ * @param amount
+ * @returns {Boolean} True if has and has enough of such ItemPile, false 
+ * otherwise.
+ */
+ItemSet.prototype.hasPile = function(typeId, amount) {
 	if (amount === undefined) {
 		amount = 1;
 	}
 	return this.itemPiles[typeId] !== undefined && this.itemPiles[typeId].amount >= amount;
 };
-ItemMap.prototype.hasItem = function(item) {
-	if (item.isUnique) {
+/**
+ * Checks if ItemSet contains particular {@link UniqueItem}/{@link ItemPile} 
+ * object.
+ * 
+ * @param {UniqueItem|ItemPile} item 
+ * @returns {Boolean} True if it contains such object, false otherwise.
+ */
+ItemSet.prototype.hasItem = function(item) {
+	if (item instanceof UniqueItem) {
 		return this.hasUnique(item.itemId);
 	} else {
 		return this.hasPile(item.typeId, item.amount);
 	}
-	
 };
-ItemMap.prototype.PILE = 0xB00B1E5;
-ItemMap.prototype.UNIQUE = 0xFA1105E5;
-ItemMap.prototype.getValues = function() {
+/** @private @const */
+ItemSet.prototype.PILE = 0xB00B1E5;
+/** @private @const */
+ItemSet.prototype.UNIQUE = 0xFA1105E5;
+/**
+ * Returns contents of item set as an array of UniqueItem and ItemPile objects.
+ * First go {@link UniqueItem}s, then go {@link ItemPile}s
+ * 
+ * @returns {mixed[]}
+ */
+ItemSet.prototype.getValues = function() {
 	var answer = [];
 	for (var i in this.uniqueItems) {
 		answer.push(this.uniqueItems[i]);
@@ -180,70 +306,226 @@ ItemMap.prototype.getValues = function() {
 	}
 	return answer;
 };
-ItemMap.prototype.empty = function _() {
+/**
+ * Removes all contents of this ItemSet.
+ */
+ItemSet.prototype.empty = function _() {
 	this.itemPiles = {};
 	this.uniqueItems = {};
 };
-
-function Ammunition() {
+/**
+ * Equipment is class for storing items worn on characters. Essentially it is 
+ * a hash map where key is a slot number and value is a {@link UniqueItem}.
+ * Equipment consists only of UniqueItems, no ItemPiles.
+ * 
+ * @constructor
+ */
+function Equipment() {
+/** @private */
 	this.items = {};
 }
-Ammunition.prototype.putOn = function(item) {
+/**
+ * Fills Equipment object with particular equipment.
+ * 
+ * @param {Array} data
+ */
+Equipment.prototype.getFromData = function(data) {
+	for (var slot in data) {
+		if (slot == 9 && this.hasItemInSlot(9)) {
+			slot = 10;
+		}
+		this.putOnToSlot(slot, new UniqueItem(data[slot][0], data[slot][1]));
+	}
+};
+/**
+ * Put on an item to the slot it belongs to.
+ * 
+ * @see Equipment#putOnToSlot
+ * @param {UniqueItem} item
+ */
+Equipment.prototype.putOn = function(item) {
 	this.items[getSlotFromClass(items[item.typeId][1])] = item;
 };
-Ammunition.prototype.putOnToSlot = function(slot, item) {
+/**
+ * Put item to particular slot.
+ * 
+ * @see Equipment#putOn
+ * @param {Number} slot
+ * @param {UniqueItem} item
+ */
+Equipment.prototype.putOnToSlot = function(slot, item) {
 	this.items[slot] = item;
 };
-Ammunition.prototype.getItemInSlot = function(slot) {
-	return this.items[slot];
+/**
+ * Returns an {@link UniqueItem} object of item in particular slot.
+ * @returns {UniqueItem}
+ */
+Equipment.prototype.getItemInSlot = function(slot) {
+	return this.items[slot] || null;
 };
-Ammunition.prototype.getItemById = function(itemId) {
+/**
+ * Searches for {@link UniqueItem} with particular item id.
+ * 
+ * @see UniqueItem
+ * @param {Number} itemId
+ * @returns {UniqueItem} Or null if item is not found.
+ */
+Equipment.prototype.getItemById = function(itemId) {
 	for (var i in this.items) {
 		if (this.items[i].itemId == itemId) {
 			return this.items[i];
 		}
 	}
+	return null;
 };
-Ammunition.prototype.takeOffItem = function(item) {
+/**
+ * Removes particular item from the slot it is. If Equipment doesn't have this
+ * item, throws an Error.
+ * 
+ * @throw {Error}
+ */
+Equipment.prototype.takeOffItem = function(item) {
 	for (var i in this.items) {
 		if (this.items[i] == item) {
 			delete this.items[i];
-			return true;
+			break;
 		}
 	}
-	throw new Error("No item "+item.itemId+" in ammunition");
+	throw new Error("No item "+item.itemId+" in equipment");
 };
-Ammunition.prototype.hasItemInSlot = function(slot) {
-	return !!this.items[slot];
+/**
+ * Checks if Equipment has any item in particular slot.
+ * 
+ * @returns {Boolean} True if Equipment has an item, false otherwise.
+ */
+Equipment.prototype.hasItemInSlot = function(slot) {
+	return slot in this.items;
 };
-Ammunition.prototype.takeOffFromSlot = function(slot) {
+/**
+ * Removes an item in particular slot of this Equipment or throws an Error if
+ * this Equipment has no item in that slot.
+ * 
+ * @param {Number} slot
+ * @throws {Error} If this Equipment has no item in that slot.
+ */
+Equipment.prototype.takeOffFromSlot = function(slot) {
 	if (this.items[slot]) {
 		delete this.items[slot];
 	} else {
 		throw new Error("No item in slot "+slot);
 	}
 };
-Ammunition.prototype.NUMBER_OF_SLOTS = 10;
-function createInventoryItem(typeId, param) {
-	if (isUnique(typeId)) {
-		return new UniqueItem(typeId, param);
-	} else {
-		return new ItemPile(typeId, param);
-	}
-}
+/** 
+ * How many equipment slots are there in game.
+ * @public
+ * @const
+ */
+Equipment.prototype.NUMBER_OF_SLOTS = 10;
+//function createInventoryItem(typeId, param) {
+//	if (isUnique(typeId)) {
+//		return new UniqueItem(typeId, param);
+//	} else {
+//		return new ItemPile(typeId, param);
+//	}
+//}
+/**
+ * Class representing a single item that does not stack with other items. This 
+ * may be, for example, a piece of equipment. Two UniqueItems of the same type
+ * may have different properties (e.g. blessings), unlike {@link ItemPile}s.
+ * 
+ * @see ItemPile
+ * @constructor
+ */
 function UniqueItem(typeId, itemId) {
+/** 
+ * A number describing to which type this item relates.
+ * @type Number
+ * @public 
+ */
 	this.typeId = typeId;
+/** 
+ * An identifier, unique for each UniqueItem.
+ * @type Number
+ * @public 
+ */
 	this.itemId = itemId;
-	this.isUnique = true;
 }
+/**
+ * Checks if this UniqueItem is a melee weapon or not.
+ * 
+ * @returns {Boolean}
+ */
 UniqueItem.prototype.isMelee = function () {
 	return !this.isRanged();
 };
+/**
+ * Checks if this UniqueItem is a ranged weapon or not.
+ * 
+ * @returns {Boolean}
+ */
 UniqueItem.prototype.isRanged = function(typeId) {
 	return items[this.typeId][1]==7;
 };
+/**
+ * Returns a name of this item's type.
+ * 
+ * @returns {String}
+ */
+UniqueItem.prototype.toString = function () {
+	return items[this.typeId][0];
+};
+/**
+ * Comparator.
+ * 
+ * @see System#hasEqualObject
+ * @param {UniqueItem} a
+ * @param {UniqueItem} b
+ * @return {Boolean}
+ */
+UniqueItem.prototype.equals = function(a,b) {
+	return a.itemId == b.itemId;
+};
+UniqueItem.prototype.hashCode = function() {
+	return this.itemId;
+};
+/**
+ * Class representing a pile if similar items, none of which has properties
+ * different from properties of other items in pile, unlike 
+ * {@link UniqueItem}s. These may be arrows, bullets, potions, food, money etc.
+ * 
+ * @see UniqueItem
+ * @param {Number} typeId
+ * @param {Number} amount
+ */
 function ItemPile(typeId, amount) {
+/**
+ * A number describing to which type this pile relates.
+ * @type Number
+ * @public 
+ */
 	this.typeId = typeId;
+/**
+ * Amount of items in this pile.
+ * 
+ * @type Number
+ * @public
+ */
 	this.amount = amount;
-	this.isUnique = false;
 }
+ItemPile.prototype.toString = function () {
+	return this.amount+" of "+items[this.typeId];
+};
+/**
+ * Comparator.
+ * 
+ * @see System#hasEqualObject
+ * @param {ItemPile} a
+ * @param {ItemPile} b
+ * @return {Boolean}
+ */
+ItemPile.prototype.equals = function(a,b) {
+	return a.typeId == b.typeId;
+};
+ItemPile.prototype.hashCode = function() {
+	return this.typeId;
+};

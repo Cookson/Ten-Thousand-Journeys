@@ -93,7 +93,7 @@ var CellCursor = {
 	 * @param {Function} callback Function to call after cell was chosen
 	 * @param {Object} context Context of that function (or leave undefined 
 	 * so the window object will be the context)
-	 * @param {number} maximumDistance Radius of selection area (or leave 
+	 * @param {Number} maximumDistance Radius of selection area (or leave 
 	 * undefined so distance will be unlimited)
 	 * @param {Object} zoneCenter Object with fields object.x and object.y; 
 	 * this may be a Character, GameObject or simply {x:int,y:int}. Area of 

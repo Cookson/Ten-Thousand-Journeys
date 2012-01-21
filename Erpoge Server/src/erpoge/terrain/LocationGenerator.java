@@ -88,7 +88,7 @@ public class LocationGenerator extends TerrainGenerator {
 	}
 	public Location getLevel(int number) {
 	/**
-	 * Returns Location object of certain level.
+	 * Returns Location object of particular level.
 	 */
 		return levels.get(number);
 	}

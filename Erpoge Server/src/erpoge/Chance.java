@@ -2,7 +2,7 @@ package erpoge;
 
 public class Chance {
 	/**
-	  * An object used to return true with certain probability.
+	  * An object used to return true with particular probability.
 	  * For example, new Chance(30).roll() will return true with 30 percent probability.
 	  */
 	private final int value;
@@ -12,7 +12,7 @@ public class Chance {
 	}
 	/**
 	 * Get true of false.
-	 * @return true with probability this.value%
+	 * @returns true with probability this.value%
 	 */
 	public boolean roll() {
 		return Math.random() * 100 < value;
@@ -24,10 +24,10 @@ public class Chance {
 	 * The static method to return a random integer or long from range [a..b].
 	 * @param a	min value
 	 * @param b max value
-	 * @return true with probability this.value%
+	 * @returns true with probability this.value%
 	 */
 	public static int rand(int a, int b) {
-		// Получить случайное значение от a до b
+		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ a пїЅпїЅ b
 		return Math.min(a, b)
 				+ (int) Math.round(Math.random() * Math.abs(b - a));
 	}

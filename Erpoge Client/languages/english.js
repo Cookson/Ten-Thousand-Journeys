@@ -8,7 +8,7 @@ Language.english = {
 		skills: "Open skills window",
 		wait: "Wait",
 		selectItem: "Select item",
-		selectAmmunitionItem: "Select ammunition item",
+		selectEquipmentItem: "Select equipment item",
 		selectSpell: "Select spell",
 		enterLocation: "Enter location",
 		leaveLocation: "Leave location"

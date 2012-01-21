@@ -87,7 +87,7 @@ public abstract class Building extends Rectangle {
 	}
 	public Coordinate placeDoor(RectangleArea r, Side side, int object) {
 	/**
-	 * Places door in the middle of certain side of room.
+	 * Places door in the middle of particular side of room.
 	 */
 		Coordinate c = r.getMiddleOfSide(side).moveToSide(side, 1);
 		settlement.setObject(c.x, c.y, object);
@@ -95,7 +95,7 @@ public abstract class Building extends Rectangle {
 	}
 	public Coordinate placeDoor(RectangleArea r, Side side, Side sideOfSide, int depth, int object) {
 	/**
-	 * Places door in the certain cell on certain side of room
+	 * Places door in the particular cell on particular side of room
 	 */
 		Coordinate c = r.getCellFromSide(side, sideOfSide, depth).moveToSide(side, 1);
 		settlement.setObject(c.x, c.y, object);
@@ -138,7 +138,7 @@ public abstract class Building extends Rectangle {
 	}
 	public Coordinate placeFrontDoor(int rectangleId, Side side) {
 	/**
-	 * Place front door in the middle of rectangle from certain side.
+	 * Place front door in the middle of rectangle from particular side.
 	 */
 		RectangleArea r = rectangleSystem.rectangles.get(rectangleId);
 		Coordinate doorCoord = r.getMiddleOfSide(side).moveToSide(side, 1);

@@ -198,7 +198,7 @@ public class PlayerCharacter extends Character {
 		 * 		w :{w,h,c:[[ground,forest,road,river,race,[objects]]xN]}, 
 		 *  	p : [(0)characterId, (1)worldX, (2)worldY, (3)isLead, (4)name, (5)race, (6)class, 
 		 *  		(7)maxHp, (8)maxMp, (9)maxEp, (10)hp, (11)mp, (12)ep, 
-		 *  		(13)str, (14)dex, (15)wis, (16)itl, (17)items[], (18)ammunition[], (19)spells[], (20)skills[],
+		 *  		(13)str, (14)dex, (15)wis, (16)itl, (17)items[], (18)equipment[], (19)spells[], (20)skills[],
 		 *  		(21)ac, (22)ev, (23)resistances[]],
 		 * 		online : [[characterId,name,class,race,party,worldX,worldY]xM], 
 		 * 		chat : [name,message, name,message ...] || 0, 
@@ -211,9 +211,9 @@ public class PlayerCharacter extends Character {
 		 * 		l: {w,h,locationId,c:[[ground,forest,road,river,race,[objects]]xN]}, 
 		 * 		p : [(0)characterId, (1)worldX, (2)worldY, (3)isLead, (4)name, (5)race, (6)class, 
 		 *  		(7)maxHp, (8)maxMp, (9)maxEp, (10)hp, (11)mp, (12)ep, 
-		 *  		(13)str, (14)dex, (15)wis, (16)itl, (17)items[], (18)ammunition[], (19)spells[], (20)skills[],
+		 *  		(13)str, (14)dex, (15)wis, (16)itl, (17)items[], (18)equipment[], (19)spells[], (20)skills[],
 		 *  		(21)ac, (22)ev, (23)resistances[]],
-		 * 		online : [[characterId,x,y,name,maxHp,hp,effects,ammunition(,cls,race)|(,type)]xM], 
+		 * 		online : [[characterId,x,y,name,maxHp,hp,effects,equipment(,cls,race)|(,type)]xM], 
 		 * }
 		 */
 		StringBuilder answer = new StringBuilder();
@@ -245,7 +245,7 @@ public class PlayerCharacter extends Character {
 /* 15*/		.append(wis).append(",")
 /* 16*/		.append(itl).append(",")
 /* 17*/		.append(inventory.jsonGetContents()).append(",")
-/* 18*/		.append(ammunition.jsonGetAmmunition()).append(",[");
+/* 18*/		.append(equipment.jsonGetEquipment()).append(",[");
 /* 19*/	// Spells
 		int i = 0;
 		int iterations = spells.size() - 1;
@@ -323,7 +323,7 @@ public class PlayerCharacter extends Character {
 						.append(character.maxMp).append(",")
 						.append(character.mp).append(",")
 						.append(character.jsonGetEffects()).append(",")
-						.append(character.jsonGetAmmunition());
+						.append(character.jsonGetEquipment());
 					if (character instanceof PlayerCharacter) {
 						PlayerCharacter player = (PlayerCharacter) onlinePlayers
 								.get(i);
@@ -350,7 +350,7 @@ public class PlayerCharacter extends Character {
 					.append(character.maxMp).append(",")
 					.append(character.mp).append(",")
 					.append(character.jsonGetEffects()).append(",")
-					.append(character.jsonGetAmmunition());
+					.append(character.jsonGetEquipment());
 				if (character instanceof PlayerCharacter) {
 					PlayerCharacter player = (PlayerCharacter) onlinePlayers
 							.get(i);

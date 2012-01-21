@@ -220,7 +220,7 @@ public class Location extends TerrainBasics {
 				ch.characterId, ch.x, ch.y, ch.type, ch.name,
 				ch.getAttribute(Attribute.MAX_HP), ch.getAttribute(Attribute.HP),
 				ch.getAttribute(Attribute.MAX_MP), ch.getAttribute(Attribute.MP),
-				ch.getEffects(), ch.getAmmunition(), ch.getFraction()));
+				ch.getEffects(), ch.getEquipment(), ch.getFraction()));
 		ch.getVisibleEntities();
 		return ch;
 	}	

@@ -28,7 +28,7 @@ public class ItemSystemMetaInfo {
 		CLASS_AMULET = 17,
 		CLASS_BOOK = 22,
 		CLASS_AMMO = 23,
-	// Slots in AmmunitionMap
+	// Slots in EquipmentMap
 		NUMBER_OF_SLOTS = 10,
 		SLOT_ANY_HAND = -1,
 		SLOT_RIGHT_HAND = 0,
@@ -40,7 +40,7 @@ public class ItemSystemMetaInfo {
 		SLOT_CLOAK = 6,
 		SLOT_RING = 7,
 		SLOT_AMULET = 9,
-	// Материалы
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		MATERIAL_WOOD = 1,
 		MATERIAL_STEEL = 2,
 		MATERIAL_GOLD = 3,

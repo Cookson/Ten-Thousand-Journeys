@@ -59,8 +59,8 @@ public class NonPlayerCharacter extends Character {
 	}
 	public void discoverDeath(Character character) {
 	/** 
-	 * Removes certain craracter from this character's aims private data,
-	 * when that certain character is dead
+	 * Removes particular craracter from this character's aims private data,
+	 * when that particular character is dead
 	 */
 		if (activeEnemy == character) {
 			activeEnemy = null;
@@ -238,9 +238,9 @@ public class NonPlayerCharacter extends Character {
 	 * Checks if this character is able to shoot an arrow
 	 * or other missile.
 	 */
-		return ammunition.hasPiece(Item.SLOT_RIGHT_HAND)
-			&& ammunition.getItemInSlot(Item.SLOT_RIGHT_HAND).getType().isRanged()
-			&& hasItem(ItemsTypology.getMissileType(ammunition.getItemInSlot(0)),1);
+		return equipment.hasPiece(Item.SLOT_RIGHT_HAND)
+			&& equipment.getItemInSlot(Item.SLOT_RIGHT_HAND).getType().isRanged()
+			&& hasItem(ItemsTypology.getMissileType(equipment.getItemInSlot(0)),1);
 	}
 	private boolean canCast() {
 		return characterType.isCaster;

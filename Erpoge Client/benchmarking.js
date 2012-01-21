@@ -18,7 +18,7 @@
 	this.testDoll = function(times) {
 		var t = new Date().getTime();
 		var character = {};
-		character.ammunition = [ 71, 301, 301, 322, 313, 304, 152 ];
+		character.equipment = [ 71, 301, 301, 322, 313, 304, 152 ];
 		character.race = 1;
 		character.doll = new Doll(character);
 		for ( var i = 0; i < times; i++) {
