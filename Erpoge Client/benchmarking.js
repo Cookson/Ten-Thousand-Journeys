@@ -48,32 +48,32 @@
 		var t = new Date().getTime();
 		var bench = this;
 		qanimate(
-				player.cellWrap,
+				Player.cellWrap,
 				[ -100, 0 ],
 				time / 6,
 				function() {
 					qanimate(
-							player.cellWrap,
+							Player.cellWrap,
 							[ 100, 100 ],
 							time / 6,
 							function() {
 								qanimate(
-										player.cellWrap,
+										Player.cellWrap,
 										[ 100, -100 ],
 										time / 6,
 										function() {
 											qanimate(
-													player.cellWrap,
+													Player.cellWrap,
 													[ -100, -100 ],
 													time / 6,
 													function() {
 														qanimate(
-																player.cellWrap,
+																Player.cellWrap,
 																[ -100, 100 ],
 																time / 6,
 																function() {
 																	qanimate(
-																			player.cellWrap,
+																			Player.cellWrap,
 																			[
 																					100,
 																					0 ],

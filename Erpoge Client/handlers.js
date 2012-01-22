@@ -27,7 +27,7 @@ handlers={
 				if (e.shiftKey || inMenu) {
 					centerWorldCamera(x,y);
 				} else {
-					if (player.isPartyLeader) {
+					if (Player.isPartyLeader) {
 						worldTravel(x,y);
 					} else {
 						UI.notify("alert", "Когда вы в группе, только лидер группы может перемещать группу по карте")
@@ -86,7 +86,7 @@ handlers={
 			mapCursorX=x;
 			mapCursorY=y;
 			CellCursor.move(x,y);
-//			if (player.spellId != -1) {
+//			if (Player.spellId != -1) {
 //				cellCursorSec.move(x,y);
 //			} else {
 //				cellCursorPri.move(x,y);
@@ -94,7 +94,7 @@ handlers={
 //				// var nCurrentCell=document.getElementById("cellCursorPri");
 //				// nCurrentCell.style.top=y*32+"px";
 //				// nCurrentCell.style.left=x*32+"px";
-//				// if (Terrain.onGlobalMap || player.seenCells[x][y]) {
+//				// if (Terrain.onGlobalMap || Player.seenCells[x][y]) {
 //					// nCurrentCell.style.borderColor="#ff0";
 //				// } else {
 //					// nCurrentCell.style.borderColor="#f00";
@@ -112,19 +112,19 @@ handlers={
 //						// var obj=Terrain.cells[mapCursorX][mapCursorY+1].wall || Terrain.cells[mapCursorX][mapCursorY+1].object;
 //						// obj.hide();
 //						// obj.show();
-//						// if (!player.canSee(mapCursorX,mapCursorY+1)) {
+//						// if (!Player.canSee(mapCursorX,mapCursorY+1)) {
 //							// obj.shade();
 //						// }
 //						// От мешающего объекта идём влево. Если объект слева тоже мешающий, то продолжаем, иначе останавливаемся
 //						var leftestObject=objectLower;
 //						var i=x;
-//						while ((leftestObject=getObject(--i,y+dy)) &&  leftestObject.image && objectProperties[leftestObject.type][1]>32 && !objectProperties[leftestObject.type][2] && player.seenCells[i][y] && (!getObject(i,y) || objectProperties[getObject(i,y).type][2]==1)) { 
+//						while ((leftestObject=getObject(--i,y+dy)) &&  leftestObject.image && objectProperties[leftestObject.type][1]>32 && !objectProperties[leftestObject.type][2] && Player.seenCells[i][y] && (!getObject(i,y) || objectProperties[getObject(i,y).type][2]==1)) { 
 //						// Получаем объект слева так же, как и objectLower
 //						}
 //						// Теперь в i мы получили x-координату левейшего мешающего объекта.
 //						// Идём от этого объекта направо и скрываем все мешающие объекты
 //						var obj;
-//						while ((obj=getObject(++i,y+dy)) &&  obj.image && objectProperties[obj.type][1]>32 && !objectProperties[obj.type][2] && player.seenCells[i][y] && (!getObject(i,y) || objectProperties[getObject(i,y).type][2]==1)) {
+//						while ((obj=getObject(++i,y+dy)) &&  obj.image && objectProperties[obj.type][1]>32 && !objectProperties[obj.type][2] && Player.seenCells[i][y] && (!getObject(i,y) || objectProperties[getObject(i,y).type][2]==1)) {
 //							try {
 //								obj.cursorShade();
 //								// obj.image.style.opacity="0.3";
@@ -235,9 +235,9 @@ handlers={
 			}
 		},
 		loadContents : function _(data) {
-		// Find out whether player is on global map or in an area and
+		// Find out whether Player is on global map or in an area and
 		// load contents of character's environment after authentification.
-		// Server can send two different types of answers: when the player is in location
+		// Server can send two different types of answers: when the Player is in location
 		// and when he is on the world map. The type is determined by data.onGlobalMap value
 		/* on world map: {
 		 * 		onGlobalMap: true,
@@ -284,12 +284,12 @@ handlers={
 				Terrain.onGlobalMap = true;
 				prepareArea();
 				readWorld(data.w);
-				if (player == null) {
-					new Player(data.p);
+				if (Player.cls == undefined) {
+					Player.init(data.p);
 				}
 				readOnlinePlayers(data.online);
 				
-				centerWorldCamera(player.worldX,player.worldY,true);
+				centerWorldCamera(Player.worldX, Player.worldY,true);
 				readChatMessages(data.chat);
 				data.inv && readInvite(data.inv);
 				readEntering(data.en);
@@ -298,7 +298,7 @@ handlers={
 				}
 				UI.enterGlobalMapMode();
 				UI.notify("worldLoad");
-				UI.setMode(UI.MODE_ON_GLOBAL_MAP);
+				UI.setKeyMapping("Default");
 			} else {
 			// Area loading
 				if (characters[1]) {
@@ -315,19 +315,17 @@ handlers={
 				onlinePlayers = [];
 				prepareArea();
 				readLocation(data.l);
-				if (player == null) {
-					new Player(data.p);
-					
-				} else {
-					console.log(player)
+				if (Player.cls == undefined) {
+					Player.init(data.p);
 				}
-				player.display();
-				moveGameField(player.x, player.y, true);
-				player.initVisibility();
+				characters[Player.characterId] = Player;
+				Player.display();
+				moveGameField(Player.x, Player.y, true);
+				Player.initVisibility();
 				readCharacters(data.online);
 				UI.enterLocationMode();
 				UI.notify("locationLoad");
-				UI.setMode(UI.MODE_IN_LOCATION);
+				UI.setKeyMapping("Default");
 			}
 			recountWindowSize();
 			hideLoadingScreen();

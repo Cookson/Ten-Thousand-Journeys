@@ -98,7 +98,6 @@ var Terrain = {
 	}	
 };
 
-var player = null;
 // Переменные соединения
 var servers=[[]]; // Список всех серверов с логинами и паролями к персонажу на них, берётся из localStorage
 var session="";

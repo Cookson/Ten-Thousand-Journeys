@@ -238,7 +238,7 @@ Doll.prototype.draw = function() {
 	) {
 		this.drawEquipment(this.character.equipment.getItemInSlot(6).typeId);
 	}
-	if (!Terrain.onGlobalMap || this.character.characterId == player.characterId) {
+	if (!Terrain.onGlobalMap || this.character.characterId == Player.characterId) {
 		for (var i=0; i < Equipment.prototype.NUMBER_OF_SLOTS; i++) {
 			if (!this.character.equipment.hasItemInSlot(i)) {
 				continue;
@@ -256,7 +256,7 @@ Doll.prototype.draw = function() {
 				this.drawEquipment(this.character.equipment.getItemInSlot(i).typeId);
 			}
 		}
-	} else if (Terrain.onGlobalMap && !this.character.characterId == player.characterId) {
+	} else if (Terrain.onGlobalMap && !this.character.characterId == Player.characterId) {
 		this.drawEquipment(342);
 		this.drawEquipment(344);
 	}
@@ -303,15 +303,15 @@ Minimap.prototype.draw = function() {
 		// Нахождение координат всех видимых мобов
 		var x = characters[i].x;
 		var y = characters[i].y;
-		if (player.visibleCells[x][y]) {
+		if (Player.visibleCells[x][y]) {
 			charactersCoords[i] = [ x, y ];
 		}
 	}
 	var obj;
 	for (var x = 0; x < this.w; x++) {
 		for ( var y = 0; y < this.h; y++) {
-			if (!player.visibleCells[x][y]) {
-				if (player.seenCells[x][y]) {
+			if (!Player.visibleCells[x][y]) {
+				if (Player.seenCells[x][y]) {
 					if (getObject(x, y)) {
 						this.drawCell(x, y, "seenWall");
 					} else {
@@ -333,7 +333,7 @@ Minimap.prototype.draw = function() {
 	for (var i in charactersCoords) {
 		if (characters[i].isClientPlayer) {
 			this.drawCell(charactersCoords[i][0], charactersCoords[i][1], "clientPlayer");
-		} else if (!player.isEnemy(characters[i])) {
+		} else if (!Player.isEnemy(characters[i])) {
 			this.drawCell(charactersCoords[i][0], charactersCoords[i][1], "ally");
 		} else {
 			this.drawCell(charactersCoords[i][0], charactersCoords[i][1], "enemy");

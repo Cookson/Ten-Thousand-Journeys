@@ -444,24 +444,42 @@ UIElementTypes.windowLogin = {
 };
 UIElementTypes.iconsInventory = {
  	onInit: function _() {
- 		this.setData("itemViewCache", new ItemViewCache("Inventory"));
+ 		this.setData("itemViewCache", new CachingItemViewFactory("Inventory"));
  		this.setData("displayedNullViews",[]);
+ 		this.setData("itemLetters", []);
+ 		this.setData("keymappingPutOn", new UIKeymapping(
+ 				"Icons inventory put on",
+ 				["Esc", "iconsInventoryQuit"],
+ 				["=", "bookLetter"],
+ 				["?","showCurrentKeymapping"]
+ 		));
+ 		this.getData("keymappingPutOn").listenToLetterAssigner(Player.itemsLetterAssigner, "putOn");
+ 		this.setData("keymappingDrop", new UIKeymapping(
+ 				"Icons inventory drop",
+ 				["Esc", "iconsInventoryQuit"],
+ 				["=", "bookLetter"]
+ 		));
+ 		this.setData("keymappingPutToContainer", new UIKeymapping(
+ 				"Icons inventory put to container",
+ 				["Esc", "iconsInventoryQuit"],
+ 				["=", "bookLetter"]
+ 		));
  	},
  	listeners: {
  		inventoryChange: function _(notifier) {
 	 		var count = 0;
-	 		var items = player.items.getValues();
+	 		var items = Player.items.getValues();
 	 		var cache = this.getData("itemViewCache");
 	 		var displayedNullViews = this.getData("displayedNullViews");
 	 		while (displayedNullViews.length > 0) {
 	 			this.rootElement.removeChild(displayedNullViews[0]);
 	 			displayedNullViews.shift();
 	 		}
- 			var itemChanges = getSetsDifferences(player.items, cache);
+ 			var itemChanges = getSetsDifferences(Player.items, cache);
  			for (var i=0; i<itemChanges[0].length; i++) {
  			// New items
  				count++;
- 				var nWrap = cache.createItemView(itemChanges[0][i]).getNode();
+ 				var nWrap = cache.get(itemChanges[0][i]).getNode();
  				this.addEventListener(nWrap, "click", "click");
 	 			this.addEventListener(nWrap, "contextmenu", "contextmenu");
 	 			this.addEventListener(nWrap, "mouseout", "mouseout");
@@ -469,7 +487,7 @@ UIElementTypes.iconsInventory = {
  			}
  			for (var i=0; i<itemChanges[1].length; i++) {
  			// Removing items
- 				var itemView = cache.getItemView(itemChanges[1][i]);
+ 				var itemView = cache.get(itemChanges[1][i]);
  				if (itemView.isDisplayed()) {
  					this.rootElement.removeChild(itemView.getNode());
  				}
@@ -490,7 +508,7 @@ UIElementTypes.iconsInventory = {
  				}
  			}
 	 		while (count%6 != 0) {
-	 			var nullView = NullItemViewCache.queryItemView("Inventory").getNode();
+	 			var nullView = NullCachingItemViewFactory.get("Inventory").getNode();
 	 			this.rootElement.appendChild(nullView);
 	 			displayedNullViews.push(nullView);
 	 			count++;
@@ -500,9 +518,29 @@ UIElementTypes.iconsInventory = {
  		worldLoad: "inventoryChange"
  	},
  	keysActions: {
- 		startMissileSelect: function () {
+ 		startMissileSelect: function() {
 			
-		} 
+		},
+		iconsInventoryShowKeysToPutOn: function() {
+			var itemViews = this.getData("itemViewCache").getDisplayedViews();
+			for (var i in itemViews) {
+				var nLetter = CachingLetterFactory.get(
+					"defaultLetter", 
+					Player.itemsLetterAssigner.getLetter(itemViews[i].item)
+				);
+				itemViews[i].rootElement.appendChild(nLetter);
+				this.getData("itemLetters").push(nLetter);
+			}
+			UI.setKeyMapping("Icons inventory put on");
+		},
+		iconsInventoryQuit: function() {
+			var nlLetters = this.getData("itemLetters");
+			for (var i in nlLetters) {
+				nlLetters[i].parentNode.removeChild(nlLetters[i]);
+			}
+			this.setData("itemLetters", []); 
+			UI.setKeyMapping("Default");
+		}
  	},
  	handlers: {
 		click: function _(e) {
@@ -511,31 +549,31 @@ UIElementTypes.iconsInventory = {
 			if (Terrain.onGlobalMap && isEquipment(typeId)) {
 			// На глобальной карте
 				var slot = getSlotFromClass(items[typeId][1]);
-				if (!player.equipment.hasItemInSlot(slot)) {
-					player.sendPutOn(param);
+				if (!Player.equipment.hasItemInSlot(slot)) {
+					Player.sendPutOn(param);
 				} else {
-					player.sendTakeOff(player.equipment.getItemInSlot(slot));
+					Player.sendTakeOff(Player.equipment.getItemInSlot(slot));
 				}
 			} else if (UI.mode == UI.MODE_CONTAINER) {
 			// Положить в контейнер
-				player.sendPutToContainer(typeId, (e.shiftKey ? 1 : param));
+				Player.sendPutToContainer(typeId, (e.shiftKey ? 1 : param));
 			} else if (!Terrain.onGlobalMap && e.shiftKey) {
 			// Выкинуть предмет (шифт-клик)
 				if (isUnique(typeId)) {
-					player.sendDrop(player.items.getUnique(param));
+					Player.sendDrop(Player.items.getUnique(param));
 				} else {
-					player.sendDrop(player.items.getPile(typeId));
+					Player.sendDrop(Player.items.getPile(typeId));
 				}
 			} else if (isUsable(typeId)) {
 			// Если предмет можно использовать (на локальной карте), то использовать его
-				player.sendUseItem(typeId);
+				Player.sendUseItem(typeId);
 			} else if (isEquipment(typeId)) {
 			// Если предмет можно надеть, то надеть его
 				var slot = getSlotFromClass(items[typeId][1]);
-				if (!player.equipment.hasItemInSlot(slot)) {
-					player.sendPutOn(param);
+				if (!Player.equipment.hasItemInSlot(slot)) {
+					Player.sendPutOn(param);
 				} else {
-					player.sendTakeOff(player.equipment.getItemInSlot(slot));
+					Player.sendTakeOff(Player.equipment.getItemInSlot(slot));
 				}
 			}
 		},
@@ -671,7 +709,7 @@ UIElementTypes.chat = {
 				var sender = chat[i][0];
 				var message = chat[i][1];
 				if (sender === undefined) {
-					sender = player.name;
+					sender = Player.name;
 				}
 				
 				var nB=document.createElement("b");
@@ -706,7 +744,7 @@ UIElementTypes.chat = {
 	},
  	handlers: {
 		inputOnFocus: function _() {
-			UI.setMode(UI.MODE_CHAT);
+			UI.setKeyMapping("Chat");
 			var nlWraps=this.parentNode.children;
 			// First two children are wraps with background and text area
 			for (var i=0;i<2;i++) {
@@ -718,7 +756,7 @@ UIElementTypes.chat = {
 			});
 		},
 		inputOnBlur: function _() {
-			UI.setMode(UI.MODE_DEFAULT);
+			UI.setKeyMapping("Default");
 			var nlWraps=this.parentNode.children;
 			// First two children are wraps with background and text area
 			for (var i=0;i<2;i++) {
@@ -792,10 +830,10 @@ UIElementTypes.iconMissileType = {
 	},
 	listeners: {
 		missileTypeChange: function _() {
-			if (player.missileType == null) {
+			if (Player.missileType == null) {
 				this.getData("imgNode").setAttribute("src", "./images/intf/nothing.png");
 			} else {
-				this.getData("imgNode").setAttribute("src", "./images/items/"+player.missileType+".png");
+				this.getData("imgNode").setAttribute("src", "./images/items/"+Player.missileType+".png");
 			}
 		}
 	},
@@ -824,7 +862,7 @@ UIElementTypes.iconsEquipment = {
 			for (var i=0; i<itemViews.length; i++) {
 				var nImg = itemViews[i].getImg();
 				var src, typeId, itemId;
-				var item = player.equipment.getItemInSlot(i);
+				var item = Player.equipment.getItemInSlot(i);
 				if (item === null) {
 					src = "./images/intf/nothing.png";
 					typeId = -1;
@@ -848,7 +886,7 @@ UIElementTypes.iconsEquipment = {
 			var itemId = this.getData("itemId");
 			if (itemId != -1) {
 			// If a piece of armor is put on, take if off.
-				player.sendTakeOff(player.equipment.getItemById(itemId));
+				Player.sendTakeOff(Player.equipment.getItemById(itemId));
 			}
 		},
 		contextmenu: function _(e) {
@@ -909,20 +947,20 @@ UIElementTypes.iconsEquipment = {
 };
 UIElementTypes.iconsLoot = {
 	onInit: function _() {
-		this.setData("itemViewCache", new ItemViewCache("Loot"));
+		this.setData("itemViewCache", new CachingItemViewFactory("Loot"));
 		this.setData("displayedNullViews",[]);
 	},
 	listeners: {
 		lootChange: function _() {
 	 		var count = 0;
-	 		var items = Terrain.cells[player.x][player.y].items.getValues();
+	 		var items = Terrain.cells[Player.x][Player.y].items.getValues();
 	 		var cache = this.getData("itemViewCache");
 	 		var displayedNullViews = this.getData("displayedNullViews");
 	 		while (displayedNullViews.length > 0) {
 	 			this.rootElement.removeChild(displayedNullViews[0]);
 	 			displayedNullViews.shift();
 	 		}
-			var itemChanges = getSetsDifferences(Terrain.cells[player.x][player.y].items, cache);
+			var itemChanges = getSetsDifferences(Terrain.cells[Player.x][Player.y].items, cache);
 			for (var i=0; i<itemChanges[0].length; i++) {
 			// New items
 				count++;
@@ -955,7 +993,7 @@ UIElementTypes.iconsLoot = {
 				}
 			}
 	 		while (count%6 != 0) {
-	 			var nullView = NullItemViewCache.queryItemView("Loot").getNode();
+	 			var nullView = NullCachingItemViewFactory.get("Loot").getNode();
 	 			this.rootElement.appendChild(nullView);
 	 			displayedNullViews.push(nullView);
 	 			count++;
@@ -971,11 +1009,11 @@ UIElementTypes.iconsLoot = {
 			var item;
 			if (isUnique(typeId)) {
 				var param = this.getData("param");
-				item = Terrain.cells[player.x][player.y].items.getUnique(param);
+				item = Terrain.cells[Player.x][Player.y].items.getUnique(param);
 			} else {
-				item =  Terrain.cells[player.x][player.y].items.getPile(typeId);
+				item =  Terrain.cells[Player.x][Player.y].items.getPile(typeId);
 			}
-			player.sendPickUp(item);
+			Player.sendPickUp(item);
 		},
 		contextmenu:function _(e) {
 			var typeId = this.getData("typeId");
@@ -1028,7 +1066,7 @@ UIElementTypes.iconsSpells = {
     	// Refresh highlighted spell icon
 	    	var nlSpells = this.rootElement.getElementsByTagName("img");
 	    	for (var i=0;i<nlSpells.length;i++) {
-	    		if (nlSpells[i].getData("spellId") == player.spellId) {
+	    		if (nlSpells[i].getData("spellId") == Player.spellId) {
 	    			nlSpells[i].style.opacity = "1";
 	    			break;
 	    		} else if (i == nlSpells.length-1) {
@@ -1042,15 +1080,15 @@ UIElementTypes.iconsSpells = {
     		while (this.rootElement.children.length>0) {
         		this.rootElement.removeChild(this.rootElement.children[0]);
         	}
-        	for (var i=0;(i<player.spells.length || i%6!=0);i++) {
+        	for (var i=0; (i<Player.spells.length || i%6!=0); i++) {
         		var nSpellImg = document.createElement("img");
         		var nSpellWrap=document.createElement("div");
         		
         		this.addEventListener(nSpellImg, "click", "click");
         		this.addEventListener(nSpellImg, "contextmenu", "contextmenu");
         		this.addEventListener(nSpellImg, "mouseout",  "mouseout");
-        		nSpellImg.setData("spellId", ((i<player.spells.length)?player.spells[i]:-1));
-        		nSpellImg.setAttribute("src", "./images/"+((i<player.spells.length)?"spells/"+player.spells[i]:"intf/spellBg")+".png");
+        		nSpellImg.setData("spellId", ((i<Player.spells.length)?Player.spells[i]:-1));
+        		nSpellImg.setAttribute("src", "./images/"+((i<Player.spells.length)?"spells/"+Player.spells[i]:"intf/spellBg")+".png");
         		
         		nSpellWrap.appendChild(nSpellImg);
         		this.rootElement.appendChild(nSpellWrap);
@@ -1062,37 +1100,37 @@ UIElementTypes.iconsSpells = {
     },
     keysActions: {
     	unselectSpell: function _() {
-    		player.unselectSpell();
+    		Player.unselectSpell();
     	}
     },
  	handlers: {
     	click:function _() {
 			document.getElementById("itemInfo").style.display="none";
 			var spellId = this.getData("spellId");
-			if (player.spellId == spellId) {
+			if (Player.spellId == spellId) {
 			// If this spell is already chosen, unchoose it
-				player.unselectSpell();
+				Player.unselectSpell();
 				this.applyStyle({
 					opacity: "1"
 				});
 			} else {
-				player.selectSpell(spellId);
+				Player.selectSpell(spellId);
 				if (spells[spellId].onlyOnSelf) {
-					player.sendCastSpell(player.x, player.y);
+					Player.sendCastSpell(Player.x, Player.y);
 				} else {
 					this.applyStyle({
 						opacity: "0.5"
 					});
-					player.selectSpell(spellId);
+					Player.selectSpell(spellId);
 					// Spell cursor positioning
-					var spell = spells[player.spellId];
+					var spell = spells[Player.spellId];
 					var aimcharacter;
 					if (spell.onlyOnSelf) {
-						CellCursor.move(player.x,player.y);
-					} else if (spell.onCharacter && (aimcharacter = player.findEnemy())) {
+						CellCursor.move(Player.x, Player.y);
+					} else if (spell.onCharacter && (aimcharacter = Player.findEnemy())) {
 						CellCursor.move(aimcharacter.x, aimcharacter.y);
 					} else {
-						CellCursor.move(player.x, player.y);
+						CellCursor.move(Player.x, Player.y);
 					}
 				}
 			}
@@ -1153,8 +1191,8 @@ UIElementTypes.textTitle = {
     },
     listeners: {
     	titleChange: function _() {
-	    	this.getData("nameTextNode").nodeValue = player.name;
-	    	this.getData("titleTextNode").nodeValue = Global.races[player.race]+" "+player.cls+" "+player.level+" уровня";
+	    	this.getData("nameTextNode").nodeValue = Player.name;
+	    	this.getData("titleTextNode").nodeValue = Global.races[Player.race]+" "+Player.cls+" "+Player.level+" уровня";
     	},
     	locationLoad: "titleChange",
     	worldLoad: "titleChange"
@@ -1213,8 +1251,8 @@ UIElementTypes.hpBar = {
     }, 
     listeners: {
     	healthChange: function _() {
-	    	this.getData("valueTextNode").nodeValue = player.hp+"/"+player.maxHp;
-	    	this.getData("stripNode").style.width = (204*player.hp/player.maxHp)+"px";
+	    	this.getData("valueTextNode").nodeValue = Player.hp+"/"+Player.maxHp;
+	    	this.getData("stripNode").style.width = (204*Player.hp/Player.maxHp)+"px";
     	},
     	locationLoad: "healthChange"
     },
@@ -1289,8 +1327,8 @@ UIElementTypes.epBar = {
     listeners: {
     	energyChange: function _() {
     	
-	    	this.getData("valueTextNode").nodeValue = player.ep+"/"+player.maxEp;
-	    	this.getData("stripNode").style.width = (204*player.ep/player.maxEp)+"px";
+	    	this.getData("valueTextNode").nodeValue = Player.ep+"/"+Player.maxEp;
+	    	this.getData("stripNode").style.width = (204*Player.ep/Player.maxEp)+"px";
     	},
     	locationLoad: "energyChange"
     },
@@ -1364,8 +1402,8 @@ UIElementTypes.mpBar = {
     }, 
     listeners: {
     	manaChange: function _() {
-	    	this.getData("valueTextNode").nodeValue = player.mp+"/"+player.maxMp;
-	    	this.getData("stripNode").style.width = (204*player.mp/player.maxMp)+"px";
+	    	this.getData("valueTextNode").nodeValue = Player.mp+"/"+Player.maxMp;
+	    	this.getData("stripNode").style.width = (204*Player.mp/Player.maxMp)+"px";
     	},
     	locationLoad: "manaChange"
     },
@@ -1431,7 +1469,7 @@ UIElementTypes.windowSkills = {
 			while (nSkills.children.length > 0) {
 				nSkills.removeChild(nSkills.children[0]);
 			}
-			for (var i=0;i<player.skills.length;i+=2) {
+			for (var i=0;i<Player.skills.length;i+=2) {
 				var nWrap = document.createElement("div");
 				var nSkillName = document.createElement("div");
 				var nSkillValue = document.createElement("div");
@@ -1439,8 +1477,8 @@ UIElementTypes.windowSkills = {
 				this.addCustomClass(nSkillName, "Name");
 				this.addCustomClass(nSkillValue, "Value");
 				
-				nSkillName.appendChild(document.createTextNode(Global.skillNames[player.skills[i]]));
-				nSkillValue.appendChild(document.createTextNode(player.skills[i+1]));
+				nSkillName.appendChild(document.createTextNode(Global.skillNames[Player.skills[i]]));
+				nSkillValue.appendChild(document.createTextNode(Player.skills[i+1]));
 				nWrap.appendChild(nSkillName);
 				nWrap.appendChild(nSkillValue);
 				nSkills.appendChild(nWrap);
@@ -1625,7 +1663,7 @@ UIElementTypes.windowSettings = {
 			localStorage.setItem(2, +this.getData("showGridNode").checked);
 			localStorage.setItem(3, this.getData("gameFieldSizeXNode").value);
 			localStorage.setItem(4, this.getData("gameFieldSizeYNode").value);
-			if (player) {
+			if (Player) {
 				Net.quickRefresh();
 			} else {
 				window.location.href=window.location.href;
@@ -1717,7 +1755,7 @@ UIElementTypes.windowDialogue = {
 	keysActions: {},
 	handlers: {
 		answerClick: function _() {
-			player.sendAnswer(this.getData("answerId"));
+			Player.sendAnswer(this.getData("answerId"));
 		}
 	},
 	cssRules: function _() {
@@ -1807,6 +1845,7 @@ UIElementTypes.windowContainer = {
 			}
 		},
 		containerOpen: function _() {
+			UI.setKeyMapping("Container");
 			this.UIElementType.listeners.containerChange.apply(this);
 			this.show();
 		}
@@ -1814,12 +1853,12 @@ UIElementTypes.windowContainer = {
 	keysActions: {
 		closeContainer: function _() {
 			this.hide();
-			UI.setMode(UI.MODE_DEFAULT);
+			UI.setKeyMapping("Default");
 		}
 	},
 	handlers: {
 		itemClick: function _(e) {
-			player.sendTakeFromContainer(
+			Player.sendTakeFromContainer(
 				+this.getAttribute("typeId"), 
 				(e.shiftKey ? 1 : +this.getAttribute("param")),
 				Global.container.x,
@@ -1827,7 +1866,7 @@ UIElementTypes.windowContainer = {
 			);
 		},
 		containerClose: function _() {
-			UI.setMode(UI.MODE_DEFAULT);
+			UI.setKeyMapping("Default");
 		}
 	},
 	cssRules: function _() {
@@ -2400,15 +2439,15 @@ UIElementTypes.attributeList = {
 			}
 		},
 		attributesInit: function _() {
-			this.getData("armorText").nodeValue = player.attributes.armor;
-			this.getData("evasionText").nodeValue = player.attributes.evasion;
-			this.getData("fireResText").nodeValue = player.attributes.fireRes;
-			this.getData("coldResText").nodeValue = player.attributes.coldRes;
-			this.getData("poisonResText").nodeValue = player.attributes.poisonRes;
-			this.getData("strText").nodeValue = player.attributes.str;
-			this.getData("dexText").nodeValue = player.attributes.dex;
-			this.getData("wisText").nodeValue = player.attributes.wis;
-			this.getData("itlText").nodeValue = player.attributes.itl;
+			this.getData("armorText").nodeValue = Player.attributes.armor;
+			this.getData("evasionText").nodeValue = Player.attributes.evasion;
+			this.getData("fireResText").nodeValue = Player.attributes.fireRes;
+			this.getData("coldResText").nodeValue = Player.attributes.coldRes;
+			this.getData("poisonResText").nodeValue = Player.attributes.poisonRes;
+			this.getData("strText").nodeValue = Player.attributes.str;
+			this.getData("dexText").nodeValue = Player.attributes.dex;
+			this.getData("wisText").nodeValue = Player.attributes.wis;
+			this.getData("itlText").nodeValue = Player.attributes.itl;
 		}
 	},
 	keysActions: {},
@@ -2436,11 +2475,11 @@ UIElementTypes.attributeList = {
 };
 UIElementTypes.actionsPanel = {
 	onInit: function _() {
-		for (var i in Player.prototype.actions) {
+		for (var i in Player.actions) {
 			var nDiv = document.createElement("div");
 			this.addCustomClass(nDiv,"Action");
-			nDiv.appendChild(document.createTextNode(Player.prototype.actions[i].substring(0,3)));
-			this.addEventListener(nDiv,"click", Player.prototype.actions[i]);
+			nDiv.appendChild(document.createTextNode(Player.actions[i].substring(0,3)));
+			this.addEventListener(nDiv,"click", Player.actions[i]);
 			this.rootElement.appendChild(nDiv);
 		}
 	},
@@ -2451,26 +2490,26 @@ UIElementTypes.actionsPanel = {
 			CellCursor.enterSelectionMode(function (startX, startY) {
 				CellCursor.enterSelectionMode(function(endX, endY) {
 					var direction = Side.d2side(endX-startX, endY-startY);
-					player.sendPush(startX, startY, direction);
+					Player.sendPush(startX, startY, direction);
 				}, window, 1, {x:startX,y:startY});
 			}, window, 1);
 		},
 		changePlaces: function _() {
 			CellCursor.enterSelectionMode(function (x,y) {
-				player.sendChangePlaces(x, y);
+				Player.sendChangePlaces(x, y);
 			}, window, 1);
 		},
 		makeSound: function () {
-			player.sendMakeSound(1);
+			Player.sendMakeSound(1);
 		},
 		shieldBash: function() {
 			CellCursor.enterSelectionMode(function(x, y) {
-				player.sendShieldBash(x,y);
+				Player.sendShieldBash(x,y);
 			}, window, 1);
 		},
 		jump: function _() {
 			CellCursor.enterSelectionMode(function(x, y) {
-				player.sendJump(x,y);
+				Player.sendJump(x,y);
 			}, window, 2);
 		}
 	},

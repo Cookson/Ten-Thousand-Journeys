@@ -158,7 +158,7 @@ Net = {
 		return false;
 	},
 	quickRefresh: function _() {
-		localStorage.setItem(101,player.characterId+","+Global.playerLogin+","+Global.playerPassword);
+		localStorage.setItem(101,Player.characterId+","+Global.playerLogin+","+Global.playerPassword);
 		window.location.reload();
 	},
 	logInForCharacter: function _(characterId, login, password) {

@@ -68,17 +68,17 @@ var CellCursor = {
 				x=this.character.x;
 				y=this.character.y;
 			} else {
-				x=mapCursorX || player.x;
-				y=mapCursorY || player.y;
+				x=mapCursorX || Player.x;
+				y=mapCursorY || Player.y;
 			}
 		}
-		UI.setMode(UI.MODE_CURSOR_ACTION);
+		UI.setKeyMapping("CellCursor");
 		this.move(x,y);
 		this.show();
 	},
 	withdraw: function _() {
 		this.hide();
-		UI.setMode(UI.MODE_DEFAULT);
+		UI.setKeyMapping("Default");
 	},
 	changeStyle: function _(className) {
 		this.currentStyle = className;
@@ -87,7 +87,7 @@ var CellCursor = {
 	enterSelectionMode: function _(callback, context, maximumDistance, zoneCenter) {
 	/**
 	 * Enters cell selection mode. Exit from selection mode and callback call
-	 * are in handlers object. Also shades cells if needed, so player can see 
+	 * are in handlers object. Also shades cells if needed, so Player can see 
 	 * the maximum range of his action.
 	 * 
 	 * @param {Function} callback Function to call after cell was chosen
@@ -98,7 +98,7 @@ var CellCursor = {
 	 * @param {Object} zoneCenter Object with fields object.x and object.y; 
 	 * this may be a Character, GameObject or simply {x:int,y:int}. Area of 
 	 * applicable cells will be made around th zoneCenter (or leave zone center 
-	 * undefined so it will be the player)
+	 * undefined so it will be the Player)
 	 */
 		if (context === undefined) {
 			context = window;
@@ -109,14 +109,14 @@ var CellCursor = {
 		}
 		this.maximumDistance = maximumDistance;
 		if (zoneCenter === undefined) {
-			zoneCenter = player;
+			zoneCenter = Player;
 		}
 		this.zoneCenter = zoneCenter;
 		this.isSelectionMode = true;
 		this.callback = callback;
 		
 		
-		UI.setMode(UI.MODE_CURSOR_ACTION);
+		UI.setKeyMapping("CellCursor");
 		this.changeStyle("CellAction");
 		// Shade cells
 		this.shadedCells = [];
@@ -128,17 +128,17 @@ var CellCursor = {
 			endX = startX+bounds[2];
 			endY = startY+bounds[3];
 		} else {
-			startX = zoneCenter.x-player.VISION_RANGE;
-			startY = zoneCenter.y-player.VISION_RANGE;
-			endX = zoneCenter.x+player.VISION_RANGE;
-			endY = zoneCenter.y+player.VISION_RANGE;
+			startX = zoneCenter.x-Player.VISION_RANGE;
+			startY = zoneCenter.y-Player.VISION_RANGE;
+			endX = zoneCenter.x+Player.VISION_RANGE;
+			endY = zoneCenter.y+Player.VISION_RANGE;
 		}
 		for (var x = startX; x<=endX; x++) {
 			for (var y = startY; y<=endY; y++) {
 				if (
-					player.visibleCells[x][y] 
+					Player.visibleCells[x][y] 
 					&& (Math.floor(distance(zoneCenter.x,zoneCenter.y,x,y)) > maximumDistance
-					|| (!Terrain.isPeaceful || !player.canSee(x,y,false,true)))
+					|| (!Terrain.isPeaceful || !Player.canSee(x,y,false,true)))
 				) {
 					this.shadedCells.push(Terrain.cells[x][y]);
 					Terrain.cells[x][y].shade();
@@ -163,7 +163,7 @@ var CellCursor = {
 	 * Exits selection mode without calling the callback
 	 */
 		this.isSelectionMode = false;
-		UI.setMode(UI.MODE_DEFAULT);
+		UI.setKeyMapping("Default");
 		this.changeStyle("Main");
 		for (var i in this.shadedCells) {
 			this.shadedCells[i].unshade();

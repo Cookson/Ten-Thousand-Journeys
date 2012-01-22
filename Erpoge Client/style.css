@@ -744,4 +744,18 @@ div.itemViewLoot {
 	background-image: url('./images/intf/lootBg.png');
  	border: 1px solid #534511;
 }
-
+/* CachingLettersFactory */
+div.defaultLetter {
+	display: inline-block;
+	position: absolute;
+	top: 1px;
+	left: 1px;
+	width: 14px;
+	height: 14px;
+	line-height: 14px;
+	text-align: center;
+	z-index: 3;
+	border-radius: 7px;
+	background-color: #000;
+	color: #fff;
+}

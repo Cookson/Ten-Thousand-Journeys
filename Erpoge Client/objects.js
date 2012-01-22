@@ -999,17 +999,17 @@ Ceiling.prototype.show = function _() {
 function visToNum(x, y) {
 	// Возвращает 1, если клетка видима, и 0, если клетка невидима или находится
 	// за пределами карты
-	return +(x>=0&&x<Terrain.width&&y>0&&y<Terrain.height /*&& !!player.visibleCells[x][y]*/);
+	return +(x>=0&&x<Terrain.width&&y>0&&y<Terrain.height /*&& !!Player.visibleCells[x][y]*/);
 }
 function seenToNum(x, y) {
 	// Возвращает 1, если клетка уже была увидена, и 0, если клетка не была
 	// увидена или находится за пределами карты
-	return +(x>=0&&x<Terrain.width&&y>0&&y<Terrain.height&& ! !player.seenCells[x][y]);
+	return +(x>=0&&x<Terrain.width&&y>0&&y<Terrain.height&& !!Player.seenCells[x][y]);
 }
 function wallToNum(x, y) {
 	// Возвращает 1, если на клетке есть стена, и 0, если на клетке нет стены
 	// или нет такой клетки
-	return +(x>=0&&x<Terrain.width&&y>0&&y<Terrain.height&&( ! !Terrain.cells[x][y].wall|| ! !(Terrain.cells[x][y].object&&isDoor(Terrain.cells[x][y].object.type))));
+	return +(x>=0&&x<Terrain.width&&y>0&&y<Terrain.height&&(!!Terrain.cells[x][y].wall|| ! !(Terrain.cells[x][y].object&&isDoor(Terrain.cells[x][y].object.type))));
 }
 function anyItemsInCell(x, y) {
 	// Проверяет, есть ли в клетке предметы

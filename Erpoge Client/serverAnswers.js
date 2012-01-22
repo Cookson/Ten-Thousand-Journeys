@@ -25,7 +25,7 @@ serverAnswerHandlers = {
 	},
 	we: function _(value) {
 		// Character enters world (on global map)
-		if (!player.characterId) {
+		if (!Player.characterId) {
 		// If the world is not loaded for this client (Character stub instead player Character, see variables2.js)
 			return;
 		}
@@ -55,23 +55,23 @@ serverAnswerHandlers = {
 		handleNextEvent();
 	},
 	move: function _(value) {
-		if (characters[value.characterId] == player && (player.destX != value.x || player.destY != value.y)) {
+		if (characters[value.characterId] == Player && (Player.destX != value.x || Player.destY != value.y)) {
 		// ������� ������ ���� ����� showMove - � showMove ���������� check out (��������, ��� ���������� ���������)
-			player.addActionToQueue(player.sendMove);
+			Player.addActionToQueue(Player.sendMove);
 		} else {
 			CellCursor.show();
 		}
 		characters[value.characterId].showMove(value.x, value.y);	
 		UI.notify("environmentChange");
-		if (value.characterId == player.characterId) {
+		if (value.characterId == Player.characterId) {
 			UI.notify("lootChange");
 		}
 	},
 	putOn: function _(value) {
 		// Put on item
 		if (Terrain.onGlobalMap) {
-			if (value.characterId == player.characterId) {
-				player.putOn(value.itemId);
+			if (value.characterId == Player.characterId) {
+				Player.putOn(value.itemId);
 				UI.notify("inventoryChange");
 				UI.notify("equipmentChange");
 			} else {
@@ -79,7 +79,7 @@ serverAnswerHandlers = {
 			}
 		} else {
 			characters[value.characterId].putOn(value.itemId);
-			if (value.characterId == player.characterId) {
+			if (value.characterId == Player.characterId) {
 				UI.notify("inventoryChange");
 				UI.notify("equipmentChange");
 			}
@@ -88,8 +88,8 @@ serverAnswerHandlers = {
 	},
 	takeOff: function _(value) {
 		if (Terrain.onGlobalMap) {
-			if (value.characterId == player.characterId) {
-				player.takeOff(value.itemId);
+			if (value.characterId == Player.characterId) {
+				Player.takeOff(value.itemId);
 				UI.notify("inventoryChange");
 				UI.notify("equipmentChange");
 			} else {
@@ -97,7 +97,7 @@ serverAnswerHandlers = {
 			}
 		} else {
 			characters[value.characterId].takeOff(value.itemId);
-			if (value.characterId == player.characterId) {
+			if (value.characterId == Player.characterId) {
 				UI.notify("inventoryChange");
 				UI.notify("equipmentChange");
 			}
@@ -123,7 +123,7 @@ serverAnswerHandlers = {
 //		}
 	},
 	openContainer: function _(value) {
-		UI.setMode(UI.MODE_CONTAINER);
+		
 		Global.container.items.empty();
 		for (var i in value.items) {
 			Global.container.items.addNewItem(value.items[i][0], value.items[i][1]);
@@ -135,7 +135,7 @@ serverAnswerHandlers = {
 		if (Terrain.onGlobalMap) {
 			throw new Error("Character "+value.characterId+" takes an item "+items[value.typeId][0]+" from container on global map!");
 		} else {
-			if (value.characterId == player.characterId) {
+			if (value.characterId == Player.characterId) {
 				Global.container.items.remove(value.typeId, value.param);
 				UI.notify("containerChange");
 			}
@@ -146,7 +146,7 @@ serverAnswerHandlers = {
 		if (Terrain.onGlobalMap) {
 			throw new Error("Character "+value.characterId+" puts an item "+items[value.typeId][0]+" to container on global map!");
 		} else {
-			if (value.characterId == player.characterId) {
+			if (value.characterId == Player.characterId) {
 				Global.container.items.addNewItem(value.typeId, value.param);
 				UI.notify("containerChange");
 			}
@@ -170,14 +170,14 @@ serverAnswerHandlers = {
 	},
 	changeMana: function _(value) {
 		characters[value.characterId].mp = value.value;
-		if (value.characterId == player.characterId) {
+		if (value.characterId == Player.characterId) {
 			UI.notify("manaChange");
 		}
 		handleNextEvent();
 	},
 	changeEnergy: function _(value) {
 		characters[value.characterId].ep = value.value;
-		if (value.characterId == player.characterId) {
+		if (value.characterId == Player.characterId) {
 			UI.notify("energyChange");
 		}
 		handleNextEvent();
@@ -198,7 +198,7 @@ serverAnswerHandlers = {
 			} else {
 				Terrain.cells[value.x][value.y].addItem(new ItemPile(value.typeId, value.param));
 			}
-			if (player.x == value.x && player.y == value.y) {
+			if (Player.x == value.x && Player.y == value.y) {
 				UI.notify("lootChange");
 			}
 		}
@@ -209,7 +209,7 @@ serverAnswerHandlers = {
 			throw new Error("Item appear on global map!");
 		} else {
 			Terrain.cells[value.x][value.y].removeItem(value.typeId, value.param);
-			if (value.x == player.x && value.y == player.y) {
+			if (value.x == Player.x && value.y == Player.y) {
 				UI.notify("lootChange");
 			}
 		}
@@ -221,10 +221,10 @@ serverAnswerHandlers = {
 		} else {
 			UI.notify("spellCast");
 			
-			if (value.characterId == player.characterId) {
-				player.spellAimId=-1;
-				player.spellX=-1;
-				player.spellY=-1;
+			if (value.characterId == Player.characterId) {
+				Player.spellAimId=-1;
+				Player.spellX=-1;
+				Player.spellY=-1;
 			}
 //				new effectTypes.confuse(this.x, this.y, this.x, this.y,  1000, 1000, 1000, 1000, function() {
 //					handleNextEvent();
@@ -246,27 +246,27 @@ serverAnswerHandlers = {
 	loseItem: function _(value) {
 		if (Terrain.onGlobalMap) {
 			throw new Error("Missile flight on global map!");
-		} else if (value.characterId == player.characterId) {
-			player.loseItem(value.typeId, value.param);
+		} else if (value.characterId == Player.characterId) {
+			Player.loseItem(value.typeId, value.param);
 		}
 		handleNextEvent();
 	},
 	getItem: function _(value) {
 		if (Terrain.onGlobalMap) {
 			throw new Error("Missile flight on global map!");
-		} else if (value.characterId == player.characterId) {
-			player.getItem(value.typeId, value.param);
+		} else if (value.characterId == Player.characterId) {
+			Player.getItem(value.typeId, value.param);
 		}
 		handleNextEvent();
 	},
 	objectAppear: function _(value) {
 		new GameObject(value.x, value.y, value.object).show();
-		player.updateVisibility();
+		Player.updateVisibility();
 		handleNextEvent();
 	},
 	objectDisappear: function _(value) {
 		Terrain.cells[value.x][value.y].object.remove();
-		player.updateVisibility();
+		Player.updateVisibility();
 		handleNextEvent();
 	},	
 	characterAppear: function _(value) {
@@ -275,9 +275,9 @@ serverAnswerHandlers = {
 		handleNextEvent();
 	},	
 	nextTurn: function _(value) {
-		if (value.characterId == player.characterId) {
-			if (player.actionQueue.length > 0) {
-				player.doActionFromQueue();
+		if (value.characterId == Player.characterId) {
+			if (Player.actionQueue.length > 0) {
+				Player.doActionFromQueue();
 			}
 		}
 		// Here must be no handleNextEvent()
@@ -301,13 +301,13 @@ serverAnswerHandlers = {
 		handleNextEvent();
 	},
 	dialoguePoint: function _(value) {
-		if (value.playerId == player.characterId) {
+		if (value.playerId == Player.characterId) {
 			UI.notify("dialoguePointRecieve", {phrase:value.phrase, answers:value.answers});
 		}
 		handleNextEvent();
 	},
 	dialogueEnd: function _(value) {
-		if (value.characterId == player.characterId) {
+		if (value.characterId == Player.characterId) {
 			UI.notify("dialogueEnd");
 		}
 		handleNextEvent();

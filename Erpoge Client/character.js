@@ -4,16 +4,16 @@
 		return;
 	}
 	characters[id] = this;
-	this.x=x;
-	this.y=y;
+	this.x = x;
+	this.y = y;
 	this.isClientPlayer = false;
 	Terrain.cells[x][y].character = this;
 	Terrain.cells[x][y].passability = Terrain.PASS_SEE;	
-	this.characterId=id;
-	this.destX=this.x;
-	this.destY=this.y;
-	this.type=(type!=undefined)?type:"player";
-	if (this.type!="player") {
+	this.characterId = id;
+	this.destX = this.x;
+	this.destY = this.y;
+	this.type = (type!=undefined) ? type : "player";
+	if (this.type != "player") {
 		this.name = characterTypes[type][0];
 	}
 	
@@ -29,23 +29,21 @@
 	this.VISION_RANGE = 8;
 	this.visible;
 	
-	// Ячейка
-	this.cellWrap=document.createElement("div");
-	this.cellWrap.className="cellWrap";
+	this.cellWrap = document.createElement("div");
+	this.cellWrap.className = "cellWrap";
 	this.cellWrap.setAttribute("id", "character"+this.characterId);
-	gameField.appendChild(this.cellWrap);
-	var viewIndent = Terrain.getViewIndentation(x,y,32);
-	this.cellWrap.style.top=viewIndent.top+"px";
-	this.cellWrap.style.left=viewIndent.left+"px";
-	this.cellWrap.style.opacity="0";
-	this.cellWrap.style.zIndex=this.y*2+2;
 	
-	// Массивы	
+	var viewIndent = Terrain.getViewIndentation(this.x,this.y,32);
+	this.cellWrap.style.top = viewIndent.top+"px";
+	this.cellWrap.style.left = viewIndent.left+"px";
+	this.cellWrap.style.opacity = "0";
+	this.cellWrap.style.zIndex = this.y*2+2;
+	
+	
 	this.equipment = new Equipment();	
-	
 	this.effects = {};
 	
-	// Заклинания
+	// Spell
 	this.spellId=-1;
 	this.spellAimId=-1;
 	this.spellX=-1;
@@ -55,27 +53,24 @@
 Character.prototype.display = function () { 
 // Initiates character view
 // This method is overriden in Player class
-	var ncharacterImage=document.createElement("img");
-	ncharacterImage.className="characterIcon";
-	ncharacterImage.setAttribute("characterId",this.characterId);
-	ncharacterImage.setAttribute("src","images/characters/"+this.type+".png");
+	gameField.appendChild(this.cellWrap);
 	if (this.type in characterSpriteSizes) {
 	// If this mod's sprite has irregular size (not 32х32)
-		ncharacterImage.style.left=((32-characterSpriteSizes[this.type][0])/2)+"px";
-		ncharacterImage.style.top=((16-characterSpriteSizes[this.type][1]))+"px";
+		ncharacterImage.style.left = ((32-characterSpriteSizes[this.type][0])/2)+"px";
+		ncharacterImage.style.top = ((16-characterSpriteSizes[this.type][1]))+"px";
 	}
 	this.cellWrap.appendChild(ncharacterImage);
 	if (this.fraction == 1) {
 	// Friend marker
-		var nWrap=document.createElement("div");
-		nWrap.className="wrap";
-		var nFriendMarker=document.createElement("img");
-		nFriendMarker.className="cellFriendMarker";
-		nFriendMarker.src="./images/intf/friendMarker.png";
+		var nWrap = document.createElement("div");
+		nWrap.className = "wrap";
+		var nFriendMarker = document.createElement("img");
+		nFriendMarker.className = "cellFriendMarker";
+		nFriendMarker.src = "./images/intf/friendMarker.png";
 		nWrap.appendChild(nFriendMarker);
-		this.cellWrap.insertBefore(nWrap,this.cellWrap.children[0]);
+		this.cellWrap.insertBefore(nWrap, this.cellWrap.children[0]);
 	}
-	if (player.canSee(this.x, this.y)) {
+	if (Player.canSee(this.x, this.y)) {
 		this.showModel();
 	}
 	// HP strip
@@ -117,15 +112,15 @@ Character.prototype.showAttackResult=function(res) {
 Character.prototype.redrawDoll=function() {
 //Отобразить амуницию
 //prevEquipment - предыдущее значение this.equipment
-	if (player.canSee(this.x,this.y)) {
+	if (Player.canSee(this.x,this.y)) {
 		this.doll.draw();
 	}
 };
-Character.prototype.initHpBar=function() {
+Character.prototype.initHpBar = function() {
 //Creates HP bar element
 	this.nHpBar = document.createElement("div");
 	this.nHpBar.className = "cellHp";
-	document.getElementById("character"+this.characterId).appendChild(this.nHpBar);
+	this.cellWrap.appendChild(this.nHpBar);
 	if (this.type in characterSpriteSizes) {
 		this.nHpBar.style.top=((16-characterSpriteSizes[this.type][1]))+"px";
 	}
@@ -650,8 +645,8 @@ Character.prototype.initVisibility = function() {
 		for (var i=0;i<Terrain.width;i++) {
 			for (var j=0;j<Terrain.height;j++) {
 				if (!Terrain.cells[i][j].visible) {
-					player.seenCells[i][j] = true;
-					player.visibleCells[i][j] = true;
+					Player.seenCells[i][j] = true;
+					Player.visibleCells[i][j] = true;
 					Terrain.cells[i][j].show();
 				}
 			}
@@ -731,7 +726,7 @@ Character.prototype.animateSpell = function(spellId, aimId, spellX, spellY, call
 Character.prototype.showDeath = function() {
 	this.cellWrap.parentNode.removeChild(this.cellWrap);
 	Terrain.cells[this.x][this.y].passability=Terrain.PASS_FREE;
-	if (this === player) {
+	if (this === Player) {
 		UI.notify("death");
 		var nlEffects=document.getElementById("effectsList").children;
 		while (nlEffects.length>0) {
@@ -778,7 +773,7 @@ Character.prototype.meleeAttack=function(x,y) {
 };
 Character.prototype.showMove = function(nextCellX, nextCellY) {
 	if (this.destX == this.x && this.destY == this.y) {
-	// If player moves not by his will, then destX/Y may remain the same,
+	// If Player moves not by his will, then destX/Y may remain the same,
 	// so destX/Y should be changed
 		this.destX = nextCellX;
 		this.destY = nextCellY;
@@ -809,9 +804,9 @@ Character.prototype.showMove = function(nextCellX, nextCellY) {
 		this.y = nextCellY;
 		Terrain.cells[this.x][this.y].passability = Terrain.PASS_SEE;
 		Terrain.cells[this.x][this.y].character = this;
-		if (this.visible && !player.visibleCells[this.x][this.y]) {
+		if (this.visible && !Player.visibleCells[this.x][this.y]) {
 			this.hideModel();
-		} else if (!this.visible && player.visibleCells[this.x][this.y]) {
+		} else if (!this.visible && Player.visibleCells[this.x][this.y]) {
 			this.showModel();
 		}
 		if (this.isClientPlayer) {
@@ -954,15 +949,27 @@ Character.prototype.changeAttribute = function _(attrId, value) {
  * @param {mixed[]} data
  * @return
  */
-function Player(data) {
-/*	
+var Player = {
+/**
+ * @public
+ * @type LetterAssigner
+ */
+	itemsLetterAssigner: new LetterAssigner("Inventory"),
+/**
+ * @public
+ * @type LetterAssigner
+ */
+	spellsLetterAssigner: new LetterAssigner("Spells")
+};
+Player.__proto__ = new Character(-1);
+Player.init = function _(data) {
+	/*	
 	data : [(0)characterId, (1)worldX, (2)worldY, (3)isLead, (4)name, (5)race, (6)class, 
 			(7)maxHp, (8)maxMp, (9)maxEp, (10)hp, (11)mp, (12)ep, 
 			(13)str, (14)dex, (15)wis, (16)itl, (17)items[], (18)equipment[], (19)spells[], (20)skills[],
 			(21)ac, (22)ev, (23)resistances[]] 
 */
 	Character.apply(this, [data[0],"player",data[1], data[2],1]);
-	window.player = this;
 	characters[data[0]] = this;
 	this.isClientPlayer = true;
 	if (Terrain.onGlobalMap) {
@@ -994,7 +1001,6 @@ function Player(data) {
 	this.attributes.coldRes = data[23][1];
 	this.attributes.poisonRes = data[23][2];
 	
-	
 	this.pathTable = blank2dArray();
 	this.items = new ItemSet();
 	this.spells = [];
@@ -1005,15 +1011,20 @@ function Player(data) {
 	this.actionQueue = [];
 	this.actionQueueParams = [];
 	
-	// Inventory	
+	// Inventory
+	
 	for (var i=0;i<data[17].length;i++) {
 		var typeId = data[17][i][0];
 		var param = data[17][i][1];
+		var item;
 		if (isUnique(typeId)) {
-			this.items.addItem(new UniqueItem(typeId, param));
+			item = new UniqueItem(typeId, param);
+			this.items.addItem(item);
 		} else {
-			this.items.addItem(new ItemPile(typeId, param));
+			item = new ItemPile(typeId, param);
+			this.items.addItem(item);
 		}
+		this.itemsLetterAssigner.addObject(item);
 	}
 	
 	this.equipment.getFromData(data[18]);
@@ -1024,40 +1035,41 @@ function Player(data) {
 	var len = data[20].length/2;
 	this.skills = [];
 	for (var i=0; i<len; i++) {
-		player.skills.push(data[20][i*2]);
-		player.skills.push(data[20][i*2+1]);
+		Player.skills.push(data[20][i*2]);
+		Player.skills.push(data[20][i*2+1]);
 	}
 	this.missileType = null;
 	this.autoSetMissileType();
-	UI.notify("attributesInit");
-}
-Player.prototype = new Character(-1);
-Player.prototype.actions = ["push","changePlaces","makeSound","shieldBash","jump"];
-Player.prototype.display = function () {
+
 	this.doll = new Doll(this);
-	this.doll.draw();
-	document.getElementById("character"+this.characterId).appendChild(this.doll.DOMNode);
+	this.cellWrap.appendChild(this.doll.DOMNode);
 	this.initHpBar();
+	UI.notify("attributesInit");
 };
-Player.prototype.showDamage = function (amount, type) {
+Player.actions = ["push","changePlaces","makeSound","shieldBash","jump"];
+Player.display = function () {
+	gameField.appendChild(this.cellWrap);
+	this.doll.draw();
+};
+Player.showDamage = function (amount, type) {
 	Character.prototype.showDamage.apply(this, arguments);
 	UI.notify("healthChange");
 };
-Player.prototype.sendTakeOff = function(item) {
+Player.sendTakeOff = function(item) {
 	Net.send({a:Net.TAKE_OFF,itemId:item.itemId});
 };
-Player.prototype.putOn = function (itemId) {
+Player.putOn = function (itemId) {
 	Character.prototype.putOn.apply(this,[itemId]);
 	this.items.removeUnique(itemId);
 };
-Player.prototype.takeOff = function (itemId) {
+Player.takeOff = function (itemId) {
 	this.items.addItem(this.equipment.getItemById(itemId));
 	Character.prototype.takeOff.apply(this, [itemId]);
 	// This code is also in Character.prototype.takeOff;
 	// consider changing server output for takeOff event
 	// to slot information, not itemId information.	
 };
-Player.prototype.autoSetMissileType = function () {
+Player.autoSetMissileType = function () {
 	if (this.missileType != null) {
 		return;
 	}
@@ -1074,25 +1086,25 @@ Player.prototype.autoSetMissileType = function () {
 		}
 	}
 };
-Player.prototype.setMissileType = function _(type) {
+Player.setMissileType = function _(type) {
 	this.missileType = type;
 	UI.notify("missileTypeChange");
 };
 /* Send methods */
 // These methods don't change internal state, only send data to server
-Player.prototype.sendStartConversation = function(characterId) {
+Player.sendStartConversation = function(characterId) {
 	Net.send({a:Net.START_CONVERSATION,characterId:characterId});
 };
-Player.prototype.sendAnswer = function(answerId) {
+Player.sendAnswer = function(answerId) {
 	Net.send({a:Net.ANSWER,answerId:answerId});
 };
-Player.prototype.sendTakeOff = function(item) {
+Player.sendTakeOff = function(item) {
 	Net.send({a:Net.TAKE_OFF, itemId:item.itemId});
 };
-Player.prototype.sendUseObject = function(x,y) {
+Player.sendUseObject = function(x,y) {
 	Net.send({a:Net.USE_OBJECT,x:x,y:y});
 };
-Player.prototype.sendTakeFromContainer = function(typeId, param) {
+Player.sendTakeFromContainer = function(typeId, param) {
 	Net.send({
 		a:Net.TAKE_FROM_CONTAINER,
 		typeId:typeId,
@@ -1101,13 +1113,13 @@ Player.prototype.sendTakeFromContainer = function(typeId, param) {
 		y:Global.container.y
 	});
 };
-Player.prototype.sendShootMissile = function(x, y) {
+Player.sendShootMissile = function(x, y) {
 	Net.send({a:Net.SHOOT_MISSILE,x:x,y:y,missile:this.missileType});
 };
-Player.prototype.sendOpenContainer = function() {
+Player.sendOpenContainer = function() {
 	Net.send({a:Net.OPEN_CONTAINER,x:Global.container.x,y:Global.container.y});
 };
-Player.prototype.sendPutToContainer = function(typeId, param) {
+Player.sendPutToContainer = function(typeId, param) {
 	Net.send({
 		a:Net.PUT_TO_CONTAINER,
 		typeId:typeId,
@@ -1116,13 +1128,13 @@ Player.prototype.sendPutToContainer = function(typeId, param) {
 		y:Global.container.y
 	});
 };
-Player.prototype.sendAttack = function(aimId, ranged) {
+Player.sendAttack = function(aimId, ranged) {
 	Net.send({a:Net.ATTACK, aimId:aimId, ranged:ranged});
 };
-Player.prototype.sendCastSpell = function(x, y) {
+Player.sendCastSpell = function(x, y) {
 	Net.send({a:Net.CAST_SPELL, spellId:this.spellId, x:x, y:y});
 };
-Player.prototype.sendMove = function() {
+Player.sendMove = function() {
 	if (this.x<0) {
 		throw new Error("dest x < 0");
 	}
@@ -1156,7 +1168,7 @@ Player.prototype.sendMove = function() {
 			var nextCellX=path[0].x; 
 			var nextCellY=path[0].y;
 			if (Terrain.cells[nextCellX][nextCellY].passability==Terrain.PASS_BLOCKED && Terrain.cells[nextCellX][nextCellY].object && isDoor(Terrain.cells[nextCellX][nextCellY].object.type)) {
-				player.addActionToQueue(player.sendMove);
+				Player.addActionToQueue(Player.sendMove);
 				this.sendUseObject(nextCellX, nextCellY);
 				return true;
 			}
@@ -1180,7 +1192,7 @@ Player.prototype.sendMove = function() {
 			} else if (nextCellX-this.x==-1 && nextCellY-this.y==-1) {
 				dir=7;
 			} else {
-				throw new Error("error getting dir from "+player.x+":"+player.y+" to "+this.destX+":"+this.destY);
+				throw new Error("error getting dir from "+Player.x+":"+Player.y+" to "+this.destX+":"+this.destY);
 			}
 			Net.send({a:Net.MOVE,dir:dir});
 		} else {
@@ -1201,14 +1213,14 @@ Player.prototype.sendMove = function() {
 				var left=32;
 			}
 			var viewIndent = Terrain.getViewIntentation(x/32,y/32,32);
-			if ((this.x!=this.destX || this.y!=this.destY) && !player.canSee(this.x,this.y) && player.canSee(this.destX,this.destY)) {
+			if ((this.x!=this.destX || this.y!=this.destY) && !Player.canSee(this.x,this.y) && Player.canSee(this.destX,this.destY)) {
 				this.cellWrap.style.display="block";
 			}
-			if (+localStorage.getItem(1) && player.canSee(this.x, this.y)) {
+			if (+localStorage.getItem(1) && Player.canSee(this.x, this.y)) {
 			// Анимировать...
 				qanimate(character.cellWrap,[viewIndent.left,viewIndent.top], 100, function() {
 				// Скрыть персонажа, если он ушёл из поля видимости
-					// if ((character.x!=character.destX || character.y!=character.destY) && player.canSee(character.x,character.y) && !player.canSee(character.destX,character.destY)) {
+					// if ((character.x!=character.destX || character.y!=character.destY) && Player.canSee(character.x,character.y) && !Player.canSee(character.destX,character.destY)) {
 						// character.cellWrap.style.display="none";
 					// }
 					character.x=character.destX;
@@ -1223,7 +1235,7 @@ Player.prototype.sendMove = function() {
 				var style=this.cellWrap.style;
 				style.top=parseInt(style.top)+top+"px";
 				style.left=parseInt(style.left)+left+"px";
-				// if ((this.x!=this.destX || this.y!=this.destY) && player.canSee(this.x,this.y) && !player.canSee(this.destX,this.destY)) {
+				// if ((this.x!=this.destX || this.y!=this.destY) && Player.canSee(this.x,this.y) && !Player.canSee(this.destX,this.destY)) {
 					// this.cellWrap.style.display="none";
 				// }
 				this.x=this.destX;
@@ -1237,17 +1249,17 @@ Player.prototype.sendMove = function() {
 		}
 	}
 };
-Player.prototype.sendIdle = function() {	
+Player.sendIdle = function() {	
 	Net.send({a:Net.IDLE});
 };
-Player.prototype.leaveLocation = function() {
+Player.leaveLocation = function() {
 	Net.send({leaveLocation:1},function(data) {
 		Terrain.onGlobalMap = true;
 		leaveLocation();
 	});
 	this.leavesArea=false;
 };
-Player.prototype.sendDrop = function(item) {
+Player.sendDrop = function(item) {
 	if (this.items.hasItem(item)) {
 		if (item instanceof UniqueItem) {
 			Net.send({a:Net.DROP_UNIQUE,typeId:item.typeId,itemId:item.itemId});
@@ -1258,48 +1270,60 @@ Player.prototype.sendDrop = function(item) {
 		throw new Error("Player "+this.name+" has no items of type "+item.typeId);
 	}
 };
-Player.prototype.sendPickUp = function(item) {
+Player.sendPickUp = function(item) {
 	if (item instanceof UniqueItem) {
 		Net.send({a:Net.PICK_UP_UNIQUE, itemId:item.itemId});
 	} else {
 		Net.send({a:Net.PICK_UP_PILE, typeId:item.typeId, amount:item.amount});
 	}
 };
-Player.prototype.sendPutOn = function(itemId) {
+Player.sendPutOn = function(itemId) {
 // Send putting on data to server
 	Net.send({a:Net.PUT_ON, itemId:itemId});
 };
 /* Send methods of special actions */
-Player.prototype.sendPush = function(x,y,direction) {
+Player.sendPush = function(x,y,direction) {
 /**
  * Direction is Side object
  */
 	Net.send({a:Net.PUSH, x:x, y:y, direction:direction.getInt()});
 };
-Player.prototype.sendChangePlaces = function(x,y) {
+Player.sendChangePlaces = function(x,y) {
 	Net.send({a:Net.CHANGE_PLACES, x:x, y:y});
 };
-Player.prototype.sendMakeSound = function(type) {
+Player.sendMakeSound = function(type) {
 	Net.send({a:Net.MAKE_SOUND, type:type});
 };
-Player.prototype.sendShieldBash = function (x,y) {
+Player.sendShieldBash = function (x,y) {
 	Net.send({a:Net.SHIELD_BASH, x:x, y:y});
 };
-Player.prototype.sendJump = function (x,y) {
+Player.sendJump = function (x,y) {
 	Net.send({a:Net.JUMP, x:x, y:y});
 };
+/* */
+Player.getItem = function(typeId, param) {
+	Character.prototype.getItem.apply(this, arguments);
+	var item = this.items.getItem(typeId, param);
+	this.itemsLetterAssigner.addObject(item);
+};
+Player.loseItem = function(typeId, param) {
+	var item = this.items.getItem(typeId, param);
+	Character.prototype.loseItem.apply(this, arguments);
+	this.itemsLetterAssigner.removeObject(item);
+};
+
 /* Interface methods */
-Player.prototype.selectMissileType = function(type) {
+Player.selectMissileType = function(type) {
 	this.missileType = type || null;
 };
-Player.prototype.selectMissile = function() {
+Player.selectMissile = function() {
 // Enter missile mode
-	if (player.equipment.getItemInSlot(0) && player.equipment.getItemInSlot(0).isRanged()) {
+	if (this.equipment.getItemInSlot(0) && this.equipment.getItemInSlot(0).isRanged()) {
 		var aimcharacter;
-		if (aimcharacter=player.findEnemy()) {
+		if (aimcharacter = this.findEnemy()) {
 			CellCursor.move(aimcharacter.x,aimcharacter.y);
 		} else {
-			CellCursor.move(player.x,player.y);
+			CellCursor.move(this.x,this.y);
 		}
 		
 		UI.notify("missileSelect");
@@ -1308,49 +1332,49 @@ Player.prototype.selectMissile = function() {
 		UI.notify("alert","Игрок не держит в руках оружия дальнего боя!");
 	}
 };
-Player.prototype.selectSpell = function(spellId) {
+Player.selectSpell = function(spellId) {
 // Enter spell casting mode
 	this.spellId = spellId;
 	CellCursor.enterSelectionMode(this.cellCursorSpellSelectCallback, this);
 	UI.notify("spellSelect");	
 };
-Player.prototype.cellCursorSpellSelectCallback = function() {
-	player.sendCastSpell();
-	player.unselectSpell();
+Player.cellCursorSpellSelectCallback = function() {
+	this.sendCastSpell();
+	this.unselectSpell();
 };
-Player.prototype.unselectSpell = function() {
+Player.unselectSpell = function() {
 // Exit spell casting mode
 	UI.notify("spellUnselect");
 	this.spellId = -1;
-	UI.setMode(UI.MODE_DEFAULT);
+	UI.setKeyMapping("Default");
 	CellCursor.exitSelectionMode();
 };
-Player.prototype.cellChooseAction = function() {
+Player.cellChooseAction = function() {
 // Совершить действие на координате под курсором
 	var x = CellCursor.x;
 	var y = CellCursor.y;
-	if (!player.canSee(x,y)) {
+	if (!this.canSee(x,y)) {
 		UI.notify("alert","Игрок не видит целевой клетки!");
 	} else {
-		if (player.spellId!=-1) {
+		if (this.spellId!=-1) {
 		// Spell
-			player.sendCastSpell(x, y);
+			this.sendCastSpell(x, y);
 		} else {
 		// Ranged attack
 			var aim = Character.prototype.findCharacterByCoords(x,y);
 			if (aim) {
 			// On character
-				player.sendAttack(aim.characterId, !player.equipment.getItemInSlot(0).isMelee());
+				this.sendAttack(aim.characterId, !this.equipment.getItemInSlot(0).isMelee());
 			} else {
 			// On cell
-				player.sendShootMissile(x, y, 2300);
+				this.sendShootMissile(x, y, 2300);
 			}
 		}
 		CellCursor.character=Character.prototype.findCharacterByCoords(x,y);
-		UI.setMode(UI.MODE_DEFAULT);
+		UI.setKeyMapping("Default");
 	}
 };
-Player.prototype.addActionToQueue = function(func, params) {
+Player.addActionToQueue = function(func, params) {
 // Add a function to the queue. When the client is informed by server that it is client's turn,
 // the client will do the first queued action, if it has any.
 // params: array of arguments
@@ -1364,8 +1388,8 @@ Player.prototype.addActionToQueue = function(func, params) {
 	this.actionQueue.push(func);
 	this.actionQueueParams.push(params);
 };
-Player.prototype.doActionFromQueue = function() {
-	this.actionQueue[0].apply(player, this.actionQueueParams[0]);
+Player.doActionFromQueue = function() {
+	this.actionQueue[0].apply(this, this.actionQueueParams[0]);
 	this.actionQueue.splice(0, 1);
 	this.actionQueueParams.splice(0, 1);
 };

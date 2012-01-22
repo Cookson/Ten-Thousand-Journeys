@@ -88,7 +88,7 @@ public abstract class Character extends Coordinate {
 	
 	protected CharacterState state = CharacterState.DEFAULT;
 	public Character(String t, String n, int x, int y) {
-	// Common character creation: with all attributes, in location
+	// Common character creation: with all attributes, in location.
 		super(x, y);
 		name = n;
 		type = t;

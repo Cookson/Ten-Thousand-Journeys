@@ -22,6 +22,7 @@ onLoadEvents['game'] = function _() {
 	}
 	cacheImages();
 	saveParticlesImageData();
+	Keys.formReverseKeyCodesTable();
 };
 function moveGameField(x,y,initiate) {
 	var normal = Terrain.getViewIndentation(x,y,1);
@@ -44,7 +45,7 @@ function moveGameField(x,y,initiate) {
 	// Here x and y contain indentations in pixels.
 	if (+localStorage.getItem(1) && !initiate) {
 		if (Terrain.onGlobalMap) {
-			var dist=distance(xCells,yCells, player.worldX, player.worldY);
+			var dist=distance(xCells,yCells, Player.worldX, Player.worldY);
 			var time=(dist<2) ? 200 : (dist<10) ? dist*30 : 150;
 			qanimate(gameField, [x-parseInt(gameField.style.left),y-parseInt(gameField.style.top)], time, function() {
 				// gameField.onmousemove(false);c
@@ -58,8 +59,8 @@ function moveGameField(x,y,initiate) {
 		gameField.style.left=x+"px";
 		gameField.style.top=y+"px";		
 		if (weatherEffect) {
-			var wx = player.x;
-			var wy = player.y;
+			var wx = Player.x;
+			var wy = Player.y;
 			weatherEffect.move(Math.min(Math.max(wx, rendCX), Terrain.width-rendCX), Math.min(Math.max(wy, rendCY), Terrain.height-rendCY));
 		}
 	}
@@ -101,55 +102,55 @@ function prepareArea(isWorld) {
 }
 function playerClick(x, y, shiftKey) {
 // Функция обработки клика игрока
-	if (player.x != player.destX || player.y != player.destY) {
+	if (Player.x != Player.destX || Player.y != Player.destY) {
 		return;
 	}
 	var aim;
 	// If we click behind a character who we can attack
-	var dx = x-player.x;
-	var shiftX = dx == 0 ? player.x : player.x+dx/Math.abs(dx);
-	var dy = y-player.y;
-	var shiftY = dy == 0 ? player.y : player.y+dy/Math.abs(dy);
+	var dx = x-Player.x;
+	var shiftX = dx == 0 ? Player.x : Player.x+dx/Math.abs(dx);
+	var dy = y-Player.y;
+	var shiftY = dy == 0 ? Player.y : Player.y+dy/Math.abs(dy);
 	if (UI.mode == UI.MODE_CURSOR_ACTION) {
 		CellCursor.chooseCurrentCell();
-	} else if (x == player.x && y == player.y) {
-		player.sendIdle();
+	} else if (x == Player.x && y == Player.y) {
+		Player.sendIdle();
 	} else if (
 		(aim = Terrain.cells[shiftX][shiftY].character) &&
-		player.isEnemy(aim)
+		Player.isEnemy(aim)
 	) {
 	// Attack
-		player.sendAttack(aim.characterId, !(player.isBareHanded() || player.equipment.getItemInSlot(0).isMelee()));
-	} else if ((aim = Terrain.cells[x][y].character) && player != Terrain.cells[x][y].character && !player.isEnemy(aim)) {
-		player.sendStartConversation(aim.characterId);
+		Player.sendAttack(aim.characterId, !(Player.isBareHanded() || Player.equipment.getItemInSlot(0).isMelee()));
+	} else if ((aim = Terrain.cells[x][y].character) && Player != Terrain.cells[x][y].character && !Player.isEnemy(aim)) {
+		Player.sendStartConversation(aim.characterId);
 	} else if (
 			Terrain.cells[x][y].object && isDoor(Terrain.cells[x][y].object.type) && 
 		(!isOpenDoor(Terrain.cells[x][y].object.type) || shiftKey) && 
-		player.isNear(x,y)
+		Player.isNear(x,y)
 	) {
 	// Open door
-		player.sendUseObject(x,y);
-	} else if (Terrain.cells[x][y].object && player.isNear(x,y) && isContainer(Terrain.cells[x][y].object.type)) {
+		Player.sendUseObject(x,y);
+	} else if (Terrain.cells[x][y].object && Player.isNear(x,y) && isContainer(Terrain.cells[x][y].object.type)) {
 	// Open cotainer
 		Global.container.x = x;
 		Global.container.y = y;
-		player.sendOpenContainer();
+		Player.sendOpenContainer();
 	} else if (Terrain.cells[x][y].passability==Terrain.PASS_BLOCKED || Terrain.cells[x][y].passability==Terrain.PASS_SEE) {
 	// Go to object
-		player.aimcharacter=-1;
-		player.destX = x;
-		player.destY = y;
-		player.getPathTable();
-		if (player.comeTo(x,y)) {
-			player.sendMove();
+		Player.aimcharacter=-1;
+		Player.destX = x;
+		Player.destY = y;
+		Player.getPathTable();
+		if (Player.comeTo(x,y)) {
+			Player.sendMove();
 		} else {
 			return;
 		}
 	} else {
-	// If player goes to cell
-		player.destX=x;
-		player.destY=y;
-		player.sendMove();
+	// If Player goes to cell
+		Player.destX=x;
+		Player.destY=y;
+		Player.sendMove();
 	} 
 }
 function renderView() {
@@ -194,7 +195,7 @@ function renderView() {
 			// Переделать на циклы по x и y, как исправлю
 				var x = startX+i;
 				var y = startY+j;
-				if (!Terrain.onGlobalMap && player.seenCells[x][y]!=undefined) {
+				if (!Terrain.onGlobalMap && Player.seenCells[x][y]!=undefined) {
 					if (isInPlayerVis(x,y) && !isInPlayerPrevVis(x,y)) {
 						if (Terrain.cells[x][y].floor == null) {
 							if (Terrain.cells[x][y].visible) {
@@ -205,14 +206,14 @@ function renderView() {
 						// Terrain.cells[x][y].unshade();
 						unshaded++;
 					} else if (!isInPlayerVis(x,y) && isInPlayerPrevVis(x,y)) {
-						// shadedD+=x+", "+y+"(player.visibleCells["+x+"]["+y+"]) -
-						// "+player.visibleCells[x][y]+"\n"
+						// shadedD+=x+", "+y+"(Player.visibleCells["+x+"]["+y+"]) -
+						// "+Player.visibleCells[x][y]+"\n"
 						Terrain.cells[x][y].shade();
 						shaded++;
 					} else if (isInRendRange(x,y) && !isInPrevRendRange(x,y) && prevRendCX!=-1) {
 						Terrain.cells[x][y].show();
 						shown++;
-						if (player.visibleCells[x][y]==undefined) {
+						if (Player.visibleCells[x][y] === undefined) {
 							Terrain.cells[x][y].shade();
 						}
 					}
@@ -221,14 +222,14 @@ function renderView() {
 					Terrain.cells[x][y].show();
 					shown++;
 				}
-				if (isInPrevRendRange(x,y) && !isInRendRange(x,y) && (player.seenCells[x][y] || Terrain.onGlobalMap) && prevRendCX!=-1) {
+				if (isInPrevRendRange(x,y) && !isInRendRange(x,y) && (Player.seenCells[x][y] || Terrain.onGlobalMap) && prevRendCX!=-1) {
 					// Спрятать старые
 					Terrain.cells[x][y].hide();
 					hidden++;
 				}
 			}
 		}
-//		player.prevVisibleCells = player.visibleCells;
+//		Player.prevVisibleCells = Player.visibleCells;
 	}
 	prevRendCX = rendCX;
 	prevRendCY = rendCY;	
@@ -253,7 +254,7 @@ function rotateCamera(side) {
 	for (var ch in characters) {
 		characters[ch].placeSprite();
 	}
-	moveGameField(player.x, player.y, true);
+	moveGameField(Player.x, Player.y, true);
 	UI.notify("cameraRotation");
 }
 function showSound(x, y, type) {
@@ -291,7 +292,7 @@ in : [[
 	]xM],
  */
 	for (var i=0;i<data.length;i++) {
-		if (data[i][3] == player.name) {
+		if (data[i][3] == Player.name) {
 			continue;
 		}
 		
@@ -327,15 +328,15 @@ function worldMapRenderView() {
 	startY = (startY < 0) ? 0 : startY;
 	maxX = (maxX >= Terrain.width) ? Terrain.width-1 : maxX;
 	maxY = (maxY >= Terrain.height) ? Terrain.height-1 : maxY;
-//	player.visibleCells = blank2dArray();
+//	Player.visibleCells = blank2dArray();
 //	for (var i=startX; i<=maxX; i++) {
 //		for (var j=startY; j<=maxY; j++) {
-//			player.visibleCells[i][j] = true;
+//			Player.visibleCells[i][j] = true;
 //		}
 //	}
 	
 	renderView();
-//	player.prevVisibleCells = player.visibleCells;
+//	Player.prevVisibleCells = Player.visibleCells;
 }
 function drawWorldMapFloor(ctx,x,y,floor) {
 // Создаёт изображение поверхности глобальной карты (только для floor, объекты
@@ -399,11 +400,11 @@ function readWorld(data) {
 */
 	Terrain.width = data.w;
 	Terrain.height = data.h;
-//	player.seenCells = blank2dArray();
+//	Player.seenCells = blank2dArray();
 //	for (var x=0;x<Terrain.width;x++) {
-//		player.seenCells[x]=[];
+//		Player.seenCells[x]=[];
 //		for (var y=0;y<Terrain.height;y++) {
-//			player.seenCells[x][y]=true;
+//			Player.seenCells[x][y]=true;
 //		}
 //	}
 	prepareArea(true);
@@ -517,9 +518,9 @@ function readLocation(data) {
 	Terrain.width = data.w;
 	Terrain.height = data.h;
 //	for (var x=0;x<Terrain.width;x++) {
-//		player.seenCells[x]=[];
+//		Player.seenCells[x]=[];
 //		for (var y=0;y<Terrain.height;y++) {
-//			player.seenCells[x][y]=true;
+//			Player.seenCells[x][y]=true;
 //		}
 //	}
 	prepareArea(true);
@@ -579,16 +580,16 @@ function readLocation(data) {
 	}
 }
 function enterArea(callback) {
-// Войти в область [player.worldX,player.worldY] и загрузить информацию о
+// Войти в область [Player.worldX,Player.worldY] и загрузить информацию о
 // персонаже
 	showLoadingScreen();
 	Net.send({
 		a:Net.ENTER_LOCATION,
-		x:worldPlayers[player.characterId].x,
-		y:worldPlayers[player.characterId].y,
-		characterId:player.characterId
+		x:worldPlayers[Player.characterId].x,
+		y:worldPlayers[Player.characterId].y,
+		characterId:Player.characterId
 	},handlers.net.loadContents);
-//	Net.send({a:Net.APPEAR,n:player.name,x:player.worldX,y:player.worldY,pid:player.partyId,islead:player.isPartyLeader},handlers.net.appear);
+//	Net.send({a:Net.APPEAR,n:Player.name,x:Player.worldX,y:Player.worldY,pid:Player.partyId,islead:Player.isPartyLeader},handlers.net.appear);
 }
 function worldTravel(x,y) {
 // Путешествие из одной клетки глобальной карты в другую

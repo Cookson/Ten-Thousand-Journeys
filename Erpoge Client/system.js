@@ -44,6 +44,12 @@ HTMLElement.prototype.getData = function _(key) {
 	}
 	return this.data[key];
 };
+/*
+ * Make Strings hahsable
+ */
+String.prototype.hashCode = function() {
+	return this.valueOf();
+};
 /**
  * Checks if there is any object in an array that is equal to %object% 
  * we pass in the second argument. Objects must be comparable, i.e. %object%
@@ -108,8 +114,8 @@ function recountWindowSize() {
 	
 	if (!inMenu) {
 	// Если в игру уже зашли
-	// player - для случаев, когда окно ресайзится до самого первого хода в локации (когда rendCX|Y==-1)
-		moveGameField(rendCX==-1 ? player.x : rendCX, rendCY==-1 ? player.y : rendCY, true);
+	// Player - для случаев, когда окно ресайзится до самого первого хода в локации (когда rendCX|Y==-1)
+		moveGameField(rendCX==-1 ? Player.x : rendCX, rendCY==-1 ? Player.y : rendCY, true);
 	}
 	resizeTimeout=null;		
 	
@@ -261,7 +267,7 @@ function isInPrevRendRange(x,y) {
 	
 }
 function isInPlayerVis(x,y) {
-	if (player.visibleCells[x][y]!==undefined) {
+	if (Player.visibleCells[x][y]!==undefined) {
 		return true;
 	}
 	return false;
@@ -270,7 +276,7 @@ function isInPlayerPrevVis(x,y) {
 	if (prevRendCX==-1) {
 		return false;
 	}
-	if (player.prevVisibleCells[x][y]!=undefined) {
+	if (Player.prevVisibleCells[x][y]!=undefined) {
 		return true;
 	}
 	return false;
