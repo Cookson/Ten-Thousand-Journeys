@@ -19,12 +19,13 @@
 	gameField.cellInfo.onmouseover = handlers['cellInfo'].mouseover;
 	
 	CellCursor.init();
-	handlers.initInterface();	
+	handlers.initInterface();
+	UI.setClickHandler(Player.gameFieldClickHandler, Player);
 };
 var CellCursor = {
 	x:-1,
 	y:-1,
-	callback: null,
+	callbackAction: null,
 	context: null,
 	zoneCenter: null,
 	isSelectionMode: false,
@@ -84,13 +85,14 @@ var CellCursor = {
 		this.currentStyle = className;
 		this.bg.className = "cellCursor"+className;
 	},
-	enterSelectionMode: function _(callback, context, maximumDistance, zoneCenter) {
+	enterSelectionMode: function _(callbackAction, context, maximumDistance, zoneCenter) {
 	/**
 	 * Enters cell selection mode. Exit from selection mode and callback call
 	 * are in handlers object. Also shades cells if needed, so Player can see 
 	 * the maximum range of his action.
 	 * 
-	 * @param {Function} callback Function to call after cell was chosen
+	 * @param {String} callback name of registered UIAction that is performed 
+	 * after cell is chosen.
 	 * @param {Object} context Context of that function (or leave undefined 
 	 * so the window object will be the context)
 	 * @param {Number} maximumDistance Radius of selection area (or leave 
@@ -113,10 +115,11 @@ var CellCursor = {
 		}
 		this.zoneCenter = zoneCenter;
 		this.isSelectionMode = true;
-		this.callback = callback;
+		this.callbackAction = callbackAction;
 		
 		
 		UI.setKeyMapping("CellCursor");
+		UI.setClickHandler(this.chooseCurrentCell, this);
 		this.changeStyle("CellAction");
 		// Shade cells
 		this.shadedCells = [];
@@ -152,11 +155,11 @@ var CellCursor = {
 	/**
 	 * Exits selection mode and calls the callback
 	 */
-		if (this.callback === null) {
+		if (this.callbackAction === null) {
 			throw new Error("No callback assigned");
 		}		
 		this.exitSelectionMode();
-		this.callback.apply(this.context, [CellCursor.x, CellCursor.y]);
+		performAction(this.callbackAction, [CellCursor.x, CellCursor.y]);
 	},
 	exitSelectionMode: function _() {
 	/**
@@ -164,6 +167,7 @@ var CellCursor = {
 	 */
 		this.isSelectionMode = false;
 		UI.setKeyMapping("Default");
+		UI.setClickHandler(Player.gameFieldClickHandler, Player);
 		this.changeStyle("Main");
 		for (var i in this.shadedCells) {
 			this.shadedCells[i].unshade();

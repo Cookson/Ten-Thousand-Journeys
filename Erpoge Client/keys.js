@@ -17,7 +17,7 @@ onLoadEvents['keys'] = function _() {
 			["?", "showCurrentKeymapping"]
 	);
 	new UIKeymapping(
-			"Cell cursor",
+			"CellCursor",
 			["Esc", "unselectCellAction"],
 			["Space", "chooseCell"],
 			["F", "chooseCell"],

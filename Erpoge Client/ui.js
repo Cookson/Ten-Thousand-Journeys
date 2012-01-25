@@ -198,7 +198,10 @@ var UI = {
 	 * @type UIPanel
 	 */
 	leftPanel : null,
-	registeredActions : {}
+	registeredActions : {},
+	/** @private @type Function */
+	_gameFieldClickHandler: null,
+	_gameFieldClickContext: null
 };
 /**
  * Fires an event and notifies all the elements which listen to that event,
@@ -364,29 +367,49 @@ UI.setKeyMapping = function(keyMappingName) {
 	}
 	Keys.keyMapping = Keys.keyMappings[keyMappingName];
 };
+/**
+ * Sets function that handles click on game field (not on UI elements). That
+ * function must take 3 arguments: x and y of click cell and Event object.
+ * 
+ * @param {Function} func New handler.
+ * @param {Function} context In thich context function will run. Leave undefined
+ * to set context to window object.
+ */
+UI.setClickHandler = function(func, context) {
+	this._gameFieldClickHandler = func;
+	this._gameFieldClickContext = context || window;
+};
+/**
+ * Transfers the management of click handling on game field to the handler
+ * function.
+ */
+UI.gameFieldClick = function(x,y,e) {
+	this._gameFieldClickHandler.apply(this._gameFieldClickContext, [x,y,e]);
+};
+/**
+ * Creates a new UIElement from description.
+ * 
+ * @param {Object}
+ *            properties
+ * 
+ * @param properties.type
+ *            {Sring} Name of window type (as in uiElementTypes, with prefix
+ *            "window")
+ * 
+ * @param properties.vAlign
+ *            Vertical align: UI.ALIGN_(TOP|MIDDLE|BOTTOM) or a number value
+ *            to set position in pixels, positive to set from top border,
+ *            negative to set from bottom border. This parameter may not be
+ *            omitted.
+ * 
+ * @param properties.hAlign
+ *            Horizontal align: UI.ALIGN_(LEFT|CENTER|RIGHT) or a number
+ *            value to set position in pixels, positive to set from left
+ *            border, negative to set from right border. This parameter may
+ *            not be omitted.
+ */
 UI.addElement = function _(properties) {
-	/**
-	 * Creates a new UIElement from description.
-	 * 
-	 * @param {Object}
-	 *            properties
-	 * 
-	 * @param properties.type
-	 *            {Sring} Name of window type (as in uiElementTypes, with prefix
-	 *            "window")
-	 * 
-	 * @param properties.vAlign
-	 *            Vertical align: UI.ALIGN_(TOP|MIDDLE|BOTTOM) or a number value
-	 *            to set position in pixels, positive to set from top border,
-	 *            negative to set from bottom border. This parameter may not be
-	 *            omitted.
-	 * 
-	 * @param properties.hAlign
-	 *            Horizontal align: UI.ALIGN_(LEFT|CENTER|RIGHT) or a number
-	 *            value to set position in pixels, positive to set from left
-	 *            border, negative to set from right border. This parameter may
-	 *            not be omitted.
-	 */
+	
 	var uiElement = new UIElement(properties.type);
 	if (properties.panel) {
 		// Nothing else is needed for UIElements on panel
@@ -700,68 +723,39 @@ UI.registerAction = function _(name, context, handler) {
 
 /**
  * Creates a structure of dome nodes that represents an item image with
- * particular background. Top node will also have data ({@link HTMLElement#setData}):
- * "typeId" and "param".
+ * particular background. This class is used by ItemViewFactory
  * 
+ * @private
  * @param {UniqueItem|ItemPile}
  *            item {@link UniqueItem}, or {@link ItemPile}, or the constructor
  *            function {@link UniqueItem} itself to not set src of image (is
  *            useful for preloading UI elements before Player is loaded).
- * @param {String}
- *            bg Standard item background class name. See style.css, they start
- *            with div.itemBg*. E.g. for class itemBgEquipment this argument
- *            should be "Equipment".
+ * 
  * @returns {HTMLDivElement} A div (with set data) containing other nodes.
  */
-function ItemView(item, bg) {
+function ItemView(item) {
 /** @private */
-	this.item = null;
+	this.item = item;
 /** @private @type HTMLDivElement */
 	this.rootElement = this._itemViewWrapProto.cloneNode(true);
-	this.rootElement.addClass("itemView"+bg);
-	if (item===null) {
-		// Empty item cell
-		this.rootElement.setData("typeId", -1);
-	} else if (item===UniqueItem) {
-		this.rootElement.setData("typeId", -1);
-		this.rootElement.appendChild(this._itemViewImgProto.cloneNode(true));
-	} else if (item===ItemPile) {
-		this.rootElement.setData("typeId", -1);
-		this.rootElement.appendChild(this._itemViewImgProto.cloneNode(true));
-		this.numElement = this._itemViewNumProto.cloneNode(true);
-		this.rootElement.appendChild(this.numElement);
-	} else {
-		// UniqueItem or ItemPile instance.
-		this.item = item;
-		var nImg = this._itemViewImgProto.cloneNode(true);
-		nImg.setAttribute("src", "./images/items/"+item.typeId+".png");
-		this.rootElement.setData("typeId", item.typeId);
-		if (item instanceof UniqueItem) {
-			this.rootElement.setData("param", item.itemId);
-			this.rootElement.appendChild(nImg);
-		} else {
-			this.rootElement.appendChild(nImg);
-			this.rootElement.setData("param", item.amount);
-			this.numElement = this._itemViewNumProto.cloneNode(true);
-			this.changeAmount(item.amount);
-			this.rootElement.appendChild(this.numElement);
-			if (item.amount<=1) {
-				this.numElement.style.display = "none";
-			}
-		}
-	}
+	this.numElement = this._itemViewNumProto.cloneNode(true);
+	this.rootElement.appendChild(this._itemViewImgProto.cloneNode(true));
+	this.rootElement.appendChild(this.numElement);
 };
 /**
+ * img node for cloning
  * @private
  * @const
  */
 ItemView.prototype._itemViewImgProto = document.createElement("img");
 /**
+ * div element for cloning. Has className "itemView"
  * @private
  * @const
  */
 ItemView.prototype._itemViewWrapProto = document.createElement("div");
 /**
+ * div element for cloning. Has className "itemAmount"
  * @private
  * @const
  */
@@ -784,7 +778,7 @@ ItemView.prototype.getImg = function() {
 };
 /**
  * Changes displayed amount of items. If amount was undisplayable (1 item) and
- * become displayable (more than 1 item), display it.
+ * became displayable (more than 1 item), display it.
  * 
  * @param {Number}
  *            amount
@@ -793,13 +787,11 @@ ItemView.prototype.getImg = function() {
  *             ItemView of {@link UniqueItem}).
  */
 ItemView.prototype.changeAmount = function(amount) {
-	if (this.numElement===undefined) {
-		throw new Error("An attempt to change amount of UniqueItem ItemView");
-	}
-	if (this.numElement.firstChild.nodeValue<=1&&amount>1) {
+	if (amount == 1) {
+		this.numElement.style.display = "none";
+	} else if (this.numElement.firstChild.nodeValue==1 && amount>1) {
 		this.numElement.style.display = "inline-block";
 	}
-
 	this.numElement.firstChild.nodeValue = amount;
 };
 /**
@@ -809,7 +801,33 @@ ItemView.prototype.changeAmount = function(amount) {
  * @returns {Boolean}
  */
 ItemView.prototype.isDisplayed = function() {
-	return this.rootElement.parentNode!=null;
+	return this.rootElement.parentNode !== null;
+};
+ItemView.prototype.setBackground = function(bg) {
+	this.rootElement.children[0].className = "itemView";
+	this.rootElement.children[0].addClass("itemView"+bg);
+};
+/**
+ * Display certain item in ItemView.
+ * 
+ * @param {UniqueItem|ItemPile|null} item If null, displays null view.
+ */
+ItemView.prototype.setItem = function(item) {
+	this.item = item;
+	if (item === null) {
+		this.rootElement.children[0].setAttribute("src","./images/intf/nothing.png");
+		this.changeAmount(1);
+	} else {
+		this.rootElement.children[0].setAttribute("src","./images/items/"+item.typeId+".png");
+		if ("amount" in item) {
+			this.changeAmount(item.amount);
+		} else {
+			this.changeAmount(1);
+		}
+	}
+};
+ItemView.prototype.hashCode = function() {
+	return this.item.hashCode();
 };
 
 /**
@@ -1025,6 +1043,17 @@ UIElement.prototype.bindHandlerToUIElementContext = function _(element,
 		handler.apply(uiElement, arguments);
 	}, false);
 };
+/**
+ * Adds an event listener from this UIElement's UIElementType to an elements.
+ * If this element is reusable (is cached in CachingFactory), you will need
+ * to remove his listeners using {@link UIElement#clearEventListeners}, or it
+ * will have unnecessary event listeners afterwards.
+ * 
+ * @see UIElement#clearEventListeners
+ * @param {HTMLElement} element Element to which we add an event listener.
+ * @param {String} eventName Name of event, e.g. "click", "focus" etc.
+ * @param handlerName Name of listener function in UIElementType.
+ */
 UIElement.prototype.addEventListener = function _(element, eventName,
 		handlerName) {
 	if (this.UIElementType.handlers[handlerName]===undefined) {
@@ -1033,6 +1062,12 @@ UIElement.prototype.addEventListener = function _(element, eventName,
 	}
 	element.addEventListener(eventName,
 			this.UIElementType.handlers[handlerName]);
+	if (element.eventTypes === undefined) {
+		element.eventTypes = [];
+		element.eventHandlers = [];
+	}
+	element.eventTypes.push(eventName);
+	element.eventTypes.push(this.UIElementType.handlers[handlerName]);
 };
 /**
  * Adds a class name, that will most likely be uniqe, to an element. For
@@ -1097,7 +1132,19 @@ UIElement.prototype.addCSSRules = function _(ruleSet) {
 		}
 	}
 };
-
+/**
+ * Removes all the event listeners that were added to an element using 
+ * UIElement.addEventListener().
+ * @param {HTMLElement} element
+ */
+UIElement.prototype.clearEventListeners = function(element) {
+	if (!("eventTypes" in element)) {
+		return;
+	}
+	for (var i=0; i<element.eventTypes.length; i++) {
+		element.removeEventListener(element.eventTypes[i], element.eventHandlers[i], false);
+	}
+};
 /**
  * @constructor
  */

@@ -35,6 +35,125 @@ serverAnswerHandlers = {
 		new WorldPlayer(value.worldX, value.worldY, characters[value.characterId]);
 		handleNextEvent();
 	},
+	login: function _(data) {
+			/* 	in: {
+				l: String login,
+				p: String password,
+			}
+			out: {players:[{characterId, name, race, class, level, equipment}xN]}
+		*/
+		if (data.error !== undefined) {
+		// If there is an error
+			UI.notify("loginError", data.error);
+		} else {
+			UI.notify("accountPlayersRecieve", data.players);
+			Net.setServerAdressesStorage(serverAddress, Global.playerLogin, Global.playerPassword);
+		}
+		handleNextEvent();
+	},
+	loadContents: function _(data) {
+	// Find out whether Player is on global map or in an area and
+	// load contents of character's environment after authentification.
+	// Server can send two different types of answers: when the Player is in location
+	// and when he is on the world map. The type is determined by data.onGlobalMap value
+	/* on world map: {
+	 * 		onGlobalMap: true,
+	 *  	w : {w,h,c:[[ground,forest,road,river,race,[objects]]xN]},
+	 *  	p : [
+	 *  		characterId, name, race, class, level, 
+	 *  		maxHp, maxMp, 
+	 *  		str, dex, wis, itl, 
+	 *  		items, equipment, spells, skills, 
+	 *  		worldX, worldY
+	 *  	],
+	 *  	islead : boolean,
+	 *  	online : [[characterId,name,class,race,party,worldX,worldY]xM],
+	 *  	chat : [name,message, name,message ...] || 0,
+	 *  	invite : [inviterId,inviterName] || 0
+	 *  },
+	 *  in location: {
+	 *  	onGlobalMap: false,
+	 *  	l : {w,h,locationId,c:[[ground,forest,road,river,race,[objects]]xN]},
+	 *   	p : [
+	 *  		characterId, name, race, class, level,
+	 *  		maxHp, maxMp, 
+	 *  		str, dex, wis, itl, 
+	 *  		items, equipment, spells, skills,
+	 *  		x, y
+	 *  	],
+	 *  	islead : boolean,
+	 *		online : [[characterId,x,y,name,maxHp,hp,maxMp,mp,effects,equipment(,cls,race)|(,type)]xM],
+	 *  }
+	 */
+		if (data.error === 0) {
+			throw new Error("Login is empty");
+		} else if (data.error == 1) {
+			throw new Error("Login is empty");
+		} else if (data.error == 2) {
+			throw new Error("No such account");
+		} else if (data.error == 4) {
+			throw new Error("No such character on account");
+		}
+		showLoadingScreen();
+		if (data.onGlobalMap) {
+		// World loading
+			Terrain.isPeaceful = false;
+			Terrain.onGlobalMap = true;
+			prepareArea();
+			readWorld(data.w);
+			if (Player.cls == undefined) {
+				Player.init(data.p);
+			}
+			readOnlinePlayers(data.online);
+			
+			centerWorldCamera(Player.worldX, Player.worldY,true);
+			readChatMessages(data.chat);
+			data.inv && readInvite(data.inv);
+			readEntering(data.en);
+			if (Net.callback) {
+				Net.callback();
+			}
+			UI.enterGlobalMapMode();
+			UI.notify("worldLoad");
+			UI.setKeyMapping("Default");
+		} else {
+		// Area loading
+			if (characters[1]) {
+				characters[1].cellWrap.parentNode.removeChild(characters[1].cellWrap);
+				delete characters[1];
+			}
+			characters = {};
+			Terrain.onGlobalMap=false;
+			showLoadingScreen();
+			onlinePlayers = [];
+			Terrain.width = data.l.w;
+			height = data.l.h;
+			Terrain.isPeaceful = data.l.p;
+			onlinePlayers = [];
+			prepareArea();
+			readLocation(data.l);
+			if (Player.cls == undefined) {
+				Player.init(data.p);
+			}
+			characters[Player.characterId] = Player;
+			Player.display();
+			moveGameField(Player.x, Player.y, true);
+			Player.initVisibility();
+			readCharacters(data.online);
+			UI.enterLocationMode();
+			UI.notify("locationLoad");
+			UI.setKeyMapping("Default");
+		}
+		recountWindowSize();
+		hideLoadingScreen();
+	},
+	loadPassiveContents : function _(data) {
+		Terrain.onGlobalMap = true;
+		readWorld(data);
+		recountWindowSize();
+		centerWorldCamera(Terrain.width/2, Terrain.height/2, true);
+		hideLoadingScreen();
+	},
 	deauth: function _(value) {
 		// Deauthorization
 		delete characters[value.characterId];
@@ -57,7 +176,7 @@ serverAnswerHandlers = {
 	move: function _(value) {
 		if (characters[value.characterId] == Player && (Player.destX != value.x || Player.destY != value.y)) {
 		// ������� ������ ���� ����� showMove - � showMove ���������� check out (��������, ��� ���������� ���������)
-			Player.addActionToQueue(Player.sendMove);
+			Player.addActionToQueue("move");
 		} else {
 			CellCursor.show();
 		}

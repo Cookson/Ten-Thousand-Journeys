@@ -304,7 +304,7 @@ Minimap.prototype.draw = function() {
 		var x = characters[i].x;
 		var y = characters[i].y;
 		if (Player.visibleCells[x][y]) {
-			charactersCoords[i] = [ x, y ];
+			charactersCoords[i] = [x, y];
 		}
 	}
 	var obj;

@@ -51,6 +51,22 @@ String.prototype.hashCode = function() {
 	return this.valueOf();
 };
 /**
+ * Similar to Array.indexOf, but searches not for "javascriptly-equal" element, 
+ * but for element with equal .hashCode() ("java-equal", lolz). Array must
+ * contain only hashable objects of the same type as the sought-for object.
+ * 
+ * @param {Object} Hashable object.
+ * @returns {Number} Index of object in array if has one, -1 otherwise.
+ */
+function indexOfByHash(array, object) {
+	for (var i=0; i<array.length; i++) {
+		if (array[i].equals(object)) {
+			return i;
+		}
+	}
+	return -1;
+}
+/**
  * Checks if there is any object in an array that is equal to %object% 
  * we pass in the second argument. Objects must be comparable, i.e. %object%
  * and all objects in %array% must implement method .equals() in their 

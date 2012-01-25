@@ -486,7 +486,7 @@ UniqueItem.prototype.equals = function(a,b) {
 	return a.itemId == b.itemId;
 };
 UniqueItem.prototype.hashCode = function() {
-	return this.itemId;
+	return "u"+this.itemId;
 };
 /**
  * Class representing a pile if similar items, none of which has properties
@@ -527,5 +527,5 @@ ItemPile.prototype.equals = function(a,b) {
 	return a.typeId == b.typeId;
 };
 ItemPile.prototype.hashCode = function() {
-	return this.typeId;
+	return "p"+this.typeId;
 };

@@ -93,7 +93,7 @@ public abstract class Character extends Coordinate {
 		name = n;
 		type = t;
 		fraction = 0;
-	}	
+	}
 	/* Actions */
 	protected void attack(Character aim) {
 		location.addEvent(new EventMeleeAttack(characterId, aim.characterId));

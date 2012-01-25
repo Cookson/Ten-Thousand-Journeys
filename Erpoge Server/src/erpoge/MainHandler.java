@@ -98,16 +98,16 @@ public class MainHandler extends WebSocketServer {
 	/* Handlers */
 	private void aServerInfo(String message, WebSocket conn) throws IOException {
 		// ping
-		conn.send("{\"a\":"+MainHandler.SERVER_INFO+",\"serverName\":\"Erpoge Server\",\"online\":106}");
-		Main.console("{\"a\":"+MainHandler.SERVER_INFO+",\"serverName\":\"Erpoge Server\",\"online\":106}");
+		conn.send("[{\"e\":\"serverInfo\",\"serverName\":\"Erpoge Server\",\"online\":31337}]");
+		Main.console("[{\"e\":\"serverInfo\",\"serverName\":\"Erpoge Server\",\"online\":31337}]");
 	}
 	private void aLoadPassiveContents(String message, WebSocket conn) throws IOException {
 	/**
 	 * Sends only contents of world witout any login information.
 	 * Used, for example, in world preview in client.
 	 */
-		conn.send("{\"a\":"+MainHandler.SERVER_INFO+","+world.jsonPartGetWorldContents()+"}");
-		Main.console("{\"a\":"+MainHandler.SERVER_INFO+","+world.jsonPartGetWorldContents()+"}");
+		conn.send("[{\"e\":\"loadPassiveContents\","+world.jsonPartGetWorldContents()+"}]");
+		Main.console("[{\"e\":\"loadPassiveContents\","+world.jsonPartGetWorldContents()+"}]");
 	}
 	private void aLogin(String message, WebSocket conn) throws IOException {
 		/* 	in: {
@@ -118,18 +118,18 @@ public class MainHandler extends WebSocketServer {
 		*/
 		ClientMessageLogin data = gson.fromJson(message, ClientMessageLogin.class);
 		if (data.l.equals("")) {
-			conn.send("{\"a\":"+MainHandler.LOGIN+",\"error\":1}");
+			conn.send("[{\"e\":\"login\",\"error\":1}]");
 		} else if (data.p.equals("")) {
-			conn.send("{\"a\":"+MainHandler.LOGIN+",\"error\":2}");
+			conn.send("[{\"e\":\"login\",\"error\":2}]");
 		} else if (Accounts.hasAccount(data.l)) {
 			Account account = Accounts.account(data.l);
 			if (data.p.equals(account.password)) {
-				conn.send("{\"a\":"+MainHandler.LOGIN+","+account.jsonPartGetCharactersAuthInfo()+"}");
+				conn.send("[{\"e\":\"login\","+account.jsonPartGetCharactersAuthInfo()+"}]");
 			} else {
-				conn.send("{\"a\":"+MainHandler.LOGIN+",\"error\":3}");
+				conn.send("[{\"e\":\"login\",\"error\":3}]");
 			}
 		} else {
-			conn.send("{\"a\":"+MainHandler.LOGIN+",\"error\":3}");
+			conn.send("[{\"e\":\"login\",\"error\":3}]");
 		}
 	}
 	private void aLoadContents(String message, WebSocket conn) throws IOException {
@@ -137,21 +137,21 @@ public class MainHandler extends WebSocketServer {
 		ClientMessageAuth clientData = gson.fromJson(message, ClientMessageAuth.class);
 		if (clientData.login.equals("")) {
 		// Login is empty
-			conn.send("{\"a\":"+MainHandler.LOAD_CONTENTS+",\"error\":0}");
+			conn.send("[{\"e\":\"loadContents\",\"error\":0}]");
 		} else if (clientData.password.equals("")) {
 		// Password is empty
-			conn.send("{\"a\":"+MainHandler.LOAD_CONTENTS+",\"error\":1}");
+			conn.send("[{\"e\":\"loadContents\",\"error\":1}]");
 		}
 		Account account = Accounts.account(clientData.login);
 		
 		if (account == null) {
 		// No such account
-			conn.send("{\"a\":"+MainHandler.LOAD_CONTENTS+",\"error\":2}");
+			conn.send("[{\"e\":\"loadContents\",\"error\":2}]");
 		} else if (!account.password.equals(clientData.password)) {
 		// Client password doesn't match account password
-			conn.send("{\"a\":"+MainHandler.LOAD_CONTENTS+",\"error\":3}");
+			conn.send("[{\"e\":\"loadContents\",\"error\":3}]");
 		} else if (!account.hasCharacterWithId(clientData.characterId)) {
-			conn.send("{\"a\":"+MainHandler.LOAD_CONTENTS+",\"error\":4}");
+			conn.send("[{\"e\":\"loadContents\",\"error\":4}]");
 		} else {
 		// Everything is okay
 			conn.character = world.getPlayerById(clientData.characterId);

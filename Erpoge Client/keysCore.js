@@ -184,6 +184,7 @@ Keys.universalKeyDownHandler = function _(e) {
 		return;
 	}
 	uiAction.handler.apply(uiAction.context, uiAction.arguments);
+	e.preventDefault();
 };
 /**
  * Returns DOM structure with text describing a key combination.
@@ -336,7 +337,7 @@ UIKeymapping.prototype.strictAddHandler = function(ctrl, alt, shift, keyCode, ac
  * @param shift
  * @param keyCode
  */
-UIKeymapping.strictRemoveHandler = function(ctrl, alt, shift, keyCode) {
+UIKeymapping.prototype.strictRemoveHandler = function(ctrl, alt, shift, keyCode) {
 	delete this.handlers[ctrl][alt][shift][keyCode];
 	delete this.arguments[ctrl][alt][shift][keyCode];
 };
@@ -497,6 +498,7 @@ LetterAssigner.prototype.addObject = function(object) {
 LetterAssigner.prototype.removeObject = function(object) {
 	var keyCode = this.categories[object.__proto__.constructor.name][object.hashCode()];
 	var shift = 0;
+	delete this.occupiedLetters[keyCode];
 	if (keyCode > 90) {
 	// If removed letter is uppercase
 		shift = 1;
@@ -506,7 +508,7 @@ LetterAssigner.prototype.removeObject = function(object) {
 		this.allLowercaseOccupied = false;
 	}
 	delete this.categories[object.__proto__.constructor.name][object.hashCode()];
-	delete this.occupiedLetters[newKeyCode];
+	
 	for (var i=0; i<this.listeners.length; i++) {
 		this.listeners[i].strictRemoveHandler(0, 0, shift, keyCode);
 	}

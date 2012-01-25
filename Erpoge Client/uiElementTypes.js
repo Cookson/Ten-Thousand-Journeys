@@ -1,4 +1,5 @@
-UIElementTypes = {};
+
+var UIElementTypes = {};
 /*
  * UIElementTypes object contains description objects for 
  * UI elements that can be created in game. Each type has 4
@@ -52,7 +53,7 @@ UIElementTypes.windowInfo = {
 		}
 	},
 	handlers: {},
-	cssRules: function () {
+	cssRules: function _() {
 		return "					\
 		div.$type$ {				\
 			width: 120px;			\
@@ -180,6 +181,7 @@ UIElementTypes.windowAccountCharacters = {
 		accountPlayersRecieve: function _(data) {
 			// Clear players list
 			// data: [[characterId, name, class, race, equipment]xN]
+			Net.accountPlayers = data;
 			var nPlayersList = this.getData("playersListNode");
 			while (nPlayersList.children.length>0) {
 				nPlayersList.children[0].parentNode.removeChild(nPlayersList.children[0]);
@@ -204,7 +206,11 @@ UIElementTypes.windowAccountCharacters = {
 		},
 		accountPlayersListCall: function _() {
 			this.show();
-		}
+		},
+		locationLoad: function() {
+			this.hide();
+		},
+		worldLoad: "locationLoad"
 	},
 	keysActions: {},
 	handlers: {
@@ -339,6 +345,12 @@ UIElementTypes.windowLogin = {
 			this.getData("serverAddressTextNode").nodeValue = "http://"+window.location.host;
 			this.getData("serverOnlineTextNode").nodeValue = Net.online;
 			this.show();
+			setTimeout(function() {
+				performAction("login",["1","1"]);
+				setTimeout(function() {
+					performAction("logInForCharacter", ["Alvoi"]);
+				}, 50);
+			},50);
 		},
 		accountPlayersRecieve: function _() {
 			this.hide();
@@ -366,15 +378,15 @@ UIElementTypes.windowLogin = {
 		// Отправка логина и пароля
 		// callback используется ровно в одном месте: вызов stLoginForm.onsubmit() из stChooseServerForm.onsubmit(), 
 		// это требуется для реализации "быстрой перезагрузки".
-			var login=this.getData("loginInputNode").value;
-			var password=this.getData("passwordInputNode").value;
+			var login = this.getData("loginInputNode").value;
+			var password = this.getData("passwordInputNode").value;
 			if (login == "") {
-				winkElement(this.getData("loginErrorNode"), "Пустой логин!");
+				winkElement(this.getData("loginErrorNode"), "Empty login!");
 				return;
 			}
 			Global.playerLogin = login;
 			Global.playerPassword = password;
-			Net.send({a:Net.LOGIN,l:login,p:password}, handlers.net.login);
+			performAction("login", [login, password]);
 			e.preventDefault();
 		},
 		createAccountClick: function _() {
@@ -444,7 +456,6 @@ UIElementTypes.windowLogin = {
 };
 UIElementTypes.iconsInventory = {
  	onInit: function _() {
- 		this.setData("itemViewCache", new CachingItemViewFactory("Inventory"));
  		this.setData("displayedNullViews",[]);
  		this.setData("itemLetters", []);
  		this.setData("keymappingPutOn", new UIKeymapping(
@@ -464,49 +475,42 @@ UIElementTypes.iconsInventory = {
  				["Esc", "iconsInventoryQuit"],
  				["=", "bookLetter"]
  		));
+ 		this.setData("displayedItemViews", new HashSet());
  	},
  	listeners: {
  		inventoryChange: function _(notifier) {
 	 		var count = 0;
 	 		var items = Player.items.getValues();
-	 		var cache = this.getData("itemViewCache");
+	 		/** @type HashSet */
+	 		var displayedItemViews = this.getData("displayedItemViews");
 	 		var displayedNullViews = this.getData("displayedNullViews");
 	 		while (displayedNullViews.length > 0) {
 	 			this.rootElement.removeChild(displayedNullViews[0]);
 	 			displayedNullViews.shift();
 	 		}
- 			var itemChanges = getSetsDifferences(Player.items, cache);
- 			for (var i=0; i<itemChanges[0].length; i++) {
- 			// New items
- 				count++;
- 				var nWrap = cache.get(itemChanges[0][i]).getNode();
- 				this.addEventListener(nWrap, "click", "click");
-	 			this.addEventListener(nWrap, "contextmenu", "contextmenu");
-	 			this.addEventListener(nWrap, "mouseout", "mouseout");
-	 			this.rootElement.appendChild(nWrap);
- 			}
- 			for (var i=0; i<itemChanges[1].length; i++) {
- 			// Removing items
- 				var itemView = cache.get(itemChanges[1][i]);
- 				if (itemView.isDisplayed()) {
- 					this.rootElement.removeChild(itemView.getNode());
- 				}
- 			}
- 			for (var i=0; i<itemChanges[2].length; i++) {
- 			// Rest of items may be displayed or cached
- 				count++;
- 				var item = itemChanges[2][i];
- 				var itemView = cache.getItemView(item);
- 				if (itemView.isDisplayed()) {
- 				// If displayed - only refresh amount of pile items 					
-	 				if (item instanceof ItemPile) {
-	 					itemView.changeAmount(item.amount);
-	 				}
- 				} else {
- 				// If cached - display ItemView
- 					this.rootElement.appendChild(itemView.getNode());
- 				}
- 			}
+	 		for (var i=0; i<items.length; i++) {
+	 			count++;
+	 			if (displayedItemViews.contains(items[i])) {
+	 			// If item is already displayed, leave it as is.
+	 				continue;
+	 			}
+	 			// If item is not displayed yet, display it.
+	 			var newItemView = CachingItemViewFactory.get(items[i], "Inventory");
+	 			displayedItemViews.add(newItemView);
+	 			this.rootElement.appendChild(newItemView.rootElement);
+	 			this.addEventListener(newItemView.rootElement, "click", "click");
+	 			this.addEventListener(newItemView.rootElement, "contextmenu", "contextmenu");
+	 			this.addEventListener(newItemView.rootElement, "mouseout", "mouseout");
+	 		}
+	 		var uiElement = this;
+	 		displayedItemViews.forEach(function(view) {
+	 		// Undisplay removed items
+	 			if (!Player.items.hasItem(view.item)) {
+	 				uiElement.rootElement.removeChild(view.rootElement);
+	 				displayedItemViews.remove(view);
+	 				uiElement.clearEventListeners(view.rootElement);
+	 			}
+	 		});
 	 		while (count%6 != 0) {
 	 			var nullView = NullCachingItemViewFactory.get("Inventory").getNode();
 	 			this.rootElement.appendChild(nullView);
@@ -518,10 +522,10 @@ UIElementTypes.iconsInventory = {
  		worldLoad: "inventoryChange"
  	},
  	keysActions: {
- 		startMissileSelect: function() {
+ 		startMissileSelect: function _() {
 			
 		},
-		iconsInventoryShowKeysToPutOn: function() {
+		iconsInventoryShowKeysToPutOn: function _() {
 			var itemViews = this.getData("itemViewCache").getDisplayedViews();
 			for (var i in itemViews) {
 				var nLetter = CachingLetterFactory.get(
@@ -571,9 +575,9 @@ UIElementTypes.iconsInventory = {
 			// Если предмет можно надеть, то надеть его
 				var slot = getSlotFromClass(items[typeId][1]);
 				if (!Player.equipment.hasItemInSlot(slot)) {
-					Player.sendPutOn(param);
+					performAction("putOn", [Player.items.getItem(typeId, param)]);
 				} else {
-					Player.sendTakeOff(Player.equipment.getItemInSlot(slot));
+					performAction("takeOff", [Player.equipment.getItemInSlot(slot)]);
 				}
 			}
 		},
@@ -650,11 +654,12 @@ UIElementTypes.minimap = {
  	handlers: {
 		click: function _(e) {
 			var minimap = this.getData("minimap");
-			var rect=getOffsetRect(minimap.elem);
+			var rect = getOffsetRect(minimap.elem);
 			var normal = Terrain.getNormalView(
-					Math.floor((e.clientX-rect.left)/minimap.scale), 
-					Math.floor((e.clientY-rect.top)/minimap.scale));
-			playerClick(normal.x,normal.y);
+				Math.floor((e.clientX-rect.left)/minimap.scale), 
+				Math.floor((e.clientY-rect.top)/minimap.scale)
+			);
+			UI.gameFieldClick(normal.x, normal.y, e);
 		},
 		mousemove: function _(e) {
 			var minimap = this.getData("minimap");
@@ -824,7 +829,7 @@ UIElementTypes.chat = {
 };
 UIElementTypes.iconMissileType = {
 	onInit: function () {
-		var itemView = new ItemView(new UniqueItem(2300,1), "Equipment");
+		var itemView = CachingItemViewFactory.get(new UniqueItem(2300,1), "Equipment");
 		this.rootElement.appendChild(itemView.getNode());
 		this.setData("imgNode",itemView.getImg());
 	},
@@ -847,7 +852,7 @@ UIElementTypes.iconsEquipment = {
 		this.setData("itemViews", []);
 		var itemViews = this.getData("itemViews");
 		for (var i=0; i<10; i++) {
-			var itemView = new ItemView(UniqueItem, "Equipment");
+			var itemView = NullCachingItemViewFactory.get("Equipment");
 			itemViews.push(itemView);
 			var nImg = itemView.getImg();
 			this.addEventListener(nImg, "click", "click");
@@ -947,55 +952,28 @@ UIElementTypes.iconsEquipment = {
 };
 UIElementTypes.iconsLoot = {
 	onInit: function _() {
-		this.setData("itemViewCache", new CachingItemViewFactory("Loot"));
 		this.setData("displayedNullViews",[]);
 	},
 	listeners: {
 		lootChange: function _() {
 	 		var count = 0;
 	 		var items = Terrain.cells[Player.x][Player.y].items.getValues();
-	 		var cache = this.getData("itemViewCache");
-	 		var displayedNullViews = this.getData("displayedNullViews");
-	 		while (displayedNullViews.length > 0) {
-	 			this.rootElement.removeChild(displayedNullViews[0]);
-	 			displayedNullViews.shift();
+	 		while (this.rootElement.children.length > 0) {
+	 		// Remove all the children.
+	 			this.clearEventListeners(this.rootElement.children[0]);
+	 			this.rootElement.removeChild(this.rootElement.children[0]);
 	 		}
-			var itemChanges = getSetsDifferences(Terrain.cells[Player.x][Player.y].items, cache);
-			for (var i=0; i<itemChanges[0].length; i++) {
-			// New items
-				count++;
-				var nWrap = cache.createItemView(itemChanges[0][i]).getNode();
-				this.addEventListener(nWrap, "click", "click");
-	 			this.addEventListener(nWrap, "contextmenu", "contextmenu");
-	 			this.addEventListener(nWrap, "mouseout", "mouseout");
-	 			this.rootElement.appendChild(nWrap);
-			}
-			for (var i=0; i<itemChanges[1].length; i++) {
-			// Removing items
-				var itemView = cache.getItemView(itemChanges[1][i]);
-				if (itemView.isDisplayed()) {
-					this.rootElement.removeChild(itemView.getNode());
-				}
-			}
-			for (var i=0; i<itemChanges[2].length; i++) {
-			// Rest of items may be displayed or cached
-				count++;
-				var item = itemChanges[2][i];
-				var itemView = cache.getItemView(item);
-				if (itemView.isDisplayed()) {
-				// If displayed - only refresh amount of pile items 					
- 				if (item instanceof ItemPile) {
- 					itemView.changeAmount(item.amount);
- 				}
-				} else {
-				// If cached - display ItemView
-					this.rootElement.appendChild(itemView.getNode());
-				}
-			}
+	 		for (var i in items) {
+	 			var nItem = CachingItemViewFactory.get(items[i], "Loot").rootElement;
+				this.addEventListener(nItem, "click", "click");
+	 			this.addEventListener(nItem, "contextmenu", "contextmenu");
+	 			this.addEventListener(nItem, "mouseout", "mouseout");
+	 			this.rootElement.appendChild(nItem);
+	 			count++;
+	 		}
 	 		while (count%6 != 0) {
 	 			var nullView = NullCachingItemViewFactory.get("Loot").getNode();
 	 			this.rootElement.appendChild(nullView);
-	 			displayedNullViews.push(nullView);
 	 			count++;
 	 		}
 		},
@@ -1052,7 +1030,7 @@ UIElementTypes.iconsLoot = {
  	cssRules: function _() {
  		return "						\
  		div.$type$ {					\
- 			width:240px;				\
+ 			width:204px;				\
  		}								\
  		";
  	}
@@ -1153,10 +1131,11 @@ UIElementTypes.iconsSpells = {
     	div.$type$ {					\
     		-webkit-box-sizing: border-box;	\
     		-moz-box-sizing: border-box;	\
-    		padding: 0px 0px 0px 0px;		\
+    		padding: 0px 0px 0px 0px;	\
     		width: 204px;				\
+    		max-width: 204px;			\
     	}								\
-    	div.$type$ > div {				\
+     	div.$type$ > div {				\
     		display: inline-block;		\
     		width: 32px;				\
     		height: 32px;				\

@@ -100,58 +100,15 @@ function prepareArea(isWorld) {
 	gameField.style.width = (32*Terrain.getHorizontalDimension())+"px";
 	gameField.style.height = (32*Terrain.getVerticalDimension())+"px";	
 }
-function playerClick(x, y, shiftKey) {
-// Функция обработки клика игрока
-	if (Player.x != Player.destX || Player.y != Player.destY) {
-		return;
+function performAction(actionName, args) {
+	if (!(actionName in UI.registeredActions)) {
+		throw new Error("No action "+actionName+" registered");
 	}
-	var aim;
-	// If we click behind a character who we can attack
-	var dx = x-Player.x;
-	var shiftX = dx == 0 ? Player.x : Player.x+dx/Math.abs(dx);
-	var dy = y-Player.y;
-	var shiftY = dy == 0 ? Player.y : Player.y+dy/Math.abs(dy);
-	if (UI.mode == UI.MODE_CURSOR_ACTION) {
-		CellCursor.chooseCurrentCell();
-	} else if (x == Player.x && y == Player.y) {
-		Player.sendIdle();
-	} else if (
-		(aim = Terrain.cells[shiftX][shiftY].character) &&
-		Player.isEnemy(aim)
-	) {
-	// Attack
-		Player.sendAttack(aim.characterId, !(Player.isBareHanded() || Player.equipment.getItemInSlot(0).isMelee()));
-	} else if ((aim = Terrain.cells[x][y].character) && Player != Terrain.cells[x][y].character && !Player.isEnemy(aim)) {
-		Player.sendStartConversation(aim.characterId);
-	} else if (
-			Terrain.cells[x][y].object && isDoor(Terrain.cells[x][y].object.type) && 
-		(!isOpenDoor(Terrain.cells[x][y].object.type) || shiftKey) && 
-		Player.isNear(x,y)
-	) {
-	// Open door
-		Player.sendUseObject(x,y);
-	} else if (Terrain.cells[x][y].object && Player.isNear(x,y) && isContainer(Terrain.cells[x][y].object.type)) {
-	// Open cotainer
-		Global.container.x = x;
-		Global.container.y = y;
-		Player.sendOpenContainer();
-	} else if (Terrain.cells[x][y].passability==Terrain.PASS_BLOCKED || Terrain.cells[x][y].passability==Terrain.PASS_SEE) {
-	// Go to object
-		Player.aimcharacter=-1;
-		Player.destX = x;
-		Player.destY = y;
-		Player.getPathTable();
-		if (Player.comeTo(x,y)) {
-			Player.sendMove();
-		} else {
-			return;
-		}
-	} else {
-	// If Player goes to cell
-		Player.destX=x;
-		Player.destY=y;
-		Player.sendMove();
-	} 
+	if (args === undefined) {
+		args = [];
+	}
+	UI.registeredActions[actionName].handler
+		.apply(UI.registeredActions[actionName].context, args);
 }
 function renderView() {
 // Прорисовка содержимого ячеек

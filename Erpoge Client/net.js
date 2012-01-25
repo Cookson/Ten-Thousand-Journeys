@@ -44,6 +44,7 @@ Net = {
 	SHIELD_BASH             : 205,
 	serverAddress : "ws://"+window.location.host+":8787",
 	websocket : null,
+	accountPlayers : [],
 	send : function _(data, onmessage, callback) {
 		// Функция, отправляющая серверу данные, получающая ответ и
 		// обрабатывающая его.
@@ -59,7 +60,7 @@ Net = {
 				Net.serverName = data.serverName;
 				Net.online = data.online;
 				UI.notify("serverInfoRecieve");
-				Net.send({a:Net.LOAD_PASSIVE_CONTENTS},handlers.net.loadPassiveContents);  
+				Net.send({a:Net.LOAD_PASSIVE_CONTENTS});  
 			});
 			if (!localStorage.getItem(101)) {
 				// Автовыбор сервера из URL
@@ -162,18 +163,15 @@ Net = {
 		window.location.reload();
 	},
 	logInForCharacter: function _(characterId, login, password) {
-		Net.send({a:Net.LOGIN,l:login,p:password},function() {
-			Net.send({
-				a:Net.LOAD_CONTENTS,
-				login:login,
-				password:password,
-				characterId:characterId
-			},handlers.net.loadContents);
-			Global.playerLogin = login;
-			Global.playerPassword = password;
-			inMenu = false;
-			UI.notify("login");
-		});
+		Net.send({
+			a:Net.LOAD_CONTENTS,
+			login:login,
+			password:password,
+			characterId:characterId
+		},handlers.net.loadContents);
+		Global.playerLogin = login;
+		Global.playerPassword = password;
+		UI.notify("login");
 	}
 };
 
