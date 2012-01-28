@@ -844,7 +844,7 @@ Character.prototype.meleeAttack = function(x, y) {
 	});
 };
 Character.prototype.showMove = function(nextCellX, nextCellY) {
-	if (this.destX==this.x&&this.destY==this.y) {
+	if (this.destX==this.x && this.destY==this.y) {
 		// If Player moves not by his will, then destX/Y may remain the same,
 		// so destX/Y should be changed
 		this.destX = nextCellX;
@@ -857,45 +857,28 @@ Character.prototype.showMove = function(nextCellX, nextCellY) {
 
 	var viewIndent = Terrain.getViewIndentation(nextCellX, nextCellY, 1);
 
-	if ( +localStorage.getItem(1)) {
-		var character = this;
-		qanimate(
-				this.cellWrap,
-				[viewIndent.left, viewIndent.top],
-				75,
-				function() {
-					character.cellWrap.style.zIndex = character.y*2+2;
-					moveGameField(this.x, this.y);
-					this.x = nextCellX;
-					this.y = nextCellY;
-					Terrain.cells[this.x][this.y].passability = Terrain.PASS_SEE;
-					Terrain.cells[this.x][this.y].character = this;
-					renderView();
-				});
-	} else {
-		this.cellWrap.style.top = viewIndent.top*32+"px";
-		this.cellWrap.style.left = viewIndent.left*32+"px";
-		this.cellWrap.style.zIndex = viewIndent.top*2+2;
-		this.x = nextCellX;
-		this.y = nextCellY;
-		Terrain.cells[this.x][this.y].passability = Terrain.PASS_SEE;
-		Terrain.cells[this.x][this.y].character = this;
-		if (this.visible&& !Player.visibleCells[this.x][this.y]) {
-			this.hideModel();
-		} else if ( !this.visible&&Player.visibleCells[this.x][this.y]) {
-			this.showModel();
-		}
-		if (this.isClientPlayer) {
-			moveGameField(this.x, this.y);
-			this.updateVisibility();
-			renderView();
-		}
-		for ( var i in this.effects) {
-			var viewIndent = Terrain.getViewIndentation(this.x, this.y, 1);
-			this.effects[i].move(viewIndent.left, viewIndent.top);
-		}
-		handleNextEvent();
+	this.cellWrap.style.top = viewIndent.top*32+"px";
+	this.cellWrap.style.left = viewIndent.left*32+"px";
+	this.cellWrap.style.zIndex = viewIndent.top*2+2;
+	this.x = nextCellX;
+	this.y = nextCellY;
+	Terrain.cells[this.x][this.y].passability = Terrain.PASS_SEE;
+	Terrain.cells[this.x][this.y].character = this;
+	if (this.visible&& !Player.visibleCells[this.x][this.y]) {
+		this.hideModel();
+	} else if ( !this.visible&&Player.visibleCells[this.x][this.y]) {
+		this.showModel();
 	}
+	if (this.isClientPlayer) {
+		moveGameField(this.x, this.y);
+		this.updateVisibility();
+		renderView();
+	}
+	for ( var i in this.effects) {
+		var viewIndent = Terrain.getViewIndentation(this.x, this.y, 1);
+		this.effects[i].move(viewIndent.left, viewIndent.top);
+	}
+	handleNextEvent();
 };
 Character.prototype.graphicEffect = function(name, callback) {
 	// Графический эффект
@@ -1033,25 +1016,81 @@ Character.prototype.changeAttribute = function _(attrId, value) {
 };
 
 /**
- * @augments Character
- * @param {mixed[]}
- *            data
- * @return
+ * @class
+ * @extends Character
+ * @param {mixed[]} data
  */
-var Player = {
-	/**
-	 * @public
-	 * @type LetterAssigner
-	 */
-	itemsLetterAssigner : new LetterAssigner("Inventory"),
-	/**
-	 * @public
-	 * @type LetterAssigner
-	 */
-	spellsLetterAssigner : new LetterAssigner("Spells")
-};
-Player.__proto__ = new Character( -1);
-Player.init = function _(data) {
+function ClientPlayer() {
+	/** @public @type LetterAssigner */
+	this.itemsLetterAssigner = new LetterAssigner("Inventory");
+	/** @public @type LetterAssigner */
+	this.spellsLetterAssigner = new LetterAssigner("Spells");
+	/** @public @type LetterAssigner */
+	this.lootLetterAssigner = new LetterAssigner("Loot");
+	/** @public @type ItemSet */
+	this.items = new ItemSet();
+	this.spells = [];
+	this.isClientPlayer = true;
+	
+	// These three will be initiated by blank2dArray in
+	// Character.initVisiblilty() on location/global map enter.
+	/** @public @type Array[] */
+	this.visibleCells = [[]];
+	/** @public @type Array[] */
+	this.previousVisibleCells = [[]];
+	/** @public @type Array[] */
+	this.seenCells = [[]];
+	/** @public @type string[] */
+	this.actionQueue = [];
+	/** @public @type Array[] */
+	this.actionQueueParams = [];
+	/** @public @type number[] */
+	this.skills = [];
+	/** @public @type string */
+	this.name = null;
+	/** @public @type number */
+	this.race = null;
+	/** @public @type string */
+	this.cls = null;
+	/** @public @type number */
+	this.maxHp = null;
+	/** @public @type number */
+	this.maxMp = null;
+	/** @public @type number */
+	this.maxEp = null;
+	/** @public @type number */
+	this.hp = null;
+	/** @public @type number */
+	this.mp = null;
+	/** @public @type number */
+	this.ep = null;
+	/** @public @type Object */
+	this.attributes = {};
+	/** @public @type number */
+	this.attributes.str = 0;
+	/** @public @type number */
+	this.attributes.dex = 0;
+	/** @public @type number */
+	this.attributes.wis = 0;
+	/** @public @type number */
+	this.attributes.itl = 0;
+	/** @public @type number */
+	this.attributes.armor = 0;
+	/** @public @type number */
+	this.attributes.evasion = 0;
+	/** @public @type number */
+	this.attributes.fireRes = 0;
+	/** @public @type number */
+	this.attributes.coldRes = 0;
+	/** @public @type number */
+	this.attributes.poisonRes = 0;
+	/** @public @type Doll */
+	this.doll = null;
+}
+ClientPlayer.prototype = new Character(-1);
+/** @name Player @type ClientPlayer */
+
+ClientPlayer.prototype.init = function init(data) {
 	/*
 	 * data : [(0)characterId, (1)worldX, (2)worldY, (3)isLead, (4)name,
 	 * (5)race, (6)class, (7)maxHp, (8)maxMp, (9)maxEp, (10)hp, (11)mp, (12)ep,
@@ -1060,7 +1099,6 @@ Player.init = function _(data) {
 	 */
 	Character.apply(this, [data[0], "player", data[1], data[2], 1]);
 	characters[data[0]] = this;
-	this.isClientPlayer = true;
 	if (Terrain.onGlobalMap) {
 		this.worldX = data[1];
 		this.worldY = data[2];
@@ -1079,7 +1117,6 @@ Player.init = function _(data) {
 	this.hp = data[10];
 	this.mp = data[11];
 	this.ep = data[12];
-	this.attributes = {};
 	this.attributes.str = data[13];
 	this.attributes.dex = data[14];
 	this.attributes.wis = data[15];
@@ -1090,37 +1127,26 @@ Player.init = function _(data) {
 	this.attributes.coldRes = data[23][1];
 	this.attributes.poisonRes = data[23][2];
 
-	this.items = new ItemSet();
-	this.spells = [];
-
-	// These three will be initiated by blank2dArray in
-	// Character.initVisiblilty() on location/global map enter.
-	this.visibleCells = blank2dArray();
-	this.prevVisibleCells = blank2dArray();
-	this.seenCells = blank2dArray();
-	this.pathTable = blank2dArray();
-
-	this.skills = [];
-	this.actionQueue = [];
-	this.actionQueueParams = [];
 
 	// Inventory
-
-	for ( var i = 0; i<data[17].length; i++ ) {
+	for (var i = 0; i<data[17].length; i++) {
 		var typeId = data[17][i][0];
 		var param = data[17][i][1];
 		var item;
 		if (isUnique(typeId)) {
 			item = new UniqueItem(typeId, param);
-			this.items.addItem(item);
+			this.items.add(item);
 		} else {
 			item = new ItemPile(typeId, param);
-			this.items.addItem(item);
+			this.items.add(item);
 		}
 		this.itemsLetterAssigner.addObject(item);
 	}
 
 	this.equipment.getFromData(data[18]);
+	this.equipment.forEach(function(item) {
+		Player.itemsLetterAssigner.addObject(item);
+	});
 
 	// Spells
 	this.spells = data[19];
@@ -1130,8 +1156,8 @@ Player.init = function _(data) {
 	for ( var i = 0; i<len; i++ ) {
 		Player.skills.push(data[20][i*2]);
 		Player.skills.push(data[20][i*2+1]);
-	}
-	this.missileType = null;
+	}	
+
 	this.autoSetMissileType();
 
 	this.doll = new Doll(this);
@@ -1139,33 +1165,33 @@ Player.init = function _(data) {
 	this.initHpBar();
 	UI.notify("attributesInit");
 };
-Player.actions = ["push", "changePlaces", "makeSound", "shieldBash", "jump"];
-Player.display = function _() {
+ClientPlayer.prototype.actions = ["push", "changePlaces", "makeSound", "shieldBash", "jump"];
+ClientPlayer.prototype.display = function _() {
 	gameField.appendChild(this.cellWrap);
 	this.doll.draw();
 };
-Player.showDamage = function _(amount, type) {
+ClientPlayer.prototype.showDamage = function _(amount, type) {
 	Character.prototype.showDamage.apply(this, arguments);
 	UI.notify("healthChange");
 };
-Player.sendTakeOff = function _(item) {
+ClientPlayer.prototype.sendTakeOff = function _(item) {
 	Net.send( {
 		a : Net.TAKE_OFF,
 		itemId : item.itemId
 	});
 };
-Player.putOn = function _(itemId) {
+ClientPlayer.prototype.putOn = function _(itemId) {
 	Character.prototype.putOn.apply(this, [itemId]);
 	this.items.removeUnique(itemId);
 };
-Player.takeOff = function _(itemId) {
-	this.items.addItem(this.equipment.getItemById(itemId));
+ClientPlayer.prototype.takeOff = function _(itemId) {
+	this.items.add(this.equipment.getItemById(itemId));
 	Character.prototype.takeOff.apply(this, [itemId]);
 	// This code is also in Character.prototype.takeOff;
 	// consider changing server output for takeOff event
 	// to slot information, not itemId information.
 };
-Player.autoSetMissileType = function _() {
+ClientPlayer.prototype.autoSetMissileType = function _() {
 	if (this.missileType!=null) {
 		return;
 	}
@@ -1182,27 +1208,29 @@ Player.autoSetMissileType = function _() {
 		}
 	}
 };
-Player.setMissileType = function _(type) {
+ClientPlayer.prototype.setMissileType = function _(type) {
 	this.missileType = type;
 	UI.notify("missileTypeChange");
 };
 /* Setters */
-Player.getItem = function _(typeId, param) {
+ClientPlayer.prototype.getItem = function _(typeId, param) {
 	Character.prototype.getItem.apply(this, arguments);
 	var item = this.items.getItem(typeId, param);
-	this.itemsLetterAssigner.addObject(item);
+	if (!this.itemsLetterAssigner.hasLetterForObject(item)) {
+		this.itemsLetterAssigner.addObject(item);
+	}
 };
-Player.loseItem = function _(typeId, param) {
+ClientPlayer.prototype.loseItem = function _(typeId, param) {
 	var item = this.items.getItem(typeId, param);
 	Character.prototype.loseItem.apply(this, arguments);
 	this.itemsLetterAssigner.removeObject(item);
 };
 
 /* Interface methods */
-Player.selectMissileType = function _(type) {
+ClientPlayer.prototype.selectMissileType = function _(type) {
 	this.missileType = type||null;
 };
-Player.selectMissile = function _() {
+ClientPlayer.prototype.selectMissile = function _() {
 	// Enter missile mode
 	if (this.equipment.getItemInSlot(0)
 			&&this.equipment.getItemInSlot(0).isRanged()) {
@@ -1219,24 +1247,24 @@ Player.selectMissile = function _() {
 		UI.notify("alert", "Игрок не держит в руках оружия дальнего боя!");
 	}
 };
-Player.selectSpell = function _(spellId) {
+ClientPlayer.prototype.selectSpell = function _(spellId) {
 	// Enter spell casting mode
 	this.spellId = spellId;
-	CellCursor.enterSelectionMode("castSpell", this);
+	CellCursor.enterSelectionMode("castSpell");
 	UI.notify("spellSelect");
 };
-Player.cellCursorSpellSelectCallback = function _() {
+ClientPlayer.prototype.cellCursorSpellSelectCallback = function _() {
 	this.sendCastSpell(CellCursor.x, CellCursor.y);
 	this.unselectSpell();
 };
-Player.unselectSpell = function _() {
+ClientPlayer.prototype.unselectSpell = function _() {
 	// Exit spell casting mode
 	UI.notify("spellUnselect");
 	this.spellId = -1;
 	UI.setKeyMapping("Default");
 	CellCursor.exitSelectionMode();
 };
-Player.cellChooseAction = function _() {
+ClientPlayer.prototype.cellChooseAction = function _() {
 	// Совершить действие на координате под курсором
 	var x = CellCursor.x;
 	var y = CellCursor.y;
@@ -1262,7 +1290,7 @@ Player.cellChooseAction = function _() {
 		UI.setKeyMapping("Default");
 	}
 };
-Player.addActionToQueue = function _(actionName, params) {
+ClientPlayer.prototype.addActionToQueue = function _(actionName, params) {
 	if (!(params instanceof Array)) {
 		if (params === undefined) {
 			params = [];
@@ -1277,12 +1305,12 @@ Player.addActionToQueue = function _(actionName, params) {
 	this.actionQueue.push(actionName);
 	this.actionQueueParams.push(params);
 };
-Player.doActionFromQueue = function _() {
+ClientPlayer.prototype.doActionFromQueue = function _() {
 	performAction(this.actionQueue[0], this.actionQueueParams[0]);
 	this.actionQueue.shift();
 	this.actionQueueParams.shift();
 };
-Player.gameFieldClickHandler = function _(x, y, e) {
+ClientPlayer.prototype.locationClickHandler = function _(x, y, e) {
 	if (this.x!=this.destX||this.y!=this.destY) {
 		return;
 	}
@@ -1291,21 +1319,27 @@ Player.gameFieldClickHandler = function _(x, y, e) {
 	var dx = x-this.x;
 	var shiftX = dx==0 ? this.x : this.x+dx/Math.abs(dx);
 	var dy = y-this.y;
-	var shiftY = dy==0 ? this.y : Player.y+dy/Math.abs(dy);
+	var shiftY = dy==0 ? this.y : this.y+dy/Math.abs(dy);
 	if (x==this.x && y==this.y) {
 		performAction("idle");
-	} else if ((aim = Terrain.cells[shiftX][shiftY].character)
-			&&this.isEnemy(aim)) {
+	} else if (
+		(aim = Terrain.cells[shiftX][shiftY].character)
+		&& this.isEnemy(aim)
+	) {
 		// Attack
-		this.sendAttack(aim.characterId, !(this.isBareHanded()||this.equipment
-				.getItemInSlot(0).isMelee()));
-	} else if ((aim = Terrain.cells[x][y].character)
-			&&this!=Terrain.cells[x][y].character&& !this.isEnemy(aim)) {
+		performAction("attack", [aim]);
+	} else if (
+		(aim = Terrain.cells[x][y].character)
+		&& this != Terrain.cells[x][y].character 
+		&& !this.isEnemy(aim)
+	) {
 		this.sendStartConversation(aim.characterId);
-	} else if (Terrain.cells[x][y].object
-			&&isDoor(Terrain.cells[x][y].object.type)
-			&&( !isOpenDoor(Terrain.cells[x][y].object.type)||shiftKey)
-			&&this.isNear(x, y)) {
+	} else if (
+		Terrain.cells[x][y].object
+		&& isDoor(Terrain.cells[x][y].object.type)
+		&& (!isOpenDoor(Terrain.cells[x][y].object.type) || shiftKey)
+		&& this.isNear(x, y)
+	) {
 		// Open door
 		this.sendUseObject(x, y);
 	} else if (Terrain.cells[x][y].object&&this.isNear(x, y)
@@ -1314,8 +1348,11 @@ Player.gameFieldClickHandler = function _(x, y, e) {
 		Global.container.x = x;
 		Global.container.y = y;
 		this.sendOpenContainer();
-	} else if (Terrain.cells[x][y].passability==Terrain.PASS_BLOCKED
-			||Terrain.cells[x][y].passability==Terrain.PASS_SEE) {
+	} else if (
+		Terrain.cells[x][y].passability == Terrain.PASS_BLOCKED
+		|| Terrain.cells[x][y].passability == Terrain.PASS_SEE
+			
+	) {
 		// Go to object
 		this.aimcharacter = -1;
 		this.destX = x;
@@ -1333,3 +1370,4 @@ Player.gameFieldClickHandler = function _(x, y, e) {
 		performAction("move", [x,y]);
 	}
 };
+var Player = new ClientPlayer();

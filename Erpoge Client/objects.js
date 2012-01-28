@@ -155,21 +155,21 @@ Cell.prototype.hasItem = function(typeId, param) {
 };
 Cell.prototype.addItem = function(item) {
 	if (item instanceof UniqueItem || !this.items.hasPile(item.typeId, item.amount)) {
-		this.items.addItem(item);
+		this.items.add(item);
 		item.itemImage = new CellItemImage(this, item);
 		item.itemImage.show();
 	} else {
-		this.items.addItem(item);
+		this.items.add(item);
 	}
 };
 Cell.prototype.addItemWithoutShowing = function(item) {
-	this.items.addItem(item);
+	this.items.add(item);
 	item.itemImage = new CellItemImage(this, item);
 };
 Cell.prototype.removeItem = function(typeId, param) {
 	var item = this.items.getItem(typeId, param);
-	this.items.remove(typeId, param);
-	if (!this.items.hasItem(item)) {
+	this.items.remove(item);
+	if (!this.items.contains(item)) {
 		item.itemImage.remove();
 	}
 };

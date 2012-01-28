@@ -227,7 +227,7 @@ public class PlayerHandler extends PlayerCharacter {
 			location = world.createLocation(messageEnter.x, messageEnter.y, Main.DEFAULT_LOCATION_WIDTH,Main.DEFAULT_LOCATION_HEIGHT, Main.TEST_LOCATION_TYPE, "����� �������");
 		}
 		location.addCharacter(connection.character);
-		String enteringData = jsonGetEnteringData(connection.character.isOnGlobalMap());
+		String enteringData = "["+jsonPartGetEnteringData(connection.character.isOnGlobalMap())+"]";
 		connection.send(enteringData);
 	}
 	public void aLeaveLocation(String message) throws IOException {
@@ -237,7 +237,7 @@ public class PlayerHandler extends PlayerCharacter {
 		} else {
 			connection.character.leaveLocation();
 		}
-		connection.send(connection.character.jsonGetEnteringData(connection.character.isOnGlobalMap()));
+		connection.send("["+connection.character.jsonPartGetEnteringData(connection.character.isOnGlobalMap())+"]");
 	}
 	public void aAnswer(String message) throws IOException {
 		ClientMessageAnswer messageAnswer = gson.fromJson(message, ClientMessageAnswer.class);

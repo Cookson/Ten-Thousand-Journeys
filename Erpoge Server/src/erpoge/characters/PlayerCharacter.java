@@ -90,7 +90,7 @@ public class PlayerCharacter extends Character {
 	public void die() {
 		super.die();
 		try {
-			connection.send(jsonGetEnteringData(isOnGlobalMap()));
+			connection.send("["+jsonPartGetEnteringData(isOnGlobalMap())+"]");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -184,7 +184,7 @@ public class PlayerCharacter extends Character {
 			return "{\"x\":" + worldX + ",\"y\":" + worldY + "}";
 		}
 	}
-	public String jsonGetEnteringData(boolean isWorld) {
+	public String jsonPartGetEnteringData(boolean isWorld) {
 		/**
 		 * The same data is used for entering both global and local map
 		 * 
@@ -218,9 +218,8 @@ public class PlayerCharacter extends Character {
 		 */
 		StringBuilder answer = new StringBuilder();
 		answer
-			.append("{\"a\":")
-			.append(MainHandler.LOAD_CONTENTS)
-			.append(",\"onGlobalMap\":").append(isWorld).append(",\"")
+			.append("{\"e\":\"loadContents\",\"onGlobalMap\":")
+			.append(isWorld).append(",\"")
 			.append(isWorld ? "w" : "l").append("\":{")
 			.append(isWorld ? world.jsonPartGetWorldContents() : location.jsonPartGetLocationContents())
 			.append("},");

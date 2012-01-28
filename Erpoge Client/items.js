@@ -96,36 +96,16 @@ function isUnique(typeId) {
  * on the same cell.
  * 
  * @constructor
+ * @extends HashSet
  */
 function ItemSet() {
 /**
  * @type Object
  * @private
  */
-	this.uniqueItems = {};
-/**
- * @type Object
- * @private
- */
-	this.itemPiles = {};
+	this._contents = {};
 }
-/**
- * Add a UniqueItem or ItemPile to this ItemSet.
- * 
- * @param {UniqueItem|ItemPile}
- */
-ItemSet.prototype.addItem = function(item) {
-	if (item instanceof UniqueItem) {
-		this.uniqueItems[item.itemId] = item;
-	} else {
-	// If item instanceof ItemPile
-		if (this.itemPiles[item.typeId] !== undefined) {
-			this.itemPiles[item.typeId].amount += item.amount;
-		} else {
-			this.itemPiles[item.typeId] = item;
-		}
-	}
-};
+ItemSet.prototype = new HashSet();
 /**
  * Creates a new {@link UniqueItem} or {@link ItemPile} object and adds it to 
  * this ItemSet. Note that you do not have to specify if you are adding an 
@@ -138,11 +118,11 @@ ItemSet.prototype.addItem = function(item) {
  * amount of items in pile.
  * @returns {mixed} New created {@link UniqueItem} or {@link ItemType}
  */
-ItemSet.prototype.addNewItem = function (typeId, param) {
+ItemSet.prototype.addNewItem = function addNewItem(typeId, param) {
 	if (isUnique(typeId)) {
-		this.addItem(new UniqueItem(typeId, param));
+		this.add(new UniqueItem(typeId, param));
 	} else {
-		this.addItem(new ItemPile(typeId, param));
+		this.add(new ItemPile(typeId, param));
 	}
 };
 /**
@@ -154,10 +134,11 @@ ItemSet.prototype.addNewItem = function (typeId, param) {
  * @throws {Error} If ItemSet has no {@link UniqueItem} with such itemId.
  */
 ItemSet.prototype.removeUnique = function(itemId) {
-	if (itemId in this.uniqueItems) {
-		delete this.uniqueItems[itemId];
+	var itemId = "u"+itemId;
+	if (itemId in this._contents) {
+		delete this._contents[itemId];
 	} else {
-		throw new Error("No UniqueItem with itemId "+itemId);
+		throw new Error("No UniqueItem with hash code "+itemId);
 	}
 };
 /**
@@ -171,33 +152,12 @@ ItemSet.prototype.removeUnique = function(itemId) {
  * if argument amount is bigger than ItemPile.amount.
  */
 ItemSet.prototype.removePile = function(typeId, amount) {
-	this.itemPiles[typeId].amount -= amount;
-	if (this.itemPiles[typeId].amount == 0) {
-		delete this.itemPiles[typeId];
-	} else if (this.itemPiles[typeId].amount < 0) {
+	var hashCode = "p"+typeId;
+	this._contents[hashCode].amount -= amount;
+	if (this._contents[hashCode].amount == 0) {
+		delete this._contents[hashCode];
+	} else if (this._contents[hashCode].amount < 0) {
 		throw new Error("Предметов отнято больше, чем есть");
-	}
-};
-/**
- * This method works in two ways. If typeId is a type of {@link UniqueItem} 
- * type, it removes a UniqueItem with itemId that equals %param%. Else, if
- * typeId is a type of {@link ItemPile}, then if removes %param% items from 
- * that Pile. 
- * 
- * @see UniqueItem
- * @see ItemPile
- * @see ItemSet#removeUnique
- * @see ItemSet#removePile
- * @param {Number} typeId Id of item's type.
- * @param {Number} param If type typeId is type of UniqueItem, then this must 
- * be itemId of this item, otherwise, if that is ItemPile type, this must be 
- * amount of items in pile.
- */
-ItemSet.prototype.remove = function(typeId, param) {
-	if (isUnique(typeId)) {
-		this.removeUnique(param);
-	} else {
-		this.removePile(typeId, param);
 	}
 };
 /**
@@ -211,7 +171,7 @@ ItemSet.prototype.remove = function(typeId, param) {
  * itemId.
  */
 ItemSet.prototype.getUnique = function(itemId) {
-	return this.uniqueItems[itemId] || null;
+	return this._contents["u"+itemId] || null;
 };
 /**
  * Get a {@link ItemPile} object with particular itemId from this ItemSet. 
@@ -223,7 +183,7 @@ ItemSet.prototype.getUnique = function(itemId) {
  * typeId.
  */
 ItemSet.prototype.getPile = function(typeId) {
-	return this.itemPiles[typeId] || null;
+	return this._contents["p"+typeId] || null;
 };
 /**
  * This method works in two ways. If typeId is a type of {@link UniqueItem} 
@@ -242,9 +202,9 @@ ItemSet.prototype.getPile = function(typeId) {
  */
 ItemSet.prototype.getItem = function(typeId, param) {
 	if (isUnique(typeId)) {
-		return this.uniqueItems[param];
+		return this._contents["u"+param];
 	} else {
-		return this.itemPiles[typeId];
+		return this._contents["p"+typeId];
 	}
 	return null;
 };
@@ -255,7 +215,7 @@ ItemSet.prototype.getItem = function(typeId, param) {
  * @returns {Boolean} True if has such UniqueItem, false otherwise.
  */
 ItemSet.prototype.hasUnique = function(itemId) {
-	return this.uniqueItems[itemId] != undefined;
+	return this._contents["u"+itemId] != undefined;
 };
 /**
  * Checks if ItemSet has more that %amount% of items {@link ItemPile} with 
@@ -270,7 +230,7 @@ ItemSet.prototype.hasPile = function(typeId, amount) {
 	if (amount === undefined) {
 		amount = 1;
 	}
-	return this.itemPiles[typeId] !== undefined && this.itemPiles[typeId].amount >= amount;
+	return this._contents["p"+typeId] !== undefined && this._contents["p"+typeId].amount >= amount;
 };
 /**
  * Checks if ItemSet contains particular {@link UniqueItem}/{@link ItemPile} 
@@ -279,51 +239,24 @@ ItemSet.prototype.hasPile = function(typeId, amount) {
  * @param {UniqueItem|ItemPile} item 
  * @returns {Boolean} True if it contains such object, false otherwise.
  */
-ItemSet.prototype.hasItem = function(item) {
-	if (item instanceof UniqueItem) {
-		return this.hasUnique(item.itemId);
-	} else {
-		return this.hasPile(item.typeId, item.amount);
-	}
-};
+ItemSet.prototype.hasItem = HashSet.prototype.has;
 /** @private @const */
 ItemSet.prototype.PILE = 0xB00B1E5;
 /** @private @const */
 ItemSet.prototype.UNIQUE = 0xFA1105E5;
-/**
- * Returns contents of item set as an array of UniqueItem and ItemPile objects.
- * First go {@link UniqueItem}s, then go {@link ItemPile}s
- * 
- * @returns {mixed[]}
- */
-ItemSet.prototype.getValues = function() {
-	var answer = [];
-	for (var i in this.uniqueItems) {
-		answer.push(this.uniqueItems[i]);
-	}
-	for (var i in this.itemPiles) {
-		answer.push(this.itemPiles[i]);
-	}
-	return answer;
-};
-/**
- * Removes all contents of this ItemSet.
- */
-ItemSet.prototype.empty = function _() {
-	this.itemPiles = {};
-	this.uniqueItems = {};
-};
+
 /**
  * Equipment is class for storing items worn on characters. Essentially it is 
  * a hash map where key is a slot number and value is a {@link UniqueItem}.
  * Equipment consists only of UniqueItems, no ItemPiles.
  * 
+ * @extends HashMap
  * @constructor
  */
 function Equipment() {
-/** @private */
-	this.items = {};
+	HashMap.apply(this);
 }
+Equipment.prototype = new HashMap();
 /**
  * Fills Equipment object with particular equipment.
  * 
@@ -344,7 +277,7 @@ Equipment.prototype.getFromData = function(data) {
  * @param {UniqueItem} item
  */
 Equipment.prototype.putOn = function(item) {
-	this.items[getSlotFromClass(items[item.typeId][1])] = item;
+	this._contents[getSlotFromClass(items[item.typeId][1])] = item;
 };
 /**
  * Put item to particular slot.
@@ -354,14 +287,14 @@ Equipment.prototype.putOn = function(item) {
  * @param {UniqueItem} item
  */
 Equipment.prototype.putOnToSlot = function(slot, item) {
-	this.items[slot] = item;
+	this._contents[slot] = item;
 };
 /**
  * Returns an {@link UniqueItem} object of item in particular slot.
  * @returns {UniqueItem}
  */
 Equipment.prototype.getItemInSlot = function(slot) {
-	return this.items[slot] || null;
+	return this._contents[slot] || null;
 };
 /**
  * Searches for {@link UniqueItem} with particular item id.
@@ -371,9 +304,9 @@ Equipment.prototype.getItemInSlot = function(slot) {
  * @returns {UniqueItem} Or null if item is not found.
  */
 Equipment.prototype.getItemById = function(itemId) {
-	for (var i in this.items) {
-		if (this.items[i].itemId == itemId) {
-			return this.items[i];
+	for (var i in this._contents) {
+		if (this._contents[i].itemId == itemId) {
+			return this._contents[i];
 		}
 	}
 	return null;
@@ -385,8 +318,8 @@ Equipment.prototype.getItemById = function(itemId) {
  * @throw {Error}
  */
 Equipment.prototype.takeOffItem = function(item) {
-	for (var i in this.items) {
-		if (this.items[i] == item) {
+	for (var i in this._contents) {
+		if (this._contents[i] == item) {
 			delete this.items[i];
 			break;
 		}
@@ -398,8 +331,8 @@ Equipment.prototype.takeOffItem = function(item) {
  * 
  * @returns {Boolean} True if Equipment has an item, false otherwise.
  */
-Equipment.prototype.hasItemInSlot = function(slot) {
-	return slot in this.items;
+Equipment.prototype.hasItemInSlot = function (slot) {
+	return slot in this._contents;
 };
 /**
  * Removes an item in particular slot of this Equipment or throws an Error if
@@ -409,8 +342,8 @@ Equipment.prototype.hasItemInSlot = function(slot) {
  * @throws {Error} If this Equipment has no item in that slot.
  */
 Equipment.prototype.takeOffFromSlot = function(slot) {
-	if (this.items[slot]) {
-		delete this.items[slot];
+	if (this._contents[slot]) {
+		delete this._contents[slot];
 	} else {
 		throw new Error("No item in slot "+slot);
 	}
@@ -487,6 +420,9 @@ UniqueItem.prototype.equals = function(a,b) {
 };
 UniqueItem.prototype.hashCode = function() {
 	return "u"+this.itemId;
+};
+UniqueItem.prototype.getSlot = function() {
+	return getSlotFromClass(window.items[this.typeId][1]);
 };
 /**
  * Class representing a pile if similar items, none of which has properties

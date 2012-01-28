@@ -349,8 +349,8 @@ UIElementTypes.windowLogin = {
 				performAction("login",["1","1"]);
 				setTimeout(function() {
 					performAction("logInForCharacter", ["Alvoi"]);
-				}, 50);
-			},50);
+				}, 30);
+			},30);
 		},
 		accountPlayersRecieve: function _() {
 			this.hide();
@@ -455,26 +455,25 @@ UIElementTypes.windowLogin = {
 	}
 };
 UIElementTypes.iconsInventory = {
- 	onInit: function _() {
+ 	onInit: function iconsInventoryOnInit() {
  		this.setData("displayedNullViews",[]);
  		this.setData("itemLetters", []);
  		this.setData("keymappingPutOn", new UIKeymapping(
  				"Icons inventory put on",
- 				["Esc", "iconsInventoryQuit"],
- 				["=", "bookLetter"],
- 				["?","showCurrentKeymapping"]
+ 				["Esc", "quitSelection"],
+ 				["?", "showCurrentKeymapping"]
  		));
  		this.getData("keymappingPutOn").listenToLetterAssigner(Player.itemsLetterAssigner, "putOn");
  		this.setData("keymappingDrop", new UIKeymapping(
  				"Icons inventory drop",
- 				["Esc", "iconsInventoryQuit"],
- 				["=", "bookLetter"]
+ 				["Esc", "quitSelection"]
  		));
+ 		this.getData("keymappingDrop").listenToLetterAssigner(Player.itemsLetterAssigner, "drop");
  		this.setData("keymappingPutToContainer", new UIKeymapping(
  				"Icons inventory put to container",
- 				["Esc", "iconsInventoryQuit"],
- 				["=", "bookLetter"]
+ 				["Esc", "quitSelection"]
  		));
+ 		this.getData("keymappingPutToContainer").listenToLetterAssigner(Player.itemsLetterAssigner, "putToContainer");
  		this.setData("displayedItemViews", new HashSet());
  	},
  	listeners: {
@@ -491,7 +490,11 @@ UIElementTypes.iconsInventory = {
 	 		for (var i=0; i<items.length; i++) {
 	 			count++;
 	 			if (displayedItemViews.contains(items[i])) {
-	 			// If item is already displayed, leave it as is.
+	 			// If item is already displayed, check if it is an ItemPile 
+	 			// that changed its amount, otherwise just leave it as it is.
+	 				if (items[i].amount != displayedItemViews.getEqual(items[i]).amount) {
+	 					displayedItemViews.getEqual(items[i]).changeAmount(items[i].amount);
+	 				}
 	 				continue;
 	 			}
 	 			// If item is not displayed yet, display it.
@@ -505,7 +508,7 @@ UIElementTypes.iconsInventory = {
 	 		var uiElement = this;
 	 		displayedItemViews.forEach(function(view) {
 	 		// Undisplay removed items
-	 			if (!Player.items.hasItem(view.item)) {
+	 			if (!Player.items.contains(view.item)) {
 	 				uiElement.rootElement.removeChild(view.rootElement);
 	 				displayedItemViews.remove(view);
 	 				uiElement.clearEventListeners(view.rootElement);
@@ -518,6 +521,14 @@ UIElementTypes.iconsInventory = {
 	 			count++;
 	 		}
  		},
+ 		quitSelection: function quitSelection() {
+			var nlLetters = this.getData("itemLetters");
+			for (var i=0; i<nlLetters.length; i++) {
+				nlLetters[i].parentNode.removeChild(nlLetters[i]);
+			}
+			this.setData("itemLetters", []);
+			UI.setKeyMapping("Default");
+		},
  		locationLoad: "inventoryChange",
  		worldLoad: "inventoryChange"
  	},
@@ -526,24 +537,32 @@ UIElementTypes.iconsInventory = {
 			
 		},
 		iconsInventoryShowKeysToPutOn: function _() {
-			var itemViews = this.getData("itemViewCache").getDisplayedViews();
-			for (var i in itemViews) {
+			var itemViews = this.getData("displayedItemViews");
+			var uiElement = this;
+			var keymapping = this.getData("keymappingPutOn");
+			var itemLetters = this.getData("itemLetters");
+			itemViews.forEach(function(itemView) {
 				var nLetter = CachingLetterFactory.get(
 					"defaultLetter", 
-					Player.itemsLetterAssigner.getLetter(itemViews[i].item)
+					keymapping.assignedLetters.get(itemView)
 				);
-				itemViews[i].rootElement.appendChild(nLetter);
-				this.getData("itemLetters").push(nLetter);
-			}
+				itemView.getNode().appendChild(nLetter);
+				itemLetters.push(nLetter);
+			});
 			UI.setKeyMapping("Icons inventory put on");
 		},
-		iconsInventoryQuit: function() {
-			var nlLetters = this.getData("itemLetters");
-			for (var i in nlLetters) {
-				nlLetters[i].parentNode.removeChild(nlLetters[i]);
-			}
-			this.setData("itemLetters", []); 
-			UI.setKeyMapping("Default");
+		iconsInventoryShowKeysToDrop: function _() {
+			var itemViews = this.getData("displayedItemViews");
+			var uiElement = this;
+			itemViews.forEach(function(itemView) {
+				var nLetter = CachingLetterFactory.get(
+					"defaultLetter", 
+					Player.itemsLetterAssigner.getLetter(itemView.item)
+				);
+				itemView.getNode().appendChild(nLetter);
+				uiElement.getData("itemLetters").push(nLetter);
+			});
+			UI.setKeyMapping("Icons inventory drop");
 		}
  	},
  	handlers: {
@@ -564,9 +583,9 @@ UIElementTypes.iconsInventory = {
 			} else if (!Terrain.onGlobalMap && e.shiftKey) {
 			// Выкинуть предмет (шифт-клик)
 				if (isUnique(typeId)) {
-					Player.sendDrop(Player.items.getUnique(param));
+					performAction("drop", [Player.items.getUnique(param)]);
 				} else {
-					Player.sendDrop(Player.items.getPile(typeId));
+					performAction("drop", [Player.items.getPile(typeId)]);
 				}
 			} else if (isUsable(typeId)) {
 			// Если предмет можно использовать (на локальной карте), то использовать его
@@ -574,11 +593,7 @@ UIElementTypes.iconsInventory = {
 			} else if (isEquipment(typeId)) {
 			// Если предмет можно надеть, то надеть его
 				var slot = getSlotFromClass(items[typeId][1]);
-				if (!Player.equipment.hasItemInSlot(slot)) {
-					performAction("putOn", [Player.items.getItem(typeId, param)]);
-				} else {
-					performAction("takeOff", [Player.equipment.getItemInSlot(slot)]);
-				}
+				performAction("putOn", [Player.items.getItem(typeId, param)]);
 			}
 		},
 		contextmenu: function _(e) {
@@ -647,8 +662,7 @@ UIElementTypes.minimap = {
 	 	},
 	 	locationLoad: function _() {
 	 		this.getData("minimap").changeDimensions(Terrain.width, Terrain.height);
-	 	},
-	 	worldLoad: "locationLoad"
+	 	}
 	},
 	keysActions: {},
  	handlers: {
@@ -831,7 +845,7 @@ UIElementTypes.iconMissileType = {
 	onInit: function () {
 		var itemView = CachingItemViewFactory.get(new UniqueItem(2300,1), "Equipment");
 		this.rootElement.appendChild(itemView.getNode());
-		this.setData("imgNode",itemView.getImg());
+		this.setData("imgNode", itemView.getImg());
 	},
 	listeners: {
 		missileTypeChange: function _() {
@@ -850,6 +864,11 @@ UIElementTypes.iconMissileType = {
 UIElementTypes.iconsEquipment = {
 	onInit: function _() {	
 		this.setData("itemViews", []);
+		this.setData("keymappingTakeOff", new UIKeymapping(
+				"IconsEquipmentTakeOff",
+				["Esc", "quitSelection"]
+		));
+		this.getData("keymappingTakeOff").listenToLetterAssigner(Player.itemsLetterAssigner, "takeOff");
 		var itemViews = this.getData("itemViews");
 		for (var i=0; i<10; i++) {
 			var itemView = NullCachingItemViewFactory.get("Equipment");
@@ -860,6 +879,7 @@ UIElementTypes.iconsEquipment = {
 			this.addEventListener(nImg, "mouseout", "mouseout");
 			this.rootElement.appendChild(itemView.getNode());
 		}
+		this.setData("displayedLetters", []);
 	}, 
 	listeners: {
 		equipmentChange: function _() {
@@ -880,12 +900,37 @@ UIElementTypes.iconsEquipment = {
 				nImg.setAttribute("src", src);
 				nImg.setData("typeId", typeId);
 				nImg.setData("itemId", itemId);
+				nImg.parentNode.setData("item", item);
 			}
+		},
+		quitSelection: function quitSelection() {
+			var displayedLetters = this.getData("displayedLetters");
+			for (var i=0; i<displayedLetters.length; i++) {
+				displayedLetters[i].parentNode.removeChild(displayedLetters[i]);
+			}
+			UI.setKeyMapping("Default");
+			this.setData("displayedLetters", []);
 		},
 		locationLoad: "equipmentChange",
 		worldLoad: "equipmentChange"
 	},
-	keysActions: {},
+	keysActions: {
+		iconsEquipmentTakeOff: function(item) {
+			var displayedLetters = this.setData("displayedLetters", []);
+			var keymapping = this.getData("keymappingTakeOff");
+			for (var i=0; i<this.rootElement.children.length; i++) {
+				var item = this.rootElement.children[i].getData("item");
+				if (item === null) {
+					continue;
+				}
+				var nLetter = CachingLetterFactory
+					.get("defaultLetter", keymapping.assignedLetters.get(item));
+				this.rootElement.children[i].appendChild(nLetter);
+				displayedLetters.push(nLetter);
+			}
+			UI.setKeyMapping("IconsEquipmentTakeOff");
+		}
+	},
  	handlers: {
 		click: function _() {
 			var itemId = this.getData("itemId");
@@ -953,18 +998,29 @@ UIElementTypes.iconsEquipment = {
 UIElementTypes.iconsLoot = {
 	onInit: function _() {
 		this.setData("displayedNullViews",[]);
+		this.setData("itemLetters", []);
+		this.setData("displayedItemViews", new HashSet());
+		this.setData("keymappingPickUp", new UIKeymapping(
+				"IconsLootPickUp",
+				["Esc", "quitSelection"]
+		));
+		this.getData("keymappingPickUp").listenToLetterAssigner(Player.lootLetterAssigner, "pickUp");
 	},
 	listeners: {
 		lootChange: function _() {
 	 		var count = 0;
 	 		var items = Terrain.cells[Player.x][Player.y].items.getValues();
+	 		var displayedItemViews = this.getData("displayedItemViews");
+	 		displayedItemViews.empty();
 	 		while (this.rootElement.children.length > 0) {
 	 		// Remove all the children.
 	 			this.clearEventListeners(this.rootElement.children[0]);
 	 			this.rootElement.removeChild(this.rootElement.children[0]);
 	 		}
 	 		for (var i in items) {
-	 			var nItem = CachingItemViewFactory.get(items[i], "Loot").rootElement;
+	 			var itemView = CachingItemViewFactory.get(items[i], "Loot");
+	 			var nItem = itemView.rootElement;
+	 			displayedItemViews.add(itemView);
 				this.addEventListener(nItem, "click", "click");
 	 			this.addEventListener(nItem, "contextmenu", "contextmenu");
 	 			this.addEventListener(nItem, "mouseout", "mouseout");
@@ -977,9 +1033,37 @@ UIElementTypes.iconsLoot = {
 	 			count++;
 	 		}
 		},
+		quitSelection: function quitSelection() {
+			var nlLetters = this.getData("itemLetters");
+			for (var i in nlLetters) {
+				nlLetters[i].parentNode.removeChild(nlLetters[i]);
+			}
+			this.setData("itemLetters", []);
+			UI.setKeyMapping("Default");
+		},
 		locationLoad: "lootChange"
 	},
-	keysActions: {},
+	keysActions: {
+		iconsLootShowKeysToPickUp: function _() {
+			var itemViews = this.getData("displayedItemViews");
+			var uiElement = this;
+			var itemsLetters = this.getData("itemLetters");
+			var keymapping = this.getData("keymappingPickUp");
+			if (Player.lootLetterAssigner.isEmpty()) {
+				Player.lootLetterAssigner
+					.fillFromIterable(Terrain.cells[Player.x][Player.y].items)
+			}
+			itemViews.forEach(function(itemView) {
+				var nLetter = CachingLetterFactory.get(
+					"defaultLetter", 
+					keymapping.assignedLetters.get(itemView)
+				);
+				itemView.getNode().appendChild(nLetter);
+				itemsLetters.push(nLetter);
+			});
+			UI.setKeyMapping("IconsLootPickUp");
+		}
+	},
  	handlers: {
 		click : function _() {
 			document.getElementById("itemInfo").style.display="none";
@@ -991,7 +1075,7 @@ UIElementTypes.iconsLoot = {
 			} else {
 				item =  Terrain.cells[Player.x][Player.y].items.getPile(typeId);
 			}
-			Player.sendPickUp(item);
+			performAction("pickUp", [item]);
 		},
 		contextmenu:function _(e) {
 			var typeId = this.getData("typeId");
@@ -2466,30 +2550,23 @@ UIElementTypes.actionsPanel = {
 	keysActions: {},
 	handlers: {
 		push: function _() {
-			CellCursor.enterSelectionMode(function (startX, startY) {
-				CellCursor.enterSelectionMode(function(endX, endY) {
-					var direction = Side.d2side(endX-startX, endY-startY);
-					Player.sendPush(startX, startY, direction);
-				}, window, 1, {x:startX,y:startY});
-			}, window, 1);
+			performAction("choosePushAim");
 		},
 		changePlaces: function _() {
-			CellCursor.enterSelectionMode(function (x,y) {
-				Player.sendChangePlaces(x, y);
-			}, window, 1);
+			CellCursor.enterSelectionMode("changePlaces", 1, function(x,y){
+				return [Terrain.cells[x][y]];
+			});
 		},
 		makeSound: function () {
-			Player.sendMakeSound(1);
+			performAction("makeSound", [1]);
 		},
 		shieldBash: function() {
-			CellCursor.enterSelectionMode(function(x, y) {
-				Player.sendShieldBash(x,y);
-			}, window, 1);
+			CellCursor.enterSelectionMode("shieldBash", 1, function(x,y){
+				return [Terrain.cells[x][y]];
+			});
 		},
 		jump: function _() {
-			CellCursor.enterSelectionMode(function(x, y) {
-				Player.sendJump(x,y);
-			}, window, 2);
+			CellCursor.enterSelectionMode("jump", 2);
 		}
 	},
 	cssRules: function _() {

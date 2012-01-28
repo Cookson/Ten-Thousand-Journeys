@@ -156,7 +156,7 @@ var Keys = {
  * Form array "keyCode => keyName" from constant KEYCODES (that contains 
  * reverse array "keyName => keyCode")
  */
-Keys.formReverseKeyCodesTable = function _() {
+Keys.formReverseKeyCodesTable = function formReverseKeyCodesTable() {
 	for (var i in this.KEYCODES) {
 		this.KEYNAMES[this.KEYCODES[i]] = i;
 	}
@@ -169,10 +169,10 @@ Keys.formReverseKeyCodesTable = function _() {
  * 
  * @see UIKeymapping
  */
-Keys.setKeyMapping = function(keymapping) {
+Keys.setKeyMapping = function setKeyMapping(keymapping) {
 	this.keyMapping = keymapping;
 };
-Keys.universalKeyDownHandler = function _(e) {
+Keys.universalKeyDownHandler = function universalKeyDownHandler(e) {
 // The function in document.addEventListener("keyDown")
 // Handles all the key presses in game. 
 	var ctrl = e.ctrlKey ? 1 : 0;
@@ -183,7 +183,7 @@ Keys.universalKeyDownHandler = function _(e) {
 	if (uiAction === undefined) {
 		return;
 	}
-	uiAction.handler.apply(uiAction.context, uiAction.arguments);
+	uiAction._handler.apply(uiAction._context, Keys.keyMapping.arguments[ctrl][alt][shift][key]);
 	e.preventDefault();
 };
 /**
@@ -195,7 +195,7 @@ Keys.universalKeyDownHandler = function _(e) {
  * @param {Number} keyCode
  * @returns {HTMLDivElement}
  */
-Keys.getCombinationAsTextInDiv = function _(ctrl, alt, shift, keyCode) {
+Keys.getCombinationAsTextInDiv = function getCombinationAsTextInDiv(ctrl, alt, shift, keyCode) {
 	var text = [];
 	if (ctrl == 1) {
 		text.push("Ctrl");
@@ -248,8 +248,13 @@ function UIKeymapping(name) {
 		this.addHandler.apply(this, arguments[i]);
 	}
 	Keys.keyMappings[this.name] = this;
-	/** @private @boolean */
+	/** @private @type boolean */
 	this.listensToLetterAssigner = false;
+	/** 
+	 * Letters assigned by LetterAssigner which this elements listens to.
+	 * @private @type HashMap 
+	 */
+	this.assignedLetters = null;
 }
 /**
  * Adds action for a key combination. Last argument in a name of registered 
@@ -259,7 +264,7 @@ function UIKeymapping(name) {
  * 
  * @see UI#registerAction
  */
-UIKeymapping.prototype.addHandler = function() {
+UIKeymapping.prototype.addHandler = function addHandler() {
 	var ctrl = 0, alt = 0, shift = 0, keyCode, actionName, args = [];
 	var namePosition = arguments.length-1;
 	if (arguments[namePosition] instanceof Array) {
@@ -306,6 +311,9 @@ UIKeymapping.prototype.addHandler = function() {
 			keyCode = Keys.KEYCODES[arguments[i]];
 		}
 	}
+	if (!(actionName in UI.registeredActions)) {
+		throw new Error("No action "+actionName+" registered!");
+	}
 	this.handlers[ctrl][alt][shift][keyCode] = UI.registeredActions[actionName];
 	this.arguments[ctrl][alt][shift][keyCode] = args;
 };
@@ -324,7 +332,7 @@ UIKeymapping.prototype.addHandler = function() {
  * @param {Array} [args=[]] Arguments for UIAction. By default it is an empty 
  * array.
  */
-UIKeymapping.prototype.strictAddHandler = function(ctrl, alt, shift, keyCode, actionName, args) {
+UIKeymapping.prototype.strictAddHandler = function strictAddHandler(ctrl, alt, shift, keyCode, actionName, args) {
 	this.handlers[ctrl][alt][shift][keyCode] = UI.registeredActions[actionName];
 	this.arguments[ctrl][alt][shift][keyCode] = args;
 };
@@ -337,7 +345,7 @@ UIKeymapping.prototype.strictAddHandler = function(ctrl, alt, shift, keyCode, ac
  * @param shift
  * @param keyCode
  */
-UIKeymapping.prototype.strictRemoveHandler = function(ctrl, alt, shift, keyCode) {
+UIKeymapping.prototype.strictRemoveHandler = function strictRemoveHandler(ctrl, alt, shift, keyCode) {
 	delete this.handlers[ctrl][alt][shift][keyCode];
 	delete this.arguments[ctrl][alt][shift][keyCode];
 };
@@ -349,16 +357,21 @@ UIKeymapping.prototype.strictRemoveHandler = function(ctrl, alt, shift, keyCode)
  * @param {LetterAssigner} assigner LetterAssigner to listen to.
  * @param {String} action What action to perform when that letter is pressed.
  */
-UIKeymapping.prototype.listenToLetterAssigner = function(assigner, action) {
-	if (!(assigner instanceof LetterAssigner) || action.__proto__.constructor != String) {
+UIKeymapping.prototype.listenToLetterAssigner = function listenToLetterAssigner(assigner, action) {
+	if (!(assigner instanceof LetterAssigner)) {
 		throw new Error("Wrong arguments: "+assigner+", "+action);
+	}
+	if (typeof action != "string") {
+		throw new Error("The second arguments must be action name!");
 	}
 	if (this.listensToLetterAssigner) {
 		throw new Error("UIKeymapping "+this.name+" already listens to a letter assigner.");
 	}
 	this.listensToLetterAssigner = true;
+	this.assignedLetters = new HashMap();
 	assigner.listeners.push(this);
 	assigner.listenerActions.push(action);
+	
 };
 /**
  * 
@@ -372,27 +385,28 @@ UIKeymapping.prototype.listenToLetterAssigner = function(assigner, action) {
  * window object (by default) or any other object.
  */
 function UIAction(handler, context) {
-	this.handler = handler;
-	this.context = context || window;
+	/** @private @type Function */
+	this._handler = handler;
+	/** @private @type Object @default window */
+	this._context = context || window;
 }
 /**
  * Perform action. This is simply this.handler.apply(this.context, arguments);
  * You can pass any amount arguments to this method — the handler will be
  * applied with them.
  */
-UIAction.prototype.perform = function() {
-	this.handler.apply(this.context, arguments);
+UIAction.prototype.perform = function perform() {
+	this._handler.apply(this._context, arguments);
 };
 /**
  * Class represents a key mapping which links certain objects with their keys,
  * for example item objects or spell objects. This class allows automatic
- * assigning and reassigning of keys. {@link UIKeymapping}s mey listen to
+ * assigning and reassigning of keys. {@link UIKeymapping}s may listen to
  * LetterAssigners and set handlers for letters that are added to this 
  * LetterAssigner.
  * 
- * @extends UIKeumapping
+ * @extends HashMap
  * @param {String} name Just a name to identify this object.
- * @return
  */
 function LetterAssigner(name) {
 /** 
@@ -403,7 +417,7 @@ function LetterAssigner(name) {
  * @private 
  * @type Object
  */
-	this.categories = {};
+	this._contents = {};
 /** @private @type Boolean */
 	this.allLowercaseOccupied = false;
 /**
@@ -432,7 +446,7 @@ function LetterAssigner(name) {
  */
 	this.occupiedLetters = {};
 }
-LetterAssigner.prototype = new UIKeymapping("Prototype keymapping");
+LetterAssigner.prototype = new HashMap();
 /**
  * Links object with letter. Letter is chosen automatically, though may be
  * pre-assigned (see {@link LetterAssigner#bookLetterForObject}). 
@@ -445,16 +459,12 @@ LetterAssigner.prototype = new UIKeymapping("Prototype keymapping");
  * @param {Object} object
  * @param {String} actionName Name of registered UIAction
  */
-LetterAssigner.prototype.addObject = function(object) {
-	if (!(object.hashCode instanceof Function)) {
-		throw new Error(object.__proto__.constructor.name+" class is not hashable!");
-	}
-	var category = object.__proto__.constructor.name;
-	if (!(category in this.categories)) {
-		this.categories[category] = {};
-	} else if (object.hashCode() in this.categories[category]) {
-		throw new Error("Object "+object.__proto__.constructor.name+" with hash\
- code "+object.hashCode()+" already registered in keymapping"+this.name);
+LetterAssigner.prototype.addObject = function addObject(object) {
+	Interface.check(object, "Hashable");
+	var hashCode = object.hashCode();
+	if (hashCode in this._contents) {
+		throw new Error("Object "+object.__proto__.constructor.name+" "+hashCode
+				+" is already registered in LetterAssigner "+this.name);
 	}
 	var newKeyCode = this.getBookedLetter(object);
 	var objectToReassign = null;
@@ -469,7 +479,7 @@ LetterAssigner.prototype.addObject = function(object) {
 	// If the letter for this object is not booked.
 		var newKeyCode = this.getUnoccupiedCharacter();
 	}
-	this.categories[category][object.hashCode()] = newKeyCode;
+	this._contents[hashCode] = newKeyCode;
 	this.occupiedLetters[newKeyCode] = true;
 	if (objectToReassign !== null) {
 		this.addObject(objectToReassign);
@@ -486,6 +496,8 @@ LetterAssigner.prototype.addObject = function(object) {
 	}	
 	for (var i=0; i<this.listeners.length; i++) {
 		this.listeners[i].strictAddHandler(0, 0, shift, newKeyCode, this.listenerActions[i], [object]);
+		this.listeners[i].assignedLetters
+			.put(object, shift ? Keys.SHIFTKEYNAMES[newKeyCode+32] : Keys.KEYNAMES[newKeyCode]);
 	}
 };
 /** 
@@ -495,8 +507,10 @@ LetterAssigner.prototype.addObject = function(object) {
  * @public
  * @param {Object} object
  */
-LetterAssigner.prototype.removeObject = function(object) {
-	var keyCode = this.categories[object.__proto__.constructor.name][object.hashCode()];
+LetterAssigner.prototype.removeObject = function removeObject(object) {
+	Interface.check(object, "Hashable");
+	var hashCode = object.hashCode();
+	var keyCode = this._contents[hashCode];
 	var shift = 0;
 	delete this.occupiedLetters[keyCode];
 	if (keyCode > 90) {
@@ -507,10 +521,35 @@ LetterAssigner.prototype.removeObject = function(object) {
 	// If removed letter is lowercase
 		this.allLowercaseOccupied = false;
 	}
-	delete this.categories[object.__proto__.constructor.name][object.hashCode()];
+	delete this._contents[hashCode];
 	
 	for (var i=0; i<this.listeners.length; i++) {
 		this.listeners[i].strictRemoveHandler(0, 0, shift, keyCode);
+		this.listeners[i].assignedLetters.remove(object);
+	}
+};
+/**
+ * Remove letter assigned with object with particular hashCode.
+ * 
+ * @param {string} hashCode
+ */
+LetterAssigner.prototype.removeObjectByHashCode = function(hashCode) {
+	var keyCode = this._contents[hashCode];
+	var shift = 0;
+	delete this.occupiedLetters[keyCode];
+	if (keyCode > 90) {
+	// If removed letter is uppercase
+		shift = 1;
+		keyCode -= 32;
+	} else {
+	// If removed letter is lowercase
+		this.allLowercaseOccupied = false;
+	}
+	delete this._contents[hashCode];
+	
+	for (var i=0; i<this.listeners.length; i++) {
+		this.listeners[i].strictRemoveHandler(0, 0, shift, keyCode);
+		this.listeners[i].assignedLetters.removeByHashCode(hashCode);
 	}
 };
 /**
@@ -523,7 +562,8 @@ LetterAssigner.prototype.removeObject = function(object) {
  * @param {Number} keyCode Reverse ASCII code of letter (65—90 for lowercase,
  * 97—122 for uppercase).
  */
-LetterAssigner.prototype.bookLetterForObject = function(keyCode, object) {
+LetterAssigner.prototype.bookLetterForObject = function bookLetterForObject(keyCode, object) {
+	Interface.check(object, "Hashable");
 	this.bookedLetters[keyCode] = [object.__proto__.constructor.name][object.hashCode()];
 };
 /**
@@ -531,7 +571,8 @@ LetterAssigner.prototype.bookLetterForObject = function(keyCode, object) {
  * 
  * @param {Object} object
  */
-LetterAssigner.prototype.unbookLetterForObject = function(object) {
+LetterAssigner.prototype.unbookLetterForObject = function unbookLetterForObject(object) {
+	Interface.check(object, "Hashable");
 	var hashCode = object.hashCode();
 	var constructorName = object.__proto__.constructor.name;
 	for (var i in this.bookedLetters) {
@@ -549,7 +590,8 @@ LetterAssigner.prototype.unbookLetterForObject = function(object) {
  * 
  * @returns {Number} Reverse ASCII code, if the letter is booked, -1 otherwise.
  */
-LetterAssigner.prototype.getBookedLetter = function(object) {
+LetterAssigner.prototype.getBookedLetter = function getBookedLetter(object) {
+	Interface.check(object, "Hashable");
 	var hashCode = object.hashCode();
 	var constructorName = object.__proto__.constructor.name;
 	for (var i in this.bookedLetters) {
@@ -568,7 +610,7 @@ LetterAssigner.prototype.getBookedLetter = function(object) {
  * @param {Number} keyCode Reverse ASCII code of letter.
  * @returns {Boolean}
  */
-LetterAssigner.prototype.isLetterOccupied = function(keyCode) {
+LetterAssigner.prototype.isLetterOccupied = function isLetterOccupied(keyCode) {
 	return keyCode in this.occupiedLetters;
 };
 /**
@@ -579,9 +621,9 @@ LetterAssigner.prototype.isLetterOccupied = function(keyCode) {
  * 
  * @returns {Boolean}
  */
-LetterAssigner.prototype.hasFreeLowercase = function() {
+LetterAssigner.prototype.hasFreeLowercase = function hasFreeLowercase() {
 	for (var i=65; i<=90; i++) {
-		if (this.handlers[0][0][0][i] === undefined) {
+		if (!(i in this.occupiedLetters)) {
 			return true;
 		}
 	}
@@ -593,8 +635,9 @@ LetterAssigner.prototype.hasFreeLowercase = function() {
  * @param {Object} object
  * @returns {String} 1 character string — the letter for object.
  */
-LetterAssigner.prototype.getLetter = function(object) {
-	var keyCode = this.categories[object.__proto__.constructor.name][object.hashCode()];
+LetterAssigner.prototype.getLetter = function getLetter(object) {
+	Interface.check(object, "Hashable");
+	var keyCode = this._contents[object.hashCode()];
 	if (keyCode > 90) {
 	// If the letter is uppercase
 		return Keys.SHIFTKEYNAMES[keyCode-32];
@@ -610,7 +653,7 @@ LetterAssigner.prototype.getLetter = function(object) {
  * @returns {Number} Key code of character for lowercase caharacter, keyCode*2
  * for uppercase character.
  */
-LetterAssigner.prototype.getUnoccupiedCharacter = function() {
+LetterAssigner.prototype.getUnoccupiedCharacter = function getUnoccupiedCharacter() {
 	if (!this.allLowercaseOccupied) {
 	// Try to get lowercase character.
 		for (var i=65; i<=90; i++) {
@@ -627,3 +670,32 @@ LetterAssigner.prototype.getUnoccupiedCharacter = function() {
 	}
 	throw new Error("All the characters, both lower- and uppercase, are occupied.");
 };
+/**
+ * Checks if LetterAssigner has an assigned letter for an object.
+ */
+LetterAssigner.prototype.hasLetterForObject = function hasLetterForObject(object) {
+	Interface.check(object, "Hashable");
+	return object.hashCode() in this._contents;
+};
+/**
+ * Unlinks all the objects in LetterAssigner from their letters. Also removes
+ * handlers for these letters in {@link UIKeymappings} that listen to this 
+ * LetterAssigner.
+ */
+LetterAssigner.prototype.empty = function() {
+	for (var i in this._contents) {
+		this.removeObjectByHashCode(i);
+	}
+};
+/**
+ * Add to this LetterAssigner all the values from an iterable object.
+ * 
+ * @param {Object} object Iterable object containing values to which you need
+ * to assign letters in this LetterAssigner.
+ */
+LetterAssigner.prototype.fillFromIterable = function(object) {
+	Interface.check(object, "Iterable");
+	object.forEach(this.addObject, this);
+};
+
+

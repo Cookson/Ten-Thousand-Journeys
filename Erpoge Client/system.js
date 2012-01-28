@@ -50,6 +50,9 @@ HTMLElement.prototype.getData = function _(key) {
 String.prototype.hashCode = function() {
 	return this.valueOf();
 };
+String.prototype.equals = function(object) {
+	return this.valueOf() === object.hashCode()
+};
 /**
  * Similar to Array.indexOf, but searches not for "javascriptly-equal" element, 
  * but for element with equal .hashCode() ("java-equal", lolz). Array must
@@ -393,11 +396,11 @@ function getOffsetRect(elem) {
  * @returns {Object[3][]}
  */
 function getSetsDifferences(set1, set2) {
-	if (set1.getValues instanceof Function) {
+	if (Interface.objectImplements(set1, "Arrayable")) {
 	// If set1 implements interface Set
 		set1 = set1.getValues();
 	}
-	if (set2.getValues instanceof Function) {
+	if (Interface.objectImplements(set2, "Arrayable")) {
 	// If set2 implements interface Set
 		set2 = set2.getValues();
 	}

@@ -7,13 +7,17 @@ onLoadEvents['keys'] = function _() {
 			["r", "quickRefresh"],
 			["t", "focusOnChat"],
 			[">", "enterLocation"],
-			["Ctrl", "F1", "toggleUi"],
+			["Ctrl", "F1", "toggleUI"],
 			["n", "toggleSkillsWindow"],
 			["F4", "toggleSettingsWindow"],
 			["c", "rotateCamera"],
 			["s", "idle"],
 			["f", "selectMissile"],
-			["i", "iconsInventoryShowKeysToPutOn"],
+			["w", "iconsInventoryShowKeysToPutOn"],
+			["d", "iconsInventoryShowKeysToDrop"],
+			["T", "iconsEquipmentTakeOff"],
+			["g", "iconsLootShowKeysToPickUp"],
+			[",", "iconsLootShowKeysToPickUp"],
 			["?", "showCurrentKeymapping"]
 	);
 	new UIKeymapping(

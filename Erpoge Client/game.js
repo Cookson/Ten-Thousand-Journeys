@@ -5,14 +5,16 @@ window.onload = function _() {
 	document.getElementById("stLoad").style.color="#fff";
 	// Собственно, загрузка
 	// Задержка нужна для того, чтобы отобразилась надпись "Загрузка"
+	
 	setTimeout(function _() {
+		
 		onLoadEvents['customStylesheets']();
 		onLoadEvents['game']();
 		onLoadEvents['uiWindowPrototype']();
+		onLoadEvents['defaultUIActions']();
 		onLoadEvents['gui']();
 		onLoadEvents['storage']();
 		onLoadEvents['ajax']();
-		onLoadEvents['defaultUIActions']();
 		onLoadEvents['keys']();
 	}, 1);
 };
@@ -107,8 +109,8 @@ function performAction(actionName, args) {
 	if (args === undefined) {
 		args = [];
 	}
-	UI.registeredActions[actionName].handler
-		.apply(UI.registeredActions[actionName].context, args);
+	UI.registeredActions[actionName]._handler
+		.apply(UI.registeredActions[actionName]._context, args);
 }
 function renderView() {
 // Прорисовка содержимого ячеек
@@ -367,7 +369,7 @@ function readWorld(data) {
 	prepareArea(true);
 	var contents=data.c;
 	var x=0, y=0;
-	for (var i=0;i<contents.length;i++) {
+	for (var i=0; i<contents.length; i++) {
 		x++;
 		if (x==Terrain.width) {
 			x=0;
@@ -390,7 +392,7 @@ function readWorld(data) {
 		worldMapFloorCanvas.getContext("2d").clearRect(0,0,Terrain.width*32, Terrain.height*32);
 	}
 	
-	for (var num=0;num<contents.length;num++) {
+	for (var num=0; num<contents.length; num++) {
 		Terrain.cells[x][y].floor = new Floor(x,y,contents[num][0]);
 		x++;
 		if (x==Terrain.width) {
@@ -547,10 +549,6 @@ function enterArea(callback) {
 		characterId:Player.characterId
 	},handlers.net.loadContents);
 //	Net.send({a:Net.APPEAR,n:Player.name,x:Player.worldX,y:Player.worldY,pid:Player.partyId,islead:Player.isPartyLeader},handlers.net.appear);
-}
-function worldTravel(x,y) {
-// Путешествие из одной клетки глобальной карты в другую
-	Net.send({a:Net.WORLD_TRAVEL,x:x,y:y},handlers.net.worldTravel);
 }
 function leaveLocation(callback) {
 // Выйти из области или загрузить мир при загрузке игры, в т. ч. загрузить

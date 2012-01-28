@@ -143,7 +143,6 @@ public class MainHandler extends WebSocketServer {
 			conn.send("[{\"e\":\"loadContents\",\"error\":1}]");
 		}
 		Account account = Accounts.account(clientData.login);
-		
 		if (account == null) {
 		// No such account
 			conn.send("[{\"e\":\"loadContents\",\"error\":2}]");
@@ -159,7 +158,7 @@ public class MainHandler extends WebSocketServer {
 				conn.character.authorize();
 				conn.character.setConnection(conn);
 			}
-			conn.send(conn.character.jsonGetEnteringData(conn.character.isOnGlobalMap()));
+			conn.send("["+conn.character.jsonPartGetEnteringData(conn.character.isOnGlobalMap())+"]");
 		}
 	}
 	/* Listeners */

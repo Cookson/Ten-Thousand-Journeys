@@ -24,6 +24,7 @@ onLoadEvents["defaultUIActions"] = function() {
 			a : Net.TAKE_OFF,
 			itemId : item.itemId
 		});
+		UI.notify("quitSelection");
 	});
 	UI.registerAction("useObject", Player, function (x, y) {
 		Net.send({
@@ -65,11 +66,11 @@ onLoadEvents["defaultUIActions"] = function() {
 			y : Global.container.y
 		});
 	});
-	UI.registerAction("attack", Player, function (aimId, ranged) {
+	UI.registerAction("attack", Player, function (character) {
 		Net.send({
 			a : Net.ATTACK,
-			aimId : aimId,
-			ranged : ranged
+			aimId : character.characterId,
+			ranged : false
 		});
 	});
 	UI.registerAction("castSpell", Player, function (x, y, spellId) {
@@ -81,7 +82,7 @@ onLoadEvents["defaultUIActions"] = function() {
 		});
 	});
 	UI.registerAction("drop", Player, function (item, amount) {
-		if (this.items.hasItem(item)) {
+		if (this.items.contains(item)) {
 			if (item instanceof UniqueItem) {
 				Net.send( {
 					a : Net.DROP_UNIQUE,
@@ -95,16 +96,36 @@ onLoadEvents["defaultUIActions"] = function() {
 					amount : amount === undefined ? item.amount : amount
 				});
 			}
+			UI.notify("quitSelection");
 		} else {
 			throw new Error("Player "+this.name+" has no items of type "
 					+item.typeId);
 		}
 	});
 	UI.registerAction("putOn", Player, function (item) {
+		if (this.equipment.hasItemInSlot(item.getSlot())) {
+			UI.notify("alert", "Сначала снимите "+window.items[this.equipment.getItemInSlot(item.getSlot()).typeId][0]);
+			return;
+		}
 		Net.send({
 			a : Net.PUT_ON,
 			itemId : item.itemId
 		});
+		UI.notify("quitSelection");
+	});
+	UI.registerAction("choosePushAim", Player, function (x, y) {
+		// Chooses the object at cell x,y as the aim to push
+		// This action calls action "choosePushDirection", which calls action
+		// "push", which sends the query to server.
+		CellCursor.enterSelectionMode("choosePushDirection", 1, function(x,y){
+			return [Terrain.cells[x][y]];
+		});
+	});
+	UI.registerAction("choosePushDirection", Player, function (entity) {
+		// Chooses the direction 
+		CellCursor.enterSelectionMode("push", 1, function(x, y){
+			return [entity, Side.d2side(x-entity.x, y-entity.y)];
+		}, entity);
 	});
 	UI.registerAction("push", Player, function (entity, direction) {
 		// Direction is Side object
@@ -115,7 +136,7 @@ onLoadEvents["defaultUIActions"] = function() {
 			direction : direction.getInt()
 		});
 	});
-	UI.registerAction("changePlaces", Player, function (entity, direction) {
+	UI.registerAction("changePlaces", Player, function (entity) {
 		Net.send( {
 			a : Net.CHANGE_PLACES,
 			x : entity.x,
@@ -149,11 +170,16 @@ onLoadEvents["defaultUIActions"] = function() {
 				amount : amount === undefined ? item.amount : amount
 			});
 		}
+		UI.notify("quitSelection");
 	});
 	UI.registerAction("shieldBash", Player, function (entity) {
 		/**
 		 * @param {Object} entity Object with properties entity.x and entity.y
 		 */
+		if (Player.equipment.getItemInSlot(2) === null) {
+			UI.notify("alert", "Вы либо галстук снимите, либо щит наденьте!")
+			return;
+		}
 		Net.send({
 			a : Net.SHIELD_BASH,
 			x : entity.x,
@@ -206,7 +232,7 @@ onLoadEvents["defaultUIActions"] = function() {
 		this.placeSprite();
 		var num = this.characterId;
 		if (this.x==this.destX && this.y==this.destY) {
-			throw new Erorr("Going to the same cel he is stating at");
+			throw new Error("Going to the same cell he is staying at");
 		}
 		this.getPathTable();
 		Terrain.cells[this.x][this.y].passability = Terrain.PASS_FREE;
@@ -232,7 +258,20 @@ onLoadEvents["defaultUIActions"] = function() {
 			dir : Side.d2side(nextCellX-this.x, nextCellY-this.y).getInt()
 		});
 	});
-	
+	UI.registerAction("worldTravel", Player, function (x, y) {
+		/**
+		 * @param {Number} x
+		 * @param {Number} y
+		 */
+		Net.send({a:Net.WORLD_TRAVEL, x:x, y:y});
+	});
+	UI.registerAction("quitSelection", UI, function () {
+		/**
+		 * @param {Number} x
+		 * @param {Number} y
+		 */
+		this.notify("quitSelection");
+	});
 	
 };
 UI.defaultUIActions = {
@@ -272,7 +311,7 @@ UI.defaultUIActions = {
 		}
 	},
 	selectMissile: function _() {
-		CellCursor.enterSelectionMode(Player.sendShootMissile, Player, 11);
+		CellCursor.enterSelectionMode("shootMissile", 11);
 	},
 	unselectCellAction: function _() {
 		CellCursor.exitSelectionMode();
@@ -284,7 +323,7 @@ UI.defaultUIActions = {
 		var itemValues = Global.container.items.getValues();
 		for (var i in itemValues) {
 			Player.addActionToQueue(
-				Player.sendTakeFromContainer, 
+				"takeFromContainer", 
 				[
 				 	itemValues[i].typeId, 
 				 	itemValues[i][itemValues[i].amount ? "amount" : "itemId"]

@@ -152,6 +152,7 @@ var UI = {
 		containerChange : {},
 		cameraRotation : {},
 		/* Interface events */
+		quitSelection : {},
 		spellSelect : {},
 		spellUnselect : {},
 		missileSelect : {},
@@ -362,7 +363,7 @@ UI.addListener = function(notifier, func) {
  * @return
  */
 UI.setKeyMapping = function(keyMappingName) {
-	if (Keys.keyMappings[keyMappingName]===undefined) {
+	if (Keys.keyMappings[keyMappingName] === undefined) {
 		throw new Error("No keymapping "+keyMappingName+" registered");
 	}
 	Keys.keyMapping = Keys.keyMappings[keyMappingName];
@@ -692,7 +693,7 @@ UI.addWindow = function _(properties) {
  * @returns {HTMLDivElement}
  */
 UI.getStaticDOMStructure = function _(hash, func) {
-	if ( !(hashinthis._savedDOMStructures)) {
+	if (!(hash in this._savedDOMStructures)) {
 		this._savedDOMStructures[hash] = func();
 	}
 	return this._savedDOMStructures[hash];
@@ -828,6 +829,9 @@ ItemView.prototype.setItem = function(item) {
 };
 ItemView.prototype.hashCode = function() {
 	return this.item.hashCode();
+};
+ItemView.prototype.equals = function(object) {
+	return this.item.hashCode() == object.hashCode();
 };
 
 /**
@@ -986,10 +990,7 @@ UIElement.prototype.setData = function(name, data) {
 	return this.data[name] = data;
 };
 UIElement.prototype.getData = function(name) {
-	if (this.data[name]===undefined) {
-		return null;
-	}
-	return this.data[name];
+	return this.data[name] || null;
 };
 UIElement.prototype.hide = function() {
 	this.rootElement.style.display = "none";

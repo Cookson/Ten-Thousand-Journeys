@@ -15,28 +15,13 @@ handlers={
 	},
 	gameField: {
 		click:function _(e) {
-			
 			var elementCoord=getOffsetRect(gameField);
 			var xPx = Math.floor((e.clientX-elementCoord.left)/32);
 			var yPx = Math.floor((e.clientY-elementCoord.top)/32);
 			var normal = Terrain.getNormalView(xPx, yPx);
 			var x=normal.x;
 			var y=normal.y;
-			if (Terrain.onGlobalMap) {
-			// На глобальной карте
-				if (e.shiftKey || inMenu) {
-					centerWorldCamera(x,y);
-				} else {
-					if (Player.isPartyLeader) {
-						worldTravel(x,y);
-					} else {
-						UI.notify("alert", "Когда вы в группе, только лидер группы может перемещать группу по карте")
-					}
-				}
-			} else {
-			// На карте области
-				UI.gameFieldClick(x,y,e);
-			}
+			UI.gameFieldClick(x,y,e);
 		},
 		mousemove:function _(e) {
 		// Передвижение указателя клетки
@@ -191,6 +176,17 @@ handlers={
 			// document.getElementById("cellCursorPri").style.display="inline-block";
 		}
 	},
+	globalMapClickHandler: function(x,y,e) {
+		if (e.shiftKey) {
+			centerWorldCamera(x,y);
+		} else {
+			if (Player.isPartyLeader) {
+				performAction("worldTravel", [x,y]);
+			} else {
+				UI.notify("alert", "Когда вы в группе, только лидер группы может перемещать группу по карте")
+			}
+		}
+	},
 	cellInfo: {
 		mouseover:function _() {
 			this.style.display="none";
@@ -218,11 +214,7 @@ handlers={
 		}
 	},
 	net: {
-		authComplete : function _() {
-		// Tell the server that content loading after authentification is complete
-		// And that server may now send events to this client
-			
-		}
+		
 	},
 	initWindows: function _() {
 	// Windows are initiated before other ui elements, but after panels

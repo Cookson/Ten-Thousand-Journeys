@@ -20,13 +20,13 @@
 	
 	CellCursor.init();
 	handlers.initInterface();
-	UI.setClickHandler(Player.gameFieldClickHandler, Player);
+	UI.setClickHandler(Player.locationClickHandler, Player);
 };
 var CellCursor = {
 	x:-1,
 	y:-1,
 	callbackAction: null,
-	context: null,
+	argsFunction: null,
 	zoneCenter: null,
 	isSelectionMode: false,
 	maximumDistance: 9000,
@@ -85,7 +85,7 @@ var CellCursor = {
 		this.currentStyle = className;
 		this.bg.className = "cellCursor"+className;
 	},
-	enterSelectionMode: function _(callbackAction, context, maximumDistance, zoneCenter) {
+	enterSelectionMode: function enterSelectionMode(callbackAction, maximumDistance, argsFunction, zoneCenter) {
 	/**
 	 * Enters cell selection mode. Exit from selection mode and callback call
 	 * are in handlers object. Also shades cells if needed, so Player can see 
@@ -93,19 +93,24 @@ var CellCursor = {
 	 * 
 	 * @param {String} callback name of registered UIAction that is performed 
 	 * after cell is chosen.
-	 * @param {Object} context Context of that function (or leave undefined 
-	 * so the window object will be the context)
 	 * @param {Number} maximumDistance Radius of selection area (or leave 
 	 * undefined so distance will be unlimited)
+	 * @param {function} argsFunction Normally the action will be performed 
+	 * with arguments [CellCursor.x, CellCursor.y], but if you need other 
+	 * arguments, you may specify this function that takes x and y and returns
+	 * needed array of arguments.
 	 * @param {Object} zoneCenter Object with fields object.x and object.y; 
 	 * this may be a Character, GameObject or simply {x:int,y:int}. Area of 
 	 * applicable cells will be made around th zoneCenter (or leave zone center 
 	 * undefined so it will be the Player)
 	 */
-		if (context === undefined) {
-			context = window;
+		if (!(typeof callbackAction == "string")) {
+			throw new Error("Callback action must be a string");
 		}
-		this.context = context;
+		if (argsFunction === undefined) {
+			argsFunction = null;
+		}
+		this.argsFunction = argsFunction;
 		if (maximumDistance === undefined) {
 			maximumDistance = 9000;
 		}
@@ -136,6 +141,7 @@ var CellCursor = {
 			endX = zoneCenter.x+Player.VISION_RANGE;
 			endY = zoneCenter.y+Player.VISION_RANGE;
 		}
+		// Shade cells that are unavailable
 		for (var x = startX; x<=endX; x++) {
 			for (var y = startY; y<=endY; y++) {
 				if (
@@ -157,9 +163,13 @@ var CellCursor = {
 	 */
 		if (this.callbackAction === null) {
 			throw new Error("No callback assigned");
-		}		
+		}
 		this.exitSelectionMode();
-		performAction(this.callbackAction, [CellCursor.x, CellCursor.y]);
+		if (!this.argsFunction) {
+			performAction(this.callbackAction, [CellCursor.x, CellCursor.y]);
+		} else {
+			performAction(this.callbackAction, this.argsFunction(CellCursor.x, CellCursor.y));
+		}
 	},
 	exitSelectionMode: function _() {
 	/**
@@ -167,7 +177,7 @@ var CellCursor = {
 	 */
 		this.isSelectionMode = false;
 		UI.setKeyMapping("Default");
-		UI.setClickHandler(Player.gameFieldClickHandler, Player);
+		UI.setClickHandler(Player.locationClickHandler, Player);
 		this.changeStyle("Main");
 		for (var i in this.shadedCells) {
 			this.shadedCells[i].unshade();

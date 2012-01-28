@@ -53,15 +53,12 @@ Net = {
 		this.websocket.send(JSON.stringify(data));
 	},
 	init : function _() {
+		
 		this.websocket = window.MozWebSocket ? new MozWebSocket(this.serverAddress) : new WebSocket(this.serverAddress);
 		this.websocket.onopen = function() {
 //			document.getElementById("stChooseServerForm").onsubmit = handlers.stChooseServerForm.submit;
-			Net.send({a:Net.SERVER_INFO}, function(data) {
-				Net.serverName = data.serverName;
-				Net.online = data.online;
-				UI.notify("serverInfoRecieve");
-				Net.send({a:Net.LOAD_PASSIVE_CONTENTS});  
-			});
+			
+			Net.send({a:Net.SERVER_INFO});
 			if (!localStorage.getItem(101)) {
 				// Автовыбор сервера из URL
 //				document.getElementById("stChooseServer").value = window.location.href
@@ -168,7 +165,7 @@ Net = {
 			login:login,
 			password:password,
 			characterId:characterId
-		},handlers.net.loadContents);
+		});
 		Global.playerLogin = login;
 		Global.playerPassword = password;
 		UI.notify("login");

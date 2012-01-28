@@ -23,7 +23,7 @@ function CachingFactory() {
  * @param {Object} object Key object.
  * @returns {Object} Value object.
  */
-CachingFactory.prototype.get = function(object) {
+CachingFactory.prototype.get = function get(object) {
 	var hashCode = object.hashCode();
 	if (!(hashCode in this.cache)) {
 	// If no objects equal to argument object were stored,
@@ -50,7 +50,7 @@ CachingFactory.prototype.get = function(object) {
  * @param {Object} object Key in map of 
  * @returns Object
  */
-CachingFactory.prototype.createNewValue = function(object) {
+CachingFactory.prototype.createNewValue = function createNewValue(object) {
 	throw new Error("Method createNewValue must be overriden in CachingFactory descendants!");
 };
 /**
@@ -59,7 +59,7 @@ CachingFactory.prototype.createNewValue = function(object) {
  * @param {Object} object Value object.
  * @returns {Boolean}
  */
-CachingFactory.prototype.isValueFree = function(value) {
+CachingFactory.prototype.isValueFree = function isValueFree(value) {
 	throw new Error("Method isValueFree must be overriden in CachingFactory descendants!");
 };
 
@@ -80,14 +80,14 @@ CachingMonoFactory.prototype = new CachingFactory();
  * returns it.
  * @return
  */
-CachingMonoFactory.prototype.get = function() {
+CachingMonoFactory.prototype.get = function get() {
 	for (var i=0; i<this.cache.length; i++) {
 		if (this.isValueFree(this.cache[i])) {
 			return this.cache[i];
 		}
 	}
 	// If there's no free element
-	var newValue = this.createNewValue()
+	var newValue = this.createNewValue();
 	this.cache.push(newValue);
 	return newValue;
 };
@@ -106,10 +106,8 @@ MultitypeCachingFactory.prototype = new CachingFactory();
  * @param {Object} object Key object.
  * @returns {Object} Value object.
  */
-MultitypeCachingFactory.prototype.get = function(object) {
-	if (!(object.hashCode instanceof Function)) {
-		throw new Error(object.__proto__.constructor.name+" is not hashable");
-	}
+MultitypeCachingFactory.prototype.get = function get(object) {
+	Interface.check(object, "Hashable");
 	var hashCode = object.hashCode();
 	var type = object.__proto__.constructor.name;
 	if (!(type in this.cache)) {
@@ -131,7 +129,7 @@ MultitypeCachingFactory.prototype.get = function(object) {
 	this.cache[type][hashCode] = newValue;
 	return newValue;
 };
-MultitypeCachingFactory.prototype.isValueFree = function(value) {
+MultitypeCachingFactory.prototype.isValueFree = function isValueFree(value) {
 	return value.parentNode === null;
 };
 
@@ -144,7 +142,10 @@ MultitypeCachingFactory.prototype.isValueFree = function(value) {
  * @see LetterAssigner
  * @class
  */
-var CachingLetterFactory = new CachingMonoFactory();
+var CachingLetterFactory = new (function CachingLetterFactory() {
+	CachingMonoFactory.apply(this);
+});
+CachingLetterFactory.__proto__ = new CachingMonoFactory();
 /**
  * Returns an HTMLDivElement containing particular letter as inner text.
  * 
@@ -155,19 +156,19 @@ var CachingLetterFactory = new CachingMonoFactory();
  *            letter A string of 1 character to put inside HTMLDivElement.
  * @returns {HTMLDivElement}
  */
-CachingLetterFactory.get = function(className, letter) {
+CachingLetterFactory.get = function get(className, letter) {
 	var nDiv = CachingMonoFactory.prototype.get.apply(this);
 	nDiv.className = className;
 	nDiv.firstChild.nodeValue = letter;
 	return nDiv;
 };
-CachingLetterFactory.createNewValue = function() {
+CachingLetterFactory.createNewValue = function createNewValue() {
 	var nDiv = document.createElement("div");
 	var nText = document.createTextNode("");
 	nDiv.appendChild(nText);
 	return nDiv;
 };
-CachingLetterFactory.isValueFree = function(value) {
+CachingLetterFactory.isValueFree = function isValueFree(value) {
 	return value.parentNode === null;
 };
 
@@ -190,11 +191,10 @@ NullCachingItemViewFactory.isValueFree = function(value) {
  *            with div.itemBg*. E.g. for class itemBgEquipment this argument
  *            should be "Equipment".
  */
-
-NullCachingItemViewFactory.createNewValue = function(background) {
+NullCachingItemViewFactory.createNewValue = function createNewValue(background) {
 	return new ItemView(null);
 };
-NullCachingItemViewFactory.get = function(bg) {
+NullCachingItemViewFactory.get = function get(bg) {
 	var itemView = CachingMonoFactory.prototype.get.apply(this);
 	itemView.rootElement.setData("typeId", -1);
 	itemView.rootElement.setData("param", -1);
@@ -231,7 +231,7 @@ CachingItemViewFactory.__proto__ = new CachingMonoFactory();
  * @param {String} bg Postfix for background node CSS class.
  * @returns {ItemView} Created ItemView
  */
-CachingItemViewFactory.get = function(item, bg) {
+CachingItemViewFactory.get = function get(item, bg) {
 	if (bg === undefined) {
 		throw new Error("You must provide bg!");
 	}
@@ -262,11 +262,11 @@ CachingItemViewFactory.get = function(item, bg) {
  * @param item
  * @return {ItemView}
  */
-CachingItemViewFactory.createNewValue = function(item) {
+CachingItemViewFactory.createNewValue = function createNewValue(item) {
 	return new ItemView(item, this.bg);
 };
 
-CachingItemViewFactory.isValueFree = function(element) {
+CachingItemViewFactory.isValueFree = function isValueFree(element) {
 	return element.parentNode === null;
 };
 /**
@@ -275,7 +275,7 @@ CachingItemViewFactory.isValueFree = function(element) {
  * @returns Object[] Array of {@link UniqueItem}s and {@link ItemPiles}.
  *          Unique items, if the CachingItemViewFactory has any, go first.
  */
-CachingItemViewFactory.getValues = function() {
+CachingItemViewFactory.getValues = function getValues() {
 	var answer = [];
 	for (var i in this.cache) {
 		for (var j in this.cache[i]) {
@@ -293,7 +293,7 @@ CachingItemViewFactory.getValues = function() {
  * @param {UniqueItem|ItemPile} item Key.
  * @returns {ItemView} Value.
  */
-CachingItemViewFactory.getCreatedItem = function(item) {
+CachingItemViewFactory.getCreatedItem = function getCreatedItem(item) {
 	return this.cache[item.__proto__.constructor.name][item.hashCode()]
 };
 
@@ -310,7 +310,7 @@ function MultitypeSet() {
  * 
  * @param {Object} object An object to store.
  */
-MultitypeSet.prototype.add = function(object) {
+MultitypeSet.prototype.add = function add(object) {
 	var type = object.__proto__.constructor.name;
 	if (!(type in this.elements)) {
 		this.elements[type] = {};
@@ -324,7 +324,7 @@ MultitypeSet.prototype.add = function(object) {
  * 
  * @param {Object} object Object we remove.
  */
-MultitypeSet.prototype.remove = function(object) {
+MultitypeSet.prototype.remove = function remove(object) {
 	var type = object.__proto__.constructor.name;
 	var hashCode = object.hashCode();
 	if (!(type in this.elements)) {
@@ -341,7 +341,7 @@ MultitypeSet.prototype.remove = function(object) {
  * @param {Object} object Object we are checking for.
  * @returns {Boolean}
  */
-MultitypeSet.prototype.has = function(object) {
+MultitypeSet.prototype.has = function has(object) {
 	var type = object.__proto__.constructor.name;
 	if (!(type in this.elements)) {
 		return false;
@@ -351,7 +351,7 @@ MultitypeSet.prototype.has = function(object) {
 /**
  * Remove all the objects from this set.
  */
-MultitypeSet.prototype.empty = function() {
+MultitypeSet.prototype.empty = function empty() {
 	for (var i in this.elements) {
 		for (var j in this.elements[i]) {
 			delete this.elements[i][j];
@@ -364,7 +364,7 @@ MultitypeSet.prototype.empty = function() {
  * 
  * @returns {Object[]} Arrays of all the objects in MultitypeSet
  */
-MultitypeSet.prototype.getValues = function() {
+MultitypeSet.prototype.getValues = function getValues() {
 	var answer = [];
 	for (var i in this.elements) {
 		for (var j in this.elements[i]) {
@@ -373,36 +373,118 @@ MultitypeSet.prototype.getValues = function() {
 	}
 	return answer;
 };
-
 function HashSet() {
-	this.contents = {};
+	this._contents = {};
 };
-HashSet.prototype.add = function(object) {
+HashSet.prototype.add = function add(object) {
+	Interface.check(object, "Hashable");
 	var hash = object.hashCode();
-	if (hash in this.contents) {
+	if (hash in this._contents) {
 		throw new Error("Object "+object.__proto__.constructor.name+" "+hash+" is already in set!");
 	}
-	this.contents[hash] = object;
+	this._contents[hash] = object;
 };
-HashSet.prototype.remove = function(object) {
+HashSet.prototype.remove = function remove(object) {
+	Interface.check(object, "Hashable");
 	var hash = object.hashCode();
-	if (!(hash in this.contents)) {
+	if (!(hash in this._contents)) {
 		throw new Error("Object "+object.__proto__.constructor.name+" "+hash+" is not in set!");
 	}
-	delete this.contents[hash];
+	delete this._contents[hash];
 };
-HashSet.prototype.contains = function(object) {
-	return object.hashCode() in this.contents;
+HashSet.prototype.contains = function contains(object) {
+	Interface.check(object, "Hashable");
+	return object.hashCode() in this._contents;
 };
-HashSet.prototype.getValues = function() {
+HashSet.prototype.getValues = function getValues() {
 	var answer = [];
-	for (var i in this.contents) {
-		answer.push(this.contents[i]);
+	for (var i in this._contents) {
+		answer.push(this._contents[i]);
 	}
 	return answer;
 };
-HashSet.prototype.forEach = function(func) {
-	for (var i in this.contents) {
-		func(this.contents[i]);
+HashSet.prototype.forEach = function forEach(func, context) {
+	for (var i in this._contents) {
+		func.apply(context, [this._contents[i]]);
 	}
+};
+HashSet.prototype.getEqual = function getEqual(object) {
+	for (var i in this._contents) {
+		if (this._contents[i].equals(object)) {
+			return this._contents[i];
+		}
+	}
+	return null;
+};
+HashSet.prototype.empty = function empty() {
+	for (var i in this._contents) {
+		delete this._contents[i];
+	}
+};
+
+function HashMap() {
+	this._contents = {};
+}
+HashMap.prototype.get = function get(key) {
+	var hash = (typeof key != "object") ? key : key.hashCode();
+	if (hash in this._contents) {
+		return this._contents[hash];
+	}
+	return null;
+};
+HashMap.prototype.put = function put(key, value) {
+	this._contents[(typeof key != "object") ? key : key.hashCode()] = value;
+};
+HashMap.prototype.containsKey = function containsKey(key) {
+	return (typeof key != "object") ? key : key.hashCode() in this._contents;
+};
+HashMap.prototype.containsValue = function containsValue(value) {
+	for (var i in this._contetns) {
+		if (this._contents[i].equals(value)) {
+			return true;
+		}
+	}
+};
+HashMap.prototype.empty = function empty() {
+	for (var i in this._contents) {
+		delete this._contents[i];
+	}
+};
+HashMap.prototype.forEach = function forEach(func, context) {
+	if (context === undefined) {
+		context = window;
+	}
+	for (var i in this._contents) {
+		func.apply(context, [this._contents[i]]);
+	}
+};
+HashMap.prototype.remove = function remove(key) {
+	if (!(key.hashCode() in this._contents)) {
+		throw new Error("HashMap doesn't have key "+key.__proto__.constructor.name+" "+key.hashCode());
+	}
+	delete this._contents[key.hashCode()];
+};
+/**
+ * Removes value under a key with certain hashCode.
+ * 
+ * @param {string} hashCode Hash code of key object.
+ */
+HashMap.prototype.removeByHashCode = function(hashCode) {
+	if (!(hashCode in this._contents)) {
+		throw new Error("HashMap has no object with hash code "+hashCode);
+	}
+	delete this._contents[hashCode];
+};
+HashMap.prototype.getValues = function getValues() {
+	var answer = [];
+	for (var i in this._contents) {
+		answer.push(this._contents[i]);
+	}
+	return answer;
+};
+HashMap.prototype.isEmpty = function () {
+	for (var i in this._contents) {
+		return false;
+	}
+	return true;
 };
