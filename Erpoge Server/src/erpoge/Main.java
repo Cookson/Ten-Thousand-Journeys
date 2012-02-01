@@ -1,6 +1,7 @@
 package erpoge;
 import java.awt.Rectangle;
 
+import erpoge.characters.CharacterManager;
 import erpoge.characters.CharacterTypes;
 import erpoge.characters.PlayerCharacter;
 import erpoge.characters.Race;
@@ -10,9 +11,8 @@ import erpoge.inventory.UniqueItem;
 import erpoge.itemtypes.ItemType;
 import erpoge.itemtypes.ItemsTypology;
 import erpoge.objects.GameObjects;
+import erpoge.terrain.HorizontalPlane;
 import erpoge.terrain.Location;
-import erpoge.terrain.TerrainGenerator;
-import erpoge.terrain.World;
 import erpoge.terrain.settlements.Building;
 
 public class Main {
@@ -53,13 +53,25 @@ public class Main {
 //		ItemsTypology.showTypology();
 //		ItemsTypology.jsonTypology();
 		
-		World world = new World(20,20,"TestWorld", "Erpoge World");
+//		World world = new World(20,20,"TestWorld", "Erpoge World");
 //		world.showWorld();
 		
 //		Location loc = world.createLocation(0, 0, 60, 40, TEST_LOCATION_TYPE, "New Location");
 //		loc.showLocation();	
+		HorizontalPlane plane = new HorizontalPlane();
+		plane.generateLocation(-60, -60, 40, 40, "Forest");
+		plane.generateLocation(-60, -20, 40, 40, "Forest");
+		plane.generateLocation(-60,  20, 40, 40, "Forest");
+		plane.generateLocation(-20, -60, 40, 40, "Forest");
+		plane.generateLocation(-20, -20, 40, 40, "BuildingTest");
+		plane.generateLocation(-20,  20, 40, 40, "Forest");
+		plane.generateLocation( 20, -60, 40, 40, "Forest");
+		plane.generateLocation( 20, -20, 40, 40, "Forest");
+		plane.generateLocation( 20,  20, 40, 40, "Forest");
 		
-		PlayerCharacter burok = world.createPlayer("Alvoi", Race.ELF, "Warrior", 6, 9);
+		plane.showTerrain(-60, -60, 120, 120);
+		
+		PlayerHandler burok = CharacterManager.createPlayer(plane, 6, 9, "Alvoi", Race.ELF, "Warrior");
 		burok.getItem(new UniqueItem(ItemType.CLASS_SWORD * ItemsTypology.CLASS_LENGTH));
 		burok.getItem(new ItemPile(ItemType.CLASS_AMMO * ItemsTypology.CLASS_LENGTH,200));
 		burok.getItem(new UniqueItem(ItemType.CLASS_BLUNT * ItemsTypology.CLASS_LENGTH));
@@ -73,7 +85,7 @@ public class Main {
 		Accounts.addAccount(new Account("Billy","1"));
 		Accounts.account("1").addCharacter(burok);
 		
-		MainHandler.assignWorld(world);
 		MainHandler.startServer();
+		MainHandler.setDefaultPlane(plane);
 	}	
 }

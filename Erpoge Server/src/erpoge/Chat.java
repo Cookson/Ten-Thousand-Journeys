@@ -11,7 +11,7 @@ import erpoge.terrain.Location;
 public final class Chat {
 	private static final Chat instance = new Chat();
 	private static final int MAX_LOCATION_MESSAGES_LIMIT = 50;
-	private HashMap<Location, ArrayList<Message>> locationChats = new HashMap<Location, ArrayList<Message>>();
+	private HashMap<Location, ArrayList<Message>> timeStreamChats = new HashMap<Location, ArrayList<Message>>();
 	private ArrayList<Message> worldChat = new ArrayList<Chat.Message>();
 
 	public Chat() {
@@ -19,8 +19,8 @@ public final class Chat {
 	}
 
 	public static void locationMessage(PlayerCharacter player, String message) {
-		ArrayList<Message> locationChat = instance.locationChats
-				.get(player.location());
+		ArrayList<Message> locationChat = instance.timeStreamChats
+				.get(player.getTimeStream());
 		locationChat.add(0, instance.new Message(player, message));
 		if (locationChat.size() > MAX_LOCATION_MESSAGES_LIMIT) {
 			locationChat.remove(MAX_LOCATION_MESSAGES_LIMIT + 1);
@@ -29,7 +29,7 @@ public final class Chat {
 	}
 	
 	public static void initLocationChat(Location location) {
-		instance.locationChats.put(location, new ArrayList<Message>());
+		instance.timeStreamChats.put(location, new ArrayList<Message>());
 	}
 	
 	public static void worldMessage(Character player, String message) {

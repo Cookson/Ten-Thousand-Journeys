@@ -13,7 +13,6 @@ import erpoge.graphs.RectangleSystem;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.CellCollection;
 import erpoge.terrain.TerrainBasics;
-import erpoge.terrain.TerrainGenerator;
 import erpoge.terrain.settlements.Building;
 import erpoge.terrain.settlements.BuildingPlace;
 import erpoge.terrain.settlements.Settlement;

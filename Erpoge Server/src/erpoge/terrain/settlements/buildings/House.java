@@ -32,16 +32,12 @@ public class House extends Building {
 		settlement.setObject(c.x, c.y, GameObjects.OBJ_LADDER_UP);
 		
 		/* SECOND FLOOR */
-		settlement.touchLevel(1, settlement.width, settlement.height);
-		settlement.linkWithPortals(c, c, 1);
-		settlement.selectLevel(1);
-		crs = new CustomRectangleSystem(settlement,x,y,width,height,1);
-		settlement.setObject(c.x, c.y, GameObjects.OBJ_LADDER_DOWN);
-		rectangleSystem = settlement.getGraph(crs);
-		buildBasis(GameObjects.OBJ_WALL_GREY_STONE);
-		
-		
-		settlement.showLocation();		
-		Main.console("========");
+//		settlement.touchLevel(1, settlement.getWidth(), settlement.getHeight());
+//		settlement.linkWithPortals(c, c, 1);
+//		settlement.selectLevel(1);
+//		crs = new CustomRectangleSystem(settlement,x,y,width,height,1);
+//		settlement.setObject(c.x, c.y, GameObjects.OBJ_LADDER_DOWN);
+//		rectangleSystem = settlement.getGraph(crs);
+//		buildBasis(GameObjects.OBJ_WALL_GREY_STONE);
 	}
 }

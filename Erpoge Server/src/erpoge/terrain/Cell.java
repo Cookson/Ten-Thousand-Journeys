@@ -13,6 +13,7 @@ import erpoge.characters.Character;
 public class Cell {
 	protected int floor = GameObjects.FLOOR_VOID;
 	protected int object = GameObjects.OBJ_VOID;
+	private int passability = TerrainBasics.PASSABILITY_FREE;
 	private Character character = null;
 	private HashSet<CellEvent> events;
 	public final ItemMap items = new ItemMap();
@@ -92,6 +93,29 @@ public class Cell {
 	public void object(int value) {
 		object = value;
 	}
-
+	public boolean isDoor() {
+		return object > 40 && object < 51;
+	}
+	public void show() {
+		if (object != GameObjects.OBJ_VOID) {
+			if (isDoor()) {
+				Main.out("+");
+			} else {
+				Main.out("8");
+			}
+		} else if (character != null) {
+			Main.out("!");
+		} else if (floor == GameObjects.FLOOR_WATER) {
+			Main.out("~");
+		} else {
+			Main.out(".");
+		}
+	}
+	public void setPassability(int passability) {
+		this.passability = passability;
+	}
+	public int getPassability() {
+		return passability;
+	}
 	
 }

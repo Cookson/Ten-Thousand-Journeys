@@ -3,7 +3,6 @@ package erpoge.terrain.settlements.buildings;
 import erpoge.Main;
 import erpoge.Side;
 import erpoge.objects.GameObjects;
-import erpoge.terrain.TerrainGenerator;
 import erpoge.terrain.settlements.Building;
 import erpoge.terrain.settlements.BuildingPlace;
 import erpoge.terrain.settlements.Settlement;

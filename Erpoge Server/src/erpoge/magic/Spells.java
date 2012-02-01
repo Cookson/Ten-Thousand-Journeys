@@ -21,9 +21,9 @@ public final class Spells {
 	public Spells() {
 		spells.put(SPELL_FIREBALL, new Spell() {
 			public void cast(Character caster, int x, int y) {
-				if (caster.location.cells[x][y].character() != null) {
+				if (caster.plane.getCell(x,y).character() != null) {
 //					caster.location.cells[x][y].character().getDamage(30, Character.DAMAGE_PLAIN);
-					caster.location.cells[x][y].character().addEffect(EffectsTypology.EFF_STINK, 5000, 5);
+					caster.plane.getCell(x,y).character().addEffect(EffectsTypology.EFF_STINK, 5000, 5);
 				}				
 //				caster.location.fireSound(x, y, Sound.SCREAM);
 //				caster.location.fireSound(x, y, Sound.ROAR);
@@ -32,7 +32,7 @@ public final class Spells {
 		});
 		spells.put(SPELL_SUMMON_ITEM, new Spell() {
 			public void cast(Character caster, int x, int y) {
-				caster.location.createCharacter("bear", "Чужой миша", x, y, 0);
+				caster.plane.getChunk(x, y).createCharacter(x, y, "bear", "Чужой миша", 0);
 //				if (caster.location.cells[x][y].object() != GameObjects.OBJ_VOID) {
 //					caster.location.removeObject(x, y);
 //				} else {
@@ -42,7 +42,7 @@ public final class Spells {
 		});
 		spells.put(SPELL_SUMMON_ENEMY, new Spell() {
 			public void cast(Character caster, int x, int y) {
-				caster.location.createCharacter("bear", "Мой миша", x, y, 1);
+				caster.plane.getChunk(x,y).createCharacter(x, y, "bear", "Мой миша", 1);
 			}
 		});
 	}

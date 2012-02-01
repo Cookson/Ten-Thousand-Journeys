@@ -19,9 +19,9 @@ import erpoge.inventory.UniqueItem;
 import erpoge.itemtypes.ItemsTypology;
 import erpoge.serverevents.*;
 import erpoge.terrain.Container;
+import erpoge.terrain.HorizontalPlane;
 import erpoge.terrain.Location;
 import erpoge.terrain.Portal;
-import erpoge.terrain.World;
 
 public class PlayerCharacter extends Character {
 	protected final String cls;
@@ -35,13 +35,10 @@ public class PlayerCharacter extends Character {
 	private final ArrayList<Integer> protections = new ArrayList<Integer>(
 			CharacterTypes.NUMBER_OF_PROTECTIONS);
 	
-	public int worldX;
-	public int worldY;
 	private HashMap<String, Integer> skills = new HashMap<String, Integer>();
 	private int party = 0;
 	private PlayerCharacter inviter;
 	private NonPlayerCharacter dialoguePartner;
-	public World world;
 	public boolean checkedOut = false;
 	protected boolean isAuthorized = false;
 	public static final String[] skillNames = {"mace", "axe", "shield",
@@ -50,12 +47,14 @@ public class PlayerCharacter extends Character {
 			"demonology", "mental", "magicItems", "craft", "traps",
 			"effraction", "mechanics", "alchemy"};
 	public WebSocket connection;
-	public PlayerCharacter(String name, Race race, String cls, int x, int y) {
-		super("player", name, x, y);
+	protected HorizontalPlane plane;
+	public PlayerCharacter(HorizontalPlane plane, int x, int y, String name, Race race, String cls) {
+		super(plane, x, y, "player", name);
 		this.cls = cls;
 		this.race = race;
-		maxHp = 100000;
+		this.plane = plane;
 		maxMp = 30000;
+		maxHp = 100000;
 		maxEp = 100;
 		hp = 100000;
 		mp = 30000;
@@ -76,115 +75,44 @@ public class PlayerCharacter extends Character {
 	
 	/* Actions */
 	public void say(String message) {
-		if (this.isOnGlobalMap()) {
-			// World message
-			Chat.worldMessage(this, message);
-			world.flushEvent(new EventChatMessage(characterId, message));
-		} else {
-			// location message
-			Chat.locationMessage(this, message);
-			location.addEvent(new EventChatMessage(characterId, message));
-			location.flushEvents(Location.TO_LOCATION, this);
-		}
+		// location message
+		Chat.locationMessage(this, message);
+		getTimeStream().addEvent(new EventChatMessage(characterId, message));
+		getTimeStream().flushEvents();
 	}
 	public void die() {
 		super.die();
 		try {
-			connection.send("["+jsonPartGetEnteringData(isOnGlobalMap())+"]");
+			connection.send("["+jsonPartGetEnteringData()+"]");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		for (Character ch : location.characters.values()) {
-			if (ch instanceof PlayerCharacter) {
-				return;
-			}
-		}
 	}
 	public void startConversation(int characterId) {
-		dialoguePartner = (NonPlayerCharacter) location.characters
-				.get(characterId);
+		dialoguePartner = (NonPlayerCharacter) timeStream.getCharacterById(characterId);
 		if (dialoguePartner.hasDialogue()) {
 			dialoguePartner.applyConversationStarting(this);
-			location.flushEvents(Location.TO_LOCATION, this);
+			getTimeStream().flushEvents();
 		}
 	}
 	/* Travelling */
-	public void leaveLocation() {
-		worldX = location.worldX;
-		worldY = location.worldY;
-		actionPoints = 0;
-		location.removeCharacter(this);
-		this.location = null;
-	}
-	public void enterLocation(Location location) {
-		if (this.location != null) {
-			throw new Error("Character can enter location only from world map");
-		}
-		this.location = location;
-		location.addCharacter(this);
-		notifyNeighborsVisiblilty();
-	}
-	public void enterLocation(Location location, Portal portal) {
-		if (this.location != null) {
-			throw new Error("Character can enter location only from world map");
-		}
-		this.location = location;
-		location.addCharacter(this, portal);
-		notifyNeighborsVisiblilty();
-	}
-	public void goToAnotherLevel(Portal portal) {
+	public void goToAnotherLevel(HorizontalPlane newPlane, int x, int y) {
 	/**
 	 * Transports character to another level of current location.
 	 */
-		leaveLocation();
-		enterLocation(portal.location, portal);
+		this.plane = newPlane;
+		this.x = x;
+		this.y = y;
 	}
-	public Portal getNearbyPortal() {
-	/**
-	 * Returns Portal if character stand next to one.
-	 * Otherwise returns null
-	 */
-		for (Portal portal : location.portals) {
-			if (portal.isNear(x, y) || portal.x == x && portal.y == y) {
-				return portal;
-			}
-		}
-		return null;
-	}
-	public void worldTravel(int x, int y) {
-		worldX = x;
-		worldY = y;
-		world.flushEvent(new EventWorldTravel(x, y, characterId));
-//		world.addEvent();
-//		world.flushEvents(Location.TO_WORLD, this);
-	}
-	private boolean canTravelTo(int x, int y) {
-		return true;
-	}
-	private void flushEvents() {
-		if (isOnGlobalMap()) {
-			world.flushEvents(Location.TO_WORLD, this);
-		} else {
-			location.flushEvents(Location.TO_LOCATION, this);
-		}
-	}
-	
 	public void dialogueAnswer(int answerIndex) {
 		say(dialoguePartner.dialogues.get(this).getAnswerText(answerIndex));
 		dialoguePartner.proceedToNextDialoguePoint(this, answerIndex);
 		moveTime(500);
-		location.flushEvents(Location.TO_LOCATION, this);
+		getTimeStream().flushEvents();
 	}
 	
 	/* Data */
-	public String jsonGetWorldTravel(int x, int y) {
-		if (canTravelTo(x, y)) {
-			return "{\"x\":" + x + ",\"y\":" + y + "}";
-		} else {
-			return "{\"x\":" + worldX + ",\"y\":" + worldY + "}";
-		}
-	}
-	public String jsonPartGetEnteringData(boolean isWorld) {
+	public String jsonPartGetEnteringData() {
 		/**
 		 * The same data is used for entering both global and local map
 		 * 
@@ -194,7 +122,6 @@ public class PlayerCharacter extends Character {
 		 */
 		/* In world:
 		 * {
-		 * 		onGlobalMap: true, 
 		 * 		w :{w,h,c:[[ground,forest,road,river,race,[objects]]xN]}, 
 		 *  	p : [(0)characterId, (1)worldX, (2)worldY, (3)isLead, (4)name, (5)race, (6)class, 
 		 *  		(7)maxHp, (8)maxMp, (9)maxEp, (10)hp, (11)mp, (12)ep, 
@@ -207,7 +134,6 @@ public class PlayerCharacter extends Character {
 		 */ 
 		/* In location: 
 		 * { 	
-		 * 		onGlobalMap: false,
 		 * 		l: {w,h,locationId,c:[[ground,forest,road,river,race,[objects]]xN]}, 
 		 * 		p : [(0)characterId, (1)worldX, (2)worldY, (3)isLead, (4)name, (5)race, (6)class, 
 		 *  		(7)maxHp, (8)maxMp, (9)maxEp, (10)hp, (11)mp, (12)ep, 
@@ -218,17 +144,15 @@ public class PlayerCharacter extends Character {
 		 */
 		StringBuilder answer = new StringBuilder();
 		answer
-			.append("{\"e\":\"loadContents\",\"onGlobalMap\":")
-			.append(isWorld).append(",\"")
-			.append(isWorld ? "w" : "l").append("\":{")
-			.append(isWorld ? world.jsonPartGetWorldContents() : location.jsonPartGetLocationContents())
+			.append("{\"e\":\"loadContents\",")
+			.append("\"l\":{")
 			.append("},");
 		// Player data
 		answer
 			.append("\"p\":[")
 /* 0 */		.append(characterId).append(",")
-/* 1 */		.append(isWorld ? worldX : x).append(",")
-/* 2 */		.append(isWorld ? worldY : y).append(",")
+/* 1 */		.append(x).append(",")
+/* 2 */		.append(y).append(",")
 /* 3 */		.append(true).append(",\"")
 /* 4 */		.append(name).append("\",")
 /* 5 */		.append(race.race2int()).append(",\"")
@@ -276,66 +200,12 @@ public class PlayerCharacter extends Character {
 		
 		// Online characters
 		.append("],\"online\":[");
-		ArrayList<Character> onlinePlayers = new ArrayList<Character>((isWorld)
-				? world.onlinePlayers.values()
-				: location.getCharacters());
+		ArrayList<Character> onlinePlayers = new ArrayList<Character>();
 		i = 0;
 		iterations = onlinePlayers.size() - 1;
 
 		if (iterations > -1) {
-			if (isWorld) {
-				for (; i < iterations; i++) {
-					PlayerCharacter player = (PlayerCharacter) onlinePlayers
-							.get(i);
-					answer
-						.append("[")
-						.append(player.characterId).append(",\"")
-						.append(player.name).append("\",\"")
-						.append(player.cls).append("\",")
-						.append(player.race.race2int()).append(",")
-						.append(player.party).append(",")
-						.append(player.worldX).append(",")
-						.append(player.worldY).append("],");
-				}
-				PlayerCharacter player = (PlayerCharacter) onlinePlayers.get(i);
-				answer
-					.append("[")
-					.append(player.characterId).append(",\"")
-					.append(player.name).append("\",\"")
-					.append(player.cls).append("\",")
-					.append(player.race.race2int()).append(",")
-					.append(player.party).append(",")
-					.append(player.worldX).append(",")
-					.append(player.worldY).append("]");
-			} else {
-				for (; i < iterations; i++) {
-					Character character = onlinePlayers.get(i);
-					answer
-						.append("[")
-						.append(character.characterId).append(",")
-						.append(character.x).append(",")
-						.append(character.y).append(",\"")
-						.append(character.name).append("\",")
-						.append(character.fraction).append(",")
-						.append(character.maxHp).append(",")
-						.append(character.hp).append(",")
-						.append(character.maxMp).append(",")
-						.append(character.mp).append(",")
-						.append(character.jsonGetEffects()).append(",")
-						.append(character.jsonGetEquipment());
-					if (character instanceof PlayerCharacter) {
-						PlayerCharacter player = (PlayerCharacter) onlinePlayers
-								.get(i);
-						answer
-							.append(",\"")
-							.append(player.cls).append("\",")
-							.append(player.race.race2int()).append("],");
-					} else {
-						answer
-							.append(",\"")
-							.append(character.type).append("\"],");
-					}
-				}
+			for (; i < iterations; i++) {
 				Character character = onlinePlayers.get(i);
 				answer
 					.append("[")
@@ -356,12 +226,38 @@ public class PlayerCharacter extends Character {
 					answer
 						.append(",\"")
 						.append(player.cls).append("\",")
-						.append(player.race.race2int()).append("]");
+						.append(player.race.race2int()).append("],");
 				} else {
 					answer
 						.append(",\"")
-						.append(character.type).append("\"]");
+						.append(character.type).append("\"],");
 				}
+			}
+			Character character = onlinePlayers.get(i);
+			answer
+				.append("[")
+				.append(character.characterId).append(",")
+				.append(character.x).append(",")
+				.append(character.y).append(",\"")
+				.append(character.name).append("\",")
+				.append(character.fraction).append(",")
+				.append(character.maxHp).append(",")
+				.append(character.hp).append(",")
+				.append(character.maxMp).append(",")
+				.append(character.mp).append(",")
+				.append(character.jsonGetEffects()).append(",")
+				.append(character.jsonGetEquipment());
+			if (character instanceof PlayerCharacter) {
+				PlayerCharacter player = (PlayerCharacter) onlinePlayers
+						.get(i);
+				answer
+					.append(",\"")
+					.append(player.cls).append("\",")
+					.append(player.race.race2int()).append("]");
+			} else {
+				answer
+					.append(",\"")
+					.append(character.type).append("\"]");
 			}
 		}
 

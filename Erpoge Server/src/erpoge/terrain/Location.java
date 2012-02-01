@@ -18,10 +18,13 @@ import erpoge.Chat;
 import erpoge.Coordinate;
 import erpoge.Main;
 import erpoge.MainHandler;
+import erpoge.Side;
 import erpoge.characters.Character;
 import erpoge.characters.NonPlayerCharacter;
 import erpoge.characters.PlayerCharacter;
 import erpoge.characters.TurnQueue;
+import erpoge.graphs.CustomRectangleSystem;
+import erpoge.graphs.RectangleSystem;
 import erpoge.inventory.Item;
 import erpoge.inventory.ItemPile;
 import erpoge.inventory.UniqueItem;
@@ -29,18 +32,18 @@ import erpoge.itemtypes.Attribute;
 import erpoge.objects.Sound;
 import erpoge.objects.SoundType;
 import erpoge.serverevents.*;
+import erpoge.terrain.settlements.Building;
+import erpoge.terrain.settlements.BuildingPlace;
 
 public class Location extends TerrainBasics {
-	public final static Location ABSTRACT_LOCATION = new Location(0,0,"ABSTRACT LOCATION");
 	public final String type;
 	public final String name;
-	public final World world;
-	public int worldX;
-	public int worldY;
+	protected final int width;
+	protected final int height;
 	
 	private ArrayList<PlayerCharacter> players = new ArrayList<PlayerCharacter>();
 	protected ArrayList<Ceiling> ceilings = new ArrayList<Ceiling>();
-	public HashSet<NonPlayerCharacter> nonPlayerCharacters = new HashSet<NonPlayerCharacter>();
+	
 	private ArrayList<Sound> soundSources = new ArrayList<Sound>();
 	/**
 	 * serverEvents - a core of the mechanism of asynchronous server-side data sending.
@@ -49,342 +52,901 @@ public class Location extends TerrainBasics {
 	 * and then flushed (Location.flushEvents) as json to all the needed players (either near enough
 	 * in location or in the world)
 	 */
-	public ArrayList<ServerEvent> serverEvents = new ArrayList<ServerEvent>();
+	private HorizontalPlane plane;
 
-	private TurnQueue turnQueue = new TurnQueue(characters);
-
-	public boolean noMorePlayersInLocation = false;	
-	
-	public Location(int w, int h, String t, String n, World wo) {
-		super(w,h);
-		type = t;
-		name = n;
-		world = wo;
+	public Location(HorizontalPlane plane, int x, int y, int width, int height, String type) {
+		super(x, y);
+		this.cells = plane.getCells(x, y, width, height);
+		for (int q=0; q<width; q++) {
+			for (int z=0; z<height; z++) {
+//				Main.console(q+" "+z+" "+this.cells[q][z]);
+			}
+		}
+		
+		this.type = type;
+		this.name = "Empty location name!";
+		this.plane = plane;
+		this.width = width;
+		this.height = height;
 		Chat.initLocationChat(this);
 	}
-	protected Location(int width, int height, String name) {
-		this(width, height, "", name, World.ABSTRACT_WORLD);
-	}
-	public void sendOutEvent(PlayerCharacter character, ServerEvent event) {
-	// Send out an event to all the players who are on global map.
-	// Used only for sending to global map, not to location.
-		ArrayList<WebSocket> targetConnections = new ArrayList<WebSocket>();
-		// Form the event in json
-		String data = "["+MainHandler.gsonIncludesStatic.toJson(event,event.getClass())+"]";
-		// Select the recipients
-		for (WebSocket conn : MainHandler.instance.connections()) {
-			if (conn.character != null && conn.character.isOnGlobalMap()) {
-				targetConnections.add(conn);
-			}
-		}
-		
-		// Send out event to whem
-		for (WebSocket conn : targetConnections) {
-			try {
-				conn.send(data);
-			} catch (IOException e) {
-				Main.outln("Data sending error");
-			}
-		}
-	}
-	public void flushEvents(int toWho, Character character) {
-		ArrayList<WebSocket> targetConnections = new ArrayList<WebSocket>();
-		// Get the list of target players
-		if (toWho == TO_LOCATION) {
-			// Send to those in location who are close enough to get these events
-			for (WebSocket conn : MainHandler.instance.connections()) {
-				if (conn.character != null && !conn.character.isOnGlobalMap() && conn.character.location == this) {
-					targetConnections.add(conn);
-				}
-			}
-		} else if (toWho == TO_WORLD) {
-			for (WebSocket conn : MainHandler.instance.connections()) {
-				if (conn.character != null && conn.character.isOnGlobalMap()) {
-					targetConnections.add(conn);
-				}
-			}
-		}
-		
-		// Form the json string
-		String data = "[";
-		int i=0;
-		int iterations = serverEvents.size()-1;
-		if (iterations>-1) {
-			for (;i<iterations;i++) {
-				ServerEvent event = serverEvents.get(i);
-				data += MainHandler.gsonIncludesStatic.toJson(event,event.getClass())+",\n";
-			}
-			ServerEvent event = serverEvents.get(i);
-			data += MainHandler.gsonIncludesStatic.toJson(event,event.getClass());
-		}
-		data += "]";
-		// Send data to all players
-		for (WebSocket conn : targetConnections) {
-			try {
-				conn.send(data);
-			} catch (IOException e) {
-				Main.outln("Data sending error");
-			}
-		}
-		serverEvents.clear();
-	}
-	public void addEvent(ServerEvent event) {
-		serverEvents.add(event);
-	}
 	
-	public void setWorldCoordinate(int x, int y) {
-		worldX = x;
-		worldY = y;
-	}
-	public String jsonGetContainerContents(int x, int y) {
-		return getContainer(x,y).jsonGetContents();
-	}
-	public String jsonPartGetLocationContents() {
+	// Data
+	// From TerrainBasics
+	public void line(int startX, int startY, int endX, int endY, int type,
+			int val, int chance) {
+		if (startX == endX && startY == endY) {
+			int x = startX;
+			int y = startY;
+			setElement(x, y, type, val);
+			return;
+		}
 		/*
-			Format: non-valid json data; 
-				String "w:xSize,h:ySize,p:boolean,s:[[x,y,type]xJ]c:[[floor,object,[[itemId,amount]xN]]xM],ceilings:[[x,y,width,height]xL]";
-		*/
-		StringBuilder answer = new StringBuilder();
-		answer
-			.append("\"w\":").append(width)
-			.append(",\"h\":").append(height)
-			.append(",\"p\":").append(isPeaceful).append(",");
-		int sSize=soundSources.size();
-		if (sSize > 0) {
-			answer.append("\"s\":[");
-			for (int i=0;i<sSize-1;i++) {
-				Sound s = soundSources.get(i);
-				answer
-					.append("[")
-					.append(s.x).append(",")
-					.append(s.y).append(",")
-					.append(s.type).append("],");
-			}
-			Sound s = soundSources.get(sSize-1);
-			answer
-				.append("[")
-				.append(s.x).append(",")
-				.append(s.y).append(",")
-				.append(s.type).append("]],");
-		}
-		answer.append("\"c\":[");
-		for (int j = 0;j<height;j++) {
-			for (int i=0;i<width;i++) {
-				Cell c = cells[i][j];
-				answer.append("["+c.floor()).append(",").append(c.object());
-				int iSize = c.items.size();
-				if (iSize > 0) {
-					answer.append(",[");
-					int k=0;
-					for (Item item : c.items.values()){
-						answer.append(item.toJson()).append((k<iSize-1) ? "," : "");
-						k++;
-					}
-					answer.append("]");
-				}
-				answer.append("]").append(i+j<width+height-2 ? "," : "");
-			}
-		}
-		answer.append("],\"ceilings\":[");
-		int ceilingsSize = ceilings.size();
-		int i=0;
-		for (Ceiling c : ceilings) {
-			answer
-				.append("[")
-				.append(c.x).append(",")
-				.append(c.y).append(",")
-				.append(c.width).append(",")
-				.append(c.height).append(",")
-				.append(c.type).append("]").append(++i<ceilingsSize ? "," : "");
-		}
-		answer.append("]");
-		return answer.toString();
-	}
-	public Coordinate getStartCoord() {
-		for (int i=startArea.x;i<startArea.x+startArea.width;i++) {
-			for (int j=startArea.y;j<startArea.y+startArea.height;j++) {
-				if (passability[i][j] == PASSABILITY_FREE) {
-					return new Coordinate(i,j);
-				}
-			}
-		}
-		throw new Error("Cannot get start coord");
-	}	
-	public NonPlayerCharacter createCharacter(String type, String name, int sx, int sy, int fraction) {
-		NonPlayerCharacter ch = new NonPlayerCharacter(type, name, this, sx, sy);
-		ch.setFraction(fraction);
-		characters.put(ch.characterId, ch);
-		nonPlayerCharacters.add(ch);
-		cells[sx][sy].character(ch);
-		addEvent(new EventCharacterAppear(
-				ch.characterId, ch.x, ch.y, ch.type, ch.name,
-				ch.getAttribute(Attribute.MAX_HP), ch.getAttribute(Attribute.HP),
-				ch.getAttribute(Attribute.MAX_MP), ch.getAttribute(Attribute.MP),
-				ch.getEffects(), ch.getEquipment(), ch.getFraction()));
-		ch.getVisibleEntities();
-		return ch;
-	}	
-	
-	public void addCharacter(PlayerCharacter ch) {
-		Coordinate spawn = getStartCoord();
-		cells[spawn.x][spawn.y].character(ch);
-		ch.x = spawn.x;
-		ch.y = spawn.y;
-		characters.put(ch.characterId, ch);
-		ch.location = this;
-		players.add(ch);
-	}
-	public void addCharacter(PlayerCharacter ch, Portal portal) {
-	/**
-	 * Adds character near portal. Portal is portal object
-	 * not in this location, but in location character came from.
-	 */
-		Coordinate spawn = portal.getAnotherEnd();
-		boolean freeSpaceFound = false;
-		both:
-		for (int dx = -1; dx<2; dx++) {
-		/**
-		 * Search for free space near portal
+		 * if (!isset(type)) { type=1; } if (!isset(name)) { name=1; }
 		 */
-			for (int dy = -1; dy<2; dy++) {
-				if (passability[spawn.x+dx][spawn.y+dy] == PASSABILITY_FREE) {
-					spawn.move(spawn.x+dx, spawn.y+dy);
-					freeSpaceFound = true;
-					break both;
+		Coordinate[] cells = vector(startX, startY, endX, endY);
+		int size = cells.length;
+		Chance cellChance = new Chance(chance);
+		for (int i = 0; i < size - 1; i++) {
+			int x = cells[i].x;
+			int y = cells[i].y;
+			int x2 = cells[i + 1].x;
+			int y2 = cells[i + 1].y;
+			if (chance != 100 && !cellChance.roll()) {
+				continue;
+			}
+
+			setElement(x, y, type, val);
+			if (i < cells.length - 1 && x != x2 && y != y2) {
+				// ������
+				setElement(x + ((x2 > x) ? 1 : -1), y, type, val);
+			}
+			if (i == size - 2) {
+				setElement(x2, y2, type, val);
+			}
+		}
+	}
+	public void line(int startX, int startY, int endX, int endY, int type,
+			int val) {
+		line(startX, startY, endX, endY, type, val, 100);
+	}
+	public void square(int startX, int startY, int w, int h, int type, int name) {
+		square(startX, startY, w, h, type, name, false);
+	}
+	public void square(Rectangle r, int type, int name, boolean fill) {
+		square(r.x, r.y, r.width, r.height, type, name, fill);
+	}
+	public void square(int startX, int startY, int w, int h, int type,
+			int name, boolean fill) {
+		if (startX + w > getWidth() || startY + h > getHeight()) {
+			throw new Error("Square " + startX + "," + startY + "," + getWidth()
+					+ "," + getHeight() + " goes out of location borders");
+		}
+		// ��������� ����
+		if (w == 1) {
+			line(startX, startY, startX, startY + h - 1, type, name);
+		} else if (h == 1) {
+			line(startX, startY, startX + w - 1, startY, type, name);
+		} else {
+			line(startX, startY, startX + w - 2, startY, type, name);
+			line(startX, startY, startX, startY + h - 2, type, name);
+			line(startX + w - 1, startY, startX + w - 1, startY + h - 1, type,
+					name);
+			line(startX, startY + h - 1, startX + w - 2, startY + h - 1, type,
+					name);
+			if (fill) {
+				// ���� ���� - ��������� ���������� �������
+				for (int i = 1; i < h - 1; i++) {
+					line(startX + 1, startY + i, startX + w - 1, startY + i,
+							type, name);
 				}
 			}
 		}
-		if (!freeSpaceFound) {
-			throw new Error("Free space not found");
+	}
+	public ArrayList<Coordinate> getCircle(int cx, int cy, int r) {
+		// ������ ���� � ������� � cX;cY ������� r �� �������� type / name
+		// ���� fill=true, ��������� ���������� �������
+		ArrayList<Coordinate> answer = new ArrayList<Coordinate>();
+		int d = -r / 2;
+		int xCoord = 0;
+		int yCoord = r;
+		Hashtable<Integer, Integer> x = new Hashtable<Integer, Integer>();
+		Hashtable<Integer, Integer> y = new Hashtable<Integer, Integer>();
+		x.put(0, 0);
+		y.put(0, r);
+		do {
+			// �������� ���� (�������� ����������)
+			if (d < 0) {
+				xCoord += 1;
+				d += xCoord;
+			} else {
+				yCoord -= 1;
+				d -= yCoord;
+			}
+			x.put(x.size(), xCoord);
+			y.put(y.size(), yCoord);
+		} while (yCoord > 0);
+		int size = x.size();
+		for (int i = 0; i < size; i++) {
+			answer.add(new Coordinate(cx + x.get(i), cy + y.get(i)));
+			answer.add(new Coordinate(cx - x.get(i), cy + y.get(i)));
+			answer.add(new Coordinate(cx + x.get(i), cy - y.get(i)));
+			answer.add(new Coordinate(cx - x.get(i), cy - y.get(i)));
 		}
-		cells[spawn.x][spawn.y].character(ch);
-		ch.x = spawn.x;
-		ch.y = spawn.y;
-		ch.location = this;
+		return answer;
+	}
+	public void circle(int cX, int cY, int r, int type, int name) {
+		circle(cX, cY, r, type, name, false);
+	}
+	public void circle(int cX, int cY, int r, int type, int name, boolean fill) {
+		// ������ ���� � ������� � cX;cY ������� r �� �������� type / name
+		// ���� fill=true, ��������� ���������� �������
+		int d = -r / 2;
+		int xCoord = 0;
+		int yCoord = r;
+		Hashtable<Integer, Integer> x = new Hashtable<Integer, Integer>();
+		Hashtable<Integer, Integer> y = new Hashtable<Integer, Integer>();
+		x.put(0, 0);
+		y.put(0, r);
+		do {
+			// �������� ���� (�������� ����������)
+			if (d < 0) {
+				xCoord += 1;
+				d += xCoord;
+			} else {
+				yCoord -= 1;
+				d -= yCoord;
+			}
+			x.put(x.size(), xCoord);
+			y.put(y.size(), yCoord);
+		} while (yCoord > 0);
+		int size = x.size();
+		for (int i = 0; i < size; i++) {
+			setElement(cX + x.get(i), cY + y.get(i), type, name);
+			setElement(cX - x.get(i), cY + y.get(i), type, name);
+			setElement(cX + x.get(i), cY - y.get(i), type, name);
+			setElement(cX - x.get(i), cY - y.get(i), type, name);
+		}
+	}
+	public RectangleSystem getGraph(int startX, int startY, int width,
+			int height, int minRectangleWidth, int borderWidth) {
+		return new RectangleSystem(this, startX, startY, width, height,
+				minRectangleWidth, borderWidth);
+	}
+	public RectangleSystem getGraph(CustomRectangleSystem crs) {
+		return new RectangleSystem(crs);
+	}
+	public CellCollection getCellCollection(ArrayList<Coordinate> cls) {
+		return new CellCollection(cls, this);
+	}
+	// From LocationGenerator
+	public NonPlayerCharacter createCharacter(String type, String name, int x, int y) {
+		NonPlayerCharacter ch = new NonPlayerCharacter(plane, x, y, type, name);
 		characters.put(ch.characterId, ch);
-		if (ch instanceof PlayerCharacter) {
-			players.add((PlayerCharacter)ch);
+		cells[x][y].character(ch);
+		return ch;
+	}
+	public void selectPlane(HorizontalPlane plane) {
+		plane = plane;
+	}
+	public Building placeBuilding(Class<? extends Building> building, int x, int y, int width, int height, Side side) {
+	/**
+	 * Places building when current location is not Settlement.
+	 * 
+	 * @param side What side a building is rotated to.
+	 */
+		BuildingPlace place = new BuildingPlace(x,y,width,height);
+		try {
+			return building.newInstance().setProperties(this, place);
+		} catch (Exception e) {
+			throw new Error("Couldn't place building");
 		}
-	}	
-	public void removeCharacter(Character character) {
-		passability[character.x][character.y] = 0;
-		characters.remove(character.characterId);
 	}
-	public void removeCharacter(PlayerCharacter character) {
-		passability[character.x][character.y] = 0;
-		characters.remove(character);
-		character.location = Location.ABSTRACT_LOCATION;
+	// From TerrainGenerator
+	public ArrayList<Coordinate> polygon(ArrayList<Coordinate> coords) {
+		return polygon(coords, false);
 	}
-	
-	public void setFloor(int x, int y, int type) {
-		super.setFloor(x, y, type);
-		addEvent(new EventFloorChange(type, x ,y));
+	public ArrayList<Coordinate> polygon(ArrayList<Coordinate> coords,
+			boolean mode) {
+		// ���������� ��������� ������ ��������������
+		// �������� � ��������� � ����������� ����������������, �� �������� �
+		// ����������������, � ������� ������������ �������
+		// coords - [[x,y]xN]
+		// mode: 0|undefined - ���������� ������� � �������, 1 - ������� ������
+		// ����� ������ �������
+		ArrayList<Coordinate> answer = new ArrayList<Coordinate>();
+
+		// �������� �������, ������� � � ������ answer
+		int size = coords.size();
+		Coordinate[] v;
+		int vSize;
+		for (int i = 0; i < size; i++) {
+			Coordinate coord = coords.get(i);
+			Coordinate nextCoord = coords.get((i == size - 1) ? 0 : i + 1);
+			v = vector(coord.x, coord.y, nextCoord.x, nextCoord.y);
+			vSize = v.length;
+			for (int j = 0; j < vSize - 1; j++) {
+				answer.add(v[j]);
+			}
+		}
+		// ���� �����������, ������������ ������� ����� ������� ���������,
+		// � ���� �����, ���������� ������� - ������� �������������� ���������
+		// ���� ��� ������
+		// (��� �������������� ����� ������ ������������)
+		int startX = (int) Math
+				.floor((coords.get(0).x + coords.get(1).x + coords.get(2).x) / 3);
+		int startY = (int) Math
+				.floor((coords.get(0).y + coords.get(1).y + coords.get(2).y) / 3);
+		if (mode == false) {
+			// ������� � ���������� ������� (�������������� ������ � ��� ������,
+			// ���� ����� �������� mode)
+			HashSet<Coordinate> oldFront = new HashSet<Coordinate>();
+			HashSet<Coordinate> newFront = new HashSet<Coordinate>();
+			newFront.add(new Coordinate(startX, startY));
+			int[][] pathTable = new int[getWidth()][getHeight()];
+			for (int i = 0; i < getWidth(); i++) {
+				Arrays.fill(pathTable[i], 0);
+			}
+			Iterator<Coordinate> it = answer.iterator();
+			while (it.hasNext()) {
+				Coordinate cell = it.next();
+				pathTable[cell.x][cell.y] = 2;
+			}
+			answer = new ArrayList<Coordinate>();
+			do {
+				oldFront = newFront;
+				newFront = new HashSet<Coordinate>();
+				size = oldFront.size(); // ������ ����� ������� � ����������,
+										// ������ ��� �� ���������� �� ����
+										// ���������� �����
+				it = oldFront.iterator();
+				while (it.hasNext()) {
+					// ������� ����� �� ������ ��������� ������ �� ������ ������
+					Coordinate cell = it.next();
+					int x = cell.x;
+					int y = cell.y;
+					int[] adjactentX = {x + 1, x, x, x - 1};
+					int[] adjactentY = {y, y - 1, y + 1, y};
+					for (int j = 0; j < 4; j++) {
+						int thisNumX = adjactentX[j];
+						int thisNumY = adjactentY[j];
+						if (pathTable[thisNumX][thisNumY] != 0
+								&& pathTable[thisNumX][thisNumY] != 2) {
+							continue;
+						}
+						if (thisNumX < 0 || thisNumX >= getWidth() || thisNumY < 0
+								|| thisNumY >= getHeight()) {
+							// �� ������� ������ �� �������, ������� ������� ��
+							// ������� ���� ��� �������� ��� ���������
+							continue;
+						}
+						// if (thisNumX<=0 || thisNumX>=w-1 || thisNumY<=0 ||
+						// thisNumY>=h-1) {
+						// // ��������, ����� ��� ��������� �������� ������ ��
+						// �������� �� �������
+						// continue;
+						// }
+						if (pathTable[thisNumX][thisNumY] == 0) {
+							newFront.add(new Coordinate(thisNumX, thisNumY));
+						}
+						answer.add(new Coordinate(thisNumX, thisNumY));
+						pathTable[thisNumX][thisNumY] = 1;
+					}
+				}
+			} while (newFront.size() > 0);
+		}
+		return answer;
 	}
-	public void setObject(int x, int y, int type) {
-		super.setObject(x, y, type);
-		addEvent(new EventObjectAppear(type, x ,y));
-		for (NonPlayerCharacter ch : nonPlayerCharacters) {
-			if (ch.initialCanSee(x,y)) {
-				ch.getVisibleEntities();
+	public void fillWithCells(int f, int o) {
+		for (int i = 0; i < getWidth(); i++) {
+			for (int j = 0; j < getHeight(); j++) {
+				setFloor(i, j, f);
+				setObject(i, j, o);
 			}
 		}
 	}
-	public void setObject(Coordinate c, int type) {
-		setObject(c.x, c.y, type);
-	}
-	
-	public void removeObject(int x, int y) {
-		super.removeObject(x, y);
-		addEvent(new EventObjectDisappear(x, y));
-		for (NonPlayerCharacter ch : nonPlayerCharacters) {
-			if (ch.initialCanSee(x,y)) {
-				ch.getVisibleEntities();
-			}
+	public ArrayList<Coordinate> closeCells(int startX, int startY, int length,
+			int pass, boolean noDiagonal) {
+		// �������� ������ �� ��������� ������ � passability==%pass%,
+		// ����������� � length
+		// ����� �� ���������
+		// ������: [[x,y]xN]
+		ArrayList<Coordinate> oldFront = new ArrayList<Coordinate>();
+		ArrayList<Coordinate> newFront = new ArrayList<Coordinate>();
+		ArrayList<Coordinate> answer = new ArrayList<Coordinate>();
+		answer.add(new Coordinate(startX, startY));
+		newFront.add(new Coordinate(startX, startY));
+		int[][] pathTable = new int[getWidth()][getHeight()];
+		int t = 0;
+		for (int i = 0; i < getWidth(); i++) {
+			Arrays.fill(pathTable[i], 0);
 		}
-	}
-	public void addItem(UniqueItem item, int x, int y) {
-		super.addItem(item, x, y);
-		addEvent(new EventItemAppear(item.getType().getTypeId(), item.getItemId(), x ,y));
-	}
-	public void addItem(ItemPile pile, int x, int y) {
-		super.addItem(pile, x, y);
-		addEvent(new EventItemAppear(pile.getType().getTypeId(), pile.getAmount(), x ,y));
-	}	
-	public void removeItem(ItemPile pile, int x, int y) {
-		super.removeItem(pile, x, y);
-		addEvent(new EventItemDisappear(pile.getType().getTypeId(), pile.getAmount(), x ,y));
-	}
-	public void removeItem(UniqueItem item, int x, int y) {
-		super.removeItem(item, x, y);
-		addEvent(new EventItemDisappear(item.getType().getTypeId(), item.getItemId(), x ,y));
-	}
-	public void setCharacter(int x, int y, String t, int fraction) {
-		createCharacter(t, "", x, y, 0);
-	}
-	
-	
-	
-	public void checkOut(PlayerCharacter player) {
-		if (player.checkedOut) {
-			throw new Error("Player "+player.name+" has already checked out!");
+		int numOfSides = noDiagonal ? 4 : 8;
+		int[] adjactentX;
+		int[] adjactentY;
+		if (noDiagonal) {
+			adjactentX = new int[]{0, 1, 0, -1};
+			adjactentY = new int[]{-1, 0, 1, 0};
 		} else {
-			player.checkedOut = true;
-			for (PlayerCharacter p : players) {
-				if (!p.checkedOut) {
-					return;
+			adjactentX = new int[]{0, 1, 0, -1, 1, 1, -1, -1};
+			adjactentY = new int[]{-1, 0, 1, 0, 1, -1, 1, -1};
+		}
+		do {
+			oldFront = newFront;
+			newFront = new ArrayList<Coordinate>();
+			Iterator<Coordinate> it = oldFront.iterator();
+			while (it.hasNext()) {
+				// ������� ����� �� ������ ��������� ������ �� ������ ������
+				Coordinate c = it.next();
+				int x = c.x;
+				int y = c.y;
+				
+				for (int j = 0; j < numOfSides; j++) {
+					int thisNumX = x+adjactentX[j];
+					int thisNumY = y+adjactentY[j];
+					if (thisNumX <= 0 || thisNumX >= getWidth() - 1 || thisNumY <= 0
+							|| thisNumY >= getHeight() - 1) {
+						// ��������, ����� ��� ��������� �������� ������ ��
+						// �������� �� �������
+						continue;
+					}
+					// if (thisNumX < 0 || thisNumX >= width || thisNumY < 0
+					// || thisNumY >= height) {
+					// // �� ������� ������ �� �������, ������� ������� ��
+					// // ������� ���� ��� �������� ��� ���������
+					// continue;
+					// }
+					if (pathTable[thisNumX][thisNumY] != 0) {
+						continue;
+					}
+
+					if (cells[thisNumX][thisNumY].getPassability() != pass) {
+						continue;
+					}
+					if (Math.floor(distance(startX, startY, thisNumX, thisNumY)) >= length) {
+						continue;
+					}
+					newFront.add(new Coordinate(thisNumX, thisNumY));
+					answer.add(new Coordinate(thisNumX, thisNumY));
+					pathTable[thisNumX][thisNumY] = 1;
 				}
 			}
-			for (PlayerCharacter p : players) {
-				p.checkedOut = false;
+			t++;
+		} while (newFront.size() > 0);
+		return answer;
+	}
+	public ArrayList<Coordinate> getElementsAreaBorder(int startX, int startY,
+			int type, int val, int depth, boolean noDiagonal) {
+		// �������� ������� ������� � ���������� ���� %type% ���� %val%, �������
+		// �� ����� ��� � %depth% ������� �� ��������� ������
+		// noDiagonal - �������� ������� ���������� ������ �� ������ �������,
+		// ��� �� ��� ������ ������.
+		int[][] pathTable = new int[getWidth()][getHeight()];
+		ArrayList<Coordinate> cells = new ArrayList<Coordinate>();
+		ArrayList<Coordinate> oldFront = new ArrayList<Coordinate>();
+		ArrayList<Coordinate> newFront = new ArrayList<Coordinate>();
+		// �� ����� ������ �������� ������
+		newFront.add(new Coordinate(startX, startY));
+		for (int i = 0; i < getWidth(); i++) {
+			for (int j = 0; j < getHeight(); j++) {
+				pathTable[i][j] = 0;
 			}
-			Character nextCharacter = turnQueue.next();
-			while (nextCharacter instanceof NonPlayerCharacter) {
-				((NonPlayerCharacter)nextCharacter).action();
-				if (noMorePlayersInLocation ) {
-					return;
-				}
-				nextCharacter = turnQueue.next();
-			}
-			addEvent(new EventNextTurn(nextCharacter.characterId));
-			flushEvents(TO_LOCATION, player);
 		}
-	}
-	
-	public Collection<PlayerCharacter> getPlayers() {
-		// TODO Auto-generated method stub
-		return players;
-	}
-	public Collection<Character> getCharacters() {
-		return characters.values();
-	}
-	public void openDoor(int x, int y) {
-		int doorId = cells[x][y].object();
-		removeObject(x,y);
-		if (doorId % 2 == 0) { 
-		// The door is closed, open the door
-			setObject(x,y,doorId-1);	
+		pathTable[startX][startY] = 0;
+		int t = 0;
+		int numOfSides = noDiagonal ? 4 : 8;
+		int[] adjactentX;
+		int[] adjactentY;
+		if (noDiagonal) {
+			adjactentX = new int[]{0, 1, 0, -1};
+			adjactentY = new int[]{-1, 0, 1, 0};
 		} else {
-			setObject(x,y,doorId+1);
+			adjactentX = new int[]{0, 1, 0, -1, 1, 1, -1, -1};
+			adjactentY = new int[]{-1, 0, 1, 0, 1, -1, 1, -1};
+		}
+		do {
+			oldFront = newFront;
+			newFront = new ArrayList<Coordinate>();
+			for (int i = 0; i < oldFront.size(); i++) {
+				// ������� ����� �� ������ ��������� ������ �� ������ ������
+				int x = oldFront.get(i).x;
+				int y = oldFront.get(i).y;
+				for (int j = 0; j < numOfSides; j++) {
+					int thisNumX = x + adjactentX[j];
+					int thisNumY = y + adjactentY[j];
+					if (thisNumX < 0
+							|| thisNumX >= getWidth()
+							|| thisNumY < 0
+							|| thisNumY >= getHeight()
+							|| pathTable[thisNumX][thisNumY] != 0
+							|| distance(startX, startY, thisNumX, thisNumY) > depth) {
+						continue;
+					}
+					int currElemVal = getElement(thisNumX, thisNumY, type);
+					if (currElemVal == val
+							&& !(thisNumX == startX && thisNumY == startY)) {
+						pathTable[thisNumX][thisNumY] = t + 1;
+						newFront.add(new Coordinate(thisNumX, thisNumY));
+					} else if (currElemVal != val) {
+						cells.add(new Coordinate(x, y));
+					}
+				}
+			}
+			t++;
+		} while (newFront.size() > 0);
+		return cells;
+	}
+	public void waveStructure(int startX, int startY, int type, int value,
+			int maxSize) {
+		// ������ �������� ��������� �� ��������� ����� �� �������� ����������
+		// ����� ���� type �������� value
+		/*
+		 * type:[ 0:���| 1:�����| 2:������| 3:���������������| 4:ground|
+		 * 5:forest| 6:road| 7:river| 8:race ]
+		 */
+		// maxSize - ������������ ���������� ����
+		Hashtable<Integer, Coordinate> newFront = new Hashtable<Integer, Coordinate>();
+		newFront.put(0, new Coordinate(startX, startY));
+		int[][] canceled = new int[getWidth()][getHeight()];
+		int[][] pathTable = new int[getWidth()][getHeight()];
+		for (int i = 0; i < getWidth(); i++) {
+			Arrays.fill(pathTable[i], 0);
+			Arrays.fill(canceled[i], 0);
+		}
+		setElement(startX, startY, type, value);
+		int t = 0;
+		do {
+			int size = newFront.size(); // ������ ����� ������� � ����������,
+										// ������ ��� �� ���������� �� ����
+										// ���������� �����
+			for (int i = 0; i < size; i++) {
+				// ������� ����� �� ������ ��������� ������ �� ������ ������
+				Coordinate c = newFront.get(i);
+				int x = c.x;
+				int y = c.y;
+				int[] adjactentX = {x + 1, x, x, x - 1};
+				int[] adjactentY = {y, y - 1, y + 1, y};
+				for (int j = 0; j < 4; j++) {
+					int thisNumX = adjactentX[j];
+					int thisNumY = adjactentY[j];
+					if (thisNumX < 0 || thisNumX >= getWidth() || thisNumY < 0
+							|| thisNumY >= getHeight()
+							|| getElement(thisNumX, thisNumY, type) != 0
+							|| canceled[thisNumX][thisNumY] != 0) {
+						// �� ������� ������ �� �������, ������� ������� ��
+						// ������� ���� ��� �������� ��� ���������
+						continue;
+					}
+					if (thisNumX <= 0 || thisNumX >= getWidth() - 1 || thisNumY <= 0
+							|| thisNumY >= getHeight() - 1) {
+						// ��������, ����� ��� ��������� �������� ������ ��
+						// �������� �� �������
+						// ��� �������� �������� � ����, ��� �� ������� ��
+						// �������
+						continue;
+					}
+					if (getElement(thisNumX + 1, thisNumY, type)
+							+ getElement(thisNumX - 1, thisNumY, type)
+							+ getElement(thisNumX, thisNumY + 1, type)
+							+ getElement(thisNumX, thisNumY - 1, type)
+							+ getElement(thisNumX + 1, thisNumY + 1, type)
+							+ getElement(thisNumX - 1, thisNumY + 1, type)
+							+ getElement(thisNumX + 1, thisNumY - 1, type)
+							+ getElement(thisNumX - 1, thisNumY - 1, type) > 3
+							&& t > 4) {
+						// �� ������� ������ �� ��� �������, ����� � �������� (�
+						// 8 ������) ��� ��� ������� 3 ������������ � ���� ��
+						// ������� ��������
+						continue;
+					}
+					Chance chance = new Chance(15);
+					if (chance.roll()) {
+						// ������ ������ (������ ��������� ������; ������ �����
+						// ������ � ������� ������������ ��������� �����������
+						// ���)
+						canceled[thisNumX][thisNumY] = 1;
+						continue;
+					}
+					setElement(thisNumX, thisNumY, type, value);
+					newFront.put(newFront.size(), new Coordinate(thisNumX,
+							thisNumY));
+				}
+			}
+			t++;
+		} while (newFront.size() > 0 && t < maxSize);
+	}
+	public CellCollection newCellCollection(ArrayList<Coordinate> cls) {
+		return new CellCollection(cls, this);
+	}
+	public int[][] getPathTable(int startX, int startY, int endX, int endY,
+			boolean noDiagonal) {
+		int[][] pathTable = new int[getWidth()][getHeight()];
+		boolean isPathFound = false;
+		ArrayList<Coordinate> oldFront = new ArrayList<Coordinate>();
+		ArrayList<Coordinate> newFront = new ArrayList<Coordinate>();
+		newFront.add(new Coordinate(startX, startY));
+		for (int i = 0; i < getWidth(); i++) {
+			for (int j = 0; j < getHeight(); j++) {
+				pathTable[i][j] = 0;
+			}
+		}
+		pathTable[startX][startY] = 0;
+		int t = 0;
+		int numOfSides = noDiagonal ? 4 : 8;
+		int[] adjactentX;
+		int[] adjactentY;
+		if (noDiagonal) {
+			adjactentX = new int[]{0, 1, 0, -1};
+			adjactentY = new int[]{-1, 0, 1, 0};
+		} else {
+			adjactentX = new int[]{0, 1, 0, -1, 1, 1, -1, -1};
+			adjactentY = new int[]{-1, 0, 1, 0, 1, -1, 1, -1};
+		}
+		do {
+			oldFront = newFront;
+			newFront = new ArrayList<Coordinate>();
+			for (int i = 0; i < oldFront.size(); i++) {
+				int x = oldFront.get(i).x;
+				int y = oldFront.get(i).y;
+				for (int j = 0; j < numOfSides; j++) {
+					int thisNumX = x + adjactentX[j];
+					int thisNumY = y + adjactentY[j];
+					if (thisNumX < 0 || thisNumX >= getWidth() || thisNumY < 0
+							|| thisNumY >= getHeight()
+							|| pathTable[thisNumX][thisNumY] != 0) {
+						continue;
+					}
+					if (thisNumX == endX && thisNumY == endY) {
+						isPathFound = true;
+					}
+					if (
+						cells[thisNumX][thisNumY].getPassability() == TerrainBasics.PASSABILITY_FREE
+						&& !(thisNumX == startX && thisNumY == startY)
+					) {
+						pathTable[thisNumX][thisNumY] = t + 1;
+						newFront.add(new Coordinate(thisNumX, thisNumY));
+					}
+				}
+			}
+			t++;
+		} while (newFront.size() > 0 && !isPathFound && t < 1000);
+		return pathTable;
+	};
+	public ArrayList<Coordinate> getPath(int startX, int startY,
+			int destinationX, int destinationY, boolean noDiagonal) {
+		// �������� ���� �� ������ � ���� ������� ��������� (0 - ������ ��� � �.
+		// �.)
+		if (destinationX == startX && destinationY == startY) {
+			throw new Error("Getting path to itself");
+		}
+		int[][] pathTable = getPathTable(startX, startY, destinationX,
+				destinationY, noDiagonal);
+		ArrayList<Coordinate> path = new ArrayList<Coordinate>();
+		if (Coordinate.isNear(startX, startY, destinationX, destinationY)) {
+			path.add(new Coordinate(destinationX, destinationY));
+			return path;
+		}
+		// ���������� ����
+		path.add(new Coordinate(startX, startY));
+		int currentNumX = destinationX;
+		int currentNumY = destinationY;
+		int x = currentNumX;
+		int y = currentNumY;
+		int numOfSides = noDiagonal ? 4 : 8;
+		int[] adjactentX;
+		int[] adjactentY;
+		if (noDiagonal) {
+			adjactentX = new int[]{0, 1, 0, -1};
+			adjactentY = new int[]{-1, 0, 1, 0};
+		} else {
+			adjactentX = new int[]{0, 1, 0, -1, 1, 1, -1, -1};
+			adjactentY = new int[]{-1, 0, 1, 0, 1, -1, 1, -1};
+		}
+		for (int j = pathTable[currentNumX][currentNumY]; j > 0; j = pathTable[currentNumX][currentNumY]) {
+			// �������: �� ���-�� ����� �� ������ dest �� ��������� ������ (���
+			// 1)
+			path.add(0, new Coordinate(currentNumX, currentNumY));
+			currentNumX = -1;
+			for (int i = 0; i < numOfSides; i++) {
+				// ��� ������ �� ��������� ������ (�, �, �, �)
+				int thisNumX = x + adjactentX[i];
+				if (thisNumX < 0 || thisNumX >= getWidth()) {
+					continue;
+				}
+				int thisNumY = y + adjactentY[i];
+				if (thisNumY < 0 || thisNumY >= getHeight()) {
+					continue;
+				}
+				if (pathTable[thisNumX][thisNumY] == j - 1
+						&& (currentNumX == -1 || distance(thisNumX, thisNumY,
+								destinationX, destinationY) < distance(
+								currentNumX, currentNumY, destinationX,
+								destinationY))) {
+					// ���� ������ � ���� ������� �������� ���������� �����,
+					// ������� �� ��
+					currentNumX = thisNumX;
+					currentNumY = thisNumY;
+				}
+			}
+			x = currentNumX;
+			y = currentNumY;
+		}
+		return path;
+	}
+	protected void cellularAutomataSmooth(int level, int type, int val,
+			int changeVal) {
+		// Smooth the borders of terrain's areas consisting of
+		// elements with %type% and %val%
+		for (int l = 0; l < level; l++) {
+			Cell[][] bufCells = new Cell[getWidth()][getHeight()];
+			for (int i = 0; i < getHeight(); i++) {
+				for (int j = 0; j < getWidth(); j++) {
+					bufCells[j][i] = new Cell(cells[j][i]);
+				}
+			}
+			for (int i = 0; i < getWidth(); i++) {
+				for (int j = 0; j < getHeight(); j++) {
+					int count = 0;
+					boolean iGT0 = i > 0;
+					boolean iLTw = i < getWidth() - 1;
+					boolean jGT0 = j > 0;
+					boolean jLTh = j < getHeight() - 1;
+					if (jGT0 && bufCells[i][j - 1].getElement(type) == val) {
+						count++;
+					}
+					if (iLTw && jGT0
+							&& bufCells[i + 1][j - 1].getElement(type) == val) {
+						count++;
+					}
+					if (iLTw && bufCells[i + 1][j].getElement(type) == val) {
+						count++;
+					}
+					if (iLTw && jLTh
+							&& bufCells[i + 1][j + 1].getElement(type) == val) {
+						count++;
+					}
+					if (jLTh && bufCells[i][j + 1].getElement(type) == val) {
+						count++;
+					}
+					if (iGT0 && jLTh
+							&& bufCells[i - 1][j + 1].getElement(type) == val) {
+						count++;
+					}
+					if (iGT0 && bufCells[i - 1][j].getElement(type) == val) {
+						count++;
+					}
+					if (iGT0 && jGT0
+							&& bufCells[i - 1][j - 1].getElement(type) == val) {
+						count++;
+					}
+
+					if (bufCells[i][j].getElement(type) != val && count > 4) {
+						setElement(i, j, type, val);
+					} else if (bufCells[i][j].getElement(type) == val
+							&& count < 4) {
+						setElement(i, j, type, changeVal);
+					}
+				}
+			}
 		}
 	}
-	public void makeSound(int x, int y, SoundType type) {
-		addEvent(new EventSound(type.type2int(), x, y));
+	public void boldLine(int startX, int startY, int endX, int endY, int type,
+			int name) {
+		boldLine(startX, startY, endX, endY, type, name, 3, 100);
 	}
-	public void createSoundSource(int x, int y, SoundType type) {
-		soundSources.add(new Sound(x, y, type));
-		addEvent(new EventSoundSourceAppear(type.type2int(), x, y));
+	public void boldLine(int startX, int startY, int endX, int endY, int type,
+			int name, int w) {
+		boldLine(startX, startY, endX, endY, type, name, w, 100);
 	}
-	public void removeSoundSource(int x, int y) {
-		int size = soundSources.size();
-		for (int i=0; i<size; i++) {
-			Sound s = soundSources.get(i);
-			if (s.x == x && s.y==y) {
-				soundSources.remove(i);
-				addEvent(new EventSoundSourceDisappear(1, x, y));
-				return;
+	public void boldLine(int startX, int startY, int endX, int endY, int type,
+			int name, int w, int chance) {
+		// ����� �������� � ��������� ������
+		/*
+		 * . . . . . . . . . - ��� ����� ������������� ������� ������ � �����
+		 * ����� ����� ���� . . .
+		 */
+		int dx;
+		int dy;
+		if (endX - startX == 0) {
+			// ������ ������������ ����� (tg = �������������)
+			dx = 1;
+			dy = 0;
+		} else {
+			// ������� ���� ����� ���� � � ������ ����������
+			int tg = (endY - startY) / (endX - startX);
+			if (tg > -0.5 && tg < 0.5) {
+				dx = 0;
+				dy = 1;
+			} else {
+				dx = 1;
+				dy = 0;
 			}
-		}		                            
-		throw new Error("Sound source at "+x+":"+y+" not found");
+		}
+		int coeff = (int) Math.floor(w / 2);
+		startX -= dx * coeff;
+		startY -= dy * coeff;
+		endX -= dx * coeff;
+		endY -= dy * coeff;
+		if (startX < 0) {
+			startX = 0;
+		} else if (startX >= getWidth()) {
+			startX = getWidth() - 1;
+		}
+		if (startY < 0) {
+			startY = 0;
+		} else if (startY >= getHeight()) {
+			startY = getHeight() - 1;
+		}
+		if (endX < 0) {
+			endX = 0;
+		} else if (endX >= getWidth()) {
+			endX = getWidth();
+		}
+		if (endY < 0) {
+			endY = 0;
+		} else if (endY >= getHeight()) {
+			endY = getHeight() - 1;
+		}
+		for (int i = 0; i < w; i++) {
+			line(startX, startY, endX, endY, type, name, chance);
+			startX += dx;
+			startY += dy;
+			endX += dx;
+			endY += dy;
+		}
 	}
-	
+	public void placeSeveralObjects(ArrayList<Integer> objects, int num,
+			Rectangle r) {
+		// ���������� ��������� ��������
+		// in: objects - ������ � id ������ ��������
+		// num - ���������� ��������.
+		// r - �������������, � ������� ����������� �������
+		int size = objects.size();
+		for (int i = 0; i < num; i++) {
+			this.setObject(r.x + Chance.rand(0, r.width - 1),
+					r.y + Chance.rand(0, r.height - 1),
+					objects.get(Chance.rand(0, size - 1)));
+		}
+	}
+	public void drawPath(int startX, int startY, int endX, int endY, int type,
+			int val) {
+		ArrayList<Coordinate> path = getPath(startX, startY, endX, endY, true);
+		int size = path.size();
+		for (int i = 0; i < size; i++) {
+			setElement(path.get(i).x, path.get(i).y, type, val);
+		}
+	}
+	protected CellCollection getCoast(int startX, int startY) {
+		int[][] pathTable = new int[getWidth()][getHeight()];
+		ArrayList<Coordinate> cells = new ArrayList<Coordinate>();
+		ArrayList<Coordinate> oldFront = new ArrayList<Coordinate>();
+		ArrayList<Coordinate> newFront = new ArrayList<Coordinate>();
+		// �� �����  ������ �������� ������
+		newFront.add(new Coordinate(startX,startY));
+		for (int i=0;i<getWidth();i++) {
+			for (int j=0;j<getHeight();j++) {
+				pathTable[i][j] = 0;
+			}
+		}
+		pathTable[startX][startY] = 0;
+		int t = 0;
+		do {
+			oldFront = newFront;
+			newFront = new ArrayList<Coordinate>();
+			for (int i=0; i<oldFront.size(); i++) {
+				// ������� ����� �� ������ ��������� ������ �� ������ ������
+				int x=oldFront.get(i).x;
+				int y=oldFront.get(i).y;
+				int[] adjactentX = new int[] {x+1,x,  x, x-1,};
+				int[] adjactentY = new int[] {y, y-1, y+1, y};
+				for (int j=0;j<4;j++) {
+					int thisNumX=adjactentX[j];
+					int thisNumY=adjactentY[j];
+					if (thisNumX<0 || thisNumX>=getWidth() || thisNumY<0 || thisNumY>=getHeight() || pathTable[thisNumX][thisNumY] != 0) {
+						continue;
+					}
+					if (this.cells[thisNumX][thisNumY].getPassability() == 0 && !(thisNumX == startX && thisNumY == startY)) {
+						pathTable[thisNumX][thisNumY] = t+1;
+						newFront.add(new Coordinate(thisNumX, thisNumY));
+					} else if (this.cells[thisNumX][thisNumY].getPassability() != 0) {
+						cells.add(new Coordinate(x, y));
+					}
+				}
+			}
+			t++;
+		} while (newFront.size()>0 && t<2000);
+		return newCellCollection(cells);
+	}
+	public ArrayList<Coordinate> getCellsAroundCell(int x, int y) {
+		ArrayList<Coordinate> answer = new ArrayList<Coordinate>();
+		int x1[] = {x, x+1, x+1, x+1, x, x-1, x-1, x-1};
+		int y1[] = {y-1, y-1, y, y+1, y+1, y+1, y, y-1};
+		for (int i=0; i<8; i++) {
+			if (cells[x1[i]][y1[i]].getPassability() == PASSABILITY_FREE) {
+				answer.add(new Coordinate(x1[i], y1[i]));
+			}
+		}
+		return answer;
+	}
+	public void lineToRectangleBorder(int startX, int startY, Side side, Rectangle r, int type, int val) {
+		if (!r.contains(startX, startY)) {
+			throw new Error("Rectangle "+r+" contains no point "+startX+":"+startY);
+		}
+		int endX, endY;
+		if (side == Side.N) {
+			endX = startX;
+			endY = r.y;
+		} else if (side == Side.E) {
+			endX = r.x+r.width-1;
+			endY = startY;
+		} else if (side == Side.S) {
+			endX = startX;
+			endY = r.y+r.height-1;
+		} else if (side == Side.W) {
+			endX = r.x;
+			endY = startY;
+		} else {
+			throw new Error("Unknown side "+side);
+		}
+		line(startX, startY, endX, endY, type, val);
+	}
+	public void fillSideOfRectangle(Rectangle r, Side side, int type, int val) {
+		int startX, startY, endX, endY;
+		switch (side) {
+		case N:
+			startX = r.x;
+			startY = r.y;
+			endX = r.x+r.width-1;
+			endY = r.y;
+			break;
+		case E:
+			startX = r.x+r.width-1;
+			startY = r.y;
+			endX = r.x+r.width-1;
+			endY = r.y+r.height-1;
+			break;
+		case S:
+			startX = r.x;
+			startY = r.y+r.height-1;
+			endX = r.x+r.width-1;
+			endY = r.y+r.height-1;
+			break;
+		case W:
+			startX = r.x;
+			startY = r.y;
+			endX = r.x;
+			endY = r.y+r.height-1;
+			break;
+		default:
+			throw new Error("Incorrect side "+side);
+		}
+		line(startX, startY, endX, endY, type, val);
+	}
+	public void fillRectangle(Rectangle r, int type, int val, int chance) {
+	/**
+	 * Fill rectngle with objects randomly. chance% of cells 
+	 * will be filled with these objects.
+	 */
+		for (int x = r.x; x<r.x+r.width; x++) {
+			for (int y = r.y; y<r.y+r.height; y++) {
+				if (Chance.roll(chance)) {
+					setElement(x, y, type, val);
+				}
+			}
+		}
+	}
+	public int getWidth() {
+		return width;
+	}
+	public int getHeight() {
+		return height;
+	}
+//	public void showLocation() {
+//		for (int y=0; y<height; y++) {
+//			for (int x=0; x<width; x++) {
+//				Main.out((cells[x][y] == null) ? "." : "#");
+//			}
+//			Main.outln();
+//		}
+//	}
 }

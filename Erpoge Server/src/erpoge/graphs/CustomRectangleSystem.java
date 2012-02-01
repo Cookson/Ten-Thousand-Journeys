@@ -11,14 +11,15 @@ import erpoge.Direction;
 import erpoge.Main;
 import erpoge.RectangleArea;
 import erpoge.Side;
+import erpoge.terrain.Location;
 import erpoge.terrain.TerrainBasics;
 
 public class CustomRectangleSystem extends Graph<RectangleArea> {
 	int startX, startY, width, height, borderWidth;
 	public HashMap<Integer, RectangleArea> rectangles;
-	public TerrainBasics location;
+	public Location location;
 	
-	public CustomRectangleSystem(TerrainBasics location, int startX, int startY, int width, int height, int borderWidth) {
+	public CustomRectangleSystem(Location location, int startX, int startY, int width, int height, int borderWidth) {
 		this.startX = startX;
 		this.startY = startY;
 		this.width = width;
@@ -29,7 +30,7 @@ public class CustomRectangleSystem extends Graph<RectangleArea> {
 		this.edges.put(0, new ArrayList<Integer>());
 		this.location = location;
 	}
-	public CustomRectangleSystem(TerrainBasics location) {
+	public CustomRectangleSystem(Location location) {
 		this.borderWidth = 0;
 		this.rectangles = new HashMap<Integer, RectangleArea>();
 		this.edges.put(0, new ArrayList<Integer>());

@@ -42,9 +42,13 @@ import erpoge.serverevents.EventPutToContainer;
 import erpoge.serverevents.EventTakeFromContainer;
 import erpoge.serverevents.EventTakeOff;
 import erpoge.serverevents.EventUseObject;
+import erpoge.terrain.Cell;
+import erpoge.terrain.Chunk;
 import erpoge.terrain.Container;
+import erpoge.terrain.HorizontalPlane;
 import erpoge.terrain.Location;
 import erpoge.terrain.TerrainBasics;
+import erpoge.terrain.TimeStream;
 
 public abstract class Character extends Coordinate {
 	public final static int
@@ -70,7 +74,8 @@ public abstract class Character extends Coordinate {
 	protected int acidRes = 0;
 	protected int actionPoints = 0;
 	protected int fraction;
-	public Location location;
+	public HorizontalPlane plane;
+	public Chunk chunk;
 	public final String name;
 	public final String type;
 	public final HashMap<Integer, Character.Effect> effects = new HashMap<Integer, Character.Effect>();
@@ -87,30 +92,33 @@ public abstract class Character extends Coordinate {
 	public HashSet<NonPlayerCharacter> observers = new HashSet<NonPlayerCharacter>();
 	
 	protected CharacterState state = CharacterState.DEFAULT;
-	public Character(String t, String n, int x, int y) {
+
+	protected TimeStream timeStream;
+	public Character(HorizontalPlane plane, int x, int y, String type, String name) {
 	// Common character creation: with all attributes, in location.
 		super(x, y);
-		name = n;
-		type = t;
+		this.name = name;
+		this.type = type;
 		fraction = 0;
 	}
 	/* Actions */
 	protected void attack(Character aim) {
-		location.addEvent(new EventMeleeAttack(characterId, aim.characterId));
+		getTimeStream().addEvent(new EventMeleeAttack(characterId, aim.characterId));
 		aim.getDamage(7 , DamageType.PLAIN);
 		moveTime(500);
 	}
 	protected void shootMissile(int toX, int toY, ItemPile missile) {
 		loseItem(missile);
 		Coordinate end = getRayEnd(toX, toY);
-		location.addEvent(new EventMissileFlight(x, y, end.x, end.y, 1));
-		location.addItem(missile, end.x, end.y);
-		if (location.cells[end.x][end.y].character() != null) {
-			location.cells[end.x][end.y].character().getDamage(10, DamageType.PLAIN);
+		getTimeStream().addEvent(new EventMissileFlight(x, y, end.x, end.y, 1));
+		plane.getChunk(end.x, end.y).addItem(missile, end.x, end.y);
+		Cell aimCell = plane.getCell(toX, toY);
+		if (aimCell.character() != null) {
+			aimCell.character().getDamage(10, DamageType.PLAIN);
 		}
 	}
 	protected void castSpell(int spellId, int x, int y) {
-		location.addEvent(new EventCastSpell(characterId, spellId, x, y));
+		getTimeStream().addEvent(new EventCastSpell(characterId, spellId, x, y));
 		Spells.cast(this, spellId, x, y);
 		changeMana(-25);
 		moveTime(500);
@@ -122,8 +130,8 @@ public abstract class Character extends Coordinate {
 		for (NonPlayerCharacter character : observers) {
 			character.discoverDeath(this);
 		}
-		location.removeCharacter(this);
-		location.addEvent(new EventDeath(characterId));
+		plane.getChunk(x,y).removeCharacter(this);
+		getTimeStream().addEvent(new EventDeath(characterId));
 	}
 	protected void putOn(UniqueItem item, boolean omitEvent) {
 	// Main put on function
@@ -145,9 +153,9 @@ public abstract class Character extends Coordinate {
 		}
 		equipment.add(item);
 		inventory.removeUnique(item);
-		if (!this.isOnGlobalMap() && !omitEvent) {
+		if (!omitEvent) {
 		// Sending for mobs. Sending for players is in PlayerCharacter.putOn()
-			location.addEvent(new EventPutOn(characterId, item.getItemId()));
+			getTimeStream().addEvent(new EventPutOn(characterId, item.getItemId()));
 		}
 		addItemBonuses(item);
 		moveTime(500);
@@ -155,10 +163,7 @@ public abstract class Character extends Coordinate {
 	protected void takeOff(UniqueItem item) {
 		equipment.removeSlot(item.getType().getSlot());
 		inventory.add(item);
-		if (!this.isOnGlobalMap()) {
-		// Sending for mobs. Sending for players is in PlayerCharacter.putOn()
-			location.addEvent(new EventTakeOff(characterId, item.getItemId()));
-		}
+		getTimeStream().addEvent(new EventTakeOff(characterId, item.getItemId()));
 		removeItemBonuses(item);
 		moveTime(500);
 	}
@@ -166,63 +171,63 @@ public abstract class Character extends Coordinate {
 	/**
 	 * Pick up an item lying on the same cell where the character stands.
 	 */
-		location.addEvent(new EventPickUp(characterId, pile.getType().getTypeId(), pile.getAmount()));
+		getTimeStream().addEvent(new EventPickUp(characterId, pile.getType().getTypeId(), pile.getAmount()));
 		getItem(pile);
-		location.removeItem(pile, x, y);
+		plane.getChunk(x,y).removeItem(pile, x, y);
 		moveTime(500);
 	}
 	protected void pickUp(UniqueItem item) {
 	/**
 	 * Pick up an item lying on the same cell where the character stands.
 	 */
-		location.addEvent(new EventPickUp(characterId, item.getTypeId(), item.getItemId()));
+		getTimeStream().addEvent(new EventPickUp(characterId, item.getTypeId(), item.getItemId()));
 		getItem(item);
-		location.removeItem(item, x, y);
+		plane.getChunk(x,y).removeItem(item, x, y);
 		moveTime(500);
 	}
 	protected void drop(UniqueItem item) {
 		loseItem(item);
-		location.addItem(item, x, y);
-		location.addEvent(new EventDropItem(characterId, item.getTypeId(), item.getItemId()));
+		plane.getChunk(x,y).addItem(item, x, y);
+		getTimeStream().addEvent(new EventDropItem(characterId, item.getTypeId(), item.getItemId()));
 		moveTime(500);
 	}
 	protected void drop(ItemPile pile) {
 		loseItem(pile);
-		location.addItem(pile, x, y);
-		location.addEvent(new EventDropItem(characterId, pile.getType().getTypeId(), pile.getAmount()));
+		plane.getChunk(x,y).addItem(pile, x, y);
+		getTimeStream().addEvent(new EventDropItem(characterId, pile.getType().getTypeId(), pile.getAmount()));
 		moveTime(500);
 	}
 	protected void takeFromContainer(ItemPile pile, Container container) {
 		getItem(pile);
 		container.removePile(pile);
-		location.addEvent(new EventTakeFromContainer(characterId, pile.getTypeId(), pile.getAmount(), x, y));
+		getTimeStream().addEvent(new EventTakeFromContainer(characterId, pile.getTypeId(), pile.getAmount(), x, y));
 		moveTime(500);
 	}
 	protected void takeFromContainer(UniqueItem item, Container container) {
 		getItem(item);
 		container.removeUnique(item);
-		location.addEvent(new EventTakeFromContainer(characterId, item.getTypeId(), item.getItemId(), x, y));
+		getTimeStream().addEvent(new EventTakeFromContainer(characterId, item.getTypeId(), item.getItemId(), x, y));
 		moveTime(500);
 	}
 	protected void putToContainer(ItemPile pile, Container container) {
 		loseItem(pile);
 		container.add(pile);
-		location.addEvent(new EventPutToContainer(characterId, pile.getTypeId(), pile.getAmount(), x, y));
+		getTimeStream().addEvent(new EventPutToContainer(characterId, pile.getTypeId(), pile.getAmount(), x, y));
 		moveTime(500);
 	}
 	protected void putToContainer(UniqueItem item, Container container) {
 		loseItem(item);
 		container.add(item);
-		location.addEvent(new EventPutToContainer(characterId, item.getTypeId(), item.getItemId(), x, y));
+		getTimeStream().addEvent(new EventPutToContainer(characterId, item.getTypeId(), item.getItemId(), x, y));
 		moveTime(500);
 	}
 	protected void useObject(int x, int y) {
-			if (location.isDoor(x, y)) {
-				location.openDoor(x,y);
-			}
-			location.addEvent(new EventUseObject(characterId, x, y));
-			moveTime(500);
+		if (plane.getCell(x, y).isDoor()) {
+			plane.getChunk(x, y).openDoor(x,y);
 		}
+		getTimeStream().addEvent(new EventUseObject(characterId, x, y));
+		moveTime(500);
+	}
 	protected void idle() {
 		moveTime(500);
 	}
@@ -231,7 +236,7 @@ public abstract class Character extends Coordinate {
 		moveTime(500);
 	} 
 	protected void makeSound(SoundType type) {
-		location.makeSound(x,y,type);
+		timeStream.makeSound(x,y,type);
 	}
 	/* Special actions */
 	protected void push(Character character, Side side) {
@@ -241,7 +246,7 @@ public abstract class Character extends Coordinate {
 		int[] d = side.side2d();
 		int nx = character.x+d[0];
 		int ny = character.y+d[1];
-		if (location.passability[nx][ny] == TerrainBasics.PASSABILITY_FREE) {
+		if (plane.getCell(nx, ny).getPassability() == TerrainBasics.PASSABILITY_FREE) {
 			int bufX = character.x;
 			int bufY = character.y;
 			character.move(nx, ny);
@@ -259,7 +264,7 @@ public abstract class Character extends Coordinate {
 		changeEnergy(-30);
 		// This event is needed for client to correctly 
 		// handle characters' new positions in Terrain.cells
-		location.addEvent(new EventChangePlaces(characterId, character.characterId));
+		getTimeStream().addEvent(new EventChangePlaces(characterId, character.characterId));
 		moveTime(500);		
 	}
 	protected void scream() {
@@ -267,7 +272,7 @@ public abstract class Character extends Coordinate {
 	}
 	protected void jump(int x, int y) {
 		move(x,y);
-		location.addEvent(new EventJump(characterId));
+		getTimeStream().addEvent(new EventJump(characterId));
 		changeEnergy(-40);
 		moveTime(500);
 	}
@@ -277,7 +282,7 @@ public abstract class Character extends Coordinate {
 		}
 		character.getDamage(5, DamageType.PLAIN);
 		changeEnergy(7);
-		location.makeSound(character.x, character.y, SoundType.CRASH);
+		timeStream.makeSound(character.x, character.y, SoundType.CRASH);
 		moveTime(500);
 	}
 	protected void shieldBash(int x, int y) {
@@ -285,7 +290,7 @@ public abstract class Character extends Coordinate {
 			throw new Error(name+" doesn't have a shield");
 		}
 		changeEnergy(7);
-		location.makeSound(x, y, SoundType.CRASH);
+		getTimeStream().makeSound(x, y, SoundType.CRASH);
 		moveTime(500);
 	}
 	/* Vision */
@@ -312,7 +317,7 @@ public abstract class Character extends Coordinate {
 	 * in square with VISION_RANGE*2+1 side length.
 	 */
 		HashSet<NonPlayerCharacter> answer = new HashSet<NonPlayerCharacter>();
-		for (NonPlayerCharacter character : location.nonPlayerCharacters) {
+		for (NonPlayerCharacter character : getTimeStream().nonPlayerCharacters) {
 		// Quickly select characters that could be seen (including this Seer itself)
 			if (
 				Math.abs(character.x - x) <= Character.VISION_RANGE && 
@@ -325,44 +330,34 @@ public abstract class Character extends Coordinate {
 		return answer;
 	}
 	public boolean initialCanSee(int x, int y) {
-	// ���������, ��������� �� ������ ������ �� ����� ���������
 		if (this.isNear(x,y) || this.x==x && this.y==y) {
-		// ���� ������ ����� ��� �������� �� ��� ����� - �� � ����� �����
 			return true;
 		}
 		if (Math.floor(this.distance(x, y))>Character.VISION_RANGE) {
 			return false;
 		}
-		// �������� ������������� ��������� ������� ��������� ������������ ��������� � ������� ������, 
-		// ��������� � ������������ ����� ������� ������ ����� ���������. �������� ��� ������ ������ ��������������� ���������.
 		if (x==this.x || y==this.y) {
-			// ��� ������, ����� ������� ������ (������� �����������) ����� ������������� ��� 0 
-			// (�.�. ����� � ����� � else ����� ���� ������� �� ����, �.�. ������� ��� �������� ����� � ������ �����)
-			// � ���� ������ ������� ������� ������ ���� �������� �� ����� (�� ����� �������, ��� � else ��� ������ � tg!=0 � tg!=1)
 			if (x==this.x) {
-			// ��� ������������ �����
 				int dy=Math.abs(y-this.y)/(y-this.y);
 				for (int i=this.y+dy; i!=y; i+=dy) {
-					if (location.passability[x][i] == 1) {
+					if (plane.getCell(x,i).getPassability() == 1) {
 						return false;
 					}
 				}
 			} else {
-			// ��� �������������� �����
 				int dx=Math.abs(x-this.x)/(x-this.x);
 				for (int i=this.x+dx; i!=x; i+=dx) {
-					if (location.passability[i][y]==1) {
+					if (plane.getCell(i,y).getPassability()==1) {
 						return false;
 					}
 				}
 			}
 			return true;
 		} else if (Math.abs(x-this.x)==1) {
-		// ��� ������, ����� ���������� ����� � ������ ��������� �� ���� �������� ������������ ������
 			int yMin=Math.min(y,this.y);
 			int yMax=Math.max(y,this.y);
 			for (int i=yMin+1; i<yMax; i++) {
-				if (location.passability[x][i]==1) {
+				if (plane.getCell(x,i).getPassability()==1) {
 					break;
 				}
 				if (i==yMax-1) {
@@ -370,7 +365,7 @@ public abstract class Character extends Coordinate {
 				}
 			}
 			for (int i=yMin+1;i<yMax;i++) {
-				if (location.passability[this.x][i]==1) {
+				if (plane.getCell(this.x,i).getPassability()==1) {
 					break;
 				}
 				if (i==yMax-1) {
@@ -379,11 +374,10 @@ public abstract class Character extends Coordinate {
 			}
 			return false;
 		} else if (Math.abs(y-this.y)==1) {
-		// ��� �� ������, ��� � ����������, �� ��� �������������� �����
 			int xMin=Math.min(x,this.x);
 			int xMax=Math.max(x,this.x);
 			for (int i=xMin+1;i<xMax;i++) {
-				if (location.passability[i][y]==1) {
+				if (plane.getCell(i,y).getPassability()==1) {
 					break;
 				}
 				if (i==xMax-1) {
@@ -391,7 +385,7 @@ public abstract class Character extends Coordinate {
 				}
 			}
 			for (int i=xMin+1;i<xMax;i++) {
-				if (location.passability[i][this.y]==1) {
+				if (plane.getCell(i,this.y).getPassability()==1) {
 					break;
 				}
 				if (i==xMax-1) {
@@ -401,7 +395,6 @@ public abstract class Character extends Coordinate {
 			return false;
 		} 
 		else if (Math.abs(x-this.x) == Math.abs(y-this.y)) {
-		// ������, ����� ����� �������� � ����� ���� 45 �������� (abs(tg)==1)
 			int dMax=Math.abs(x-this.x);
 			int dx=x>this.x ? 1 : -1;
 			int dy=y>this.y ? 1 : -1;
@@ -410,7 +403,7 @@ public abstract class Character extends Coordinate {
 			for (int i=1;i<dMax;i++) {
 				cx+=dx;
 				cy+=dy;
-				if (location.passability[cx][cy]==1) {
+				if (plane.getCell(cx,cy).getPassability()==1) {
 					return false;
 				}
 				
@@ -418,10 +411,8 @@ public abstract class Character extends Coordinate {
 			return true;
 		} 
 		else {
-		// ����� ������
 			double[][] start = new double[2][2];
 			double[] end = new double[4];
-			// x � y ������ ������������� x � y ������ ������ ��� � ���������� ���� (�������� ������������ � ����� �� k ������ � ������)
 			end[0]=(x>this.x)? x-0.5 : x+0.5;
 			end[1]=(y>this.y)? y-0.5 : y+0.5;
 			end[2]=x;
@@ -429,8 +420,6 @@ public abstract class Character extends Coordinate {
 			start[0][0]=(x>this.x)? this.x+0.5 : this.x-0.5;
 			start[0][1]=(y>this.y)? this.y+0.5 : this.y-0.5;
 			start[1][0]=(x>this.x)? this.x+0.5 : this.x-0.5;
-			// start[0][1]=this.y;
-			// start[1][0]=this.x;
 			start[1][1]=(y>this.y)? this.y+0.5 : this.y-0.5;
 			Coordinate[] rays=rays(this.x,this.y,x,y);
 			jump:
@@ -438,11 +427,6 @@ public abstract class Character extends Coordinate {
 				int endNumX=(k==0 || k==1)?0:2;
 				int endNumY=(k==0 || k==2)?1:3;
 				for (int j=0;j<1;j++) {
-				// ����� �������� ������� ��������� �������� �� ���, ���� �� �����, 
-				// ������� ��������� �����, ��� �� 0.5 ������ �� ������ - ��������� ������� ����, ��� ������ ���������� ��������.
-				// �������� � ���� ������ ��������� ������������ � R=0.5 
-				// ��� �� ������ ������� ��������� �� ������ ������ �� �����������.
-				// � ���� ������ ����� ������� �������� ����� �������� (3 ����� �� k - ����� ����� - � ��� �� j - ����� ������)
 					if (start[j][0]==this.x && start[j][1]==this.y) {
 						continue;
 					}
@@ -452,13 +436,11 @@ public abstract class Character extends Coordinate {
 					double yStart=start[j][1];
 					for (Coordinate c : rays) {
 						try {
-							if (location.passability[c.x][c.y]==1) {
-							// ��������� ������ ������
+							if (plane.getCell(c.x, c.y).getPassability()==1) {
 								if (c.x==x && c.y==y || c.x==x && c.y==y) {
 									continue;
 								}
 								if (Math.abs(((yStart-yEnd)*c.x+(xEnd-xStart)*c.y+(xStart*yEnd-yStart*xEnd))/Math.sqrt(Math.abs((xEnd-xStart)*(xEnd-xStart)+(yEnd-yStart)*(yEnd-yStart))))<=0.5) {
-								// ���� ���������� �� ����� �� ������ 0.5, ��������� ��������� �� 6 �����
 									continue jump;
 								}
 							}
@@ -473,41 +455,31 @@ public abstract class Character extends Coordinate {
 		}
 	}
 	public Coordinate getRayEnd(int endX, int endY) {
-		// ���������, ��������� �� ������ ������ �� ����� ���������
 		if (this.isNear(endX,endY) || this.x==endX && this.y==endY) {
-		// ���� ������ ����� ��� �������� �� ��� ����� - �� � ����� �����
 			return new Coordinate(endX, endY);
 		}
-		// �������� ������������� ��������� ������� ��������� ������������ ��������� � ������� ������, 
-		// ��������� � ������������ ����� ������� ������ ����� ���������. �������� ��� ������ ������ ��������������� ���������.
 		if (endX==this.x || endY==this.y) {
-			// ��� ������, ����� ������� ������ (������� �����������) ����� ������������� ��� 0 
-			// (�.�. ����� � ����� � else ����� ���� ������� �� ����, �.�. ������� ��� �������� ����� � ������ �����)
-			// � ���� ������ ������� ������� ������ ���� �������� �� ����� (�� ����� �������, ��� � else ��� ������ � tg!=0 � tg!=1)
 			if (endX==this.x) {
-			// ��� ������������ �����
 				int dy=Math.abs(endY-this.y)/(endY-this.y);
 				for (int i=this.y+dy; i!=endY+dy; i+=dy) {
-					if (location.passability[endX][i] != TerrainBasics.PASSABILITY_FREE) {
+					if (plane.getCell(endX, i).getPassability() != TerrainBasics.PASSABILITY_FREE) {
 						return new Coordinate(endX, i-dy);
 					}
 				}
 			} else {
-			// ��� �������������� �����
 				int dx=Math.abs(endX-this.x)/(endX-this.x);
 				for (int i=this.x+dx; i!=endX+dx; i+=dx) {
-					if (location.passability[i][endY] != TerrainBasics.PASSABILITY_FREE) {
+					if (plane.getCell(i, endY).getPassability() != TerrainBasics.PASSABILITY_FREE) {
 						return new Coordinate(i-dx, endY);
 					}
 				}
 			}
 			return new Coordinate(endX, endY);
 		} else if (Math.abs(endX-this.x)==1) {
-		// ��� ������, ����� ���������� ����� � ������ ��������� �� ���� �������� ������������ ������
 			int dy=Math.abs(endY-this.y)/(endY-this.y);
 			int y1 = endY, y2 = endY;
 			for (int i=this.y+dy; i!=endY+dy; i+=dy) {
-				if (location.passability[endX][i] != TerrainBasics.PASSABILITY_FREE) {
+				if (plane.getCell(endX, i).getPassability() != TerrainBasics.PASSABILITY_FREE) {
 					y1 = i-dy;
 					break;
 				}
@@ -516,7 +488,7 @@ public abstract class Character extends Coordinate {
 				}
 			}
 			for (int i=this.y+dy; i!=endY+dy; i+=dy) {
-				if (location.passability[this.x][i] != TerrainBasics.PASSABILITY_FREE) {
+				if (plane.getCell(this.x, i).getPassability() != TerrainBasics.PASSABILITY_FREE) {
 					y2 = i-dy;
 					break;
 				}
@@ -527,21 +499,20 @@ public abstract class Character extends Coordinate {
 			} else {
 				answer = new Coordinate(this.x, y2);
 			}
-			if (answer.x == this.x && answer.y == y2 && location.passability[endX][endY] == TerrainBasics.PASSABILITY_FREE) {
+			if (answer.x == this.x && answer.y == y2 && plane.getCell(endX, endY).getPassability() == TerrainBasics.PASSABILITY_FREE) {
 			// If answer is the furthest cell on the same line, but {endX:endY} is free
 				answer.x = endX;
 				answer.y = endY;
-			} else if (answer.x == this.x && answer.y == y2 && location.passability[endX][endY] == TerrainBasics.PASSABILITY_NO) {
+			} else if (answer.x == this.x && answer.y == y2 && plane.getCell(endX, endY).getPassability() == TerrainBasics.PASSABILITY_NO) {
 			// If answer is the furthest cell on the same line, and {endX:endY} has no passage 
 				answer.y = endY-dy;
 			}
 			return answer;
 		} else if (Math.abs(endY-this.y)==1) {
-		// ��� �� ������, ��� � ����������, �� ��� �������������� �����
 			int dx=Math.abs(endX-this.x)/(endX-this.x);
 			int x1 = endX, x2 = endX;
 			for (int i=this.x+dx;i!=endX+dx;i+=dx) {
-				if (location.passability[i][endY] != TerrainBasics.PASSABILITY_FREE) {
+				if (plane.getCell(i,endY).getPassability() != TerrainBasics.PASSABILITY_FREE) {
 					x1 = i-dx;
 					break;
 				}
@@ -550,7 +521,7 @@ public abstract class Character extends Coordinate {
 				}
 			}
 			for (int i=this.x+dx;i!=endX+dx;i+=dx) {
-				if (location.passability[i][this.y] != TerrainBasics.PASSABILITY_FREE) {
+				if (plane.getCell(i,this.y).getPassability() != TerrainBasics.PASSABILITY_FREE) {
 					x2 = i-dx;
 					break;
 				}
@@ -561,11 +532,11 @@ public abstract class Character extends Coordinate {
 			} else {
 				answer = new Coordinate(x2, this.y);
 			}
-			if (answer.x == x2 && answer.y == this.y && location.passability[endX][endY] == TerrainBasics.PASSABILITY_FREE) {
+			if (answer.x == x2 && answer.y == this.y && plane.getCell(endX,endY).getPassability() == TerrainBasics.PASSABILITY_FREE) {
 			// If answer is the furthest cell on the same line, but {endX:endY} is free
 				answer.x = endX;
 				answer.y = endY;
-			} else if (answer.x == x2 && answer.y == this.y && location.passability[endX][endY] == TerrainBasics.PASSABILITY_NO) {
+			} else if (answer.x == x2 && answer.y == this.y && plane.getCell(endX,endY).getPassability() == TerrainBasics.PASSABILITY_NO) {
 			// If answer is the furthest cell on the same line, and {endX:endY} has no passage 
 				answer.x = endX-dx;
 			}
@@ -573,7 +544,6 @@ public abstract class Character extends Coordinate {
 			return answer;
 		} 
 		else if (Math.abs(endX-this.x) == Math.abs(endY-this.y)) {
-		// ������, ����� ����� �������� � ����� ���� 45 �������� (abs(tg)==1)
 			int dMax=Math.abs(endX-this.x);
 			int dx=endX>this.x ? 1 : -1;
 			int dy=endY>this.y ? 1 : -1;
@@ -582,7 +552,7 @@ public abstract class Character extends Coordinate {
 			for (int i=1;i<=dMax;i++) {
 				cx+=dx;
 				cy+=dy;
-				if (location.passability[cx][cy]==1) {
+				if (plane.getCell(cx,cy).getPassability()==1) {
 					return new Coordinate(cx-dx, cy-dy);
 				}
 				
@@ -590,10 +560,8 @@ public abstract class Character extends Coordinate {
 			return new Coordinate(endX, endY);
 		} 
 		else {
-		// ����� ������
 			double[][] start = new double[2][2];
 			double[] end = new double[4];
-			// x � y ������ ������������� x � y ������ ������ ��� � ���������� ���� (�������� ������������ � ����� �� k ������ � ������)
 			end[0]=(endX>this.x)? endX-0.5 : endX+0.5;
 			end[1]=(endY>this.y)? endY-0.5 : endY+0.5;
 			end[2]=endX;
@@ -611,11 +579,6 @@ public abstract class Character extends Coordinate {
 				int endNumX=(k==0 || k==1)?0:2;
 				int endNumY=(k==0 || k==2)?1:3;
 				for (int j=0;j<1;j++) {
-				// ����� �������� ������� ��������� �������� �� ���, ���� �� �����, 
-				// ������� ��������� �����, ��� �� 0.5 ������ �� ������ - ��������� ������� ����, ��� ������ ���������� ��������.
-				// �������� � ���� ������ ��������� ������������ � R=0.5 
-				// ��� �� ������ ������� ��������� �� ������ ������ �� �����������.
-				// � ���� ������ ����� ������� �������� ����� �������� (3 ����� �� k - ����� ����� - � ��� �� j - ����� ������)
 					if (start[j][0]==this.x && start[j][1]==this.y) {
 						continue;
 					}
@@ -625,11 +588,8 @@ public abstract class Character extends Coordinate {
 					double yStart = start[j][1];
 					for (Coordinate c : rays) {
 						try {
-							if (location.passability[c.x][c.y]==1) {
-							// ��������� ������ ������
-								
+							if (plane.getCell(c.x,c.y).getPassability()==1) {
 								if (Math.abs(((yStart-yEnd)*c.x+(xEnd-xStart)*c.y+(xStart*yEnd-yStart*xEnd))/Math.sqrt(Math.abs((xEnd-xStart)*(xEnd-xStart)+(yEnd-yStart)*(yEnd-yStart))))<=0.5) {
-								// ���� ���������� �� ����� �� ������ 0.5, ��������� ��������� �� 6 �����
 									continue jump;
 								}
 								
@@ -648,12 +608,10 @@ public abstract class Character extends Coordinate {
 		}
 	}
 	public Coordinate[] rays (int startX, int startY, int endX, int endY) {
-	// ��������������� ������� ��� this->canSee
-	// ���������� ����� ��������� ������, ������� ���������� ��������� ��� �������� ���������
 		return Utils.concatAll(
-			location.vector(startX, startY, endX, endY),
-			location.vector(startX,startY+(endY>startY ? 1 : -1),endX+(endX>startX ? -1 : 1),endY),
-			location.vector(startX+(endX>startX ? 1 : -1),startY,endX,endY+(endY>startY ? -1 : 1))
+			TerrainBasics.vector(startX, startY, endX, endY),
+			TerrainBasics.vector(startX,startY+(endY>startY ? 1 : -1),endX+(endX>startX ? -1 : 1),endY),
+			TerrainBasics.vector(startX+(endX>startX ? 1 : -1),startY,endX,endY+(endY>startY ? -1 : 1))
 		);
 	}
 	
@@ -687,9 +645,6 @@ public abstract class Character extends Coordinate {
 			throw new Error("Unknown attribute");
 		}
 	}
-	public Location location() {
-		return location;
-	}
 	public int hashCode() {
 		return characterId;
 	}
@@ -705,21 +660,18 @@ public abstract class Character extends Coordinate {
 	 * also called when character blinks, being pushed and so on.
 	 * For action method, use Character.step.
 	 */
-		location.passability[this.x][this.y] = TerrainBasics.PASSABILITY_FREE;
-		location.cells[this.x][this.y].character(false);
+		plane.getCell(this.x,this.y).setPassability(TerrainBasics.PASSABILITY_FREE);
+		plane.getCell(this.x,this.y).character(false);
 		this.x = x;
 		this.y = y;
-		location.cells[x][y].character(this);
-		location.passability[x][y] = TerrainBasics.PASSABILITY_SEE;
-		location.addEvent(new EventMove(characterId, x, y));
+		plane.getCell(x,y).character(this);
+		plane.getCell(x,y).setPassability(TerrainBasics.PASSABILITY_SEE);
+		getTimeStream().addEvent(new EventMove(characterId, x, y));
 		notifyNeighborsVisiblilty();
-	}
-	protected void setLocation(Location location) {
-		this.location = location;
 	}
 	public void getDamage(int amount, DamageType type) {
 		hp -= amount;
-		location.addEvent(new EventDamage(characterId, amount, type.type2int()));
+		getTimeStream().addEvent(new EventDamage(characterId, amount, type.type2int()));
 		if (hp <= 0) {
 			die();
 		}
@@ -731,14 +683,14 @@ public abstract class Character extends Coordinate {
 		amount = Math.min(amount, maxEp-ep);
 		if (amount != 0) {
 			ep += amount;
-			location.addEvent(new EventChangeEnergy(characterId, ep));
+			getTimeStream().addEvent(new EventChangeEnergy(characterId, ep));
 		}
 	}
 	protected void changeMana(int amount) {
 		amount = Math.min(amount, maxMp-mp);
 		if (amount != 0) {
 			mp += amount;
-			location.addEvent(new EventChangeMana(characterId, mp));
+			getTimeStream().addEvent(new EventChangeMana(characterId, mp));
 		}
 	}
 	protected void removeEffect(CharacterEffect effect) {
@@ -746,22 +698,16 @@ public abstract class Character extends Coordinate {
 	}
 	public void getItem(UniqueItem item) {
 		inventory.add(item);
-		if (isInLocation()) {
-			location.addEvent(new EventGetUniqueItem(characterId, item.getTypeId(), item.getItemId()));
-		}
+		getTimeStream().addEvent(new EventGetUniqueItem(characterId, item.getTypeId(), item.getItemId()));
 	}
 	public void getItem(ItemPile pile) {
 		inventory.add(pile);
-		if (isInLocation()) {
-			location.addEvent(new EventGetItemPile(characterId, pile.getTypeId(), pile.getAmount()));
-		}
+		getTimeStream().addEvent(new EventGetItemPile(characterId, pile.getTypeId(), pile.getAmount()));
 	}
 	public void loseItem(UniqueItem item) {
 		if (inventory.hasUnique(item.getItemId())) {
 			inventory.removeUnique(item);
-			if (isInLocation()) {
-				location.addEvent(new EventLoseItem(characterId, item.getType().getTypeId(), item.getItemId()));
-			}
+			getTimeStream().addEvent(new EventLoseItem(characterId, item.getType().getTypeId(), item.getItemId()));
 		} else {
 			throw new Error("An attempt to lose an item width id " + item.getItemId()
 					+ " that is neither in inventory nor in equipment");
@@ -769,9 +715,7 @@ public abstract class Character extends Coordinate {
 	}
 	public void loseItem(ItemPile pile) {
 		inventory.removePile(pile);
-		if (isInLocation()) {
-			location.addEvent(new EventLoseItem(characterId, pile.getType().getTypeId(), pile.getAmount()));
-		}
+		getTimeStream().addEvent(new EventLoseItem(characterId, pile.getType().getTypeId(), pile.getAmount()));
 	}
 	public void setFraction(int fraction) {
 		this.fraction = fraction;
@@ -781,11 +725,11 @@ public abstract class Character extends Coordinate {
 			removeEffect(effectId);
 		}
 		effects.put(effectId, new Character.Effect(effectId, duration, modifier));
-		location.addEvent(new EventEffectStart(characterId, effectId));
+		getTimeStream().addEvent(new EventEffectStart(characterId, effectId));
 	}
 	public void removeEffect(int effectId) {
 		effects.remove(effectId);
-		location.addEvent(new EventEffectEnd(characterId, effectId));
+		getTimeStream().addEvent(new EventEffectEnd(characterId, effectId));
 	}
 	public void moveTime(int amount) {
 		actionPoints -= amount;
@@ -816,17 +760,16 @@ public abstract class Character extends Coordinate {
 		case EVASION:     resultValue = (evasion += value); break;
 		case MAX_HP:      resultValue = (maxHp += value); 
 		                                 hp += value; 
-		                  location.addEvent(new EventAttributeChange(characterId, Attribute.HP.attr2int(), hp));
+                          getTimeStream().addEvent(new EventAttributeChange(characterId, Attribute.HP.attr2int(), hp));
 		                  break;
 		case MAX_MP:      resultValue = (maxMp += value); 
                                          hp += value; 
-                          location.addEvent(new EventAttributeChange(characterId, Attribute.MP.attr2int(), mp));
+                          getTimeStream().addEvent(new EventAttributeChange(characterId, Attribute.MP.attr2int(), mp));
                           break;
 		default:
 			throw new Error("Unknown attribute");
 		}
-		Main.console("change "+attribute+" to "+resultValue);
-		location.addEvent(new EventAttributeChange(characterId, attribute.attr2int(), resultValue));
+		getTimeStream().addEvent(new EventAttributeChange(characterId, attribute.attr2int(), resultValue));
 	}
 	/* Checks */
 	public boolean at(int atX, int atY) {
@@ -835,17 +778,11 @@ public abstract class Character extends Coordinate {
 	public boolean hasItem(int typeId, int amount) {
 		return inventory.hasPile(typeId, amount);
 	}
-	public boolean isOnGlobalMap() {
-		return location == null;
-	}
 	public boolean isEnemy(Character ch) {
 		if (fraction == FRACTION_NEUTRAL) {
 			return false;
 		}
 		return ch.fraction != fraction;
-	}
-	public boolean isInLocation() {
-		return location != null;
 	}
 	/* Data */
 	public String jsonGetEffects() {
@@ -861,6 +798,13 @@ public abstract class Character extends Coordinate {
 		return new int[0][2];
 	}
 	
+	public void setTimeStream(TimeStream timeStream) {
+		this.timeStream = timeStream;
+	}
+	public TimeStream getTimeStream() {
+		return timeStream;
+	}
+
 	/* Nested classes */
 	public class Effect {
 	// Class that holds description of one current character's effect

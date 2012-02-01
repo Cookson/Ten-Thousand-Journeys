@@ -24,7 +24,7 @@ import erpoge.terrain.settlements.buildings.Inn;
 import erpoge.terrain.settlements.buildings.OneRoomHouse;
 import erpoge.terrain.settlements.buildings.Temple;
 import erpoge.terrain.settlements.buildings.TestBuilding;
-public class Settlement extends LocationGenerator {
+public class Settlement extends Location {
 	public CustomRectangleSystem rectangleSystem;
 	protected RoadSystem roadSystem = new RoadSystem();
 	protected QuarterSystem quarterSystem;
@@ -33,8 +33,8 @@ public class Settlement extends LocationGenerator {
 	public HashMap<Integer, Character> dwellers = new HashMap<Integer, Character>();
 	public ArrayList<Service> services = new ArrayList<Service>();
 	
-	public Settlement (Location location) {
-		super(location);
+	public Settlement (HorizontalPlane plane, int x, int y, int width, int height) {
+		super(plane, x, y, width, height, "Settlement");
 		quarterSystem = new QuarterSystem(this);
 	}
 	public void placeBuilding(BuildingPlace place, Class<? extends Building> cls) {
@@ -45,15 +45,12 @@ public class Settlement extends LocationGenerator {
 					building.setProperties(this, place);
 					building.draw();
 					buildings.add(building);
-					selectLevel(0);
 				} else {
 					Main.console("Coundn't place building "+cls.getSimpleName());
 				}
 			} catch (InstantiationException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (IllegalAccessException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			

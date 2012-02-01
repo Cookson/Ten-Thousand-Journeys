@@ -10,6 +10,7 @@ import erpoge.Main;
 import erpoge.Utils;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.Cell;
+import erpoge.terrain.HorizontalPlane;
 import erpoge.terrain.Location;
 import erpoge.terrain.settlements.BuildingPlace;
 import erpoge.terrain.settlements.Settlement;
@@ -26,13 +27,12 @@ import erpoge.characters.Character;
 import erpoge.graphs.RectangleSystem;
 
 public class BuildingTest extends Settlement {
-	public BuildingTest(Location location) {
-		super(location);
+	public BuildingTest(HorizontalPlane plane, int x, int y, int width, int height) {
+		super(plane, x, y, width, height);
 		
 		int buildingSizeX = 18;
 		int buildingSizeY = 19;
 		
-		makePeaceful();
 		fillWithCells(GameObjects.FLOOR_GRASS,GameObjects.OBJ_VOID);
 		// -2 and +5 are beacuse of road.width
 		Coordinate nw = new Coordinate((width-buildingSizeX)/2-2,(height-buildingSizeY)/2-2);
@@ -51,6 +51,5 @@ public class BuildingTest extends Settlement {
 				break;
 			}
 		}
-		setStartArea(5,5,5,5);
 	}
 }

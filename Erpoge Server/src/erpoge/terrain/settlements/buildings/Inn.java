@@ -12,7 +12,6 @@ import erpoge.Side;
 import erpoge.characters.NonPlayerCharacter;
 import erpoge.graphs.CustomRectangleSystem;
 import erpoge.objects.GameObjects;
-import erpoge.terrain.TerrainGenerator;
 import erpoge.terrain.settlements.Building;
 import erpoge.terrain.settlements.BuildingPlace;
 import erpoge.terrain.settlements.Building.BasisBuildingSetup;

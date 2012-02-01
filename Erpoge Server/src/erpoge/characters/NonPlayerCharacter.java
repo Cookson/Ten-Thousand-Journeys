@@ -14,6 +14,8 @@ import erpoge.itemtypes.ItemType;
 import erpoge.itemtypes.ItemsTypology;
 import erpoge.serverevents.EventDialogueEnd;
 import erpoge.serverevents.EventDialoguePoint;
+import erpoge.terrain.Chunk;
+import erpoge.terrain.HorizontalPlane;
 import erpoge.terrain.Location;
 import erpoge.terrain.TerrainBasics;
 
@@ -33,18 +35,17 @@ public class NonPlayerCharacter extends Character {
 	public HashMap<Character, DialoguePoint> dialogues = new HashMap<Character, DialoguePoint>();
 	private Dialogue dialogue;
 	
-	public NonPlayerCharacter(String type, String name, Location location,
-			int sx, int sy) {
-		super(type, name, sx, sy);
-		setLocation(location);
-		location.passability[x][y] = TerrainBasics.PASSABILITY_SEE;
+	public NonPlayerCharacter(HorizontalPlane plane, int x, int y, String type, String name) {
+		super(plane, x, y, type, name);
+		Chunk chunk = plane.getChunk(x, y);
+		chunk.getCell(x, y).setPassability(TerrainBasics.PASSABILITY_SEE);
 		hp = CharacterTypes.getType(type).hp;
 		mp = CharacterTypes.getType(type).mp;
 		ep = 100;
 		maxHp = CharacterTypes.getType(type).hp;
 		maxMp = CharacterTypes.getType(type).mp;
 		maxEp = 100;
-		pathTable = new int[location.width][location.height];
+		pathTable = new int[Chunk.WIDTH*3][Chunk.WIDTH*3];
 		destX = x;
 		destY = y;
 		characterType = CharacterTypes.getType(type);
@@ -86,14 +87,8 @@ public class NonPlayerCharacter extends Character {
 		int curDestX = -1, curDestY = -1;
 		// ����� ��������� �� ���
 		for (int i = 0; i < 8; i++) {
-			curX = dists[i * 2];
-			curY = dists[i * 2 + 1];
-			if (curX < 0 || curX >= location.width || curY < 0
-					|| curY >= location.height) {
-				continue;
-			}
-			if (location.passability[curX][curY] == 0
-					&& pathTable[curX][curY] <= dist
+			if (plane.getCell(curX, curY).getPassability() == 0
+					&& getPathTableCell(curX, curY) <= dist
 					&& (curDestX == -1 || distance(curX, curY) < distance(
 							curDestX, curDestY)) && pathTable[curX][curY] > 0
 					&& !(curX == x && curY == y)) {
@@ -112,6 +107,9 @@ public class NonPlayerCharacter extends Character {
 			destX = x;
 			destY = y;
 		}
+	}
+	private int getPathTableCell(int x, int y) {
+		return this.pathTable[Chunk.WIDTH+Chunk.WIDTH/2+x-this.x][Chunk.WIDTH+Chunk.WIDTH/2+y-this.y];
 	}
 	private boolean getEnemy() {
 	/** 
@@ -196,7 +194,6 @@ public class NonPlayerCharacter extends Character {
 			int dy2 = (int)Math.round((double)dy / dMax);
 			// side is side from which current enemy is
 			Side side = Side.d2side(dx2, dy2);
-			Main.console("enemy from "+side);
 			Side sideR1 = side.ordinalClockwise();
 			Side sideR2 = sideR1.ordinalClockwise();
 			Side sideR3 = sideR2.ordinalClockwise();
@@ -217,9 +214,8 @@ public class NonPlayerCharacter extends Character {
 		int indexMin = -1;
 		int[] d;
 		for (int i=0; i<8; i++) {
-			Main.console(Side.int2side(i)+" - "+sides[i]);
 			d = Side.int2side(i).side2d();
-			if (location.passability[x+d[0]][y+d[1]] != TerrainBasics.PASSABILITY_FREE) {
+			if (plane.getCell(x+d[0], y+d[1]).getPassability() != TerrainBasics.PASSABILITY_FREE) {
 				continue;
 			}
 			if (sides[i] < min) {
@@ -297,7 +293,7 @@ public class NonPlayerCharacter extends Character {
 					ArrayList<Coordinate> imaginaryPath = 
 							getPathOnCustomPathTable(imaginaryPathTable, activeEnemy.x, activeEnemy.y);
 					Coordinate firstStep = imaginaryPath.get(0);
-					if (!location.cells[firstStep.x][firstStep.y].hasCharacter()) {
+					if (!plane.getCell(firstStep.x,firstStep.y).hasCharacter()) {
 					// If there is no character on first cell of imaginary path, then step there
 						step(firstStep.x, firstStep.y);
 					} else {
@@ -315,7 +311,7 @@ public class NonPlayerCharacter extends Character {
 				ArrayList<Coordinate> imaginaryPath = 
 						getPathOnCustomPathTable(imaginaryPathTable, lastSeenCoord.x, lastSeenCoord.y);
 				Coordinate firstStep = imaginaryPath.get(0);
-				if (!location.cells[firstStep.x][firstStep.y].hasCharacter()) {
+				if (!plane.getCell(firstStep.x,firstStep.y).hasCharacter()) {
 				// If there is no character on first cell of imaginary path, then step there
 					step(firstStep.x, firstStep.y);
 				} else {
@@ -376,17 +372,17 @@ public class NonPlayerCharacter extends Character {
 	}
 	public void die() {
 		super.die();
-		location.nonPlayerCharacters.remove(this);
+		getTimeStream().nonPlayerCharacters.remove(this);
 	}
 	/* Pathfinding */
 	public void showPathTable() {
-		for (int i = 0; i < location.height; i++) {
-			for (int j = 0; j < location.width; j++) {
-				Main.out(pathTable[j][i]);
-			}
-			Main.outln();
-		}
-		Main.outln("------");
+//		for (int i = 0; i < location.height; i++) {
+//			for (int j = 0; j < location.width; j++) {
+//				Main.out(pathTable[j][i]);
+//			}
+//			Main.outln();
+//		}
+//		Main.outln("------");
 	}
 	public int[][] getImaginaryPathTable(int destX, int destY) {
 	/**
@@ -397,9 +393,9 @@ public class NonPlayerCharacter extends Character {
 		ArrayList<Coordinate> oldFront = new ArrayList<Coordinate>();
 		ArrayList<Coordinate> newFront = new ArrayList<Coordinate>();
 		newFront.add(new Coordinate(x, y));
-		int[][] imaginaryPathTable = new int[location.width][location.height];
-		for (int i = 0; i < location.width; i++) {
-			for (int j = 0; j < location.height; j++) {
+		int[][] imaginaryPathTable = new int[Chunk.WIDTH*3][Chunk.WIDTH*3];
+		for (int i = 0; i<Chunk.WIDTH*3; i++) {
+			for (int j = 0; j<Chunk.WIDTH*3; j++) {
 				imaginaryPathTable[i][j] = 0;
 			}
 		}
@@ -418,8 +414,8 @@ public class NonPlayerCharacter extends Character {
 				for (int j = 0; j < 8; j++) {
 					int thisNumX = adjactentX[j];
 					int thisNumY = adjactentY[j];
-					if (thisNumX < 0 || thisNumX >= location.width
-							|| thisNumY < 0 || thisNumY >= location.height
+					if (thisNumX < 0 || thisNumX >= Chunk.WIDTH*3
+							|| thisNumY < 0 || thisNumY >= Chunk.WIDTH*3
 							|| imaginaryPathTable[thisNumX][thisNumY] != 0) {
 						continue;
 					}
@@ -428,8 +424,8 @@ public class NonPlayerCharacter extends Character {
 					}
 					// This next condition is the difference between this method and getPathTable()
 					if (
-						(location.cells[thisNumX][thisNumY].hasCharacter() ||
-						location.passability[thisNumX][thisNumY] == TerrainBasics.PASSABILITY_FREE)
+						(plane.getCell(thisNumX, thisNumY).hasCharacter() ||
+						plane.getCell(thisNumX, thisNumY).getPassability() == TerrainBasics.PASSABILITY_FREE)
 						&& !(thisNumX == this.x && thisNumY == this.y)
 					) {
 						imaginaryPathTable[thisNumX][thisNumY] = t + 1;
@@ -453,9 +449,9 @@ public class NonPlayerCharacter extends Character {
 		ArrayList<Coordinate> oldFront = new ArrayList<Coordinate>();
 		ArrayList<Coordinate> newFront = new ArrayList<Coordinate>();
 		newFront.add(new Coordinate(x, y));
-		int[][] imaginaryPathTable = new int[location.width][location.height];
-		for (int i = 0; i < location.width; i++) {
-			for (int j = 0; j < location.height; j++) {
+		int[][] imaginaryPathTable = new int[Chunk.WIDTH*3][Chunk.WIDTH*3];
+		for (int i = 0; i < Chunk.WIDTH*3; i++) {
+			for (int j = 0; j < Chunk.WIDTH*3; j++) {
 				imaginaryPathTable[i][j] = 0;
 			}
 		}
@@ -475,8 +471,8 @@ public class NonPlayerCharacter extends Character {
 				for (int j = 0; j < 8; j++) {
 					int thisNumX = adjactentX[j];
 					int thisNumY = adjactentY[j];
-					if (thisNumX < 0 || thisNumX >= location.width
-							|| thisNumY < 0 || thisNumY >= location.height
+					if (thisNumX < 0 || thisNumX >= Chunk.WIDTH*3
+							|| thisNumY < 0 || thisNumY >= Chunk.WIDTH*3
 							|| imaginaryPathTable[thisNumX][thisNumY] != 0) {
 						continue;
 					}
@@ -485,14 +481,14 @@ public class NonPlayerCharacter extends Character {
 					}
 					// This next condition is the difference between this method and getPathTable()
 					if (
-						(location.cells[thisNumX][thisNumY].hasCharacter() ||
-						location.passability[thisNumX][thisNumY] == TerrainBasics.PASSABILITY_FREE)
+						(plane.getCell(thisNumX,thisNumY).hasCharacter() ||
+						plane.getCell(thisNumX,thisNumY).getPassability() == TerrainBasics.PASSABILITY_FREE)
 						&& !(thisNumX == this.x && thisNumY == this.y)
 					) {
 						imaginaryPathTable[thisNumX][thisNumY] = t + 1;
 						newFront.add(new Coordinate(thisNumX, thisNumY));
 					}
-					if (seenCharacters.contains(location.cells[thisNumX][thisNumY].character())) {
+					if (seenCharacters.contains(plane.getCell(thisNumX,thisNumY).character())) {
 						charactersLeft--;
 					}
 				}
@@ -513,8 +509,8 @@ public class NonPlayerCharacter extends Character {
 		ArrayList<Coordinate> oldFront = new ArrayList<Coordinate>();
 		ArrayList<Coordinate> newFront = new ArrayList<Coordinate>();
 		newFront.add(new Coordinate(x, y));
-		for (int i = 0; i < location.width; i++) {
-			for (int j = 0; j < location.height; j++) {
+		for (int i = 0; i<Chunk.WIDTH*3; i++) {
+			for (int j = 0; j<Chunk.WIDTH*3; j++) {
 				pathTable[i][j] = 0;
 			}
 		}
@@ -534,22 +530,22 @@ public class NonPlayerCharacter extends Character {
 				for (int j = 0; j < 8; j++) {
 					int thisNumX = adjactentX[j];
 					int thisNumY = adjactentY[j];
-					if (thisNumX < 0 || thisNumX >= location.width
-							|| thisNumY < 0 || thisNumY >= location.height
+					if (thisNumX < 0 || thisNumX >= Chunk.WIDTH*3
+							|| thisNumY < 0 || thisNumY >= Chunk.WIDTH*3
 							|| pathTable[thisNumX][thisNumY] != 0) {
 						continue;
 					}
 					if (
-						(location.passability[thisNumX][thisNumY] == TerrainBasics.PASSABILITY_FREE
+						(plane.getCell(thisNumX, thisNumY).getPassability() == TerrainBasics.PASSABILITY_FREE
 						|| !initialCanSee(thisNumX, thisNumY)
-						&& location.passability[thisNumX][thisNumY] != TerrainBasics.PASSABILITY_NO)
+						&& plane.getCell(thisNumX, thisNumY).getPassability() != TerrainBasics.PASSABILITY_NO)
 							&& !(thisNumX == this.x && thisNumY == this.y)
 					) {
 					// Step to cell if character can see it and it is free
 					// or character cannot see it and it is not PASSABILITY_NO
 						pathTable[thisNumX][thisNumY] = t + 1;
 						newFront.add(new Coordinate(thisNumX, thisNumY));
-					} else if (seenCharacters.contains(location.cells[thisNumX][thisNumY].character())) {
+					} else if (seenCharacters.contains(plane.getCell(thisNumX, thisNumY).character())) {
 						charactersLeft--;
 					}
 				}
@@ -566,8 +562,8 @@ public class NonPlayerCharacter extends Character {
 		ArrayList<Coordinate> oldFront = new ArrayList<Coordinate>();
 		ArrayList<Coordinate> newFront = new ArrayList<Coordinate>();
 		newFront.add(new Coordinate(x, y));
-		for (int i = 0; i < location.width; i++) {
-			for (int j = 0; j < location.height; j++) {
+		for (int i = 0; i < Chunk.WIDTH*3; i++) {
+			for (int j = 0; j < Chunk.WIDTH*3; j++) {
 				pathTable[i][j] = 0;
 			}
 		}
@@ -586,8 +582,8 @@ public class NonPlayerCharacter extends Character {
 				for (int j = 0; j < 8; j++) {
 					int thisNumX = adjactentX[j];
 					int thisNumY = adjactentY[j];
-					if (thisNumX < 0 || thisNumX >= location.width
-							|| thisNumY < 0 || thisNumY >= location.height
+					if (thisNumX < 0 || thisNumX >= Chunk.WIDTH*3
+							|| thisNumY < 0 || thisNumY >= Chunk.WIDTH*3
 							|| pathTable[thisNumX][thisNumY] != 0) {
 						continue;
 					}
@@ -595,10 +591,10 @@ public class NonPlayerCharacter extends Character {
 						isPathFound = true;
 					}
 					if (
-						(location.passability[thisNumX][thisNumY] == TerrainBasics.PASSABILITY_FREE
+						(plane.getCell(thisNumX, thisNumY).getPassability() == TerrainBasics.PASSABILITY_FREE
 						|| !initialCanSee(thisNumX, thisNumY)
-						&& location.passability[thisNumX][thisNumY] != TerrainBasics.PASSABILITY_NO)
-							&& !(thisNumX == this.x && thisNumY == this.y)
+						&& plane.getCell(thisNumX, thisNumY).getPassability() != TerrainBasics.PASSABILITY_NO)
+						&& !(thisNumX == this.x && thisNumY == this.y)
 					) {
 					// Step to cell if character can see it and it is free
 					// or character cannot see it and it is not PASSABILITY_NO
@@ -639,11 +635,11 @@ public class NonPlayerCharacter extends Character {
 			for (int i = 0; i < 8; i++) {
 				// ��� ������ �� ��������� ������ (�, �, �, �)
 				int thisNumX = adjactentX[i];
-				if (thisNumX < 0 || thisNumX >= location.width) {
+				if (thisNumX < 0 || thisNumX >= Chunk.WIDTH*3) {
 					continue;
 				}
 				int thisNumY = adjactentY[i];
-				if (thisNumY < 0 || thisNumY >= location.height) {
+				if (thisNumY < 0 || thisNumY >= Chunk.WIDTH*3) {
 					continue;
 				}
 				if (pathTable[thisNumX][thisNumY] == j - 1) {
@@ -684,11 +680,11 @@ public class NonPlayerCharacter extends Character {
 			for (int i = 0; i < 8; i++) {
 				// ��� ������ �� ��������� ������ (�, �, �, �)
 				int thisNumX = adjactentX[i];
-				if (thisNumX < 0 || thisNumX >= location.width) {
+				if (thisNumX < 0 || thisNumX >= Chunk.WIDTH*3) {
 					continue;
 				}
 				int thisNumY = adjactentY[i];
-				if (thisNumY < 0 || thisNumY >= location.height) {
+				if (thisNumY < 0 || thisNumY >= Chunk.WIDTH*3) {
 					continue;
 				}
 				if (customPathTable[thisNumX][thisNumY] == j - 1) {
@@ -739,7 +735,7 @@ public class NonPlayerCharacter extends Character {
  	/**
  	 * Tries to see/unsee all characters whithin vision range
  	 */
-		for (Character character : location.characters.values()) {
+		for (Character character : getTimeStream().characters) {
 		// Quickly select characters that could be seen (including this character)
 			if (
 				Math.abs(character.x - x) <= Character.VISION_RANGE &&
@@ -753,7 +749,6 @@ public class NonPlayerCharacter extends Character {
 			tryToUnsee(character);
 		}
 		seenCharacters.remove(this);
-//		Main.console(name+" gets "+seenCharacters.size()+" visible entities: "+seenCharacters);
 	}
  	/* Dialogues */
  	public boolean hasDialogue() {
@@ -773,10 +768,10 @@ public class NonPlayerCharacter extends Character {
 		}
 		if (prevDP.isAnswerEnding(answerIndex)) {
 		// End dialogue
-			location.addEvent(new EventDialogueEnd(player.characterId));
+			getTimeStream().addEvent(new EventDialogueEnd(player.characterId));
 		} else {
 		// Continue dialogue
-			location.addEvent(new EventDialoguePoint(characterId,
+			getTimeStream().addEvent(new EventDialoguePoint(characterId,
 					player.characterId, curDP.message, curDP.getAnswers()
 							.toArray(new String[0])));
 		}
@@ -790,7 +785,7 @@ public class NonPlayerCharacter extends Character {
 		}
 
 		dialogues.put(player, startDP);
-		location.addEvent(new EventDialoguePoint(characterId,
+		getTimeStream().addEvent(new EventDialoguePoint(characterId,
 				player.characterId, startDP.message, startDP.getAnswers()
 						.toArray(new String[0])));
 	}

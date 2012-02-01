@@ -20,22 +20,17 @@ import erpoge.Side;
 import erpoge.Utils;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.Cell;
+import erpoge.terrain.Location;
 import erpoge.terrain.TerrainBasics;
 
 public class RectangleSystem extends Graph<RectangleArea> {
-	// Класс для разбиения определённой прямоугольной области локации на меньшие
-	// прямоугольники
-	// и представления этой области в виде графа,
-	// где вершины - прямоугольники, а рёбра - границы прямоугольника и его
-	// соседей
-	
 	public int width;
 	public int height;
 	public int startX;
 	public int startY;
 	public int minRectangleWidth;
 	public int borderWidth;
-	public TerrainBasics location;
+	public Location location;
 	public HashMap<Integer, ArrayList<Side>> outerSides;
 	private HashMap<Integer, RectangleArea> outerRectangles = new HashMap<Integer, RectangleArea>();
 
@@ -45,12 +40,12 @@ public class RectangleSystem extends Graph<RectangleArea> {
 	 */
 	public HashMap<Integer, RectangleArea> rectangles;
 
-	public RectangleSystem(TerrainBasics loc, int startX, int startY, int w,
+	public RectangleSystem(Location loc, int startX, int startY, int w,
 			int h, int minRectangleWidth) {
 		this(loc, startX, startY, w, h, minRectangleWidth, 1);
 	}
 
-	public RectangleSystem(TerrainBasics loc, int sx, int sy, int w, int h,
+	public RectangleSystem(Location loc, int sx, int sy, int w, int h,
 			int minrw, int bw) {
 		/*
 		 * location - объект локации, на которой строится граф;
@@ -945,9 +940,9 @@ public class RectangleSystem extends Graph<RectangleArea> {
 	}
 
 	public static RectangleSystem createSystemFromRectangleSet(
-			TerrainBasics terrain, Set<RectangleArea> set, int borderWidth) {
+			Location terrain, Set<RectangleArea> set, int borderWidth) {
 		CustomRectangleSystem newCRS = new CustomRectangleSystem(terrain);
-		newCRS.setStartCoord(terrain.width, terrain.height);
+		newCRS.setStartCoord(terrain.getWidth(), terrain.getHeight());
 		int endX = 0, endY = 0;
 		for (RectangleArea r : set) {
 			newCRS.addRectangle(r);

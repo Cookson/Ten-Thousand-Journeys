@@ -16,9 +16,7 @@ import erpoge.graphs.RectangleSystem;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.CellCollection;
 import erpoge.terrain.Location;
-import erpoge.terrain.LocationGenerator;
 import erpoge.terrain.TerrainBasics;
-import erpoge.terrain.TerrainGenerator;
 import erpoge.terrain.settlements.Settlement.RoadSystem.Road;
 import erpoge.terrain.settlements.buildings.Inn;
 
@@ -28,7 +26,7 @@ public abstract class Building extends Rectangle {
 		SIDE_E = 2,
 		SIDE_S = 3,
 		SIDE_W = 4;
-	public LocationGenerator settlement;
+	public Location settlement;
 	public HashMap<Integer, RectangleArea> rooms;
 	public RectangleSystem rectangleSystem;
 	public int lobby = -1;
@@ -50,7 +48,7 @@ public abstract class Building extends Rectangle {
 	public Building() {
 		
 	}
-	public Building setProperties(LocationGenerator settlement, BuildingPlace place) {
+	public Building setProperties(Location settlement, BuildingPlace place) {
 		this.x = place.x+1;
 		this.y = place.y+1;
 		this.width = place.width-2;
@@ -366,24 +364,24 @@ public abstract class Building extends Rectangle {
 	}
 	public ArrayList<Coordinate> getCellsNearWalls(Rectangle r) {
 		ArrayList<Coordinate> answer = new ArrayList<Coordinate>();
-		for (int i = r.x + 1; i < r.x + r.width - 1; i++) {
-			if (!settlement.isDoor(i, r.y - 1)) {
+		for (int i=r.x+1; i<r.x+r.width-1; i++) {
+			if (!settlement.isDoor(i, r.y-1)) {
 				answer.add(new Coordinate(i, r.y));
 			}
-			if (!settlement.isDoor(i, r.y + r.height)) {
-				answer.add(new Coordinate(i, r.y + r.height - 1));
+			if (!settlement.isDoor(i, r.y+r.height)) {
+				answer.add(new Coordinate(i, r.y+r.height-1));
 			}
 		}
-		for (int i = r.y + 1; i < r.y + r.height - 1; i++) {
-			if (!settlement.isDoor(r.x - 1, i)) {
+		for (int i=r.y+1; i<r.y+r.height-1; i++) {
+			if (!settlement.isDoor(r.x-1, i)) {
 				answer.add(new Coordinate(r.x, i));
 			}
-			if (!settlement.isDoor(r.x + r.width, i)) {
-				answer.add(new Coordinate(r.x + r.width - 1, i));
+			if (!settlement.isDoor(r.x+r.width, i)) {
+				answer.add(new Coordinate(r.x+r.width-1, i));
 			}
 		}
 		// Checking cells in corners
-		if (!settlement.isDoor(r.x, r.y - 1) && !settlement.isDoor(r.x - 1, r.y)) {
+		if (!settlement.isDoor(r.x, r.y - 1) && !settlement.isDoor(r.x-1, r.y)) {
 			answer.add(new Coordinate(r.x, r.y));
 		}
 		if (!settlement.isDoor(r.x + r.width - 1, r.y - 1)

@@ -11,7 +11,6 @@ import erpoge.objects.GameObjects;
 import erpoge.terrain.CellCollection;
 import erpoge.terrain.Location;
 import erpoge.terrain.TerrainBasics;
-import erpoge.terrain.TerrainGenerator;
 import erpoge.terrain.settlements.Building;
 import erpoge.terrain.settlements.BuildingPlace;
 import erpoge.terrain.settlements.Settlement;
@@ -122,8 +121,6 @@ public class Monastery extends Building {
 //			cellsNearWalls.setCharacter("dwarvenHooker", "���������-�����������").setFraction(Character.FRACTION_NEUTRAL);
 		}
 		
-		// Set start area
-		this.settlement.setStartArea(mainRS.getRandomRectangle());
 		
 		// Check structure for connectivity of inner part and road part
 	}

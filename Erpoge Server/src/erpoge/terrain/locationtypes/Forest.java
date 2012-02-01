@@ -10,23 +10,18 @@ import erpoge.graphs.RectangleSystem;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.Cell;
 import erpoge.terrain.CellCollection;
+import erpoge.terrain.HorizontalPlane;
 import erpoge.terrain.Location;
-import erpoge.terrain.LocationGenerator;
-import erpoge.terrain.TerrainGenerator;
-import erpoge.terrain.World;
 
 import java.util.ArrayList;
 
-public class Forest extends LocationGenerator {
-	public Forest(Location location) {
-		super(location);
+public class Forest extends Location {
+	public Forest(HorizontalPlane plane, int x, int y, int width, int height) {
+		super(plane, x, y, width, height, "Forest");
 		fillWithCells(1,0);
-		setStartArea(0, 0, 10, 10);
 		
 		Chance ch50 = new Chance(50);
 		// Choose starting position
-		int x;
-		int y;
 
 		// Objects creation
 		// num=(w*h)/50;

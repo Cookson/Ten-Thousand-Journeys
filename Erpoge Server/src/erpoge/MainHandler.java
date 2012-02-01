@@ -9,6 +9,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import erpoge.characters.Character;
+import erpoge.characters.CharacterManager;
 import erpoge.characters.PlayerCharacter;
 import erpoge.clientmessages.*;
 import erpoge.inventory.Item;
@@ -17,9 +18,9 @@ import erpoge.inventory.UniqueItem;
 import erpoge.itemtypes.ItemType;
 import erpoge.itemtypes.ItemsTypology;
 import erpoge.serverevents.EventPutOn;
+import erpoge.terrain.HorizontalPlane;
 import erpoge.terrain.Location;
 import erpoge.terrain.Portal;
-import erpoge.terrain.World;
 import net.tootallnate.websocket.Draft;
 import net.tootallnate.websocket.WebSocket;
 import net.tootallnate.websocket.WebSocketServer;
@@ -75,14 +76,11 @@ public class MainHandler extends WebSocketServer {
 	public static final Gson gsonIncludesStatic = new GsonBuilder()
     	.excludeFieldsWithModifiers(Modifier.TRANSIENT)
     	.create();
-	public static World world;
+	private HorizontalPlane defaultPlane;
 
 	public MainHandler(int port) {
 		super(port, new Draft_75());
 		Main.outln("Start listening on port " + port);
-	}
-	public static void assignWorld(World world) {
-		instance.world = world;
 	}
 	public static void startServer() {
 		instance.start();
@@ -95,6 +93,9 @@ public class MainHandler extends WebSocketServer {
 		}
 		Main.outln();
 	}
+	public static void setDefaultPlane(HorizontalPlane plane) {
+		instance.defaultPlane = plane;
+	}
 	/* Handlers */
 	private void aServerInfo(String message, WebSocket conn) throws IOException {
 		// ping
@@ -106,8 +107,8 @@ public class MainHandler extends WebSocketServer {
 	 * Sends only contents of world witout any login information.
 	 * Used, for example, in world preview in client.
 	 */
-		conn.send("[{\"e\":\"loadPassiveContents\","+world.jsonPartGetWorldContents()+"}]");
-		Main.console("[{\"e\":\"loadPassiveContents\","+world.jsonPartGetWorldContents()+"}]");
+		conn.send("[{\"e\":\"loadPassiveContents\","+defaultPlane.jsonPartGetContents(-20, -20, 40, 40)+"}]");
+		Main.console("[{\"e\":\"loadPassiveContents\","+defaultPlane.jsonPartGetContents(-20, -20, 40, 40)+"}]");
 	}
 	private void aLogin(String message, WebSocket conn) throws IOException {
 		/* 	in: {
@@ -153,12 +154,12 @@ public class MainHandler extends WebSocketServer {
 			conn.send("[{\"e\":\"loadContents\",\"error\":4}]");
 		} else {
 		// Everything is okay
-			conn.character = world.getPlayerById(clientData.characterId);
+			conn.character = CharacterManager.getPlayerById(clientData.characterId);
 			if (!conn.character.isAuthorized()) {
 				conn.character.authorize();
 				conn.character.setConnection(conn);
 			}
-			conn.send("["+conn.character.jsonPartGetEnteringData(conn.character.isOnGlobalMap())+"]");
+			conn.send("["+conn.character.jsonPartGetEnteringData()+"]");
 		}
 	}
 	/* Listeners */
@@ -215,9 +216,6 @@ public class MainHandler extends WebSocketServer {
 			case DROP_UNIQUE:
 				conn.character.aDropUnique(message);
 				break;
-			case WORLD_TRAVEL:
-				conn.character.aWorldTravel(message);
-				break;
 			case DEAUTH:
 				conn.character.aDeauth(message);
 				break;
@@ -244,12 +242,6 @@ public class MainHandler extends WebSocketServer {
 				break;
 			case CHECK_OUT:
 				conn.character.aCheckOut(message);
-				break;
-			case ENTER_LOCATION:
-				conn.character.aEnterLocation(message);
-				break;
-			case LEAVE_LOCATION:
-				conn.character.aLeaveLocation(message);
 				break;
 			case ANSWER:
 				conn.character.aAnswer(message);

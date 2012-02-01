@@ -9,6 +9,7 @@ import erpoge.Main;
 import erpoge.Utils;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.Cell;
+import erpoge.terrain.HorizontalPlane;
 import erpoge.terrain.Location;
 import erpoge.terrain.settlements.BuildingPlace;
 import erpoge.terrain.settlements.Settlement;
@@ -18,9 +19,8 @@ import erpoge.characters.Character;
 import erpoge.graphs.RectangleSystem;
 
 public class Village extends Settlement {
-	public Village(Location location) {
-		super(location);
-		makePeaceful();
+	public Village(HorizontalPlane plane, int x, int y, int width, int height) {
+		super(plane, x, y, width, height);
 		fillWithCells(GameObjects.FLOOR_GRASS,GameObjects.OBJ_VOID);
 //		createRandomRoadSystem();
 		roadSystem.createRoad(width/2,0,width/2,height-1);
@@ -29,6 +29,5 @@ public class Village extends Settlement {
 		for (BuildingPlace place : quarterSystem.buildingPlaces) {
 			placeBuilding(place, Inn.class);
 		}
-		setStartArea(10,10,10,10);
 	}
 }

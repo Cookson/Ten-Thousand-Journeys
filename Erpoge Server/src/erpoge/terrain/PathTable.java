@@ -17,14 +17,14 @@ public abstract class PathTable {
 		this.start = start;
 		this.dest = dest;
 		this.terrain = terrain;
-		this.pathTable = new int[terrain.width][terrain.height];
+		this.pathTable = new int[terrain.getWidth()][terrain.getHeight()];
 		
 		boolean pathFound = false;
 		ArrayList<Coordinate> oldFront = new ArrayList<Coordinate>();
 		ArrayList<Coordinate> newFront = new ArrayList<Coordinate>();
 		newFront.add(start);
-		for (int i = 0; i < terrain.width; i++) {
-			for (int j = 0; j < terrain.height; j++) {
+		for (int i = 0; i < terrain.getWidth(); i++) {
+			for (int j = 0; j < terrain.getHeight(); j++) {
 				pathTable[i][j] = 0;
 			}
 		}
@@ -41,8 +41,8 @@ public abstract class PathTable {
 				for (int j = 0; j<8; j++) {
 					int thisNumX = adjactentX[j];
 					int thisNumY = adjactentY[j];
-					if (thisNumX < 0 || thisNumX >= terrain.width
-						|| thisNumY < 0 || thisNumY >= terrain.height
+					if (thisNumX < 0 || thisNumX >= terrain.getWidth()
+						|| thisNumY < 0 || thisNumY >= terrain.getHeight()
 						|| pathTable[thisNumX][thisNumY] != 0) {
 						continue;
 					}
@@ -85,11 +85,11 @@ public abstract class PathTable {
 			for (int i=0; i<8; i++) {
 				// ��� ������ �� ��������� ������ (�, �, �, �)
 				int thisNumX = adjactentX[i];
-				if (thisNumX<0 || thisNumX>=terrain.width) {
+				if (thisNumX<0 || thisNumX>=terrain.getWidth()) {
 					continue;
 				}
 				int thisNumY = adjactentY[i];
-				if (thisNumY<0 || thisNumY>=terrain.height) {
+				if (thisNumY<0 || thisNumY>=terrain.getHeight()) {
 					continue;
 				}
 				if (pathTable[thisNumX][thisNumY] == j-1) {
