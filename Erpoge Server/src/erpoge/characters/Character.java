@@ -111,7 +111,7 @@ public abstract class Character extends Coordinate {
 		loseItem(missile);
 		Coordinate end = getRayEnd(toX, toY);
 		getTimeStream().addEvent(new EventMissileFlight(x, y, end.x, end.y, 1));
-		plane.getChunk(end.x, end.y).addItem(missile, end.x, end.y);
+		plane.getChunkWithCell(end.x, end.y).addItem(missile, end.x, end.y);
 		Cell aimCell = plane.getCell(toX, toY);
 		if (aimCell.character() != null) {
 			aimCell.character().getDamage(10, DamageType.PLAIN);
@@ -130,7 +130,7 @@ public abstract class Character extends Coordinate {
 		for (NonPlayerCharacter character : observers) {
 			character.discoverDeath(this);
 		}
-		plane.getChunk(x,y).removeCharacter(this);
+		plane.getChunkWithCell(x,y).removeCharacter(this);
 		getTimeStream().addEvent(new EventDeath(characterId));
 	}
 	protected void putOn(UniqueItem item, boolean omitEvent) {
@@ -173,7 +173,7 @@ public abstract class Character extends Coordinate {
 	 */
 		getTimeStream().addEvent(new EventPickUp(characterId, pile.getType().getTypeId(), pile.getAmount()));
 		getItem(pile);
-		plane.getChunk(x,y).removeItem(pile, x, y);
+		plane.getChunkWithCell(x,y).removeItem(pile, x, y);
 		moveTime(500);
 	}
 	protected void pickUp(UniqueItem item) {
@@ -182,18 +182,18 @@ public abstract class Character extends Coordinate {
 	 */
 		getTimeStream().addEvent(new EventPickUp(characterId, item.getTypeId(), item.getItemId()));
 		getItem(item);
-		plane.getChunk(x,y).removeItem(item, x, y);
+		plane.getChunkWithCell(x,y).removeItem(item, x, y);
 		moveTime(500);
 	}
 	protected void drop(UniqueItem item) {
 		loseItem(item);
-		plane.getChunk(x,y).addItem(item, x, y);
+		plane.getChunkWithCell(x,y).addItem(item, x, y);
 		getTimeStream().addEvent(new EventDropItem(characterId, item.getTypeId(), item.getItemId()));
 		moveTime(500);
 	}
 	protected void drop(ItemPile pile) {
 		loseItem(pile);
-		plane.getChunk(x,y).addItem(pile, x, y);
+		plane.getChunkWithCell(x,y).addItem(pile, x, y);
 		getTimeStream().addEvent(new EventDropItem(characterId, pile.getType().getTypeId(), pile.getAmount()));
 		moveTime(500);
 	}
@@ -223,7 +223,7 @@ public abstract class Character extends Coordinate {
 	}
 	protected void useObject(int x, int y) {
 		if (plane.getCell(x, y).isDoor()) {
-			plane.getChunk(x, y).openDoor(x,y);
+			plane.getChunkWithCell(x, y).openDoor(x,y);
 		}
 		getTimeStream().addEvent(new EventUseObject(characterId, x, y));
 		moveTime(500);
@@ -698,7 +698,13 @@ public abstract class Character extends Coordinate {
 	}
 	public void getItem(UniqueItem item) {
 		inventory.add(item);
-		getTimeStream().addEvent(new EventGetUniqueItem(characterId, item.getTypeId(), item.getItemId()));
+		timeStream.addEvent(new EventGetUniqueItem(characterId, item.getTypeId(), item.getItemId()));
+	}
+	public void eventlessGetItem(UniqueItem item) {
+		inventory.add(item);
+	}
+	public void eventlessGetItem(ItemPile pile) {
+		inventory.add(pile);
 	}
 	public void getItem(ItemPile pile) {
 		inventory.add(pile);

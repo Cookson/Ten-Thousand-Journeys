@@ -73,29 +73,11 @@ public class Chunk extends TerrainBasics {
 	public String jsonPartGetContents() {
 		/*
 			Format: non-valid json data; 
-				String "p:boolean,s:[[x,y,type]xJ],c:[[floor,object,[[itemId,amount]xN]]xM],ceilings:[[x,y,width,height]xL]";
+				String "
+				c:[[floor,object,[[itemId,amount]xN]]xM],ceilings:[[x,y,width,height]xL]";
 		*/
 		StringBuilder answer = new StringBuilder();
-		answer
-			.append(",\"p\":").append(false).append(",");
-		int sSize = soundSources.size();
-		if (sSize > 0) {
-			answer.append("\"s\":[");
-			for (int i=0;i<sSize-1;i++) {
-				Sound s = soundSources.get(i);
-				answer
-					.append("[")
-					.append(s.x).append(",")
-					.append(s.y).append(",")
-					.append(s.type).append("],");
-			}
-			Sound s = soundSources.get(sSize-1);
-			answer
-				.append("[")
-				.append(s.x).append(",")
-				.append(s.y).append(",")
-				.append(s.type).append("]],");
-		}
+		
 		answer.append("\"c\":[");
 		for (int j = 0; j<WIDTH; j++) {
 			for (int i=0; i<WIDTH; i++) {
@@ -114,19 +96,20 @@ public class Chunk extends TerrainBasics {
 				answer.append("]").append(i+j<WIDTH+WIDTH-2 ? "," : "");
 			}
 		}
-		answer.append("],\"ceilings\":[");
-		int ceilingsSize = ceilings.size();
-		int i=0;
-		for (Ceiling c : ceilings) {
-			answer
-				.append("[")
-				.append(c.x).append(",")
-				.append(c.y).append(",")
-				.append(c.width).append(",")
-				.append(c.height).append(",")
-				.append(c.type).append("]").append(++i<ceilingsSize ? "," : "");
-		}
 		answer.append("]");
+//				",\"ceilings\":[");
+//		int ceilingsSize = ceilings.size();
+//		int i=0;
+//		for (Ceiling c : ceilings) {
+//			answer
+//				.append("[")
+//				.append(c.x).append(",")
+//				.append(c.y).append(",")
+//				.append(c.width).append(",")
+//				.append(c.height).append(",")
+//				.append(c.type).append("]").append(++i<ceilingsSize ? "," : "");
+//		}
+//		answer.append("]");
 		return answer.toString();
 	}
 	// From Location
@@ -273,5 +256,16 @@ public class Chunk extends TerrainBasics {
 	}
 	public String toString() {
 		return "Chunk "+x+" "+y;
+	}
+	public int[] getContentsAsIntegerArray() {
+		int[] contents = new int[Chunk.WIDTH*Chunk.WIDTH*2];
+		int u=0;
+		for (int y=0; y<Chunk.WIDTH; y++) {
+			for (int x=0; x<Chunk.WIDTH; x++) {
+				contents[u++] = cells[x][y].floor;
+				contents[u++] = cells[x][y].object;
+			}
+		}
+		return contents;
 	}
 }

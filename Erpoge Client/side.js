@@ -251,6 +251,55 @@ Side.prototype.side2d = function() {
 		throw new Error("Incorrect side "+this);
 	}
 };
+/**
+ * Returns an integer corresponding to cardinal side as if there were no ordinal
+ * sides.
+ * 
+ * @returns {number} 0 for N, 1 for E, 2 for S and 3 for W.
+ */
+Side.prototype.getCardinalInt = function() {
+	switch (this.value) {
+	case 0:
+		return 0;
+	case 2:
+		return 1;
+	case 4:
+		return 2;
+	case 6:
+		return 3;
+	default:
+		throw new Error("Only cardinal directions may return cardinal int");
+	}
+};
+Side.cardinal = {};
+/**
+ * Use this to iterate by cardinal directions.
+ * 
+ * @param func
+ * @param args
+ */
+Side.cardinal.forEach = function(func, args) {
+	func.apply(Side.N, args);
+	func.apply(Side.E, args);
+	func.apply(Side.S, args);
+	func.apply(Side.W, args);
+};
+/**
+ * Use this to iterate by ordinal directions.
+ * 
+ * @param func
+ * @param args
+ */
+Side.forEach = function(func, args) {
+	func.apply(this.N, args);
+	func.apply(this.NE, args);
+	func.apply(this.E, args);
+	func.apply(this.SE, args);
+	func.apply(this.S, args);
+	func.apply(this.SW, args);
+	func.apply(this.W, args);
+	func.apply(this.NW, args);
+};
 Side.N  = new Side(0);
 Side.NE = new Side(1);
 Side.E  = new Side(2);

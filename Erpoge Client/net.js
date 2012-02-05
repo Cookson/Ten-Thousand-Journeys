@@ -15,7 +15,7 @@ Net = {
 	LOAD_CONTENTS			: 7,
 	AUTH					: 8,
 	APPEAR 					: 9,
-	WORLD_TRAVEL			: 10,
+	QUERY_CHUNK				: 10,
 	DEAUTH					: 11,
 	CHAT_MESSAGE			: 12,
 	DROP_PILE				: 13,

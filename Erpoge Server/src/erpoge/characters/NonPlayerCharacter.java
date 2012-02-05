@@ -37,7 +37,7 @@ public class NonPlayerCharacter extends Character {
 	
 	public NonPlayerCharacter(HorizontalPlane plane, int x, int y, String type, String name) {
 		super(plane, x, y, type, name);
-		Chunk chunk = plane.getChunk(x, y);
+		Chunk chunk = plane.getChunkWithCell(x, y);
 		chunk.getCell(x, y).setPassability(TerrainBasics.PASSABILITY_SEE);
 		hp = CharacterTypes.getType(type).hp;
 		mp = CharacterTypes.getType(type).mp;

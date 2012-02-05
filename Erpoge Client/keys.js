@@ -38,6 +38,5 @@ onLoadEvents['keys'] = function _() {
 			["Esc", "closeContainer"],
 			["=", "takeAllFromContainer"]
 	);
-	
 	UI.setKeyMapping("Default");
 };

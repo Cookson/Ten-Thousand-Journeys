@@ -82,7 +82,7 @@ public final class ItemsTypology extends ItemSystemMetaInfo {
 		if (types[i].getTypeId() > 0) { 
 			data +=types[i].getTypeId()+":"+types[i].jsonPartTypology()+"}";
 		}
-		Main.console(data);
+		Main.log(data);
 	}
 	
 	public static int getSlotFromId(int itemId) {

@@ -24,6 +24,7 @@ function CachingFactory() {
  * @returns {Object} Value object.
  */
 CachingFactory.prototype.get = function get(object) {
+	Interface.check(object, "Hashable");
 	var hashCode = object.hashCode();
 	if (!(hashCode in this.cache)) {
 	// If no objects equal to argument object were stored,
@@ -433,10 +434,10 @@ HashMap.prototype.get = function get(key) {
 	return null;
 };
 HashMap.prototype.put = function put(key, value) {
-	this._contents[(typeof key != "object") ? key : key.hashCode()] = value;
+	return this._contents[(typeof key != "object") ? key : key.hashCode()] = value;
 };
 HashMap.prototype.containsKey = function containsKey(key) {
-	return (typeof key != "object") ? key : key.hashCode() in this._contents;
+	return ((typeof key != "object") ? key : key.hashCode()) in this._contents;
 };
 HashMap.prototype.containsValue = function containsValue(value) {
 	for (var i in this._contetns) {

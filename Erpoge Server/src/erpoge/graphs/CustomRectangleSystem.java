@@ -16,25 +16,19 @@ import erpoge.terrain.TerrainBasics;
 
 public class CustomRectangleSystem extends Graph<RectangleArea> {
 	int startX, startY, width, height, borderWidth;
-	public HashMap<Integer, RectangleArea> rectangles;
-	public Location location;
 	
-	public CustomRectangleSystem(Location location, int startX, int startY, int width, int height, int borderWidth) {
+	public CustomRectangleSystem(int startX, int startY, int width, int height, int borderWidth) {
 		this.startX = startX;
 		this.startY = startY;
 		this.width = width;
 		this.height = height;
 		this.borderWidth = borderWidth;
-		this.rectangles = new HashMap<Integer, RectangleArea>();
-		this.rectangles.put(0, new RectangleArea(startX, startY, width, height));
-		this.edges.put(0, new ArrayList<Integer>());
-		this.location = location;
+		addVertex(new RectangleArea(startX, startY, width, height));
 	}
 	public CustomRectangleSystem(Location location) {
 		this.borderWidth = 0;
-		this.rectangles = new HashMap<Integer, RectangleArea>();
-		this.edges.put(0, new ArrayList<Integer>());
-		this.location = location;
+		this.content = new HashMap<Integer, RectangleArea>();
+		addVertex(new RectangleArea(startX, startY, width, height));
 	}
 	/**
 	 * Splits rectangle into two rectangles. Rectangle under current number
@@ -44,12 +38,12 @@ public class CustomRectangleSystem extends Graph<RectangleArea> {
 	 * right/bottom rectangle.
 	 * 
 	 * @param i Number of rectangle in this.rectangleSystem.rectangles
-	 * @param direction - horizontally or vertically
+	 * @param direction Horizontally or vertically
 	 * @param width How much to cut
 	 */
 	public int splitRectangle(int i, Direction dir, int width) {
 	/* */ // Optimize size() calls
-		RectangleArea r = rectangles.get(i);
+		RectangleArea r = content.get(i);
 		boolean negativeWidth = width < 0;
 		int newRecId;
 		if (dir == Direction.V) {
@@ -63,9 +57,9 @@ public class CustomRectangleSystem extends Graph<RectangleArea> {
 			int x = r.x + width;
 			RectangleArea leftRec = new RectangleArea(r.x, r.y, x - r.x, r.height);
 			RectangleArea rightRec = new RectangleArea(x+1+borderWidth-1, r.y, r.x+r.width-x-1-borderWidth+1, r.height);
-			rectangles.put(i, negativeWidth ? leftRec : rightRec);
-			rectangles.put(rectangles.size(), negativeWidth ? rightRec : leftRec);
-			newRecId = rectangles.size()-1;
+			content.put(i, negativeWidth ? leftRec : rightRec);
+			addVertex(negativeWidth ? rightRec : leftRec);
+			newRecId = size-1;
 		} else {
 			// Horizontally
 			if (negativeWidth) {
@@ -78,27 +72,26 @@ public class CustomRectangleSystem extends Graph<RectangleArea> {
 			RectangleArea topRec = new RectangleArea(r.x, r.y, r.width, y - r.y);
 			RectangleArea bottomRec = new RectangleArea(r.x, y+1+borderWidth-1, r.width, r.y+r.height-y-1-borderWidth+1);
 			
-			rectangles.put(i, negativeWidth ? topRec : bottomRec);
-			rectangles.put(rectangles.size(), negativeWidth ? bottomRec : topRec);
-			newRecId = rectangles.size()-1;
+			content.put(i, negativeWidth ? topRec : bottomRec);
+			addVertex(negativeWidth ? bottomRec : topRec);
+			newRecId = size-1;
 		}
 		// Add empty edges array for new rectangle
-		edges.put(size()-1, new ArrayList<Integer>());
 		return newRecId;
 	}
 	public void buildEdges() {
 	/*
 	 * Build edges between rectangles
 	 */
-		int len = rectangles.size();
+		int len = content.size();
 		edges = new HashMap<Integer, ArrayList<Integer>>();
 		for (int i = 0; i < len; i++) {
 			edges.put(i, new ArrayList<Integer>());
 		}
 		for (int i = 0; i < len; i++) {
-			Rectangle r1 = rectangles.get(i);
+			Rectangle r1 = content.get(i);
 			for (int j = i + 1; j < len; j++) {
-				Rectangle r2 = rectangles.get(j);
+				Rectangle r2 = content.get(j);
 				if (areRectanglesNear(r1, r2)) {
 					edges.get(i).add(j);
 					edges.get(j).add(i);
@@ -131,13 +124,8 @@ public class CustomRectangleSystem extends Graph<RectangleArea> {
 		}
 		return false;
 	}
-	public void addRectangle(RectangleArea r) {
-		int size = rectangles.values().size();
-		rectangles.put(size, r);
-		edges.put(size, new ArrayList<Integer>());
-	}
 	public int size() {
-		return rectangles.size();
+		return content.size();
 	}
 	public void setStartCoord(int startX, int startY) {
 		this.startX = startX;
@@ -158,12 +146,12 @@ public class CustomRectangleSystem extends Graph<RectangleArea> {
 		// Внимание: прямоугольник в rectangles может иметь индекс 0,
 		// поэтому сравнивать результат с false нужно со сравнением типов
 		// (===/!==)
-		Set<Integer> keys = rectangles.keySet();
+		Set<Integer> keys = content.keySet();
 		Iterator<Integer> it = keys.iterator();
 		while (it.hasNext()) {
 			// Ищем любую вершину со значением 1
 			int k = it.next();
-			Rectangle r = rectangles.get(k);
+			Rectangle r = content.get(k);
 			if (r.contains(x, y)) {
 				return k;
 			}
@@ -190,12 +178,12 @@ public class CustomRectangleSystem extends Graph<RectangleArea> {
 		// прямоугольника не будет прямоугольника,
 		// что необходимо будет учитывать при переборе массива прямоугольников в
 		// цикле с итератором.
-		if (!rectangles.containsKey(num)) {
+		if (!content.containsKey(num)) {
 			throw new Error("The rectangle system already has no " + num
 					+ " rectangle");
 		}
-		excluded.put(num, rectangles.get(num));
-		rectangles.remove(num); // Удаляем прямоугольник...
+		excluded.put(num, content.get(num));
+		content.remove(num); // Удаляем прямоугольник...
 		edges.remove(num); // его рёбра...
 		Set<Integer> keys = edges.keySet();
 		Iterator<Integer> it = keys.iterator();

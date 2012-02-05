@@ -73,9 +73,7 @@
 //		Graph<Coordinate> cities = new Graph<Coordinate>();
 //		RectangleSystem citiesRS = getGraph(2,2,width-4,height-4,3,0);
 //		
-////		Main.console(citiesRS.size());
 ////		citiesRS.excludeRectanglesHaving(ELEMENT_FLOOR, GameObjects.FLOOR_WATER);
-////		Main.console(citiesRS.size());
 //
 //		
 //		Rectangle coastr = citiesRS.getRandomRectangle();

@@ -146,7 +146,7 @@ function recountWindowSize() {
 	}
 }
 function blank2dArray(i) {
-	var w = (i==undefined) ? Terrain.width : i;
+	var w = (i==undefined) ? Terrain.CHUNK_WIDTH : i;
 	var arr = [];
 	for (var i=0; i<w; i++) {
 		arr[i] = [];
@@ -257,7 +257,7 @@ function inArray(subj, arr) {
 }
 function getNumFromSeed(a,b,max) { 
 	// Получить число от нуля до max из двух заданых чисел и константы SEED
-	return Math.round(Math.abs(Math.sin(Math.pow(a%20+0.2,b%20+0.2)+Math.cos(a))*max))%max;
+	return Math.round(Math.abs(Math.sin(Math.pow(Math.abs(a%20+0.2),Math.abs(b%20+0.2))+Math.cos(a))*max))%max;
 }
 function isInRendRange(x,y) {
 	if (
@@ -286,7 +286,7 @@ function isInPrevRendRange(x,y) {
 	
 }
 function isInPlayerVis(x,y) {
-	if (Player.visibleCells[x][y]!==undefined) {
+	if (Terrain.getCell(x,y) && Terrain.getCell(x,y).visible) {
 		return true;
 	}
 	return false;

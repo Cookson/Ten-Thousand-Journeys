@@ -7,7 +7,6 @@ window.onload = function _() {
 	// Задержка нужна для того, чтобы отобразилась надпись "Загрузка"
 	
 	setTimeout(function _() {
-		
 		onLoadEvents['customStylesheets']();
 		onLoadEvents['game']();
 		onLoadEvents['uiWindowPrototype']();
@@ -27,45 +26,31 @@ onLoadEvents['game'] = function _() {
 	Keys.formReverseKeyCodesTable();
 };
 function moveGameField(x,y,initiate) {
-	var normal = Terrain.getViewIndentation(x,y,1);
+	var normal = Terrain.getViewIndentation(x,y,32);
 	x = normal.left;
 	y = normal.top;
-	var xCells=x;
-	var yCells=y;
-	x=UI.visibleWidth/2-x*32;
-	x-=(x%32==0)?0:16;
-	x=(x<0)?((Terrain.getHorizontalDimension()-xCells-1)*32<UI.visibleWidth/2)?UI.visibleWidth-Terrain.getHorizontalDimension()*32:x:0;
-	if (Terrain.getHorizontalDimension()*32<UI.visibleWidth) {
-		x=0;
-	}
-	y=UI.visibleHeight/2-y*32;
-	y-=(y%32==0)?0:16;
-	y=(y<0)?((Terrain.getVerticalDimension()-yCells-1)*32<UI.visibleHeight/2)?UI.visibleHeight-Terrain.getVerticalDimension()*32:y:0;
-	if (Terrain.getVerticalDimension()*32<UI.visibleHeight) {
-		y=0;
-	}
+//	var xCells=x;
+//	var yCells=y;
+	x-= UI.visibleWidth/2;
+//	x-=(x%32==0)?0:16;
+//	x=(x<0)?((Terrain.getHorizontalDimension()-xCells-1)*32<UI.visibleWidth/2)?UI.visibleWidth-Terrain.getHorizontalDimension()*32:x:0;
+//	if (Terrain.getHorizontalDimension()*32<UI.visibleWidth) {
+//		x=0;
+//	}
+	y-= UI.visibleHeight/2;
+//	y-=(y%32==0)?0:16;
+//	y=(y<0)?((Terrain.getVerticalDimension()-yCells-1)*32<UI.visibleHeight/2)?UI.visibleHeight-Terrain.getVerticalDimension()*32:y:0;
+//	if (Terrain.getVerticalDimension()*32<UI.visibleHeight) {
+//		y=0;
+//	}
 	// Here x and y contain indentations in pixels.
-	if (+localStorage.getItem(1) && !initiate) {
-		if (Terrain.onGlobalMap) {
-			var dist=distance(xCells,yCells, Player.worldX, Player.worldY);
-			var time=(dist<2) ? 200 : (dist<10) ? dist*30 : 150;
-			qanimate(gameField, [x-parseInt(gameField.style.left),y-parseInt(gameField.style.top)], time, function() {
-				// gameField.onmousemove(false);c
-			});
-		} else {
-			qanimate(gameField, [x-parseInt(gameField.style.left),y-parseInt(gameField.style.top)], 90, function() {
-				
-			});
-		}
-	} else {
-		gameField.style.left=x+"px";
-		gameField.style.top=y+"px";		
-		if (weatherEffect) {
-			var wx = Player.x;
-			var wy = Player.y;
-			weatherEffect.move(Math.min(Math.max(wx, rendCX), Terrain.width-rendCX), Math.min(Math.max(wy, rendCY), Terrain.height-rendCY));
-		}
-	}
+	gameField.style.left=-x+"px";
+	gameField.style.top=-y+"px";		
+//	if (weatherEffect) {
+//		var wx = Player.x;
+//		var wy = Player.y;
+//		weatherEffect.move(Math.min(Math.max(wx, rendCX), Terrain.width-rendCX), Math.min(Math.max(wy, rendCY), Terrain.height-rendCY));
+//	}
 }
 function centerWorldCamera(x,y,initiate) {
 	moveGameField(x,y,initiate);
@@ -81,26 +66,14 @@ function centerWorldCamera(x,y,initiate) {
 function prepareArea(isWorld) {
 // Подготавливает область для загрузки в неё данных с сервера
 // Если isWorld - загружется мир, иначе - область
-	while (gameField.children.length>2) {
-	// Remove all the children of #gameField, except of gameFieldFloor,
-	// cellCursor
-		gameField.removeChild(gameField.children[2]);
+	while (gameField.children.length>1) {
+	// Remove all the children of #gameField, except of gameFieldFloor and cellCursor
+		gameField.removeChild(gameField.children[1]);
 	}
 	rendCX = -1;
 	rendCY = -1;
 	prevRendCX = -1;
 	prevRendCY = -1;
-	Terrain.cells = blank2dArray();
-	for (var i=0;i<Terrain.width;i++) { 
-		for (var j=0;j<Terrain.height;j++) { 
-			Terrain.cells[i][j] = new Cell(i,j);
-		}
-	}
-	floorCanvas.width=Terrain.getHorizontalDimension()*32;
-	floorCanvas.height=Terrain.getVerticalDimension()*32;
-	gameField.style.display = "inline-block";
-	gameField.style.width = (32*Terrain.getHorizontalDimension())+"px";
-	gameField.style.height = (32*Terrain.getVerticalDimension())+"px";	
 }
 function performAction(actionName, args) {
 	if (!(actionName in UI.registeredActions)) {
@@ -154,7 +127,7 @@ function renderView() {
 			// Переделать на циклы по x и y, как исправлю
 				var x = startX+i;
 				var y = startY+j;
-				if (!Terrain.onGlobalMap && Player.seenCells[x][y]!=undefined) {
+				if (!Terrain.onGlobalMap && Player.sawCell(x,y)) {
 					if (isInPlayerVis(x,y) && !isInPlayerPrevVis(x,y)) {
 						if (Terrain.cells[x][y].floor == null) {
 							if (Terrain.cells[x][y].visible) {

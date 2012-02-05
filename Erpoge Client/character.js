@@ -6,8 +6,9 @@
 	this.x = x;
 	this.y = y;
 	this.isClientPlayer = false;
-	Terrain.cells[x][y].character = this;
-	Terrain.cells[x][y].passability = Terrain.PASS_SEE;
+	console.log(arguments);
+	Terrain.getCell(x,y).character = this;
+	Terrain.getCell(x,y).passability = Terrain.PASS_SEE;
 	this.characterId = id;
 	this.destX = this.x;
 	this.destY = this.y;
@@ -1092,46 +1093,40 @@ ClientPlayer.prototype = new Character(-1);
 
 ClientPlayer.prototype.init = function init(data) {
 	/*
-	 * data : [(0)characterId, (1)worldX, (2)worldY, (3)isLead, (4)name,
-	 * (5)race, (6)class, (7)maxHp, (8)maxMp, (9)maxEp, (10)hp, (11)mp, (12)ep,
-	 * (13)str, (14)dex, (15)wis, (16)itl, (17)items[], (18)equipment[],
-	 * (19)spells[], (20)skills[], (21)ac, (22)ev, (23)resistances[]]
+	 * data : [(0)x, (1)y, (2)characterId, (3)name,
+	 * (4)race, (5)class, (6)maxHp, (7)maxMp, (8)maxEp, (9)hp, (10)mp, (11)ep,
+	 * (12)str, (13)dex, (14)wis, (15)itl, (16)items[], (17)equipment[],
+	 * (18)spells[], (19)skills[], (20)ac, (21)ev, (22)resistances[]]
 	 */
-	Character.apply(this, [data[0], "player", data[1], data[2], 1]);
-	characters[data[0]] = this;
-	if (Terrain.onGlobalMap) {
-		this.worldX = data[1];
-		this.worldY = data[2];
-	} else {
-		this.x = data[1];
-		this.y = data[2];
-	}
+	console.log(data);
+	Character.apply(this, [data[2], "player", data[0], data[1], 1]);
+	characters[data[2]] = this;
+	this.x = data[0];
+	this.y = data[1];
 	UI.notify("titleChange");
-	this.isPartyLeader = data[3];
-	this.name = data[4];
-	this.race = data[5];
-	this.cls = data[6];
-	this.maxHp = data[7];
-	this.maxMp = data[8];
-	this.maxEp = data[9];
-	this.hp = data[10];
-	this.mp = data[11];
-	this.ep = data[12];
-	this.attributes.str = data[13];
-	this.attributes.dex = data[14];
-	this.attributes.wis = data[15];
-	this.attributes.itl = data[16];
-	this.attributes.armor = data[21];
-	this.attributes.evasion = data[22];
-	this.attributes.fireRes = data[23][0];
-	this.attributes.coldRes = data[23][1];
-	this.attributes.poisonRes = data[23][2];
-
+	this.name = data[3];
+	this.race = data[4];
+	this.cls = data[5];
+	this.maxHp = data[6];
+	this.maxMp = data[7];
+	this.maxEp = data[8];
+	this.hp = data[9];
+	this.mp = data[10];
+	this.ep = data[11];
+	this.attributes.str = data[12];
+	this.attributes.dex = data[13];
+	this.attributes.wis = data[14];
+	this.attributes.itl = data[15];
+	this.attributes.armor = data[20];
+	this.attributes.evasion = data[21];
+	this.attributes.fireRes = data[22][0];
+	this.attributes.coldRes = data[22][1];
+	this.attributes.poisonRes = data[22][2];
 
 	// Inventory
-	for (var i = 0; i<data[17].length; i++) {
-		var typeId = data[17][i][0];
-		var param = data[17][i][1];
+	for (var i = 0; i<data[16].length; i+=2) {
+		var typeId = data[16][i];
+		var param = data[16][i+1];
 		var item;
 		if (isUnique(typeId)) {
 			item = new UniqueItem(typeId, param);
@@ -1143,20 +1138,20 @@ ClientPlayer.prototype.init = function init(data) {
 		this.itemsLetterAssigner.addObject(item);
 	}
 
-	this.equipment.getFromData(data[18]);
+	this.equipment.getFromData(data[17]);
 	this.equipment.forEach(function(item) {
 		Player.itemsLetterAssigner.addObject(item);
 	});
 
 	// Spells
-	this.spells = data[19];
+	this.spells = data[18];
 	// Skills
-	var len = data[20].length/2;
-	this.skills = [];
-	for ( var i = 0; i<len; i++ ) {
-		Player.skills.push(data[20][i*2]);
-		Player.skills.push(data[20][i*2+1]);
-	}	
+//	var len = data[19].length/2;
+//	this.skills = [];
+//	for (var i = 0; i<len; i++) {
+//		Player.skills.push(data[20][i*2]);
+//		Player.skills.push(data[20][i*2+1]);
+//	}	
 
 	this.autoSetMissileType();
 
@@ -1311,6 +1306,9 @@ ClientPlayer.prototype.doActionFromQueue = function _() {
 	this.actionQueueParams.shift();
 };
 ClientPlayer.prototype.locationClickHandler = function _(x, y, e) {
+	UI.notify("alert",x+" "+y);
+	moveGameField(x, y);
+	return;
 	if (this.x!=this.destX||this.y!=this.destY) {
 		return;
 	}
@@ -1342,8 +1340,8 @@ ClientPlayer.prototype.locationClickHandler = function _(x, y, e) {
 	) {
 		// Open door
 		this.sendUseObject(x, y);
-	} else if (Terrain.cells[x][y].object&&this.isNear(x, y)
-			&&isContainer(Terrain.cells[x][y].object.type)) {
+	} else if (Terrain.cells[x][y].object && this.isNear(x, y)
+			&& isContainer(Terrain.cells[x][y].object.type)) {
 		// Open cotainer
 		Global.container.x = x;
 		Global.container.y = y;
@@ -1369,5 +1367,8 @@ ClientPlayer.prototype.locationClickHandler = function _(x, y, e) {
 		this.destY = y;
 		performAction("move", [x,y]);
 	}
+};
+ClientPlayer.prototype.sawCell = function() {
+	return true;
 };
 var Player = new ClientPlayer();

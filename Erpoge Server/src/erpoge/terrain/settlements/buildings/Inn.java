@@ -18,7 +18,7 @@ import erpoge.terrain.settlements.Building.BasisBuildingSetup;
 
 public class Inn extends Building {
 	public void draw() {
-		CustomRectangleSystem crs = new CustomRectangleSystem(settlement,x,y,width,height,1);
+		CustomRectangleSystem crs = new CustomRectangleSystem(x,y,width,height,1);
 		/* BASIS */
 		// Lobby
 		Direction dir;
@@ -45,18 +45,18 @@ public class Inn extends Building {
 //		crs.cutRectangleFromSide(rightRoomsId, side, 1);
 		int firstSideRoom = 6;
 		// Place left rooms and link them with left hall
-		while(dir.isH() && crs.rectangles.get(1).height > 5 || 
-				dir.isV() && crs.rectangles.get(1).width > 5) {
+		while(dir.isH() && crs.content.get(1).height > 5 || 
+				dir.isV() && crs.content.get(1).width > 5) {
 			crs.cutRectangleFromSide(leftRoomsId, side, 4);
-			crs.link(leftHallId, crs.rectangles.size()-1);
+			crs.link(leftHallId, crs.content.size()-1);
 		}
 		// Link last room
 		crs.link(leftRoomsId, leftHallId);
 		// Place right rooms and link them with right hall
-		while(dir.isH() && crs.rectangles.get(0).height > 5 || 
-				dir.isV() && crs.rectangles.get(0).width > 5) {
+		while(dir.isH() && crs.content.get(0).height > 5 || 
+				dir.isV() && crs.content.get(0).width > 5) {
 			crs.cutRectangleFromSide(rightRoomsId, side, 4);
-			crs.link(rightHallId, crs.rectangles.size()-1);
+			crs.link(rightHallId, crs.content.size()-1);
 		}
 		// Link last room
 		crs.link(rightRoomsId, rightHallId);
@@ -66,13 +66,13 @@ public class Inn extends Building {
 		
 		rectangleSystem = settlement.getGraph(crs);
 		rectangleSystem.initialFindOuterSides();
-		rectangleSystem.rectangles.get(lobbyId).stretch(side, -1);
+		rectangleSystem.content.get(lobbyId).stretch(side, -1);
 		buildBasis(GameObjects.OBJ_WALL_GREY_STONE);
 		
 		placeFrontDoor(lobbyId, side);
 		
 		/* CONTENTS */
-		Rectangle lobbyRec = rectangleSystem.rectangles.get(lobbyId);
+		Rectangle lobbyRec = rectangleSystem.content.get(lobbyId);
 //		for (int i=firstSideRoom, size = crs.rectangles.size();i<size;i++) {
 //			ArrayList<Coordinate> cells = getCellsNearWalls(crs.rectangles.get(i));
 //		}

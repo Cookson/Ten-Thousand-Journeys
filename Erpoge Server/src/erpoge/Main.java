@@ -42,13 +42,16 @@ public class Main {
 		}
 		outln(message);
 	}
+	public static <T> void log(T message) {
+		outln(message);
+	}
 	public static void main(String args[]) {
 		Main.window = new Window();
 		
 		GameObjects.init();
 		ItemsTypology.init();
 		CharacterTypes.init();
-//		Main.console(GameObjects.jsonGetObjectProperties());
+//		Main.log(GameObjects.jsonGetObjectProperties());
 //		CharacterTypes.jsonTypes();
 //		ItemsTypology.showTypology();
 //		ItemsTypology.jsonTypology();
@@ -58,27 +61,28 @@ public class Main {
 		
 //		Location loc = world.createLocation(0, 0, 60, 40, TEST_LOCATION_TYPE, "New Location");
 //		loc.showLocation();	
+		
 		HorizontalPlane plane = new HorizontalPlane();
-		plane.generateLocation(-60, -60, 40, 40, "Forest");
-		plane.generateLocation(-60, -20, 40, 40, "Forest");
-		plane.generateLocation(-60,  20, 40, 40, "Forest");
-		plane.generateLocation(-20, -60, 40, 40, "Forest");
-		plane.generateLocation(-20, -20, 40, 40, "BuildingTest");
-		plane.generateLocation(-20,  20, 40, 40, "Forest");
-		plane.generateLocation( 20, -60, 40, 40, "Forest");
-		plane.generateLocation( 20, -20, 40, 40, "Forest");
-		plane.generateLocation( 20,  20, 40, 40, "Forest");
+		plane.generateTerrain(-200,-200,400,400);
+//		plane.generateLocation(-60, -60, 40, 40, "Forest");
+//		plane.generateLocation(-60, -20, 40, 40, "Forest");
+//		plane.generateLocation(-60,  20, 40, 40, "Forest");
+//		plane.generateLocation(-20, -60, 40, 40, "Forest");
+//		plane.generateLocation(-20, -20, 40, 40, "BuildingTest");
+//		plane.generateLocation(-20,  20, 40, 40, "Forest");
+//		plane.generateLocation( 20, -60, 40, 40, "Forest");
+//		plane.generateLocation( 20, -20, 40, 40, "Forest");
+//		plane.generateLocation( 20,  20, 40, 40, "Forest");
 		
-		plane.showTerrain(-60, -60, 120, 120);
-		
+//		plane.showTerrain(-20, -20, 100, 100);
 		PlayerHandler burok = CharacterManager.createPlayer(plane, 6, 9, "Alvoi", Race.ELF, "Warrior");
-		burok.getItem(new UniqueItem(ItemType.CLASS_SWORD * ItemsTypology.CLASS_LENGTH));
-		burok.getItem(new ItemPile(ItemType.CLASS_AMMO * ItemsTypology.CLASS_LENGTH,200));
-		burok.getItem(new UniqueItem(ItemType.CLASS_BLUNT * ItemsTypology.CLASS_LENGTH));
-		burok.getItem(new UniqueItem(ItemType.CLASS_BOW * ItemsTypology.CLASS_LENGTH));
-		burok.getItem(new UniqueItem(ItemType.CLASS_SHIELD * ItemsTypology.CLASS_LENGTH));
-		burok.getItem(new UniqueItem(1204));
-		burok.getItem(new UniqueItem(1102));
+		burok.eventlessGetItem(new UniqueItem(ItemType.CLASS_SWORD * ItemsTypology.CLASS_LENGTH));
+		burok.eventlessGetItem(new ItemPile(ItemType.CLASS_AMMO * ItemsTypology.CLASS_LENGTH,200));
+		burok.eventlessGetItem(new UniqueItem(ItemType.CLASS_BLUNT * ItemsTypology.CLASS_LENGTH));
+		burok.eventlessGetItem(new UniqueItem(ItemType.CLASS_BOW * ItemsTypology.CLASS_LENGTH));
+		burok.eventlessGetItem(new UniqueItem(ItemType.CLASS_SHIELD * ItemsTypology.CLASS_LENGTH));
+		burok.eventlessGetItem(new UniqueItem(1204));
+		burok.eventlessGetItem(new UniqueItem(1102));
 		burok.learnSpell(9);
 		burok.learnSpell(10);
 		Accounts.addAccount(new Account("1","1"));

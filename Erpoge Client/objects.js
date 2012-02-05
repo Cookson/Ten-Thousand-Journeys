@@ -1,119 +1,85 @@
-﻿function Cell(x, y) {
+﻿function Cell() {
 	// Ячейка массива клеток, содержащего модели объектов, предметов и стен
 	// Свойства ячейки области
-	this.wall;
-	this.object;
-	this.ceiling;
+	this.wall = null;
+	/** @private @type GameObject */
+	this.object = null;
+	this.ceiling = null;
 	this.items = new ItemSet();
-	this.floor;
-	this.character;
-	this.path;
-	this.x = x;
-	this.y = y;
+	this.floor = null;
+	this.character = null;
 	this.visible = false;
 	this.passability = Terrain.PASS_FREE;
 	if (Terrain.onGlobalMap) {
 		this.worldPlayers = [];
 	}
-	// Свойства ячейки мира
-	this.size = null;
-	this.objects = [];
-	this.difficulty = null;
-	this.river = null;
-
-	this.forest;
 }
-Cell.prototype.show = function() {
-	if (!Terrain.onGlobalMap) {
-		this.floor.show();
-	}
-	if (this.object!=null) {
-		this.object.show();
-	}
-	if (this.forest!=null) {
-		this.forest.show();
+Cell.prototype.show = function(chunk, x, y) {
+	this.floor.show(chunk, x, y);
+	if (this.object !== null) {
+		this.object.show(x, y);
 	}
 	if (this.character) {
 		this.character.showModel();
 	}
-	if (this.path!=null) {
-		this.path.show();
-	}
-	if (this.soundSource) {
-		this.soundSource.show();
-	}
-	if (this.ceiling) {
+	if (this.ceiling !== null) {
 		this.ceiling.show();
 	}
 	this.showItems();
 	this.visible = true;
 };
-Cell.prototype.hide = function() {
-	if (!Terrain.onGlobalMap) {
-		this.floor.hide();
+Cell.prototype.hide = function(chunk, x, y) {
+	this.floor.hide(chunk, x, y);
+	if (this.object !== null) {
+		this.object.hide(x, y);
 	}
-	if (this.object!=null) {
-		this.object.hide();
-	}
-	if (this.forest!=null) {
-		this.forest.hide();
-	}
-	if (this.path!=null) {
-		this.path.hide();
-	}
-	if (this.character) {
+	if (this.character !== null) {
 		this.character.hideModel();
 	}
-	if (this.soundSource) {
+	if (this.soundSource !== null) {
 		this.soundSource.hide();
 	}
-	if (this.ceiling) {
+	if (this.ceiling !== null) {
 		this.ceiling.hide();
 	}
 	this.hideItems();
 	this.visible = false;
 };
-Cell.prototype.shade = function() {
-	this.floor.shade();
-	if (this.object!=null) {
-		this.object.shade();
+Cell.prototype.shade = function(chunk, x, y) {
+	this.floor.shade(chunk, x, y);
+	if (this.object !== null) {
+		this.object.shade(x, y);
 	}
-	if (this.forest!=null) {
-		this.forest.shade();
-	}
-	if (this.path!=null) {
-		this.path.shade();
-	}
-	if (this.character) {
+	if (this.character !== null) {
 		this.character.hideModel();
 	}
-	if (this.soundSource) {
+	if (this.soundSource !== null) {
 		this.soundSource.hide();
 	}
-	if (this.ceiling) {
+	if (this.ceiling !== null) {
 		this.ceiling.shade();
 	}
 	this.shadeItems();
 };
-Cell.prototype.unshade = function() {
-	this.floor.unshade();
-	if (this.object!=null) {
+Cell.prototype.unshade = function(chunk, x, y) {
+	this.floor.unshade(chunk, x, y);
+	if (this.object !== null) {
 		this.object.unshade();
 	}
-	if (this.forest!=null) {
+	if (this.forest !== null) {
 		this.forest.unshade();
 	}
-	if (this.path!=null) {
+	if (this.path !== null) {
 		this.path.unshade();
 	}
-	if (this.character) {
+	if (this.character !== null) {
 		this.character.showModel();
 	}
 	this.unshadeItems();
-	if (this.soundSource) {
+	if (this.soundSource !== null) {
 		this.soundSource.show();
 	}
-	if (this.ceiling) {
+	if (this.ceiling !== null) {
 		this.ceiling.unshade();
 	}
 };
@@ -173,6 +139,12 @@ Cell.prototype.removeItem = function(typeId, param) {
 		item.itemImage.remove();
 	}
 };
+Cell.prototype.isWall = function() {
+	return this.object instanceof Wall;
+};
+Cell.prototype.isDoor = function() {
+	return this.object instanceof Door;
+};
 function CellItemImage(cell, item) {
 	this.item = item;
 	this.cell = Terrain.cells[cell.x][cell.y];
@@ -186,7 +158,7 @@ CellItemImage.prototype.show = function() {
 	this.image.style.left = viewIndent.left + "px";
 	this.image.style.top = viewIndent.top + "px";
 	// У всех предметов на полу z-index:2
-	this.image.style.zIndex = 2;
+	this.image.style.zIndex = 2147483647+y;
 	gameField.appendChild(this.image);
 };
 CellItemImage.prototype.hide = function() {
@@ -204,96 +176,68 @@ CellItemImage.prototype.remove = function() {
 		this.hide();
 	}
 };
-function Wall(x, y, type) {
+function GameObject(x, y, type) {
 	this.type = type;
-	this.x = x;
-	this.y = y;
-	this.image = null;
-	this.doorSides = []; // Когда стена граничит с дверью, создаются
-	// дополнительные изображения для сторон стены, с
-	// которых находятся двери
-	Terrain.cells[x][y].passability = objectProperties[type][2];
-	Terrain.cells[x][y].wall = this;
-	Terrain.cells[x][y].object = this;
-}
-Wall.prototype.show = function() {
-	var postfix = "";
-	var x = this.x;
-	var y = this.y;
-	if (y>0&&Terrain.cells[x][y-1].object&&isDoor(Terrain.cells[x][y-1].object.type)
-			&&( !Terrain.cells[x][y-2].floor||Terrain.cells[x][y-2].wall)) {
-		this.newDoorSide(0);
-	}
-	if (x<Terrain.width-1&&Terrain.cells[x+1][y].object
-			&&isDoor(Terrain.cells[x+1][y].object.type)
-			&&( !Terrain.cells[x+2][y].floor||Terrain.cells[x+2][y].wall)) {
-		this.newDoorSide(1);
-	}
-	if (y<Terrain.height-1&&Terrain.cells[x][y+1].object
-			&&isDoor(Terrain.cells[x][y+1].object.type)
-			&&( !Terrain.cells[x][y+2].floor||Terrain.cells[x][y+2].wall)) {
-		this.newDoorSide(2);
-	}
-	if (x>0&&Terrain.cells[x-1][y].object&&isDoor(Terrain.cells[x-1][y].object.type)
-			&&( !Terrain.cells[x-2][y].floor||Terrain.cells[x-2][y].wall)) {
-		this.newDoorSide(3);
-	}
-	
-	var postfixN = (y>0&&(Terrain.cells[x][y-1].wall && 
-			(!wallConnectsOnlyWithItself(Terrain.cells[x][y-1].wall.type) &&
-			!wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) || 
-				wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) && 
-				Terrain.cells[x][y-1].wall.type==Terrain.cells[x][y].wall.type) ||
-			this.doorSides[0])
-			) ? "1" : "0";
-	
-	var postfixE = (x<Terrain.width-1&&(Terrain.cells[x+1][y].wall
-			&& (!wallConnectsOnlyWithItself(Terrain.cells[x+1][y].wall.type) &&
-			!wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type)	|| 
-				wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) && 
-				Terrain.cells[x+1][y].wall.type==Terrain.cells[x][y].wall.type) ||
-			this.doorSides[1]) 
-			) ? "1" : "0";
-	var postfixS = (y<Terrain.height-1&&(Terrain.cells[x][y+1].wall
-			&& (!wallConnectsOnlyWithItself(Terrain.cells[x][y+1].wall.type) &&
-			!wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) || 
-				wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) && 
-				Terrain.cells[x][y+1].wall.type == Terrain.cells[x][y].wall.type)||
-			this.doorSides[2])
-			) ? "1" : "0";
-	var postfixW = (x>0&&(Terrain.cells[x-1][y].wall
-			&& (!wallConnectsOnlyWithItself(Terrain.cells[x-1][y].wall.type) &&
-				!wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) || 
-				wallConnectsOnlyWithItself(Terrain.cells[x][y].wall.type) && 
-				Terrain.cells[x-1][y].wall.type == Terrain.cells[x][y].wall.type) ||
-			this.doorSides[3])
-			) ? "1" : "0";
-	var postfix;
-	if (Terrain.cameraOrientation == Side.N) {
-		postfix = postfixN+postfixE+postfixS+postfixW;
-	} else if (Terrain.cameraOrientation == Side.E) {
-		postfix = postfixW+postfixN+postfixE+postfixS;
-	} else if (Terrain.cameraOrientation == Side.S) {
-		postfix = postfixS+postfixW+postfixN+postfixE;
-	} else if (Terrain.cameraOrientation == Side.W) {
-		postfix = postfixE+postfixS+postfixW+postfixN;
-	}
-	var viewIndent = Terrain.getViewIndentation(x,y,1);
-	this.image = document.createElement('img');
-	this.image.src = "./images/walls/"+wallNames[this.type]+"_"+postfix
-			+".png";
+	this.image = document.createElement("img");
+	this.mod = -1;
+	var viewIndent = Terrain.getViewIndentation(x, y, 1);
 	this.image.style.position = "absolute";
-	this.image.style.zIndex = viewIndent.top*2+1;
-	gameField.appendChild(this.image);
-	this.image.style.top = viewIndent.top*32
-			+( -parseInt(objectProperties[this.type][1])+32)+"px";
-	this.image.style.left = viewIndent.left*32
-			+(( -parseInt(objectProperties[this.type][0])+32)/2)+"px";
-
+	this.image.setAttribute("src", "./images/objects/"+type+".png");
+	this.image.style.top = viewIndent.top*32+(-parseInt(objectProperties[type][1])+32)+"px";
+	this.image.style.left = viewIndent.left*32+(-parseInt(objectProperties[type][0])+32)/2+"px";
+	this.image.style.zIndex = (100000+y)*2;
+}
+GameObject.prototype.show = function() {
+	this.image.style.display = "inline-block";
 };
-Wall.prototype.newDoorSide = function(side) {
-	// Создать изображение стороны стены, обёрнутое во wrap
-	// side - сторона стены (0-3 по часовой стрелке)
+GameObject.prototype.hide = function() {
+	this.image.style.display = "none";
+};
+GameObject.prototype.remove = function() {
+	this.image.parentNode.removeChild(this.image);
+	Terrain.cells[this.x][this.y].object = null;
+	Terrain.cells[this.x][this.y].passability = Terrain.PASS_FREE;
+};
+GameObject.prototype.shade = function() {
+	this.image.style.opacity = "0.5";
+};
+GameObject.prototype.cursorShade = function() {
+	this.image.style.opacity = "0.2";
+};
+GameObject.prototype.unshade = function() {
+	this.image.style.opacity = "1";
+};
+GameObject.prototype.display = function() {
+	gameField.appendChild(this.image);
+};
+
+function Wall(x, y, type) {
+	GameObject.apply(this, [x,y,type]);
+	this._doorSides = [];
+}
+Wall.prototype = new GameObject(0,0,90);
+Wall.prototype.show = function(x,y) {
+	this.updateView(x,y);
+	this.image.style.display = "inline-block";
+};
+Wall.prototype.updateView = function(x,y) {
+	var postfix = "";
+	var postfixN = (Terrain.getCell(x,y-1) && (Terrain.getCell(x,y-1).isWall() || Terrain.getCell(x,y-1).isDoor())) ? "1" : "0";
+	var postfixE = (Terrain.getCell(x+1,y) && (Terrain.getCell(x+1,y).isWall() || Terrain.getCell(x+1,y).isDoor())) ? "1" : "0";
+	var postfixS = (Terrain.getCell(x,y+1) && (Terrain.getCell(x,y+1).isWall() || Terrain.getCell(x,y+1).isDoor())) ? "1" : "0";
+	var postfixW = (Terrain.getCell(x-1,y) && (Terrain.getCell(x-1,y).isWall() || Terrain.getCell(x-1,y).isDoor())) ? "1" : "0";
+	if (Terrain.cameraOrientation == Side.N) {
+		postfix = postfixN + postfixE + postfixS + postfixW;
+	} else if (Terrain.cameraOrientation == Side.E) {
+		postfix = postfixW + postfixN + postfixE + postfixS;
+	} else if (Terrain.cameraOrientation == Side.S) {
+		postfix = postfixS + postfixW + postfixN + postfixE;
+	} else if (Terrain.cameraOrientation == Side.W) {
+		postfix = postfixE + postfixS + postfixW + postfixN;
+	}
+	this.image.src = "./images/walls/"+wallNames[this.type]+"_"+postfix+".png";
+};
+Wall.prototype.newDoorSide = function(x,y,side) {
 	var initialSide = side;
 	if (Terrain.cameraOrientation == Side.E) {
 		side = (side+1)%4;
@@ -302,36 +246,32 @@ Wall.prototype.newDoorSide = function(side) {
 	} else if (Terrain.cameraOrientation == Side.W) {
 		side = (side+3)%4;
 	}
-	var viewIndent = Terrain.getViewIndentation(this.x,this.y,1);
+	var viewIndent = Terrain.getViewIndentation(x,y,32);
 	var img = document.createElement('img');
 	img.style.position = "absolute";
 	img.src = "./images/walls/"+wallNames[this.type]+"_d"+side+".png";
-	gameField.appendChild(img);
-	img.style.top = viewIndent.top*32-parseInt(objectProperties[this.type][1])+32
-			+"px";
-	img.style.left = viewIndent.left*32
-			+( -parseInt(objectProperties[this.type][0])+32)/2+"px";
-	img.style.zIndex = viewIndent.top*2+2;
-	this.doorSides[initialSide] = img;
+	img.style.top = viewIndent.top-parseInt(objectProperties[this.type][1])+32+"px";
+	img.style.left = viewIndent.left+(-parseInt(objectProperties[this.type][0])+32)/2+"px";
+	img.style.zIndex = (100000+y)*2+1;
+	this._doorSides[initialSide] = img;
+	console.log("new door side ", img, this.image);
 };
 Wall.prototype.hide = function() {
-	this.image.parentNode.removeChild(this.image);
-	this.image = null;
-	for ( var i = 0; i<4; i++ ) {
-		if (this.doorSides[i] === undefined) {
+	this.image.style.display = "none";
+	for (var i = 0; i<4; i++) {
+		if (this._doorSides[i] === undefined) {
 			continue;
 		}
-		this.doorSides[i].parentNode.removeChild(this.doorSides[i]);
-		delete this.doorSides[i];
+		this._doorSides[i].style.display = "none";
 	}
 };
 Wall.prototype.remove = function() {
-	this.hide();
+	this.image.parentNode.removeChild(this.image);
 	Terrain.cells[this.x][this.y].passability = Terrain.PASS_FREE;
 	delete Terrain.cells[this.x][this.y].wall;
 	delete Terrain.cells[this.x][this.y].object;
 	var sides = [0, -1, 1, 0, 0, 1, -1, 0];
-	for ( var i = 0; i<sides.length/2; i++ ) {
+	for (var i = 0; i<sides.length/2; i++) {
 		var nx = this.x+sides[i*2];
 		var ny = this.y+sides[i*2+1];
 		if (Terrain.cells[nx][ny].wall&&Terrain.cells[nx][ny].visible) {
@@ -342,78 +282,68 @@ Wall.prototype.remove = function() {
 };
 Wall.prototype.shade = function() {
 	this.image.style.opacity = "0.5";
-	for ( var i = 0; i<this.doorSides.length; i++ ) {
-		if ( !this.doorSides[i]) {
+	for (var i = 0; i<4; i++) {
+		if (this._doorSides[i] === undefined) {
 			continue;
 		}
-		this.doorSides[i].style.opacity = "0.5";
+		this._doorSides[i].style.opacity = "0.5";
 	}
 };
 Wall.prototype.cursorShade = function() {
 	this.image.style.opacity = "0.2";
-	for ( var i = 0; i<this.doorSides.length; i++ ) {
-		if ( !this.doorSides[i]) {
+	for (var i=0; i<this._doorSides.length; i++) {
+		if (this._doorSides[i] === undefined) {
 			continue;
 		}
-		this.doorSides[i].style.opacity = "0.2";
+		this._doorSides[i].style.opacity = "0.2";
 	}
 };
 Wall.prototype.unshade = function() {
 	this.image.style.opacity = "1";
-	for ( var i = 0; i<this.doorSides.length; i++ ) {
-		if ( !this.doorSides[i]) {
+	for (var i = 0; i<this.doorSides.length; i++) {
+		if (this._doorSides[i] === undefined) {
 			continue;
 		}
-		this.doorSides[i].style.opacity = "1";
+		this._doorSides[i].style.opacity = "1";
 	}
 };
-function Floor(x, y, type) {
+function Floor(type) {
 	this.type = type;
-	this.x = x;
-	this.y = y;
 	this.isCanvas = false;
 }
-Floor.prototype.show = function(noForceNeighbourReshow) {
+Floor.prototype.show = function(chunk, x, y, noForceNeighbourReshow) {
 	// Отобразить изображение тайла
 	// Аргумент noForceNeighbourReshow ставится в true, когда метод show()
 	// вызван из метода show() объекта,
 	// изображение которого рисуется на канве. Аргумент используется во
 	// избежание рекурсии.
-	if ((visToNum(this.x-1, this.y)+visToNum(this.x+1, this.y))
-			*(visToNum(this.x, this.y-1)+visToNum(this.x, this.y+1))<=1
-			&&(wallToNum(this.x-1, this.y)+wallToNum(this.x+1, this.y))
-					*(wallToNum(this.x, this.y-1)+wallToNum(this.x,
-							this.y+1))==1
-			&&seenToNum(this.x-1, this.y)+seenToNum(this.x, this.y-1)
-					+seenToNum(this.x+1, this.y)
-					+seenToNum(this.x, this.y+1)==2) {
-		// Исключение для "уголков" за угловыми стенами
-		return false;
-	} else {
-
-	}
-	var viewIndent = Terrain.getViewIndentation(this.x,this.y,32);
-	if (this.x+1<Terrain.width&&Terrain.cells[this.x+1][this.y].floor.type!=this.type||this.x-1>0
-			&&Terrain.cells[this.x-1][this.y].floor.type!=this.type||this.y+1<Terrain.height
-			&&Terrain.cells[this.x][this.y+1].floor.type!=this.type||this.y-1>0
-			&&Terrain.cells[this.x][this.y-1].floor.type!=this.type) {
-		// Если этот тайл граничит с тайлом другого типа
-
+//	if ((visToNum(x-1, y)+visToNum(x+1, y))
+//			*(visToNum(x, y-1)+visToNum(x, y+1))<=1
+//			&&(wallToNum(x-1, y)+wallToNum(x+1, y))
+//					*(wallToNum(x, y-1)+wallToNum(x,
+//							y+1))==1
+//			&&seenToNum(x-1, y)+seenToNum(x, y-1)
+//					+seenToNum(x+1, y)
+//					+seenToNum(x, y+1)==2) {
+//		// Исключение для "уголков" за угловыми стенами
+//		return false;
+//	} else {
+//		
+//	}
+	var viewIndent = Terrain.getViewIndentation(x-chunk.x,y-chunk.y,32);
+	if (
+		Terrain.getCell(x+1,y) && Terrain.getCell(x+1,y).floor.type!=this.type
+		|| Terrain.getCell(x-1,y) && Terrain.getCell(x-1,y).floor.type!=this.type
+		|| Terrain.getCell(x,y+1) && Terrain.getCell(x,y+1).floor.type!=this.type
+		|| Terrain.getCell(x,y-1) && Terrain.getCell(x,y-1).floor.type!=this.type
+	) {
+	// Если этот тайл граничит с тайлом другого типа
 		// Получаем типы соседних тайлов или тип этого тайла, если такого
 		// соседнего тайла нет (если этот тайл на границе)
-		var up = (y==0) ? this.type
-				: (Terrain.cells[this.x][this.y-1].floor==null||Terrain.cells[this.x][this.y-1].wall) ? this.type
-						: Terrain.cells[this.x][this.y-1].floor.type;
-		var right = (x==Terrain.width-1) ? this.type
-				: (Terrain.cells[this.x+1][this.y].floor==null||Terrain.cells[this.x+1][this.y].wall) ? this.type
-						: Terrain.cells[x+1][y].floor.type;
-		var down = (y==Terrain.height-1) ? this.type
-				: (Terrain.cells[this.x][this.y+1].floor==null||Terrain.cells[this.x][this.y+1].wall) ? this.type
-						: Terrain.cells[this.x][this.y+1].floor.type;
-		var left = (x==0) ? this.type
-				: (Terrain.cells[this.x-1][y].floor==null||Terrain.cells[this.x-1][y].wall) ? this.type
-						: Terrain.cells[this.x-1][this.y].floor.type;
-		
+		var up = Terrain.getCell(x,y-1) ? Terrain.getCell(x,y-1).floor.type : this.type;
+		var right = Terrain.getCell(x+1,y) ? Terrain.getCell(x+1,y).floor.type : this.type;
+		var down = Terrain.getCell(x,y+1) ? Terrain.getCell(x,y+1).floor.type : this.type;
+		var left = Terrain.getCell(x-1,y) ? Terrain.getCell(x-1,y).floor.type : this.type;
 		if (Terrain.cameraOrientation == Side.E) {
 			var leftBuf = left;
 			left = down;
@@ -436,13 +366,12 @@ Floor.prototype.show = function(noForceNeighbourReshow) {
 		}
 		var tileType= "t"+this.type+","+up+","+right+","+down+","+left;
 		
-		
-		if (floorImages[tileType]!==undefined) {
+		if (floorImages[tileType] !== undefined) {
 			// Если изображение такого тайла уже использовалось, и поэтому
 			// сгенерировано
 			// Отрисовка основного изображения
-			var ctx = floorCanvas.getContext("2d");
-			if ( +localStorage.getItem(2)) {
+			var ctx = chunk.canvas.getContext("2d");
+			if (+localStorage.getItem(2)) {
 				var imageData = floorImages[tileType];
 				// Отрисовка сетки
 				for ( var i = 0; i<32; i++ ) {
@@ -477,7 +406,7 @@ Floor.prototype.show = function(noForceNeighbourReshow) {
 			// Если изображение такого тайла ещё не сгенерировано, то
 			// создать его
 			// Отрисовка основного изображения
-			var ctx = floorCanvas.getContext("2d");
+			var ctx = chunk.canvas.getContext("2d");
 			ctx.drawImage(tiles[this.type][0], viewIndent.left, viewIndent.top);
 
 			// Отрисовка переходов
@@ -505,18 +434,19 @@ Floor.prototype.show = function(noForceNeighbourReshow) {
 			}
 		}
 	} else {
-		var ctx = floorCanvas.getContext("2d");
-		ctx.drawImage(tiles[this.type][getNumFromSeed(this.x, this.y,
+	// If tile does not bound with a tile of another type
+		var ctx = chunk.canvas.getContext("2d");
+		ctx.drawImage(tiles[this.type][getNumFromSeed(x, y,
 				NUM_OF_TILES[floorNames[this.type]])], viewIndent.left, viewIndent.top);
 		if ( +localStorage.getItem(2)) {
 			var imageData = ctx.getImageData(viewIndent.left, viewIndent.top, 32, 32);
 			// Отрисовка сетки
-			for ( var i = 0; i<32; i++ ) {
+			for (var i = 0; i<32; i++) {
 				var pix = getPixel(imageData, i, 0);
 				pix[3] = 200;
 				setPixel(imageData, i, 0, pix);
 			}
-			for ( var j = 0; j<32; j++ ) {
+			for (var j = 0; j<32; j++) {
 				var pix = getPixel(imageData, 0, j);
 				pix[3] = 200;
 				setPixel(imageData, 0, j, pix);
@@ -524,399 +454,95 @@ Floor.prototype.show = function(noForceNeighbourReshow) {
 			ctx.putImageData(imageData, viewIndent.left, viewIndent.top);
 		}
 	}
-	if ((visToNum(this.x-1, this.y)+visToNum(this.x+1, this.y))
-			*(visToNum(this.x, this.y-1)+visToNum(this.x, this.y+1))==1
-			&&(wallToNum(this.x-1, this.y)+wallToNum(this.x+1, this.y))
-					*(wallToNum(this.x, this.y-1)+wallToNum(this.x,
-							this.y+1))==1
-			&&(seenToNum(this.x-1, this.y)+seenToNum(this.x, this.y-1)
-					+seenToNum(this.x+1, this.y)
-					+seenToNum(this.x, this.y+1)==4||seenToNum(this.x-1,
-					this.y)
-					+seenToNum(this.x, this.y-1)
-					+seenToNum(this.x+1, this.y)
-					+seenToNum(this.x, this.y+1)==2)) {
+	if ((visToNum(x-1, y)+visToNum(x+1, y))
+			*(visToNum(x, y-1)+visToNum(x, y+1))==1
+			&&(wallToNum(x-1, y)+wallToNum(x+1, y))
+					*(wallToNum(x, y-1)+wallToNum(x,
+							y+1))==1
+			&&(seenToNum(x-1, y)+seenToNum(x, y-1)
+					+seenToNum(x+1, y)
+					+seenToNum(x, y+1)==4||seenToNum(x-1,y)
+					+seenToNum(x, y-1)
+					+seenToNum(x+1, y)
+					+seenToNum(x, y+1)==2)) {
 		// Случай затенения уголков у стен
 		this.shade();
 	}
 };
-Floor.prototype.hide = function() {
-	var ctx = floorCanvas.getContext("2d");
-	ctx.clearRect(this.x*32, this.y*32, 32, 32);
+Floor.prototype.hide = function(chunk,x,y) {
+	var ctx = chunk.canvas.getContext("2d");
+	ctx.clearRect(x*32, y*32, 32, 32);
 	// if (this.image!=null) {
 	// this.image.parentNode.removeChild(this.image);
 	// this.image=null;
 	// }
 };
-Floor.prototype.shade = function() {
-	var ctx = floorCanvas.getContext("2d");
-	var imgData = ctx.getImageData(this.x*32, this.y*32, 32, 32);
+Floor.prototype.shade = function(chunk, x, y) {
+	var ctx = chunk.canvas.getContext("2d");
+	var imgData = ctx.getImageData(x*32, y*32, 32, 32);
 	var len = imgData.width*imgData.height; // Количество пикселей в
 	// выделенной зоне
 	// (количество элементов в массиве - в 4 раза больше (RGBA))
 	for ( var i = 0; i<len; i++ ) {
 		imgData.data[i*4+3] = 128;
 	}
-	ctx.putImageData(imgData, this.x*32, this.y*32);
+	ctx.putImageData(imgData, x*32, y*32);
 	if ( +localStorage.getItem(2)) {
-		var imageData = ctx.getImageData(this.x*32, this.y*32, 32, 32);
+		var imageData = ctx.getImageData(x*32, y*32, 32, 32);
 		// Отрисовка сетки
-		for ( var i = 0; i<32; i++ ) {
+		for (var i = 0; i<32; i++) {
 			var pix = getPixel(imageData, i, 0);
 			pix[3] = 140;
 			setPixel(imageData, i, 0, pix);
 		}
-		for ( var j = 0; j<32; j++ ) {
+		for (var j = 0; j<32; j++) {
 			var pix = getPixel(imageData, 0, j);
 			pix[3] = 140;
 			setPixel(imageData, 0, j, pix);
 		}
-		ctx.putImageData(imageData, this.x*32, this.y*32);
+		ctx.putImageData(imageData, x*32, y*32);
 	}
 };
-Floor.prototype.unshade = function() {
-	var ctx = floorCanvas.getContext("2d");
-	var imgData = ctx.getImageData(this.x*32, this.y*32, 32, 32);
+Floor.prototype.unshade = function(chunk, x, y) {
+	var ctx = chunk.canvas.getContext("2d");
+	var imgData = ctx.getImageData(x*32, y*32, 32, 32);
 	var len = imgData.width*imgData.height; // Количество пикселей в
 	// выделенной зоне
 	// (количество элементов в массиве - в 4 раза больше (RGBA))
 	for ( var i = 0; i<len; i++ ) {
 		imgData.data[i*4+3] = 255;
 	}
-	ctx.putImageData(imgData, this.x*32, this.y*32);
+	ctx.putImageData(imgData, x*32, y*32);
 };
-function GameObject(x, y, type) {
-	this.type = type;
-	this.x = x;
-	this.y = y;
-	this.image = null;
-	this.mod = -1;
-	Terrain.cells[this.x][this.y].passability = objectProperties[type][2];
-	Terrain.cells[x][y].object = this;
+function Door(x,y,type) {
+	GameObject.apply(this, [x, y, type]);
+	this.image.style.top = parseInt(this.image.style.top)-10+"px";
 }
-GameObject.prototype.show = function() {
-	if (this.image==null) {
-		this.image = document.createElement("img");
-		this.y *= 1; /* */// Здесь this.y оказывается сторокой,
-		var viewIndent = Terrain.getViewIndentation(this.x, this.y, 1);
-		// разобраться
-		var vertical = isDoor(this.type)
-				&&(1+this.y<Terrain.height&&Terrain.cells[this.x][1+this.y].wall
-						&&this.y-1>0&&Terrain.cells[this.x][this.y-1].wall);
-		if (isDoor(this.type) && (Terrain.cameraOrientation == Side.E || Terrain.cameraOrientation == Side.W)) {
-			vertical = !vertical;
+Door.prototype = new GameObject(0,0,90);
+Door.prototype.show = function(x,y) {
+	var vertical = Terrain.getCell(x,y+1) && Terrain.getCell(x,y+1).isWall() && Terrain.getCell(x,y-1).wall !== null;
+	if (Terrain.cameraOrientation == Side.E || Terrain.cameraOrientation == Side.W) {
+		vertical = !vertical;
+	}
+	if (vertical) {
+		this.image.setAttribute("src", "./images/objects/"+this.type+(vertical ? "_v" : "")+".png");
+	}
+	this.image.style.display = "inline-block";
+};
+Door.prototype.display = function(x,y) {
+	GameObject.prototype.display.apply(this);
+	var self = this;
+	Side.cardinal.forEach(function() {
+	// "this" here is a side object, the function is applied to each cardinal side.
+		var d = this.side2d();
+		var cell = Terrain.getCell(x+d[0], y+d[1]);
+		if (cell !== null && (cell.object instanceof Wall)) {
+			cell.object.newDoorSide(x+d[0],y+d[1],this.opposite().getCardinalInt());
+			gameField.appendChild(cell.object._doorSides[this.opposite().getCardinalInt()]);
 		}
-		this.image.style.position = "absolute";
-		this.image.style.top = +"px";
-		this.image.style.left = +"px";
-		this.image.setAttribute("src", "./images/objects/"+this.type
-				+(vertical ? "_v" : "")+".png");
-		this.image.style.top = viewIndent.top*32
-				+( -parseInt(objectProperties[this.type][1])+32-(vertical ? 10
-						: 0))+"px";
-		this.image.style.left = viewIndent.left*32
-				+( -parseInt(objectProperties[this.type][0])+32)/2+"px";
-		this.image.style.zIndex = viewIndent.top*2+1;
-		gameField.appendChild(this.image);
-		// this.image.getElementByTagName("img");
-	}
-};
-GameObject.prototype.hide = function() {
-	if (this.image!=null) {
-		this.image.parentNode.removeChild(this.image);
-		this.image = null;
-	}
-};
-GameObject.prototype.remove = function() {
-	this.hide();
-	Terrain.cells[this.x][this.y].object = null;
-	Terrain.cells[this.x][this.y].passability = Terrain.PASS_FREE;
-};
-GameObject.prototype.shade = function() {
-	this.image.style.opacity = "0.5";
-};
-GameObject.prototype.cursorShade = function() {
-	this.image.style.opacity = "0.2";
-};
-GameObject.prototype.unshade = function() {
-	this.image.style.opacity = "1";
-};
-function Forest(x, y, type) {
-	this.type = type;
-	this.x = x;
-	this.y = y;
-	this.image = null;
-}
-Forest.prototype.show = function() {
-	var postfix = "";
-	var x = this.x;
-	var y = this.y;
-	if (Terrain.cells[x][y].path) {
-		// Особый спрайт леса выбирается в том случае, если на той же клетке
-		// есть река
-		postfix += (y>0&&Terrain.cells[x][y-1].path) ? "1" : "0";
-		postfix += (x<Terrain.width-1&&Terrain.cells[x+1][y].path) ? "1" : "0";
-		postfix += (y<Terrain.height-1&&Terrain.cells[x][y+1].path) ? "1" : "0";
-		postfix += (x>0&&Terrain.cells[x-1][y].path) ? "1" : "0";
-	} else {
-		// Иначе используется обычный спрайт
-		postfix = "0000";
-	}
-	this.image = document.createElement('div');
-	this.image.className = "wrap";
-	var img = document.createElement('img');
-	img.src = "./images/walls/"+wallNames[this.type]+"_"+postfix+".png";
-	this.image.appendChild(img);
-	this.image.style.top = y*32+"px";
-	this.image.style.left = x*32+"px";
-	this.image.style.zIndex = y+2;
-	gameField.appendChild(this.image);
-};
-Forest.prototype.hide = function() {
-	if (this.image!=null) {
-		this.image.parentNode.removeChild(this.image);
-		this.image = null;
-	}
-};
-Forest.prototype.remove = function() {
-	this.hide();
-	Terrain.cells[this.x][this.y].passability = Terrain.PASS_FREE;
-	Terrain.cells[this.x][this.y].wall = null;
-};
-Forest.prototype.shade = function() {
-	this.image.getElementsByTagName("img")[0].style.opacity = "0.5";
-	// this.image.getElementsByTagName("img")[0].style.display="none";
-};
-Forest.prototype.unshade = function() {
-	this.image.getElementsByTagName("img")[0].style.opacity = "1";
-	// this.image.getElementsByTagName("img")[0].style.display="inline-block";
-};
-function Path(x, y, type) {
-	// Road or river
-	this.type = type;
-	this.x = x;
-	this.y = y;
-	this.image = null;
-}
-Path.prototype.show = function() {
-	var postfix = "";
-	var x = this.x;
-	var y = this.y;
-	postfix += (y>0&&Terrain.cells[x][y-1].path&&Terrain.cells[x][y-1].path.type==this.type) ? "1"
-			: "0";
-	postfix += (x<Terrain.width-1&&Terrain.cells[x+1][y].path&&Terrain.cells[x+1][y].path.type==this.type) ? "1"
-			: "0";
-	postfix += (y<Terrain.height-1&&Terrain.cells[x][y+1].path&&Terrain.cells[x][y+1].path.type==this.type) ? "1"
-			: "0";
-	postfix += (x>0&&Terrain.cells[x-1][y].path&&Terrain.cells[x-1][y].path.type==this.type) ? "1"
-			: "0";
-	this.image = document.createElement('div');
-	this.image.className = "wrap";
-	var img = document.createElement('img');
-	img.src = "./images/walls/"+wallNames[this.type]+"_"+postfix+".png";
-	this.image.appendChild(img);
-	this.image.style.top = y*32+"px";
-	this.image.style.left = x*32+"px";
-	this.image.style.zIndex = 2;
-	gameField.appendChild(this.image);
-};
-Path.prototype.hide = function() {
-	if (this.image!=null) {
-		this.image.parentNode.removeChild(this.image);
-		this.image = null;
-	}
-};
-Path.prototype.remove = function() {
-	this.hide();
-	Terrain.cells[this.x][this.y].passability = Terrain.PASS_FREE;
-	Terrain.cells[this.x][this.y].wall = null;
-};
-Path.prototype.shade = function() {
-	this.image.getElementsByTagName("img")[0].style.opacity = "0.5";
-	// this.image.getElementsByTagName("img")[0].style.display="none";
-};
-Path.prototype.unshade = function() {
-	this.image.getElementsByTagName("img")[0].style.opacity = "1";
-	// this.image.getElementsByTagName("img")[0].style.display="inline-block";
-};
-function WorldPlayer(characterId, name, cls, race, party, x, y, equipment) {
-	this.image = null;
-	this.x = x;
-	this.y = y;
-	this.name = name;
-	this.characterId = characterId;
-	this.race = race;
-	this.visible = false;
-	this.equipment = new Equipment();
-	this.doll = new Doll(this);
-	this.doll.draw();
-	// Индекс объекта в массиве с игроками в его ячейке
-	this.worldPlayersPos = Terrain.cells[x][y].worldPlayers.length;
-	this.image = null;
-	Terrain.cells[x][y].worldPlayers.push(this);
-	worldPlayers[this.characterId] = this;
-	if (Terrain.cells[x][y].worldPlayers.length<3) {
-		// Вызывать отображние только для первого и второго (отображние группы)
-		// игроков в клетке
-		this.show();
-	}
-}
-WorldPlayer.prototype.hide = function() {
-	if (this.visible) {
-		this.image.style.visibility = "hidden";
-		this.visible = false;
-	}
-
-};
-WorldPlayer.prototype.show = function() {
-	var cell = Terrain.cells[this.x][this.y];
-	if (cell.worldPlayers.length==2) {
-		// Отобразить группу (если этот игрок - второй присоединяемый к
-		// группе).
-		// Когда на клетке появляется третий и более игрок, изображение
-		// группы уже есть (после второго игрока)
-		this.hide();
-		cell.groupImage = document.createElement("div");
-		cell.groupImage.className = "wrap";
-		var nImg = document.createElement("img");
-		nImg.style.position = "relative";
-		nImg.setAttribute("src", "./images/intf/party.png");
-		cell.groupImage.appendChild(nImg);
-		cell.groupImage.style.top = (this.y*32)+"px";
-		cell.groupImage.style.left = (this.x*32)+"px";
-		cell.groupImage.style.zIndex = this.y*2+3;
-		gameField.appendChild(cell.groupImage);
-		cell.groupImage.getElementsByTagName("img");
-		// Спрятать только первого персонажа в клетке:
-		// этот (второй) и так не отобразится,
-		// а для новых отображение вызываться не будет.
-		cell.worldPlayers[0].hide();
-	} else if (cell.worldPlayers.length==1) {
-		// Отобразить одного игрока
-		// Если этот игрок - единственный в группе
-		this.image = document.createElement("div");
-		this.image.className = "wrap";
-		this.image.appendChild(document.createElement("img"));
-		gameField.appendChild(this.image);
-		this.image.style.top = (this.y*32)+"px";
-		this.image.style.left = (this.x*32)+"px";
-		this.image.style.zIndex = this.y*2+3;
-		this.image.style.visibility = "visible";
-		this.image.appendChild(this.doll.DOMNode);
-		this.visible = true;
-	}
-};
-WorldPlayer.prototype.move = function(x, y) {
-	if (Terrain.cells[this.x][this.y].worldPlayers.length>1) {
-		// Изменить свойство wolrdPlayersPos у всех игроков, имеющих больший
-		// индекс в массиве игроков
-		for ( var i = this.worldPlayersPos+1; i<Terrain.cells[this.x][this.y].worldPlayers.length; i++ ) {
-			Terrain.cells[this.x][this.y].worldPlayers[i].worldPlayersPos-- ;
-		}
-
-	}
-	Terrain.cells[this.x][this.y].worldPlayers.splice(this.worldPlayersPos, 1);
-	this.redrawCellGroup(); // Перерисовать старую клетку
-	this.image.style.top = (y*32)+"px";
-	this.image.style.left = (x*32)+"px";
-	this.x = x;
-	this.y = y;
-	Terrain.cells[this.x][this.y].worldPlayers.push(this);
-	this.worldPlayersPos = Terrain.cells[this.x][this.y].worldPlayers.length-1;
-	this.redrawCellGroup(); // Перерировать новую клетку
-};
-WorldPlayer.prototype.redrawCellGroup = function() {
-	// Перерисовать группу в клетке после того, как один из игроков ушёл из
-	// клетки или исчез.
-	// Рассматриваются три случая:
-	// 1) когда в клетке этот и ещё один игрок;
-	// 2) когда этот игрок - единственный в клетке;
-	// 3) все остальные случаи
-	var cell = Terrain.cells[this.x][this.y];
-	if (cell.worldPlayers.length>2&&this.worldPlayersPos<2) {
-		// Если этот игрок - второй в массиве, и в массиве больше двух
-		// игроков
-		cell.worldPlayers[2].image = cell.worldPlayers[1].image;
-		cell.worldPlayers[1].image = null;
-	}
-	if (cell.worldPlayers.length==1) {
-		// 1)
-		// Удалить изображение группы
-		if (cell.groupImage) {
-			cell.groupImage.parentNode.removeChild(cell.groupImage);
-			delete cell.groupImage;
-		}
-		// Отобразить изображение оставшегося игрока
-		cell.worldPlayers[0].show();
-	} else if (cell.worldPlayers.length==2) {
-		// 2)
-		// Иначе никаких изображений не удаляется - только объект
-		// Удаление
-		Terrain.cells[this.x][this.y].worldPlayers[1].show();
-	}
-};
-WorldPlayer.prototype.remove = function() {
-	// Удаление игрока из клетки на глобальной карте.
-	Terrain.cells[this.x][this.y].worldPlayers.splice(this.worldPlayersPos, 1);
-	this.image.parentNode.removeChild(this.image);
-
-	// Изменить свойство wolrdPlayersPos у всех игроков, имеющих больший
-	// индекс в массиве игроков
-	for ( var i = this.worldPlayersPos; i<Terrain.cells[this.x][this.y].worldPlayers.length; i++ ) {
-		Terrain.cells[this.x][this.y].worldPlayers[i].worldPlayersPos-- ;
-	}
-	this.redrawCellGroup();
-	delete worldPlayers[this.characterId];
+	}, []);
 };
 
-function WorldObject(x, y, type) {
-	this.type = type;
-	this.x = x;
-	this.y = y;
-	this.image = null;
-	Terrain.cells[this.x][this.y].passability = worldObjectProperties[type][2];
-	Terrain.cells[x][y].object = this;
-}
-WorldObject.prototype.show = function() {
-	if (this.image==null) {
-		this.image = document.createElement("img");
-		this.y *= 1; /* */// Здесь this.y оказывается сторокой,
-		// разобраться
-		var vertical = isDoor(this.type)
-				&&(Terrain.cells[this.x][1+this.y].wall||Terrain.cells[this.x][this.y-1].wall);
-		this.image.style.position = "absolute";
-		this.image.style.top = +"px";
-		this.image.style.left = +"px";
-		this.image.setAttribute("src", "./images/worldobjects/"+this.type
-				+(vertical ? "_v" : "")+".png");
-		this.image.style.top = this.y
-				*32
-				+( -parseInt(worldObjectProperties[this.type][1])+32-(vertical ? 10
-						: 0))+"px";
-		this.image.style.left = this.x*32
-				+( -parseInt(worldObjectProperties[this.type][0])+32)/2
-				+"px";
-		this.image.style.zIndex = this.y*2;
-		gameField.appendChild(this.image);
-		// this.image.getElementByTagName("img");
-	}
-};
-WorldObject.prototype.hide = function() {
-	if (this.image!=null) {
-		this.image.parentNode.removeChild(this.image);
-		this.image = null;
-	}
-};
-WorldObject.prototype.remove = function() {
-	this.hide();
-	Terrain.cells[this.x][this.y].object = null;
-};
-WorldObject.prototype.shade = function() {
-	this.image.style.opacity = "0.5";
-};
-WorldObject.prototype.unshade = function() {
-	this.image.style.opacity = "1";
-};
 function SoundSource(x, y, type) {
 	this.x = x;
 	this.y = y;
@@ -995,11 +621,115 @@ Ceiling.prototype.show = function _() {
 		}
 	}
 };
+
+/**
+ * Chunks represent a square part of terrain
+ */
+function Chunk(x, y, data) {
+	this.x = x;
+	this.y = y;
+	this.cells = blank2dArray(Terrain.CHUNK_WIDTH, Terrain.CHUNK_WIDTH);
+	this.canvas = document.createElement("canvas");
+	this.canvas.setAttribute("width", 32*Terrain.CHUNK_WIDTH);
+	this.canvas.setAttribute("height", 32*Terrain.CHUNK_WIDTH);
+	this.canvas.style.position = "absolute";
+	var viewIndent = Terrain.getViewIndentation(x, y, 32);
+	this.canvas.style.top = viewIndent.top+"px";
+	this.canvas.style.left = viewIndent.left+"px";
+	this.canvas.style.zIndex = 0;
+	document.getElementById("gameField").appendChild(this.canvas);
+}
+Chunk.prototype.loadData = function(data) {
+	/*
+	 * data: {x:int,y:int,c:[floor,object, floor,object...]}
+	 */
+	for (var i=0, x=0, y=0; i<data.c.length; i+=2) {
+		this.cells[x][y] = new Cell();
+		if (x === Terrain.CHUNK_WIDTH-1) {
+			y++;
+			x = 0;
+		} else {
+			x++;
+		}
+	}
+	for (var i=0, x=0, y=0; i<data.c.length; i+=2) {
+		var cell = this.cells[x][y];
+		cell.floor = new Floor(data.c[i]);
+		if (data.c[i+1] !== 0) {
+			Terrain.createObject(this.x+x, this.y+y, data.c[i+1]);
+		}
+		if (x === Terrain.CHUNK_WIDTH-1) {
+			y++;
+			x = 0;
+		} else {
+			x++;
+		}
+	}
+	for (var i=0, x=0, y=0; i<data.c.length; i+=2) {
+		if (data.c[i+1] !== 0) {
+			Terrain.displayObject(this.x+x, this.y+y);
+		}
+		if (x === Terrain.CHUNK_WIDTH-1) {
+			y++;
+			x = 0;
+		} else {
+			x++;
+		}
+	}
+};
+Chunk.prototype.getAbsoluteCell = function(x, y) {
+	return this.cells[x-this.x][y-this.y];
+};
+Chunk.prototype.show = function() {
+	for (var y=0; y<Terrain.CHUNK_WIDTH; y++) {
+		for (var x=0; x<Terrain.CHUNK_WIDTH; x++) {
+			this.cells[x][y].show(this, this.x+x, this.y+y);
+		}
+	}
+	// Redraw walls on border of neighbor chunks
+	var chunk;
+	// From top
+	if (chunk = Terrain.getChunk(this.x,this.y-Terrain.CHUNK_WIDTH)) {
+		for (var x=0; x<Terrain.CHUNK_WIDTH; x++) {
+			if (chunk.cells[x][Terrain.CHUNK_WIDTH-1].wall !== null) { 
+				chunk.cells[x][Terrain.CHUNK_WIDTH-1].wall
+					.updateView(this.x+x,this.y-1);
+			}
+		}
+	}
+	// From right
+	if (chunk = Terrain.getChunk(this.x+Terrain.CHUNK_WIDTH,this.y)) {
+		var col = chunk.cells[0];
+		for (var y=0; y<Terrain.CHUNK_WIDTH; y++) {
+			if (col[y].wall !== null) {
+				col[y].wall.updateView(this.x+Terrain.CHUNK_WIDTH,this.y+y);
+			}
+		}
+	}
+	// From bottom
+	if (chunk = Terrain.getChunk(this.x,this.y+Terrain.CHUNK_WIDTH)) {
+		for (var x=0; x<Terrain.CHUNK_WIDTH; x++) {
+			if (chunk.cells[x][0].wall !== null) {
+				chunk.cells[x][0].wall.updateView(this.x+x, this.y+Terrain.CHUNK_WIDTH);
+			}
+		}
+	}
+	// From left
+	if (chunk = Terrain.getChunk(this.x-Terrain.CHUNK_WIDTH,this.y)) {
+		var col = chunk.cells[Terrain.CHUNK_WIDTH-1];
+		for (var y=0; y<Terrain.CHUNK_WIDTH; y++) {
+			if (col[y].wall !== null) {
+				col[y].wall.updateView(this.x-1,this.y+y);
+			}
+		}
+	}
+};
+
 // Специальные функции для работы с объектами
 function visToNum(x, y) {
 	// Возвращает 1, если клетка видима, и 0, если клетка невидима или находится
 	// за пределами карты
-	return +(x>=0&&x<Terrain.width&&y>0&&y<Terrain.height /*&& !!Player.visibleCells[x][y]*/);
+	return 1;
 }
 function seenToNum(x, y) {
 	// Возвращает 1, если клетка уже была увидена, и 0, если клетка не была
@@ -1027,7 +757,8 @@ function anyItemsInCell(x, y) {
 function getObject(x, y) {
 	// Возвращает объект стены или объект GameObject, если один из них есть в
 	// клетке x:y, иначе - false
-	return Terrain.cells[x]&&Terrain.cells[x][y]&&(Terrain.cells[x][y].wall||Terrain.cells[x][y].object);
+	var cell = Terrain.getCell(x,y);
+	return cell && (cell.wall||cell.object);
 }
 // Функции типов объектов
 function isDoor(type) {

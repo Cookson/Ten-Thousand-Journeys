@@ -11,7 +11,7 @@ import erpoge.terrain.settlements.Building.BasisBuildingSetup;
 
 public class Smithy extends Building {
 	public void draw() {
-		CustomRectangleSystem crs = new CustomRectangleSystem(settlement,x,y,width,height,1);
+		CustomRectangleSystem crs = new CustomRectangleSystem(x,y,width,height,1);
 		Side side = Side.S;
 		crs.cutRectangleFromSide(0, side, 5);
 		crs.cutRectangleFromSide(1, side.clockwise(), 5);

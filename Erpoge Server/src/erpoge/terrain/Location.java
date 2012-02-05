@@ -25,6 +25,7 @@ import erpoge.characters.PlayerCharacter;
 import erpoge.characters.TurnQueue;
 import erpoge.graphs.CustomRectangleSystem;
 import erpoge.graphs.RectangleSystem;
+import erpoge.graphs.TerrainRectangleSystem;
 import erpoge.inventory.Item;
 import erpoge.inventory.ItemPile;
 import erpoge.inventory.UniqueItem;
@@ -57,12 +58,6 @@ public class Location extends TerrainBasics {
 	public Location(HorizontalPlane plane, int x, int y, int width, int height, String type) {
 		super(x, y);
 		this.cells = plane.getCells(x, y, width, height);
-		for (int q=0; q<width; q++) {
-			for (int z=0; z<height; z++) {
-//				Main.console(q+" "+z+" "+this.cells[q][z]);
-			}
-		}
-		
 		this.type = type;
 		this.name = "Empty location name!";
 		this.plane = plane;
@@ -208,13 +203,12 @@ public class Location extends TerrainBasics {
 			setElement(cX - x.get(i), cY - y.get(i), type, name);
 		}
 	}
-	public RectangleSystem getGraph(int startX, int startY, int width,
+	public TerrainRectangleSystem getGraph(int startX, int startY, int width,
 			int height, int minRectangleWidth, int borderWidth) {
-		return new RectangleSystem(this, startX, startY, width, height,
-				minRectangleWidth, borderWidth);
+		return new TerrainRectangleSystem(this, startX, startY, width, height, minRectangleWidth, borderWidth);
 	}
-	public RectangleSystem getGraph(CustomRectangleSystem crs) {
-		return new RectangleSystem(crs);
+	public TerrainRectangleSystem getGraph(CustomRectangleSystem crs) {
+		return new TerrainRectangleSystem(this, crs);
 	}
 	public CellCollection getCellCollection(ArrayList<Coordinate> cls) {
 		return new CellCollection(cls, this);
@@ -338,8 +332,8 @@ public class Location extends TerrainBasics {
 		return answer;
 	}
 	public void fillWithCells(int f, int o) {
-		for (int i = 0; i < getWidth(); i++) {
-			for (int j = 0; j < getHeight(); j++) {
+		for (int i = 0; i < width; i++) {
+			for (int j = 0; j < height; j++) {
 				setFloor(i, j, f);
 				setObject(i, j, o);
 			}
@@ -356,9 +350,9 @@ public class Location extends TerrainBasics {
 		ArrayList<Coordinate> answer = new ArrayList<Coordinate>();
 		answer.add(new Coordinate(startX, startY));
 		newFront.add(new Coordinate(startX, startY));
-		int[][] pathTable = new int[getWidth()][getHeight()];
+		int[][] pathTable = new int[width][height];
 		int t = 0;
-		for (int i = 0; i < getWidth(); i++) {
+		for (int i = 0; i < width; i++) {
 			Arrays.fill(pathTable[i], 0);
 		}
 		int numOfSides = noDiagonal ? 4 : 8;
@@ -941,12 +935,12 @@ public class Location extends TerrainBasics {
 	public int getHeight() {
 		return height;
 	}
-//	public void showLocation() {
-//		for (int y=0; y<height; y++) {
-//			for (int x=0; x<width; x++) {
-//				Main.out((cells[x][y] == null) ? "." : "#");
-//			}
-//			Main.outln();
-//		}
-//	}
+	public void showLocation() {
+		for (int y=0; y<height; y++) {
+			for (int x=0; x<width; x++) {
+				Main.out((cells[x][y] == null) ? "." : "#");
+			}
+			Main.outln();
+		}
+	}
 }

@@ -25,7 +25,7 @@ public class Tavern extends Building {
 	public void draw() {
 		buildBasis(GameObjects.OBJ_WALL_GREY_STONE);
 		placeFrontDoor(Side.ANY_SIDE);
-		Rectangle lobbyRec = rectangleSystem.rectangles.get(lobby);
+		Rectangle lobbyRec = rectangleSystem.content.get(lobby);
 		for (int sx=lobbyRec.x; sx<lobbyRec.x+lobbyRec.width; sx++) {
 			if (!settlement.isDoor(sx, lobbyRec.y-1)) {
 				settlement.setObject(sx, lobbyRec.y, GameObjects.OBJ_VINESHELF);

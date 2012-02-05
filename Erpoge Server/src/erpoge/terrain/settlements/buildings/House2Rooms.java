@@ -15,7 +15,7 @@ import erpoge.terrain.settlements.Building.BasisBuildingSetup;
 public class House2Rooms extends Building {
 	@Override
 	public void draw() {
-		CustomRectangleSystem crs = new CustomRectangleSystem(settlement,x,y,width,height,1);
+		CustomRectangleSystem crs = new CustomRectangleSystem(x,y,width,height,1);
 		Side side = Side.S;
 		
 		int rightRoom = crs.cutRectangleFromSide(0, side.counterClockwise(), 5);	
@@ -27,8 +27,8 @@ public class House2Rooms extends Building {
 		int hallToKitchen = 0;
 		
 		// Stretch storeroom
-		RectangleArea recExPartOfStoreroom = crs.rectangles.get(exPartOfStoreroom);
-		crs.rectangles.get(storeroom)
+		RectangleArea recExPartOfStoreroom = crs.content.get(exPartOfStoreroom);
+		crs.content.get(storeroom)
 			.stretch(side, recExPartOfStoreroom.getDimensionBySide(side)+1);
 		crs.excludeRectangle(exPartOfStoreroom);
 		
@@ -36,25 +36,25 @@ public class House2Rooms extends Building {
 		buildBasis(GameObjects.OBJ_WALL_GREY_STONE);
 		
 		// Remove walls of hall to kitchen
-		Rectangle recHallToKitchen = crs.rectangles.get(hallToKitchen);
+		Rectangle recHallToKitchen = crs.content.get(hallToKitchen);
 		removeWall(recHallToKitchen, side);
 		removeWall(recHallToKitchen, side.opposite());
 		
 		// Doors
 		// Storeroom
-		RectangleArea recStoreroom = crs.rectangles.get(storeroom);
+		RectangleArea recStoreroom = crs.content.get(storeroom);
 		Coordinate c = recStoreroom
 			.getCellFromSide(side.counterClockwise(), side, 1)
 			.moveToSide(side.counterClockwise(), 1);
 		settlement.setObject(c.x, c.y, GameObjects.OBJ_DOOR_BLUE);
 		// Middle room
-		RectangleArea recMiddleRoom = crs.rectangles.get(middleRoom);
+		RectangleArea recMiddleRoom = crs.content.get(middleRoom);
 		c = recMiddleRoom
 			.getMiddleOfSide(side)
 			.moveToSide(side, 1);
 		settlement.setObject(c.x, c.y, GameObjects.OBJ_DOOR_BLUE);
 		// Right room
-		RectangleArea recRightRoom = crs.rectangles.get(rightRoom);
+		RectangleArea recRightRoom = crs.content.get(rightRoom);
 		c = recRightRoom
 			.getCellFromSide(side.clockwise(), side, 0)
 			.moveToSide(side.clockwise(), 1);

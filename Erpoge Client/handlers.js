@@ -40,33 +40,33 @@ handlers={
 				return;
 			}
 			// Hide ceiling, if there is one.
-			if (Terrain.cells[x][y].ceiling !== undefined) {
-				Terrain.cells[x][y].ceiling.parent.hide();
-			} else if (Terrain.cells[mapCursorX][mapCursorY].ceiling !== undefined) {
-				Terrain.cells[mapCursorX][mapCursorY].ceiling.parent.show();
-			} 
+//			if (Terrain.getCell(x,y).ceiling !== null) {
+//				Terrain.getCell(x,y).ceiling.parent.hide();
+//			} else if (Terrain.getCell(mapCursorX,mapCursorY).ceiling !== null) {
+//				Terrain.getCell(mapCursorX,mapCursorY).ceiling.parent.show();
+//			} 
 			// Распрозрачивание горизонтального ряда объектов, закрывающих обзор
-			for (var dy=1; !getObject(x,y+dy-1) && Terrain.cells[x][y+dy]; dy++) {
-				if (hiddenBotheringObjects.indexOf(getNum(x,y+dy))==-1) {
-				// Если при движении мыши скрывается один и тот же ряд объектов, то ничего не делать, 
-				// иначе распрозрачить предыдущие запрозраченные объекты
-					var obj;
-					for (var i=0;obj=getObject(
-						getX(hiddenBotheringObjects[i]),
-						getY(hiddenBotheringObjects[i])
-					);i++) {
-						if (obj.image) {
-						// Если объект не скрылся от того, что персонаж двигается, и вместе с ним двигается камера
-							if (!player.canSee(obj.x,obj.y)) {
-								obj.shade();
-							} else {
-								obj.unshade();
-							}
-						}
-					}
-					hiddenBotheringObjects=[];
-				}
-			}
+//			for (var dy=1; !getObject(x,y+dy-1) && Terrain.cells[x][y+dy]; dy++) {
+//				if (hiddenBotheringObjects.indexOf(getNum(x,y+dy))==-1) {
+//				// Если при движении мыши скрывается один и тот же ряд объектов, то ничего не делать, 
+//				// иначе распрозрачить предыдущие запрозраченные объекты
+//					var obj;
+//					for (var i=0;obj=getObject(
+//						getX(hiddenBotheringObjects[i]),
+//						getY(hiddenBotheringObjects[i])
+//					);i++) {
+//						if (obj.image) {
+//						// Если объект не скрылся от того, что персонаж двигается, и вместе с ним двигается камера
+//							if (!player.canSee(obj.x,obj.y)) {
+//								obj.shade();
+//							} else {
+//								obj.unshade();
+//							}
+//						}
+//					}
+//					hiddenBotheringObjects=[];
+//				}
+//			}
 			mapCursorX=x;
 			mapCursorY=y;
 			CellCursor.move(x,y);
@@ -176,7 +176,7 @@ handlers={
 			// document.getElementById("cellCursorPri").style.display="inline-block";
 		}
 	},
-	globalMapClickHandler: function(x,y,e) {
+	globalMapClickHandler: function _(x,y,e) {
 		if (e.shiftKey) {
 			centerWorldCamera(x,y);
 		} else {

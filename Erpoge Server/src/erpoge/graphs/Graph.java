@@ -4,12 +4,13 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import erpoge.Main;
 
 
-public class Graph<ContentClass> {
+public class Graph<ContentClass> implements Iterable<ContentClass> {
 	public HashMap<Integer, ArrayList<Integer>> edges;
 	public HashMap<Integer, ContentClass> excluded = new HashMap<Integer, ContentClass>();
 	public int size;
@@ -119,5 +120,9 @@ public class Graph<ContentClass> {
 			size1=checkedEdges.size();
 		} while (size1 != size2);
 		return size1 == edges.size();
+	}
+	@Override
+	public Iterator<ContentClass> iterator() {
+		return content.values().iterator();
 	}
 }

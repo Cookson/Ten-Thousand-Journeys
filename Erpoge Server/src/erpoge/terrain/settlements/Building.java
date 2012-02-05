@@ -13,6 +13,7 @@ import erpoge.RectangleArea;
 import erpoge.Side;
 import erpoge.graphs.CustomRectangleSystem;
 import erpoge.graphs.RectangleSystem;
+import erpoge.graphs.TerrainRectangleSystem;
 import erpoge.objects.GameObjects;
 import erpoge.terrain.CellCollection;
 import erpoge.terrain.Location;
@@ -28,7 +29,7 @@ public abstract class Building extends Rectangle {
 		SIDE_W = 4;
 	public Location settlement;
 	public HashMap<Integer, RectangleArea> rooms;
-	public RectangleSystem rectangleSystem;
+	public TerrainRectangleSystem rectangleSystem;
 	public int lobby = -1;
 	public ArrayList<Side> doorSides = new ArrayList<Side>();
 	public Coordinate frontDoor;
@@ -138,7 +139,7 @@ public abstract class Building extends Rectangle {
 	/**
 	 * Place front door in the middle of rectangle from particular side.
 	 */
-		RectangleArea r = rectangleSystem.rectangles.get(rectangleId);
+		RectangleArea r = rectangleSystem.content.get(rectangleId);
 		Coordinate doorCoord = r.getMiddleOfSide(side).moveToSide(side, 1);
 		settlement.setObject(doorCoord.x, doorCoord.y, GameObjects.OBJ_DOOR_BLUE);
 		lobby = rectangleId;
@@ -281,7 +282,7 @@ public abstract class Building extends Rectangle {
 		return cells;
 	}
 	public RectangleSystem buildBasis(int wallType) {
-		RectangleSystem graph = rectangleSystem;
+		TerrainRectangleSystem graph = rectangleSystem;
 //		if (notSimpleForm) {
 //			if (graph.rectangles.size() > 3) {
 //				// graph.initialFindOuterSides();
@@ -314,22 +315,22 @@ public abstract class Building extends Rectangle {
 		
 		graph.drawBorders(1, wallType, false);
 		int floorType = GameObjects.FLOOR_STONE;
-		for (Rectangle r : graph.rectangles.values()) {
+		for (Rectangle r : graph.content.values()) {
 			fillFloor(r, floorType);
 		}
 
 		Set<Integer> keys = graph.edges.keySet();
 		for (int k : keys) {
 			ArrayList<Integer> edge = graph.edges.get(k);
-			Rectangle r1 = graph.rectangles.get(k);
+			Rectangle r1 = graph.content.get(k);
 			for (int vertex : edge) {
-				Rectangle r2 = graph.rectangles.get(vertex);
+				Rectangle r2 = graph.content.get(vertex);
 				Coordinate c = connectRoomsWithDoor(r1, r2,
 						GameObjects.OBJ_DOOR_BLUE);
 				settlement.setFloor(c.x, c.y, floorType);
 			}
 		}
-		rooms = graph.rectangles;
+		rooms = graph.content;
 		return graph;
 	}
 	public RectangleSystem getRectangleSystem(int minRoomSize) {
@@ -337,7 +338,7 @@ public abstract class Building extends Rectangle {
 		return rectangleSystem;
 	}
 	
-	public RectangleSystem setRectangleSystem(CustomRectangleSystem crs) {
+	public TerrainRectangleSystem setRectangleSystem(CustomRectangleSystem crs) {
 		rectangleSystem = settlement.getGraph(crs);
 		return rectangleSystem;
 	}
@@ -442,7 +443,7 @@ public abstract class Building extends Rectangle {
 		hallways.add(rectangleId);
 	}
 	public void clearBasisInside() {
-		for (Rectangle r : rectangleSystem.rectangles.values()) {
+		for (Rectangle r : rectangleSystem.content.values()) {
 			settlement.square(r.x, r.y, r.width, r.height,
 					TerrainBasics.ELEMENT_OBJECT, GameObjects.OBJ_VOID, true);
 		}
@@ -496,7 +497,7 @@ public abstract class Building extends Rectangle {
 		NOT_BUILD_EDGES, CONVERT_TO_DIRECTED_TREE, KEYPOINTS_BASED
 	}
 	public static boolean registerClass(Class<? extends Building> cls) {
-		Main.console("Register "+cls.getName());
+		Main.log("Register "+cls.getName());
 		buildingClasses.put(cls.getName(), cls);
 		
 		return true;

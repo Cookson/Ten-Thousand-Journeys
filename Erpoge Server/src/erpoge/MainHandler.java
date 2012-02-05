@@ -17,6 +17,7 @@ import erpoge.inventory.ItemPile;
 import erpoge.inventory.UniqueItem;
 import erpoge.itemtypes.ItemType;
 import erpoge.itemtypes.ItemsTypology;
+import erpoge.serverevents.EventChunkContents;
 import erpoge.serverevents.EventPutOn;
 import erpoge.terrain.HorizontalPlane;
 import erpoge.terrain.Location;
@@ -33,36 +34,36 @@ import net.tootallnate.websocket.drafts.Draft_76;
 public class MainHandler extends WebSocketServer {
 	public static final MainHandler instance = new MainHandler(8787);
 	public static final int 
-	SERVER_INFO				= 0,
-	ATTACK					= 1,
-	MOVE					= 2,
-	PUT_ON					= 3,
-	TAKE_OFF				= 4,
-	PICK_UP_PILE			= 5,
-	LOGIN 					= 6,
-	LOAD_CONTENTS			= 7,
-	AUTH					= 8,
-	APPEAR 					= 9,
-	WORLD_TRAVEL			= 10,
-	DEAUTH					= 11,
-	CHAT_MESSAGE			= 12,
-	DROP_PILE				= 13,
-	OPEN_CONTAINER			= 14,
-	PUT_TO_CONTAINER		= 15,
-	TAKE_FROM_CONTAINER		= 16,
-	CAST_SPELL				= 17,
-	SHOOT_MISSILE			= 18,
-	USE_OBJECT				= 19,
-	CHECK_OUT				= 20,
-	ENTER_LOCATION			= 21,
-	LEAVE_LOCATION			= 22,
-	ANSWER					= 23,
-	START_CONVERSATION		= 24,
-	DROP_UNIQUE				= 25,
-	PICK_UP_UNIQUE			= 26,
-	LOAD_PASSIVE_CONTENTS	= 27,
-	ACCOUNT_REGISTER		= 28,
-	PLAYER_CREATE			= 29,
+	SERVER_INFO             = 0,
+	ATTACK                  = 1,
+	MOVE                    = 2,
+	PUT_ON                  = 3,
+	TAKE_OFF                = 4,
+	PICK_UP_PILE            = 5,
+	LOGIN                   = 6,
+	LOAD_CONTENTS           = 7,
+	AUTH                    = 8,
+	APPEAR                  = 9,
+	LOAD_CHUNK              = 10,
+	DEAUTH                  = 11,
+	CHAT_MESSAGE            = 12,
+	DROP_PILE               = 13,
+	OPEN_CONTAINER          = 14,
+	PUT_TO_CONTAINER        = 15,
+	TAKE_FROM_CONTAINER     = 16,
+	CAST_SPELL              = 17,
+	SHOOT_MISSILE           = 18,
+	USE_OBJECT              = 19,
+	CHECK_OUT               = 20,
+	ENTER_LOCATION          = 21,
+	LEAVE_LOCATION          = 22,
+	ANSWER                  = 23,
+	START_CONVERSATION      = 24,
+	DROP_UNIQUE             = 25,
+	PICK_UP_UNIQUE          = 26,
+	LOAD_PASSIVE_CONTENTS   = 27,
+	ACCOUNT_REGISTER        = 28,
+	PLAYER_CREATE           = 29,
 	IDLE                    = 30,
 	
 	/* Player special actions */
@@ -100,15 +101,19 @@ public class MainHandler extends WebSocketServer {
 	private void aServerInfo(String message, WebSocket conn) throws IOException {
 		// ping
 		conn.send("[{\"e\":\"serverInfo\",\"serverName\":\"Erpoge Server\",\"online\":31337}]");
-		Main.console("[{\"e\":\"serverInfo\",\"serverName\":\"Erpoge Server\",\"online\":31337}]");
+		Main.log("[{\"e\":\"serverInfo\",\"serverName\":\"Erpoge Server\",\"online\":31337}]");
 	}
 	private void aLoadPassiveContents(String message, WebSocket conn) throws IOException {
 	/**
-	 * Sends only contents of world witout any login information.
+	 * Sends only contents of world without any login information.
 	 * Used, for example, in world preview in client.
 	 */
-		conn.send("[{\"e\":\"loadPassiveContents\","+defaultPlane.jsonPartGetContents(-20, -20, 40, 40)+"}]");
-		Main.console("[{\"e\":\"loadPassiveContents\","+defaultPlane.jsonPartGetContents(-20, -20, 40, 40)+"}]");
+		EventQueue queue = new EventQueue(conn);
+		queue.addEvent(new EventChunkContents(defaultPlane.getChunkWithCell(-20,-20)));
+		queue.addEvent(new EventChunkContents(defaultPlane.getChunkWithCell(-20,  0)));
+		queue.addEvent(new EventChunkContents(defaultPlane.getChunkWithCell(  0,-20)));
+		queue.addEvent(new EventChunkContents(defaultPlane.getChunkWithCell(  0,  0)));
+		queue.flush();
 	}
 	private void aLogin(String message, WebSocket conn) throws IOException {
 		/* 	in: {
@@ -159,24 +164,26 @@ public class MainHandler extends WebSocketServer {
 				conn.character.authorize();
 				conn.character.setConnection(conn);
 			}
-			conn.send("["+conn.character.jsonPartGetEnteringData()+"]");
+			conn.character.getEnteringEventQueue();
 		}
 	}
 	/* Listeners */
 	public void onClientOpen(WebSocket conn) {
-//		Main.console("Client open");
+//		Main.log("Client open");
 	}
 	public void onClientClose(WebSocket conn) {
-//		Main.console("Client close");
+//		Main.log("Client close");
 		if (conn.character != null && conn.character.isAuthorized()) {
 			conn.character.deauthorize();
 		}
 	}
 	public void onClientMessage(WebSocket conn, String message) {
-		Main.console(message);
+		Main.log(message);
 		int action = gson.fromJson(message, ClientMessageAction.class).a;
 		try {
 			switch (action) {
+			case LOAD_CHUNK:
+				conn.character.aLoadChunk(message);
 			case LOGIN: 
 				aLogin(message, conn);
 				break;

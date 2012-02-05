@@ -10,7 +10,7 @@ import erpoge.terrain.settlements.Building.BasisBuildingSetup;
 
 public class House extends Building {
 	public void draw() {
-		CustomRectangleSystem crs = new CustomRectangleSystem(settlement,x,y,width,height,1);
+		CustomRectangleSystem crs = new CustomRectangleSystem(x,y,width,height,1);
 		
 		int mainRoom = 0;
 		int exFront = crs.cutRectangleFromSide(0, frontSide, 3);
@@ -23,12 +23,12 @@ public class House extends Building {
 		rectangleSystem = settlement.getGraph(crs);
 		buildBasis(GameObjects.OBJ_WALL_GREY_STONE);
 		
-		placeDoor(crs.rectangles.get(lobby), rightSide, GameObjects.OBJ_DOOR_BLUE);
-		placeDoor(crs.rectangles.get(lobby), backSide, GameObjects.OBJ_DOOR_BLUE);
-		placeDoor(crs.rectangles.get(mainRoom), rightSide, GameObjects.OBJ_DOOR_BLUE);
-		placeDoor(crs.rectangles.get(workshop), backSide, GameObjects.OBJ_DOOR_BLUE);
+		placeDoor(crs.content.get(lobby), rightSide, GameObjects.OBJ_DOOR_BLUE);
+		placeDoor(crs.content.get(lobby), backSide, GameObjects.OBJ_DOOR_BLUE);
+		placeDoor(crs.content.get(mainRoom), rightSide, GameObjects.OBJ_DOOR_BLUE);
+		placeDoor(crs.content.get(workshop), backSide, GameObjects.OBJ_DOOR_BLUE);
 		
-		Coordinate c = crs.rectangles.get(mainRoom).getCellFromSide(frontSide, leftSide, 0);
+		Coordinate c = crs.content.get(mainRoom).getCellFromSide(frontSide, leftSide, 0);
 		settlement.setObject(c.x, c.y, GameObjects.OBJ_LADDER_UP);
 		
 		/* SECOND FLOOR */

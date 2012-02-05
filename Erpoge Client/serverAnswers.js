@@ -1,6 +1,7 @@
 function handleNextEvent() {
 	if (serverAnswerIterator >= serverAnswer.length) {
-		if (!Terrain.onGlobalMap) {
+		if (Player.name !== null) {
+		// IF player is locaded, then check out after displaying all the events
 			Net.send({a:Net.CHECK_OUT});
 		}
 		return;
@@ -11,9 +12,9 @@ function handleNextEvent() {
 	} else {
 		throw new Error("Unknown type of non-synchronized answer: "+value.e);
 	}
-//	console["log"](value.e);
+	console["log"](value.e);
 }
-serverAnswerHandlers = {
+var serverAnswerHandlers = {
 	wt: function serverEventWorldTravel(value) {
 	// serverAnswerHandlers.worldTravel ?!??! 
 		// Character travels in the world
@@ -52,14 +53,36 @@ serverAnswerHandlers = {
 		}
 		handleNextEvent();
 	},
+	authentificationSuccessful: function _() {
+	// Preparing map after login
+		UI.setClickHandler(Player.locationClickHandler, Player);
+		if (characters[1]) {
+			characters[1].cellWrap.parentNode.removeChild(characters[1].cellWrap);
+			delete characters[1];
+		}
+		characters = {};
+		showLoadingScreen();
+		onlinePlayers = [];
+		prepareArea();
+		handleNextEvent();
+	},
+	playerData: function playerData(data) {
+		if (Player.cls == undefined) {
+			Player.init(data.data);
+		}
+		UI.notify("locationLoad");
+		UI.setKeyMapping("Default");
+		recountWindowSize();
+		hideLoadingScreen();
+		handleNextEvent();
+	},
 	loadContents: function serverEventLoadContents(data) {
 	// Find out whether Player is on global map or in an area and
 	// load contents of character's environment after authentification.
 	// Server can send two different types of answers: when the Player is in location
 	// and when he is on the world map. The type is determined by data.onGlobalMap value
 	/* on world map: {
-	 * 		onGlobalMap: true,
-	 *  	w : {w,h,c:[[ground,forest,road,river,race,[objects]]xN]},
+	 *  	w : {c:[[[ground,forest,road,river,race,[objects]]xN]xM]},
 	 *  	p : [
 	 *  		characterId, name, race, class, level, 
 	 *  		maxHp, maxMp, 
@@ -115,25 +138,10 @@ serverAnswerHandlers = {
 				Net.callback();
 			}
 			UI.enterGlobalMapMode();
-			UI.notify("worldLoad");
-			UI.setKeyMapping("Default");
+			
 		} else {
 		// Area loading
-			UI.setClickHandler(Player.locationClickHandler, Player);
-			if (characters[1]) {
-				characters[1].cellWrap.parentNode.removeChild(characters[1].cellWrap);
-				delete characters[1];
-			}
-			characters = {};
-			Terrain.onGlobalMap = false;
-			showLoadingScreen();
-			onlinePlayers = [];
-			Terrain.width = data.l.w;
-			height = data.l.h;
-			Terrain.isPeaceful = data.l.p;
-			onlinePlayers = [];
-			prepareArea();
-			readLocation(data.l);
+			
 			if (Player.cls == null) {
 				Player.init(data.p);
 			}
@@ -149,18 +157,21 @@ serverAnswerHandlers = {
 		recountWindowSize();
 		hideLoadingScreen();
 	},
-	loadPassiveContents : function serverEventLoadPassiveContents(data) {
-		Terrain.onGlobalMap = true;
-		readWorld(data);
+	chunkContents : function serverEventChunkContents(data) {
+		var chunk = Terrain.createChunk(data.x, data.y, data);
+		chunk.loadData(data);
+		chunk.show();
 		recountWindowSize();
-		centerWorldCamera(Terrain.width/2, Terrain.height/2, true);
+		moveGameField(-10,-10);
 		hideLoadingScreen();
+		handleNextEvent();
 	},
 	serverInfo: function serverEventServerInfo(data) {
 		Net.serverName = data.serverName;
 		Net.online = data.online;
 		UI.notify("serverInfoRecieve");
-		Net.send({a:Net.LOAD_PASSIVE_CONTENTS});  
+//		Net.send({a:Net.LOAD_PASSIVE_CONTENTS});  
+		hideLoadingScreen();
 	},
 	deauth: function serverEventDeauthorization(value) {
 		// Deauthorization

@@ -32,8 +32,6 @@
 //		// RectangleSystem mainRS = getGraph(crs);
 //		// mainRS.drawBorders(ELEMENT_OBJECT, GameObjects.OBJ_WALL_GREY_STONE,
 //		// false);
-//		// Main.console(mainRS.rectangles.get(1)+" "+mainRS.rectangles.get(2));
-//		// Main.console(mainRS.lengthOfAdjacenctZone(mainRS.rectangles.get(1),
 //		// mainRS.rectangles.get(2)));
 //
 ////		Set<Integer> keys = mainRS.getRectanglesKeys();

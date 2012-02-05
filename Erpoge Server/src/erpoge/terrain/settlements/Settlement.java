@@ -46,7 +46,7 @@ public class Settlement extends Location {
 					building.draw();
 					buildings.add(building);
 				} else {
-					Main.console("Coundn't place building "+cls.getSimpleName());
+					Main.log("Coundn't place building "+cls.getSimpleName());
 				}
 			} catch (InstantiationException e) {
 				e.printStackTrace();
@@ -75,8 +75,8 @@ public class Settlement extends Location {
 	public void markQuarter(int key, int width/*=8*/, int border/*=2*/) {
 	// Разметить квартал - создать систему прямоугольников и занести её в Settlement::quarters
 	// in: индекс пярмоугольника, на котором строится квартал, в Settlement::rectangles
-		Rectangle r = rectangleSystem.rectangles.get(key);
-		quarters.put(key, new RectangleSystem(this,r.x+1,r.y+1,r.width-2,r.height-2, width, border));
+		Rectangle r = rectangleSystem.content.get(key);
+		quarters.put(key, new RectangleSystem(r.x+1,r.y+1,r.width-2,r.height-2, width, border));
 //		quarters.get(key).initialFindOuterSides();
 	}
 	public Service createService(Character dweller, int type, String name) {
@@ -185,17 +185,17 @@ public class Settlement extends Location {
 			}
 		}
 		public void printStatistics() {
-			Main.console("Roads: "+roads.size());
+			Main.log("Roads: "+roads.size());
 			int count = 0;
 			for (ArrayList<Intersection> entity : branches.values()) {
 				count += entity.size();
 			}
-			Main.console("Branches: "+count);
+			Main.log("Branches: "+count);
 			count = 0;
 			for (ArrayList<Intersection> entity : intersections.values()) {
 				count += entity.size();
 			}
-			Main.console("Intersections: "+count);
+			Main.log("Intersections: "+count);
 			
 		}
 		public ArrayList<Coordinate> getReferencePoints() {
@@ -483,9 +483,9 @@ public class Settlement extends Location {
 			public HashSet<BuildingPlace> getBuildingPlaces(int minWidth) {
 				HashSet<BuildingPlace> answer = new HashSet<BuildingPlace>();
 				RectangleSystem rs = settlement.getGraph(x, y, width, height, minWidth, 1);
-				for (int k : rs.rectangles.keySet()) {
+				for (int k : rs.content.keySet()) {
 					if (rs.isRectangleOuter(k)) {
-						answer.add(new BuildingPlace(rs.rectangles.get(k), this));
+						answer.add(new BuildingPlace(rs.content.get(k), this));
 					}
 				}
 				return answer;

@@ -32,7 +32,7 @@ public final class Spells {
 		});
 		spells.put(SPELL_SUMMON_ITEM, new Spell() {
 			public void cast(Character caster, int x, int y) {
-				caster.plane.getChunk(x, y).createCharacter(x, y, "bear", "Чужой миша", 0);
+				caster.plane.getChunkWithCell(x, y).createCharacter(x, y, "bear", "Чужой миша", 0);
 //				if (caster.location.cells[x][y].object() != GameObjects.OBJ_VOID) {
 //					caster.location.removeObject(x, y);
 //				} else {
@@ -42,7 +42,7 @@ public final class Spells {
 		});
 		spells.put(SPELL_SUMMON_ENEMY, new Spell() {
 			public void cast(Character caster, int x, int y) {
-				caster.plane.getChunk(x,y).createCharacter(x, y, "bear", "Мой миша", 1);
+				caster.plane.getChunkWithCell(x,y).createCharacter(x, y, "bear", "Мой миша", 1);
 			}
 		});
 	}

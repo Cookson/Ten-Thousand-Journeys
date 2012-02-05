@@ -16,6 +16,7 @@ public class ItemMap extends ItemSystemMetaInfo {
 	// typeId => ItemPile
 	private final HashMap<Integer, ItemPile> itemPiles = new HashMap<Integer, ItemPile>();
 	public ItemMap() {
+		
 	}
 	public void add(UniqueItem item) {
 		uniqueItems.put(item.getItemId(), item);
@@ -96,5 +97,18 @@ public class ItemMap extends ItemSystemMetaInfo {
 		}
 		answer.append("]");
 		return answer.toString();
+	}
+	public Object getDataForSending() {
+		int[] answer = new int[size()*2];
+		int pos = 0;
+		for (UniqueItem item : uniqueItems.values()) {
+			answer[pos++] = item.type.getTypeId();
+			answer[pos++] = item.itemId;
+		}
+		for (ItemPile item : itemPiles.values()) {
+			answer[pos++] = item.type.getTypeId();
+			answer[pos++] = item.getAmount();
+		}
+		return answer;
 	}
 }

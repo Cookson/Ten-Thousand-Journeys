@@ -3,6 +3,7 @@ package erpoge.characters;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -18,6 +19,7 @@ import erpoge.inventory.ItemPile;
 import erpoge.inventory.UniqueItem;
 import erpoge.itemtypes.ItemsTypology;
 import erpoge.serverevents.*;
+import erpoge.terrain.Chunk;
 import erpoge.terrain.Container;
 import erpoge.terrain.HorizontalPlane;
 import erpoge.terrain.Location;
@@ -27,18 +29,18 @@ public class PlayerCharacter extends Character {
 	protected final String cls;
 	public final Race race;
 	
-	private int str;
-	private int dex;
-	private int wis;
-	private int itl;
+	protected int str;
+	protected int dex;
+	protected int wis;
+	protected int itl;
 	
 	private final ArrayList<Integer> protections = new ArrayList<Integer>(
 			CharacterTypes.NUMBER_OF_PROTECTIONS);
 	
-	private HashMap<String, Integer> skills = new HashMap<String, Integer>();
-	private int party = 0;
-	private PlayerCharacter inviter;
-	private NonPlayerCharacter dialoguePartner;
+	protected HashMap<String, Integer> skills = new HashMap<String, Integer>();
+	protected int party = 0;
+	protected PlayerCharacter inviter;
+	protected NonPlayerCharacter dialoguePartner;
 	public boolean checkedOut = false;
 	protected boolean isAuthorized = false;
 	public static final String[] skillNames = {"mace", "axe", "shield",
@@ -112,6 +114,22 @@ public class PlayerCharacter extends Character {
 	}
 	
 	/* Data */
+	public Set<Chunk> getClosestChunks() {
+		Set<Chunk> answer = new HashSet<Chunk>();
+		Chunk playerChunk = plane.getChunkWithCell(x, y);
+		answer.add(playerChunk);
+		answer.add(plane.getChunkByCoord(playerChunk.getX()-Chunk.WIDTH, playerChunk.getY()-Chunk.WIDTH));
+		answer.add(plane.getChunkByCoord(playerChunk.getX(), playerChunk.getY()-Chunk.WIDTH));
+		answer.add(plane.getChunkByCoord(playerChunk.getX()+Chunk.WIDTH, playerChunk.getY()-Chunk.WIDTH));
+		
+		answer.add(plane.getChunkByCoord(playerChunk.getX()-Chunk.WIDTH, playerChunk.getY()));
+		answer.add(plane.getChunkByCoord(playerChunk.getX()+Chunk.WIDTH, playerChunk.getY()));
+		
+		answer.add(plane.getChunkByCoord(playerChunk.getX()-Chunk.WIDTH, playerChunk.getY()+Chunk.WIDTH));
+		answer.add(plane.getChunkByCoord(playerChunk.getX(), playerChunk.getY()+Chunk.WIDTH));
+		answer.add(plane.getChunkByCoord(playerChunk.getX()+Chunk.WIDTH, playerChunk.getY()+Chunk.WIDTH));
+		return answer;
+	}
 	public String jsonPartGetEnteringData() {
 		/**
 		 * The same data is used for entering both global and local map

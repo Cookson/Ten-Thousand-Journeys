@@ -43,8 +43,11 @@ public abstract class TerrainBasics {
 		this.y = y;
 	}
 	public void setFloor(int x, int y, int type) {
-//		Main.console(x+" "+y+" "+cells[x][y]);
-		cells[x][y].floor(type);
+		try {
+			cells[x][y].floor(type);
+		} catch(NullPointerException e) {
+			throw new Error();
+		}
 		computePassability(x, y);
 	}
 	public void setObject(int x, int y, int type) {

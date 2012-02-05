@@ -33,7 +33,7 @@ public class BuildingTest extends Settlement {
 		int buildingSizeX = 18;
 		int buildingSizeY = 19;
 		
-		fillWithCells(GameObjects.FLOOR_GRASS,GameObjects.OBJ_VOID);
+		fillWithCells(GameObjects.FLOOR_GRASS, GameObjects.OBJ_VOID);
 		// -2 and +5 are beacuse of road.width
 		Coordinate nw = new Coordinate((width-buildingSizeX)/2-2,(height-buildingSizeY)/2-2);
 		Coordinate ne = new Coordinate(nw.x+buildingSizeX+5,nw.y);

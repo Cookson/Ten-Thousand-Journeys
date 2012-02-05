@@ -41,19 +41,16 @@ var Terrain = {
 	PASS_FREE    : -1,
 	PASS_BLOCKED :  1,
 	PASS_SEE     :  3,
+	CHUNK_WIDTH  : 20,
 	
-	cells : null,
 	ceilings: [],
-	/**
-	 * @field 
-	 */
 	cameraOrientation : Side.N,
 	cssSideX : "left",
 	cssSideY : "top",
-	isPeaceful: false,
-	onGlobalMap: false,
+	/** @private @type HashMap */
+	chunks: new HashMap(),
 	
-	getViewIndentation: function _(x,y,scale) {
+	getViewIndentation: function _(x, y, scale) {
 		if (this.cameraOrientation == Side.N) {
 			return {left: x*scale, top: y*scale};
 		} else if (this.cameraOrientation == Side.E) {
@@ -66,7 +63,7 @@ var Terrain = {
 			throw new Error("Unknown camera orientation: "+this.cameraOrientation);
 		}
 	},
-	getNormalView: function (x,y) {
+	getNormalView: function (x, y) {
 		if (this.cameraOrientation == Side.N) {
 			return {x: x, y: y};
 		} else if (this.cameraOrientation == Side.E) {
@@ -95,16 +92,74 @@ var Terrain = {
 		} else {
 			return Terrain.width;
 		}
-	}	
+	},
+	getCell: function _(x, y) {
+		if (!this.getChunk(x,y)) {
+			return null;
+		}
+		return this.getChunk(x,y).getAbsoluteCell(x,y);
+	},
+	/**
+	 * 
+	 * @param x
+	 * @param y
+	 * @returns {Chunk} A chunk containing cell x:y.
+	 */
+	getChunk: function _(x, y) {
+		x = Math.floor(x/this.CHUNK_WIDTH)*this.CHUNK_WIDTH;
+		y = Math.floor(y/this.CHUNK_WIDTH)*this.CHUNK_WIDTH;
+		if (this.chunks.containsKey(x)) {
+			if (this.chunks.get(x).containsKey(y)) {
+				return this.chunks.get(x).get(y);
+			}
+			return null;
+			throw new Error("No chunk "+x+" "+y);
+		}
+		return null;
+		throw new Error("No chunk column "+x);
+	},
+	createChunk: function(x, y, data) {
+		var column;
+		if (!this.chunks.containsKey(x)) {
+			column = this.chunks.put(x, new HashMap());
+		} else {
+			column = this.chunks.get(x);
+		}
+		return column.put(y, new Chunk(x, y, data));
+	},
+	setPassability: function(x, y, value) {
+		this.getChunk(x, y).getAbsoluteCell(x,y).passability = value;
+	},
+	createObject: function(x, y, type) {
+		var cell = this.getCell(x, y);
+		if (isWall(type)) {
+		// Wall
+			cell.object = cell.wall = new Wall(x, y, type);
+		} else if (isDoor(type)) {
+		// Door
+			cell.object = new Door(x, y, type);
+		} else {
+		// Common object
+			cell.object = new GameObject(x, y, type);
+		}
+		Terrain.setPassability(x, y, objectProperties[type][2]);
+		
+	},
+	displayObject: function(x, y) {
+		this.getCell(x, y).object.display(x, y);
+	},
+	removeObject: function(x, y) {
+		var cell = this.getCell(x, y);
+		cell.object.remove();
+		cell.object = null;
+		this.setPassability(x, y, this.PASS_FREE);
+	}
 };
 
 // Переменные соединения
 var servers=[[]]; // Список всех серверов с логинами и паролями к персонажу на них, берётся из localStorage
 var session="";
-var currentCharacterId=0; // Id текущего персонажа. Используется в функциях чтения ответа сервера, в которых не указан действующий персонаж
 
-var hasQueuedAction=false; // Есть ли у игрока действия, поставленные в очередь 
-					   //(например, автоматическое движение, когда персонаж отправлен на несколько клеток, а не на соседнюю)
 var turns=null; // Очерёдность ходов (дублируется из каждого запроса в эту переменную)
 var BARwidth=20;
 var fps=60; // Так как в javascript нельзя организовать паузу в том же "потоке", то понятие FPS является относительным 

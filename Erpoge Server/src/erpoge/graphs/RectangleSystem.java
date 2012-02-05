@@ -30,7 +30,6 @@ public class RectangleSystem extends Graph<RectangleArea> {
 	public int startY;
 	public int minRectangleWidth;
 	public int borderWidth;
-	public Location location;
 	public HashMap<Integer, ArrayList<Side>> outerSides;
 	private HashMap<Integer, RectangleArea> outerRectangles = new HashMap<Integer, RectangleArea>();
 
@@ -38,15 +37,9 @@ public class RectangleSystem extends Graph<RectangleArea> {
 	 * Многоугольники, которые покрывают уровень при представлении уровня как
 	 * графа из многоугольников, см. функцию getGraph
 	 */
-	public HashMap<Integer, RectangleArea> rectangles;
 
-	public RectangleSystem(Location loc, int startX, int startY, int w,
-			int h, int minRectangleWidth) {
-		this(loc, startX, startY, w, h, minRectangleWidth, 1);
-	}
-
-	public RectangleSystem(Location loc, int sx, int sy, int w, int h,
-			int minrw, int bw) {
+	public RectangleSystem(int startX, int startY, int width, int height,
+			int minRectangleWidth, int borderWidth) {
 		/*
 		 * location - объект локации, на которой строится граф;
 		 * startX,startY,width,height - квардат, в который вмещается граф;
@@ -54,33 +47,31 @@ public class RectangleSystem extends Graph<RectangleArea> {
 		 * которые разделется граф; borderWidth - ширина (в клетках) границы
 		 * между прямоугольниками;
 		 */
-		width = w;
-		height = h;
-		location = loc;
-		startX = sx;
-		startY = sy;
-		edges = new HashMap<Integer, ArrayList<Integer>>();
+		this.width = width;
+		this.height = height;
+		this.startX = startX;
+		this.startY = startY;
+		this.minRectangleWidth = minRectangleWidth;
+		this.borderWidth = borderWidth;
 		excluded = new HashMap<Integer, RectangleArea>();
-		rectangles = content;
-		rectangles.put(0, new RectangleArea(sx, sy, w, h));
-		minRectangleWidth = minrw;
-		borderWidth = bw;
+		addVertex(new RectangleArea(startX, startY, width, height));
+		
 
 		boolean noMoreRectangles = false;
 		int splitableRecSizeLimit = minRectangleWidth * 2 + borderWidth + 1;
 		Chance ch = new Chance(50);
 		while (!noMoreRectangles) {
 			noMoreRectangles = true;
-			int size = rectangles.size();
+			int size = content.size();
 			for (int i = 0; i < size; i++) {
-				if (rectangles.get(i).width > splitableRecSizeLimit
-						&& rectangles.get(i).height > splitableRecSizeLimit) {
+				if (content.get(i).width > splitableRecSizeLimit
+						&& content.get(i).height > splitableRecSizeLimit) {
 					noMoreRectangles = false;
 					splitRectangle(i, ch.roll() ? Direction.V : Direction.H);
-				} else if (rectangles.get(i).width > splitableRecSizeLimit) {
+				} else if (content.get(i).width > splitableRecSizeLimit) {
 					noMoreRectangles = false;
 					splitRectangle(i, Direction.V);
-				} else if (rectangles.get(i).height > splitableRecSizeLimit) {
+				} else if (content.get(i).height > splitableRecSizeLimit) {
 					noMoreRectangles = false;
 					splitRectangle(i, Direction.H);
 				}
@@ -91,14 +82,13 @@ public class RectangleSystem extends Graph<RectangleArea> {
 	}
 
 	public RectangleSystem(CustomRectangleSystem crs) {
-		this.rectangles = crs.rectangles;
+		this.content = crs.content;
 		this.edges = crs.edges;
 		this.borderWidth = crs.borderWidth;
 		this.startX = crs.startX;
 		this.startY = crs.startY;
 		this.width = crs.width;
 		this.height = crs.height;
-		this.location = crs.location;
 		this.edges = crs.edges;
 		this.excluded = crs.excluded;
 		this.outerSides = new HashMap<Integer, ArrayList<Side>>();
@@ -107,7 +97,7 @@ public class RectangleSystem extends Graph<RectangleArea> {
 	}
 
 	public int size() {
-		return rectangles.size();
+		return content.size();
 	}
 
 	public void splitRectangle(int i, Direction dir) {
@@ -116,21 +106,20 @@ public class RectangleSystem extends Graph<RectangleArea> {
 		// i - индекс прямоугольника в массиве rectangles
 		// dir - направление разделяющей стены - вертикальное (true) или
 		// горизонтальное (false)
-		Rectangle r = rectangles.get(i);
+		Rectangle r = content.get(i);
 		if (dir == Direction.V) {
 			// Vertical
 			int x = Chance.rand(r.x + minRectangleWidth, r.x + r.width
 					- minRectangleWidth - 1 - borderWidth + 1);
-			rectangles.put(i, new RectangleArea(r.x, r.y, x - r.x, r.height));
-			rectangles.put(rectangles.size(),
-					new RectangleArea(x + 1 + borderWidth - 1, r.y, r.x + r.width
-							- x - 1 - borderWidth + 1, r.height));
+			content.put(i, new RectangleArea(r.x, r.y, x - r.x, r.height));
+			addVertex(new RectangleArea(x + 1 + borderWidth - 1, r.y, r.x + r.width
+					- x - 1 - borderWidth + 1, r.height));
 		} else {
 			// Horizontal
 			int y = Chance.rand(r.y + minRectangleWidth, r.y + r.height
 					- minRectangleWidth - 1 - borderWidth + 1);
-			rectangles.put(i, new RectangleArea(r.x, r.y, r.width, y - r.y));
-			rectangles.put(rectangles.size(), new RectangleArea(r.x, y + 1
+			content.put(i, new RectangleArea(r.x, r.y, r.width, y - r.y));
+			addVertex(new RectangleArea(r.x, y + 1
 					+ borderWidth - 1, r.width, r.y + r.height - y - 1
 					- borderWidth + 1));
 		}
@@ -138,40 +127,21 @@ public class RectangleSystem extends Graph<RectangleArea> {
 
 	public void buildEdges() {
 	// Построить рёбра в графе
-		int len = rectangles.size();
-		
-		
-		edges = new HashMap<Integer, ArrayList<Integer>>();
-		for (int i : rectangles.keySet()) {
-			edges.put(i, new ArrayList<Integer>());
-		}
+		int len = content.size();
 		for (int i = 0; i < len; i++) {
-			Rectangle r1 = rectangles.get(i);
+			Rectangle r1 = content.get(i);
 			if (r1 == null) {
 				continue;
 			}
 			for (int j = i + 1; j < len; j++) {
-				Rectangle r2 = rectangles.get(j);
+				Rectangle r2 = content.get(j);
 				if (r2 == null) {
 					continue;
 				}
 				if (areRectanglesNear(r1, r2)) {
-					
-					edges.get(i).add(j);
-					edges.get(j).add(i);
+					mutualLink(i, j);
 				}
 			}
-		}
-	}
-	
-	public void unbuildEdges() {
-	/**
-	 * Reset all edges
-	 */
-		edges = new HashMap<Integer, ArrayList<Integer>>();
-		int len = rectangles.size();
-		for (int i = 0; i < len; i++) {
-			edges.put(i, new ArrayList<Integer>());
 		}
 	}
 	
@@ -234,85 +204,7 @@ public class RectangleSystem extends Graph<RectangleArea> {
 		}
 	}
 
-	public void drawBorders(int type, int name, boolean onlyInner) {
-		// Заполнить границы графа объектами type вида name
-		// Если onlyInner=true, то заполняется вся внутренняя область
-		// прямоугольника, очерчивающего систему прямоугольников,
-		// кроме внутренней области самих прямоугольников, составляющих
-		// системму.
-		// Иначе, если onlyInner=false, то каждый прямоугольник системы
-		// очерчивается квадратом из элементов type,name
-		// В этих двух случаях используются разные алгоритмы с разной
-		// производительностью (onlyInner=false быстрее)
-		// Следует учитывать, что при onlyInner=true заполнится и внутренняя
-		// область прямоугольников,
-		// которые были исключены из системы с помощью
-		// RectangleSystem::excludeRectangle.
-
-		if (onlyInner) {
-			if (borderWidth == 0) {
-				throw new Error(
-						"An attempt to draw inner borders of a rectangleSystem with borderWidth = 0");
-			}
-			// Очерчивание только внутренних границ
-//			// Буферизуем содержимое области, которую покрывает граф
-//			// Cell[][] bufContents = new Cell[width][height];
-			//
-			// int endX = startX + width - 1;
-			// int endY = startY + height - 1;
-			// for (int x = startX; x <= endX; x++) {
-			// for (int y = startY; y <= endY; y++) {
-			// Копируем содержимое каждой ячейки, передавая будущим
-//			// новым ячейкам в качестве параметра старые
-//			// bufContents[x - startX][y - startY] = new Cell(
-			// location.cells[x][y]);
-			//
-			// }
-			// }
-			// Заполняем всю площадь графа объектами type,name
-//			// Список типов type - в TerrainBasics
-			// location.square(startX, startY, width, height, type, name, true);
-			//
-			// Ставим обратно объекты внутри прямоугольников графа - таким
-//			// образом, заполнены новыми объектами будут только границы
-			// for (Map.Entry<Integer, Rectangle> e : rectangles.entrySet()) {
-			// Rectangle r = e.getValue();
-			// endX = r.x + r.width - 1;
-			// endY = r.y + r.height - 1;
-			// for (int x = r.x; x <= endX; x++) {
-			// for (int y = r.y; y <= endY; y++) {
-			// location.cells[x][y] = bufContents[x - startX][y
-			// - startY];
-			// }
-			// }
-			// }
-		
-			Set<Integer> keys = rectangles.keySet();
-			for (int k : keys) {
-				Rectangle r = rectangles.get(k);
-				if (!outerSides.get(k).contains(Side.E)) {
-					location.square(r.x + r.width, r.y, borderWidth, r.height,
-							type, name, true);
-				}
-				if (!outerSides.get(k).contains(Side.S)) {
-					location.square(r.x, r.y + r.height, r.width, borderWidth,
-							type, name, true);
-				}
-				if (!outerSides.get(k).contains(Side.S)
-						&& !outerSides.get(k).contains(Side.E)) {
-					location.square(r.x + r.width, r.y + r.height, borderWidth,
-							borderWidth, type, name, true);
-				}
-			}
-		} else {
-			// Очерчивание границ всех прямоугольников
-			for (Map.Entry<Integer, RectangleArea> e : rectangles.entrySet()) {
-				Rectangle r = e.getValue();
-				location.square(r.x - 1, r.y - 1, r.width + 2, r.height + 2,
-						type, name);
-			}
-		}
-	}
+	
 
 	public void convertGraphToDirectedTree() {
 		convertGraphToDirectedTree(-1);
@@ -512,11 +404,11 @@ public class RectangleSystem extends Graph<RectangleArea> {
 		outerSides = new HashMap<Integer, ArrayList<Side>>();
 		int size = 0;
 
-		Set<Integer> rkeys = rectangles.keySet();
+		Set<Integer> rkeys = content.keySet();
 		Iterator<Integer> it = rkeys.iterator();
 		while (it.hasNext()) {
 			int key = it.next();
-			Rectangle r = rectangles.get(key);
+			Rectangle r = content.get(key);
 			outerSides.put(key, new ArrayList<Side>());
 			try {
 				if (r.y == startY) {
@@ -544,25 +436,21 @@ public class RectangleSystem extends Graph<RectangleArea> {
 	public void findOuterSidesOfComplexForm() {
 	// Initial search for outer sides in custom rectangle system of
 	// non-squared form
-		for (int i : rectangles.keySet()) {
+		for (int i : content.keySet()) {
 			outerSides.put(i, new ArrayList<Side>());
-			Rectangle r = rectangles.get(i);
+			Rectangle r = content.get(i);
 			HashMap<Side, Integer> sides = new HashMap<Side, Integer>();
 			sides.put(Side.N, r.width);
 			sides.put(Side.E, r.height);
 			sides.put(Side.S, r.width);
 			sides.put(Side.W, r.height);
-			if (edges.get(i) == null) {
-				Main.console(rectangles+"\n"+edges);
-			}
 			for (int j : edges.get(i)) {
-				Rectangle r2 = rectangles.get(j);
+				Rectangle r2 = content.get(j);
 				if (areRectanglesNear(r, r2)) {
 					Side side = getNeighborSide(r, r2);
 					sides.put(side, sides.get(side)
 							- lengthOfAdjacenctZone(r, r2));
 				} else {
-					Main.console(i+" "+j);
 					throw new Error("Rectangles are not close to each other! Error in logic of rectangles' splitting!");
 				}
 			}
@@ -582,16 +470,16 @@ public class RectangleSystem extends Graph<RectangleArea> {
 		// прямоугольника не будет прямоугольника,
 		// что необходимо будет учитывать при переборе массива прямоугольников в
 		// цикле с итератором.
-		if (!rectangles.containsKey(num)) {
+		if (!content.containsKey(num)) {
 			throw new Error("The rectangle system already has no �" + num
 					+ " rectangle");
 		}
-		excluded.put(num, rectangles.get(num));
+		excluded.put(num, content.get(num));
 
 		// Add outer sides to nearby rectangles
-		Rectangle r = rectangles.get(num);
+		Rectangle r = content.get(num);
 		for (int neighbor : edges.get(num)) {
-			Rectangle nr = rectangles.get(neighbor);
+			Rectangle nr = content.get(neighbor);
 			Side side = getNeighborSide(nr, r);
 			ArrayList<Side> neighborOuterSides = outerSides.get(neighbor);
 			if (!neighborOuterSides.contains(side)) {
@@ -600,7 +488,7 @@ public class RectangleSystem extends Graph<RectangleArea> {
 		}
 		outerSides.remove(num);
 
-		rectangles.remove(num); // Удаляем прямоугольник...
+		content.remove(num); // Удаляем прямоугольник...
 		if (outerRectangles.containsKey(num)) {
 			outerRectangles.remove(num);
 		}
@@ -699,12 +587,12 @@ public class RectangleSystem extends Graph<RectangleArea> {
 		// Внимание: прямоугольник в rectangles может иметь индекс 0,
 		// поэтому сравнивать результат с false нужно со сравнением типов
 		// (===/!==)
-		Set<Integer> keys = rectangles.keySet();
+		Set<Integer> keys = content.keySet();
 		Iterator<Integer> it = keys.iterator();
 		while (it.hasNext()) {
 			// Ищем любую вершину со значением 1
 			int k = it.next();
-			Rectangle r = rectangles.get(k);
+			Rectangle r = content.get(k);
 			if (rectangleHasCell(r, x, y)) {
 				return k;
 			}
@@ -738,11 +626,11 @@ public class RectangleSystem extends Graph<RectangleArea> {
 	}
 
 	public boolean hasRectangleWithNum(int i) {
-		return rectangles.containsKey(i);
+		return content.containsKey(i);
 	}
 
 	public Set<Integer> getRectanglesKeys() {
-		return new HashSet<Integer>(rectangles.keySet());
+		return new HashSet<Integer>(content.keySet());
 	}
 
 	public void nibbleSystem(int depth, int chance) {
@@ -766,8 +654,8 @@ public class RectangleSystem extends Graph<RectangleArea> {
 	}
 
 	public int getRectangleNumByCoord(int x, int y) {
-		for (int k : rectangles.keySet()) {
-			Rectangle r = rectangles.get(k);
+		for (int k : content.keySet()) {
+			Rectangle r = content.get(k);
 			if (r.x == x && r.y == y) {
 				return k;
 			}
@@ -776,7 +664,7 @@ public class RectangleSystem extends Graph<RectangleArea> {
 	}
 
 	public int getRandomRectangleNum() {
-		ArrayList<Integer> keys = new ArrayList<Integer>(rectangles.keySet());
+		ArrayList<Integer> keys = new ArrayList<Integer>(content.keySet());
 		if (keys.size() == 0) {
 			throw new Error("system has no rectangles");
 		}
@@ -784,7 +672,7 @@ public class RectangleSystem extends Graph<RectangleArea> {
 	}
 
 	public Rectangle getRandomRectangle() {
-		return rectangles.get(getRandomRectangleNum());
+		return content.get(getRandomRectangleNum());
 	}
 
 	public Rectangle getRandomOuterRectangle() {
@@ -797,21 +685,6 @@ public class RectangleSystem extends Graph<RectangleArea> {
 		ArrayList<Integer> keys = new ArrayList<Integer>(outerRectangles
 				.keySet());
 		return keys.get(Chance.rand(0, outerRectangles.size() - 1));
-	}
-
-	public void excludeRectanglesHaving(int type, int val) {
-		Set<Integer> keys = new HashSet<Integer>(rectangles.keySet());
-		keyLoop: for (int i : keys) {
-			Rectangle r = rectangles.get(i);
-			for (int x = r.x; x < r.x + r.width; x++) {
-				for (int y = r.y; y < r.y + r.height; y++) {
-					if (location.cells[x][y].getElement(type) == val) {
-						excludeRectangle(i);
-						continue keyLoop;
-					}
-				}
-			}
-		}
 	}
 
 	public ArrayList<Integer> getOuterRectanglesNums() {
@@ -829,78 +702,8 @@ public class RectangleSystem extends Graph<RectangleArea> {
 		Set<Integer> keys = outerSides.keySet();
 		for (int k : keys) {
 			if (outerSides.get(k).size() > 0) {
-				outerRectangles.put(k, rectangles.get(k));
+				outerRectangles.put(k, content.get(k));
 			}
-		}
-	}
-
-	private static class ccwlLastCellHolder {
-		// A class that is used by connectCornersWithLines() method to store
-		// lastCell variable for custom comparator.
-		public static Coordinate center;;
-	}
-
-	public void connectCornersWithLines(int type, int value, int padding,
-			boolean considerBorderWidth) {
-		ccwlLastCellHolder.center = new Coordinate(Math.round(startX + width
-				/ 2), Math.round(startY + height / 2));
-		ArrayList<Coordinate> corners = new ArrayList<Coordinate>();
-		Comparator<Coordinate> comparator = new Comparator<Coordinate>() {
-			@Override
-			public int compare(Coordinate c1, Coordinate c2) {
-
-				return new Double(Utils.getLineAngle(ccwlLastCellHolder.center,
-						c1)).compareTo(Utils.getLineAngle(
-						ccwlLastCellHolder.center, c2));
-			}
-		};
-		for (int i : getRectanglesKeys()) {
-			ArrayList<Side> sides = outerSides.get(i);
-			Rectangle r = rectangles.get(i);
-			boolean n = sides.contains(Side.N);
-			boolean e = sides.contains(Side.E);
-			boolean s = sides.contains(Side.S);
-			boolean w = sides.contains(Side.W);
-			if (n && e) {
-				corners.add(new Coordinate(r.x + r.width - 1
-						+ (considerBorderWidth ? borderWidth : 0) + padding,
-						r.y + (considerBorderWidth ? -borderWidth : 0)
-								- padding));
-
-			}
-			if (e && s) {
-				corners.add(new Coordinate(r.x + r.width - 1
-						+ (considerBorderWidth ? borderWidth : 0) + padding,
-						r.y + r.height - 1
-								+ (considerBorderWidth ? borderWidth : 0)
-								+ padding));
-			}
-			if (s && w) {
-				corners.add(new Coordinate(r.x
-						+ (considerBorderWidth ? -borderWidth : 0) - padding,
-						r.y + r.height - 1
-								+ (considerBorderWidth ? borderWidth : 0)
-								+ padding));
-			}
-			if (w && n) {
-				corners.add(new Coordinate(r.x
-						+ (considerBorderWidth ? -borderWidth : 0) - padding,
-						r.y + (considerBorderWidth ? -borderWidth : 0)
-								- padding));
-			}
-		}
-		Collections.sort(corners, comparator);
-		Coordinate c1 = corners.get(0);
-		int size = corners.size();
-		for (int i = 1; i < size; i++) {
-			Coordinate c2 = corners.get(i);
-			location.line(c1.x, c1.y, c2.x, c2.y, type, value);
-			c1 = c2;
-			if (i == size - 1) {
-				location.line(c2.x, c2.y, corners.get(0).x, corners.get(0).y,
-						type, value);
-			}
-
 		}
 	}
 
@@ -945,7 +748,7 @@ public class RectangleSystem extends Graph<RectangleArea> {
 		newCRS.setStartCoord(terrain.getWidth(), terrain.getHeight());
 		int endX = 0, endY = 0;
 		for (RectangleArea r : set) {
-			newCRS.addRectangle(r);
+			newCRS.addVertex(r);
 			if (r.x < newCRS.startX) {
 				newCRS.startX = r.x;
 			}
@@ -970,9 +773,9 @@ public class RectangleSystem extends Graph<RectangleArea> {
 		// Remove rectangles that are partially or fully located in circle
 		// {x,y,radius}
 		Set<Rectangle> answer = new HashSet<Rectangle>();
-		Set<Integer> keys = new HashSet<Integer>(rectangles.keySet());
+		Set<Integer> keys = new HashSet<Integer>(content.keySet());
 		for (int k : keys) {
-			Rectangle r = rectangles.get(k);
+			Rectangle r = content.get(k);
 			if (isRectangleInCircle(r, x, y, radius)) {
 				excludeRectangle(k);
 				answer.add(r);
@@ -1008,19 +811,13 @@ public class RectangleSystem extends Graph<RectangleArea> {
 			throw new Error("border width " + borderWidth
 					+ " is too thin for expanding each rectangle by " + depth);
 		}
-		for (Rectangle r : rectangles.values()) {
+		for (Rectangle r : content.values()) {
 			r.x -= depth;
 			r.y -= depth;
 			r.width += depth * 2;
 			r.height += depth * 2;
 		}
 		borderWidth -= depth * 2;
-	}
-
-	public void fillContents(int type, int value) {
-		for (Rectangle r : rectangles.values()) {
-			location.square(r, type, value, false);
-		}
 	}
 
 	public static ArrayList<Coordinate> getOuterPoints(
@@ -1067,7 +864,7 @@ public class RectangleSystem extends Graph<RectangleArea> {
 
 	public ArrayList<Coordinate> getRectanglesCorners() {
 		ArrayList<Coordinate> answer = new ArrayList<Coordinate>();
-		for (Rectangle r : rectangles.values()) {
+		for (Rectangle r : content.values()) {
 			answer.add(new Coordinate(r.x, r.y));
 			answer.add(new Coordinate(r.x + r.width - 1, r.y));
 			answer.add(new Coordinate(r.x, r.y + r.height - 1));

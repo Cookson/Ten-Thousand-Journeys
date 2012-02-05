@@ -18,13 +18,12 @@ import erpoge.serverevents.EventNextTurn;
 import erpoge.serverevents.ServerEvent;
 
 public class TimeStream {
-	public static final int TO_LOCATION = 1,
-	TO_WORLD = 2;
 	public HashSet<Character> characters = new HashSet<Character>();
 	private HashSet<PlayerHandler> players = new HashSet<PlayerHandler>();
 	public HashSet<NonPlayerCharacter> nonPlayerCharacters = new HashSet<NonPlayerCharacter>();
 	private ArrayList<ServerEvent> events = new ArrayList<ServerEvent>();
 	private TurnQueue turnQueue = new TurnQueue(characters);
+	private HashSet<Chunk> chunks = new HashSet<Chunk>();
 	public void sendOutEvent(PlayerCharacter character, ServerEvent event) {
 	// Send out an event to all the players who are on global map.
 	// Used only for sending to global map, not to location.
@@ -116,5 +115,12 @@ public class TimeStream {
 			}
 		}
 		throw new Error("No character with id "+characterId);
+	}
+	public void addChunk(Chunk chunk) {
+		if (chunk.timeStream != null) {
+			throw new Error(chunk+" is already in a time stream!");
+		}
+		chunk.timeStream = this;
+		chunks.add(chunk);
 	}
 }

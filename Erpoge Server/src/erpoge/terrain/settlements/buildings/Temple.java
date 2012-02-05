@@ -26,7 +26,7 @@ public class Temple extends Building {
 		}
 		
 		// For two of four sides we should revert width of cut rectangle
-		CustomRectangleSystem crs = new CustomRectangleSystem(settlement, x, y, width, height, 1);
+		CustomRectangleSystem crs = new CustomRectangleSystem(x, y, width, height, 1);
 
 		crs.cutRectangleFromSide(0, side.opposite(), 4);
 		
@@ -40,8 +40,8 @@ public class Temple extends Building {
 		
 		/* CONTENT */
 		// Althar and cathedra
-		RectangleArea mainRec = rectangleSystem.rectangles.get(1);
-		RectangleArea backRec = rectangleSystem.rectangles.get(0);
+		RectangleArea mainRec = rectangleSystem.content.get(1);
+		RectangleArea backRec = rectangleSystem.content.get(0);
 		Coordinate c = mainRec.getMiddleOfSide(side.opposite());
 		Coordinate c2 = new Coordinate(c);
 		c2.moveToSide(side,1);
@@ -103,7 +103,7 @@ public class Temple extends Building {
 		}
 		
 		// Ceilings
-		for (Rectangle ceiling : rectangleSystem.rectangles.values()) {
+		for (Rectangle ceiling : rectangleSystem.content.values()) {
 			settlement.createCeiling(ceiling, 1);
 		}
 	}
