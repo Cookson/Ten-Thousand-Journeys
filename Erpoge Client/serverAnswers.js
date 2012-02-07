@@ -8,7 +8,7 @@ function handleNextEvent() {
 	}
 	var value = serverAnswer[serverAnswerIterator++];
 	if (serverAnswerHandlers[value.e]) {
-		console["log"](value.e, serverAnswerIterator);
+//		console["log"](value.e, serverAnswerIterator);
 		serverAnswerHandlers[value.e](value);
 	} else {
 		throw new Error("Unknown type of non-synchronized answer: "+value.e);
@@ -78,6 +78,9 @@ var serverAnswerHandlers = {
 		recountWindowSize();
 		hideLoadingScreen();
 		moveGameField(Player.x, Player.y, false);
+		// Display terrain (we can do it only now because only now we have
+		// player's vision range, coordinates and other info
+		Player.initVisibility();
 		handleNextEvent();
 	},
 	loadContents: function serverEventLoadContents(data) {
@@ -163,11 +166,8 @@ var serverAnswerHandlers = {
 	},
 	chunkContents : function serverEventChunkContents(data) {
 		var chunk = Terrain.createChunk(data.x, data.y, data);
-		console.log(chunk.x, chunk.y);
 		chunk.loadData(data);
-		chunk.show();
 		recountWindowSize();
-		moveGameField(-10,-10);
 		hideLoadingScreen();
 		handleNextEvent();
 	},

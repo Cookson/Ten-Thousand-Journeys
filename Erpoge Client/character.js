@@ -25,7 +25,7 @@
 		this.maxHp = maxHp;
 	}
 
-	this.VISION_RANGE = 8;
+	this.VISION_RANGE = 5;
 	this.visible;
 
 	this.cellWrap = document.createElement("div");
@@ -232,7 +232,7 @@ Character.prototype.canSee = function(x, y, setVisibleCells, forceCompute) {
 	// return true;
 	var absDx = this.x-this.VISION_RANGE;
 	var absDy = this.y-this.VISION_RANGE;
-	if (this.isNear(x, y) || this.x==x && this.y==y && !forceCompute) {
+	if (this.isNear(x, y) || this.x==x && this.y==y) {
 		// Если клетка рядом или персонаж на ней стоит - то её точно видно
 		if (setVisibleCells) {
 			this.visibleCells[x-absDx][y-absDy] = true;
@@ -264,7 +264,7 @@ Character.prototype.canSee = function(x, y, setVisibleCells, forceCompute) {
 		} else {
 			// Для горизонтальных линий
 			var dx = Math.abs(x-this.x)/(x-this.x);
-			for (var i = this.x+dx; i!=x; i += dx) {
+			for (var i=this.x+dx; i!=x; i += dx) {
 				if (Terrain.getCell(i,y).passability==Terrain.PASS_BLOCKED) {
 					return false;
 				}
@@ -463,8 +463,8 @@ Character.prototype.getPathTable = function(ignorecharacters) {
 	this.pathTable = blank2dArray(this.PATH_TABLE_WIDTH,this.PATH_TABLE_WIDTH);
 	// Difference between cell's absolute coordinate and its coordinate in
 	// the pathTable.
-	var dX = this.x-Math.floor(this.PATH_TABLE_WIDTH/2);
-	var dY = this.y-Math.floor(this.PATH_TABLE_WIDTH/2);
+	var dX = this.x-(this.PATH_TABLE_WIDTH-1)/2;
+	var dY = this.y-(this.PATH_TABLE_WIDTH-1)/2;
 	var isPathFound = false;
 	var oldFront = [];
 	var newFront = [];
@@ -548,8 +548,8 @@ Character.prototype.getPath = function(destX, destY) {
 	var currentNumY = destY;
 	var x = currentNumX;
 	var y = currentNumY;
-	var dX = this.x-Math.floor(this.PATH_TABLE_WIDTH/2);
-	var dY = this.y-Math.floor(this.PATH_TABLE_WIDTH/2);
+	var dX = this.x-(this.PATH_TABLE_WIDTH-1)/2;
+	var dY = this.y-(this.PATH_TABLE_WIDTH-1)/2;
 	var t = 0;
 	for (var j = this.pathTable[currentNumX-dX][currentNumY-dY]; j>0; j = this.pathTable[currentNumX-dX][currentNumY-dY]) {
 		// Счётчик: от кол-ва шагов до клетки dest до начальной клетки (шаг 1)
@@ -591,24 +591,23 @@ Character.prototype.getPath = function(destX, destY) {
 Character.prototype.distance = function(x, y) {
 	return Math.sqrt(Math.pow(this.x-x, 2)+Math.pow(this.y-y, 2));
 };
+Character.prototype.sees = function(x, y) {
+	return this.visibleCells[x-this.x+this.VISION_RANGE][y-this.y+this.VISION_RANGE];
+};
 Character.prototype.getVisibleCells = function() {
-	// Получить видимые клетки
-	if (Terrain.isPeaceful) {
-		return;
-	}
 	this.prevVisibleCells = this.visibleCells;
 	this.visibleCells = blank2dArray(this.VISION_RANGE*2+1,this.VISION_RANGE*2+1);
 	var dx = this.x-this.VISION_RANGE;
 	var dy = this.y-this.VISION_RANGE;
 	this.visibleCells[this.VISION_RANGE+1][this.VISION_RANGE+1] = true;
 
-	var minX = Math.max(this.x-this.VISION_RANGE, 0);
-	var minY = Math.max(this.y-this.VISION_RANGE, 0);
-	var maxX = Math.min(this.x+this.VISION_RANGE, Terrain.width-1);
-	var maxY = Math.min(this.y+this.VISION_RANGE, Terrain.height-1);
+	var minX = this.x-this.VISION_RANGE;
+	var minY = this.y-this.VISION_RANGE;
+	var maxX = this.x+this.VISION_RANGE;
+	var maxY = this.y+this.VISION_RANGE;
 
-	for (var i = minX; i<=maxX; i++) {
-		for ( var j = minY; j<=maxY; j++ ) {
+	for (var i=minX; i<=maxX; i++) {
+		for (var j=minY; j<=maxY; j++) {
 			this.canSee(i, j, true);
 		}
 	}
@@ -618,6 +617,15 @@ Character.prototype.showPathTable = function() {
 		var str = "";
 		for (var i=0; i<this.PATH_TABLE_WIDTH; i++) {
 			str += this.pathTable[i][j] === undefined ? "." : this.pathTable[i][j]%10;
+		}
+		console["log"](str);
+	}
+};
+Character.prototype.showVisibility = function() {
+	for (var j=0; j<this.VISION_RANGE*2+1; j++) {
+		var str = "";
+		for (var i=0; i<this.VISION_RANGE*2+1; i++) {
+			str += this.visibleCells[i][j] === undefined ? "." : this.visibleCells[i][j]%10;
 		}
 		console["log"](str);
 	}
@@ -681,56 +689,68 @@ Character.prototype.comeTo = function(x, y) {
 	}
 	return atLeastOnePath;
 };
+/**
+ * Hides and shows cells according to player's vision
+ */
 Character.prototype.updateVisibility = function() {
-	if (Terrain.isPeaceful) {
-		return;
-	}
 	this.getVisibleCells();
-	for ( var i = 0; i<Terrain.width; i++ ) {
-		for ( var j = 0; j<Terrain.height; j++ ) {
-			if (this.visibleCells[i][j]&& !this.prevVisibleCells[i][j]) {
-				if (this.seenCells[i][j]) {
-					Terrain.cells[i][j].unshade();
-				} else {
-					this.seenCells[i][j] = true;
-					Terrain.cells[i][j].show();
-				}
-			} else if (this.prevVisibleCells[i][j]&& !this.visibleCells[i][j]) {
-				Terrain.cells[i][j].shade();
+	var range = this.VISION_RANGE*2+1;
+	var sh=0,hi=0;
+	for (var i=0; i<range; i++) {
+		for (var j=0; j<range; j++) {
+			var x = this.x-this.VISION_RANGE+i;
+			var y = this.y-this.VISION_RANGE+j;
+			if (
+				this.visibleCells[i][j] 
+				&& (i+this.visibilityDX<0 || i+this.visibilityDX>=range
+				|| j+this.visibilityDY<0 || j+this.visibilityDY>=range
+//				&& (!this.prevVisibleCells[i+this.visibilityDX]
+				|| !this.prevVisibleCells[i+this.visibilityDX][j+this.visibilityDY])
+			) {
+//				if (cell.visible) {
+//					Terrain.cells[i][j].unshade();
+//				} else {
+					Terrain.getCell(x,y).show(Terrain.getChunkWithCell(x,y),x,y);
+					sh++;
+//				}
+			}
+			// The first and the second conditions are not mutually exclusive,
+			// because if visibilityDX/DY
+			if (
+				this.prevVisibleCells[i][j] 
+                && (i-this.visibilityDX<0 || i-this.visibilityDX>=range
+           		|| j-this.visibilityDY<0 || j-this.visibilityDY>=range
+				|| !this.visibleCells[i-this.visibilityDX][j-this.visibilityDY])
+			) {
+				var prevX = x-this.visibilityDX;
+				var prevY = y-this.visibilityDY;
+				Terrain.getCell(prevX,prevY)
+					.hide(Terrain.getChunkWithCell(prevX,prevY),prevX,prevY);
+				hi++;
 			}
 		}
 	}
+	console.log(sh,"shown",hi,"hidden");
 };
 Character.prototype.initVisibility = function() {
-	if (this.visibleCells.length!=Terrain.height
-			||this.visibleCells[0].length!=Terrain.width) {
+	if (
+		this.visibleCells.length!=Terrain.height
+		|| this.visibleCells[0].length!=Terrain.width
+	) {
 		// Init arrays if needed
 		this.visibleCells = blank2dArray();
 		this.prevVisibleCells = blank2dArray();
-		this.seenCells = blank2dArray();
 		this.pathTable = blank2dArray();
 	}
 	this.getVisibleCells();
-	for ( var i = 0; i<Terrain.width; i++ ) {
-		for ( var j = 0; j<Terrain.height; j++ ) {
+	for (var i=0; i<this.VISION_RANGE*2+1; i++) {
+		for (var j=0; j<this.VISION_RANGE*2+1; j++) {
 			if (this.visibleCells[i][j]) {
-				Terrain.cells[i][j].show();
-				this.seenCells[i][j] = true;
+				var x = this.x-this.VISION_RANGE+i;
+				var y = this.y-this.VISION_RANGE+j;
+				Terrain.getCell(x,y).show(Terrain.getChunkWithCell(x,y),x,y);
 			}
 		}
-	}
-	if (Terrain.isPeaceful) {
-		for ( var i = 0; i<Terrain.width; i++ ) {
-			for ( var j = 0; j<Terrain.height; j++ ) {
-				if ( !Terrain.cells[i][j].visible) {
-					Player.seenCells[i][j] = true;
-					Player.visibleCells[i][j] = true;
-					Terrain.cells[i][j].show();
-				}
-			}
-		}
-	} else {
-
 	}
 };
 Character.prototype.findEnemy = function(r) {
@@ -747,7 +767,7 @@ Character.prototype.findEnemy = function(r) {
 };
 Character.prototype.findCharacterByCoords = function(x, y) {
 	for ( var i in characters) {
-		if (characters[i].x==x&&characters[i].y==y) {
+		if (characters[i].x==x && characters[i].y==y) {
 			return characters[i];
 		}
 	}
@@ -862,9 +882,11 @@ Character.prototype.showMove = function(nextCellX, nextCellY) {
 		this.destX = nextCellX;
 		this.destY = nextCellY;
 	}
+	this.visibilityDX = nextCellX-this.x;
+	this.visibilityDY = nextCellY-this.y;
 	var top = 0;
 	var left = 0;
-	Terrain.getCell(this.x,this.y).character = undefined;
+	Terrain.getCell(this.x,this.y).character = null;
 	Terrain.getCell(this.x,this.y).passability = Terrain.PASS_FREE;
 
 	var viewIndent = Terrain.getViewIndentation(nextCellX, nextCellY, 1);
@@ -1051,6 +1073,11 @@ function ClientPlayer() {
 	this.previousVisibleCells = [[]];
 	/** @public @type Array[] */
 	this.seenCells = [[]];
+
+	
+	/** @public @type number */
+	this.visibilityDX = 0;
+	this.visibilityDY = 0;
 	/** @public @type string[] */
 	this.actionQueue = [];
 	/** @public @type Array[] */

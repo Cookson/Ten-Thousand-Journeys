@@ -16,7 +16,11 @@
 	}
 }
 Cell.prototype.show = function(chunk, x, y) {
-	this.floor.show(chunk, x, y);
+	var floor = this.floor;
+	setTimeout(function() {
+		floor.show(chunk, x, y);
+	},random(1,10));
+	
 	if (this.object !== null) {
 		this.object.show(x, y);
 	}
@@ -181,6 +185,7 @@ function GameObject(x, y, type) {
 	this.image.style.top = viewIndent.top*32+(-parseInt(objectProperties[type][1])+32)+"px";
 	this.image.style.left = viewIndent.left*32+(-parseInt(objectProperties[type][0])+32)/2+"px";
 	this.image.style.zIndex = (100000+y)*2;
+	this.image.style.display = "none";
 }
 GameObject.prototype.show = function() {
 	this.image.style.display = "inline-block";
@@ -465,7 +470,7 @@ Floor.prototype.show = function(chunk, x, y, noForceNeighbourReshow) {
 };
 Floor.prototype.hide = function(chunk,x,y) {
 	var ctx = chunk.canvas.getContext("2d");
-	ctx.clearRect(x*32, y*32, 32, 32);
+	ctx.clearRect((x-chunk.x)*32, (y-chunk.y)*32, 32, 32);
 	// if (this.image!=null) {
 	// this.image.parentNode.removeChild(this.image);
 	// this.image=null;
@@ -677,7 +682,9 @@ Chunk.prototype.getAbsoluteCell = function(x, y) {
 Chunk.prototype.show = function() {
 	for (var y=0; y<Terrain.CHUNK_WIDTH; y++) {
 		for (var x=0; x<Terrain.CHUNK_WIDTH; x++) {
-			this.cells[x][y].show(this, this.x+x, this.y+y);
+			if (Player.sees(this.x+x, this.y+y)) {
+				this.cells[x][y].show(this, this.x+x, this.y+y);
+			}
 		}
 	}
 	// Redraw walls on border of neighbor chunks
