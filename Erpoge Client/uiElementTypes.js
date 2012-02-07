@@ -575,7 +575,7 @@ UIElementTypes.iconsInventory = {
 				if (!Player.equipment.hasItemInSlot(slot)) {
 					Player.sendPutOn(param);
 				} else {
-					Player.sendTakeOff(Player.equipment.getItemInSlot(slot));
+					performAction("takeOff",[Player.equipment.getItemInSlot(slot)]);
 				}
 			} else if (UI.mode == UI.MODE_CONTAINER) {
 			// Положить в контейнер
@@ -936,7 +936,7 @@ UIElementTypes.iconsEquipment = {
 			var itemId = this.getData("itemId");
 			if (itemId != -1) {
 			// If a piece of armor is put on, take if off.
-				Player.sendTakeOff(Player.equipment.getItemById(itemId));
+				performAction("takeOff",[Player.equipment.getItemById(itemId)]);
 			}
 		},
 		contextmenu: function _(e) {
@@ -1009,7 +1009,7 @@ UIElementTypes.iconsLoot = {
 	listeners: {
 		lootChange: function _() {
 	 		var count = 0;
-	 		var items = Terrain.cells[Player.x][Player.y].items.getValues();
+	 		var items = Terrain.getCell(Player.x,Player.y).items.getValues();
 	 		var displayedItemViews = this.getData("displayedItemViews");
 	 		displayedItemViews.empty();
 	 		while (this.rootElement.children.length > 0) {

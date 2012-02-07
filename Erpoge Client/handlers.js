@@ -348,13 +348,13 @@ handlers={
 			type: "iconsLoot",
 			panel: "main"
 		});
-		UI.addElement({
-			type: "minimap",
-			hAlign: "left",
-			vAlign: "top",
-			displayMode: "in location",
-			panel: null
-		});
+//		UI.addElement({
+//			type: "minimap",
+//			hAlign: "left",
+//			vAlign: "top",
+//			displayMode: "in location",
+//			panel: null
+//		});
 		UI.addElement({
 			type: "actionsPanel",
 			hAlign: "center",

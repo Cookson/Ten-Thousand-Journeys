@@ -235,8 +235,21 @@ onLoadEvents["defaultUIActions"] = function() {
 			throw new Error("Going to the same cell he is staying at");
 		}
 		this.getPathTable();
-		Terrain.cells[this.x][this.y].passability = Terrain.PASS_FREE;
+//		Player.showPathTable();
+		Terrain.getCell(this.x,this.y).passability = Terrain.PASS_FREE;
 		var path = this.getPath(this.destX, this.destY);
+//		if (this.bufpath === undefined) {
+//			this.bufpath = [];
+//		}
+//		for (var i=0; i<this.bufpath.length; i++) {
+//			Terrain.unshadeCell(this.bufpath[i].x,this.bufpath[i].y);
+//		}
+//		for (var i=0; i<path.length; i++) {
+//			this.bufpath.push(path[i]);
+//			Terrain.shadeCell(path[i].x,path[i].y);
+//		}
+//		return;
+		
 		if (path.length == 0) {
 			this.destX = this.x;
 			this.destY = this.y;
@@ -245,13 +258,13 @@ onLoadEvents["defaultUIActions"] = function() {
 		var nextCellX = path[0].x;
 		var nextCellY = path[0].y;
 		if (
-			Terrain.cells[nextCellX][nextCellY].passability==Terrain.PASS_BLOCKED
-			&& Terrain.cells[nextCellX][nextCellY].object
-			&& isDoor(Terrain.cells[nextCellX][nextCellY].object.type)
+			Terrain.getCell(nextCellX,nextCellY).passability==Terrain.PASS_BLOCKED
+			&& Terrain.getCell(nextCellX,nextCellY).object
+			&& isDoor(Terrain.getCell(nextCellX,nextCellY).object.type)
 		) {
 		// Open door
 			Player.addActionToQueue("move");
-			this.sendUseObject(nextCellX, nextCellY);
+			performAction("useObject", [nextCellX, nextCellY]);
 		}
 		Net.send({
 			a : Net.MOVE,

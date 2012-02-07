@@ -36,126 +36,209 @@ var Global = {
 	playerPassword: null	
 };
 /** @class */
-var Terrain = {
+function Terrain(){
 // Passability constants
-	PASS_FREE    : -1,
-	PASS_BLOCKED :  1,
-	PASS_SEE     :  3,
-	CHUNK_WIDTH  : 20,
-	
-	ceilings: [],
-	cameraOrientation : Side.N,
-	cssSideX : "left",
-	cssSideY : "top",
+	/** @public @type number */
+	this.PASS_FREE    = -1;
+	/** @public @type number */
+	this.PASS_BLOCKED =  1;
+	/** @public @type number */
+	this.PASS_SEE     =  3;
+	/** @public @type number */
+	this.CHUNK_WIDTH  = 20;
+	/** @private @type Ceiling[] */
+	this.ceilings = [];
+	/** @public @type number */
+	this.cameraOrientation = Side.N;
+	this.cssSideX = "left";
+	this.cssSideY = "top";
 	/** @private @type HashMap */
-	chunks: new HashMap(),
-	
-	getViewIndentation: function _(x, y, scale) {
-		if (this.cameraOrientation == Side.N) {
-			return {left: x*scale, top: y*scale};
-		} else if (this.cameraOrientation == Side.E) {
-			return {left: (Terrain.height-y-1)*scale, top: x*scale};
-		} else if (this.cameraOrientation == Side.S) {
-			return {left: (Terrain.width-x-1)*scale, top: (Terrain.height-y-1)*scale};
-		} else if (this.cameraOrientation == Side.W) {
-			return {left: y*scale, top: (width-x-1)*scale};
-		} else {
-			throw new Error("Unknown camera orientation: "+this.cameraOrientation);
-		}
-	},
-	getNormalView: function (x, y) {
-		if (this.cameraOrientation == Side.N) {
-			return {x: x, y: y};
-		} else if (this.cameraOrientation == Side.E) {
-			return {x: y, y: (Terrain.height-x-1)};
-		} else if (this.cameraOrientation == Side.S) {
-			return {x: (Terrain.width-x-1), y: (Terrain.height-y-1)};
-		} else if (this.cameraOrientation == Side.W) {
-			return {x: (Terrain.width-y-1), y: x};
-		} else {
-			throw new Error("Unknown camera orientation: "+this.cameraOrientation);
-		}
-	},
-	isOrientationVertical: function _() {
-		return this.cameraOrientation == Side.N || this.cameraOrientation == Side.S;
-	},
-	getHorizontalDimension: function _() {
-		if (this.cameraOrientation == Side.N || this.cameraOrientation == Side.S) {
-			return Terrain.width;
-		} else {
-			return Terrain.height;
-		}
-	},
-	getVerticalDimension: function _() {
-		if (this.cameraOrientation == Side.N || this.cameraOrientation == Side.S) {
-			return Terrain.height;
-		} else {
-			return Terrain.width;
-		}
-	},
-	getCell: function _(x, y) {
-		if (!this.getChunk(x,y)) {
-			return null;
-		}
-		return this.getChunk(x,y).getAbsoluteCell(x,y);
-	},
-	/**
-	 * 
-	 * @param x
-	 * @param y
-	 * @returns {Chunk} A chunk containing cell x:y.
-	 */
-	getChunk: function _(x, y) {
-		x = Math.floor(x/this.CHUNK_WIDTH)*this.CHUNK_WIDTH;
-		y = Math.floor(y/this.CHUNK_WIDTH)*this.CHUNK_WIDTH;
-		if (this.chunks.containsKey(x)) {
-			if (this.chunks.get(x).containsKey(y)) {
-				return this.chunks.get(x).get(y);
-			}
-			return null;
-			throw new Error("No chunk "+x+" "+y);
-		}
-		return null;
-		throw new Error("No chunk column "+x);
-	},
-	createChunk: function(x, y, data) {
-		var column;
-		if (!this.chunks.containsKey(x)) {
-			column = this.chunks.put(x, new HashMap());
-		} else {
-			column = this.chunks.get(x);
-		}
-		return column.put(y, new Chunk(x, y, data));
-	},
-	setPassability: function(x, y, value) {
-		this.getChunk(x, y).getAbsoluteCell(x,y).passability = value;
-	},
-	createObject: function(x, y, type) {
-		var cell = this.getCell(x, y);
-		if (isWall(type)) {
-		// Wall
-			cell.object = cell.wall = new Wall(x, y, type);
-		} else if (isDoor(type)) {
-		// Door
-			cell.object = new Door(x, y, type);
-		} else {
-		// Common object
-			cell.object = new GameObject(x, y, type);
-		}
-		Terrain.setPassability(x, y, objectProperties[type][2]);
-		
-	},
-	displayObject: function(x, y) {
-		this.getCell(x, y).object.display(x, y);
-	},
-	removeObject: function(x, y) {
-		var cell = this.getCell(x, y);
-		cell.object.remove();
-		cell.object = null;
-		this.setPassability(x, y, this.PASS_FREE);
+	this.chunks = new HashMap();
+}
+Terrain.prototype.getViewIndentation = function (x, y, scale) {
+	if (this.cameraOrientation == Side.N) {
+		return {left: x*scale, top: y*scale};
+	} else if (this.cameraOrientation == Side.E) {
+		return {left: (Terrain.height-y-1)*scale, top: x*scale};
+	} else if (this.cameraOrientation == Side.S) {
+		return {left: (Terrain.width-x-1)*scale, top: (Terrain.height-y-1)*scale};
+	} else if (this.cameraOrientation == Side.W) {
+		return {left: y*scale, top: (width-x-1)*scale};
+	} else {
+		throw new Error("Unknown camera orientation: "+this.cameraOrientation);
 	}
 };
+Terrain.prototype.getNormalView = function (x, y) {
+	if (this.cameraOrientation == Side.N) {
+		return {x: x, y: y};
+	} else if (this.cameraOrientation == Side.E) {
+		return {x: y, y: (Terrain.height-x-1)};
+	} else if (this.cameraOrientation == Side.S) {
+		return {x: (Terrain.width-x-1), y: (Terrain.height-y-1)};
+	} else if (this.cameraOrientation == Side.W) {
+		return {x: (Terrain.width-y-1), y: x};
+	} else {
+		throw new Error("Unknown camera orientation: "+this.cameraOrientation);
+	}
+};
+Terrain.prototype.isOrientationVertical = function () {
+	return this.cameraOrientation == Side.N || this.cameraOrientation == Side.S;
+};
+Terrain.prototype.getHorizontalDimension = function _() {
+	if (this.cameraOrientation == Side.N || this.cameraOrientation == Side.S) {
+		return Terrain.width;
+	} else {
+		return Terrain.height;
+	}
+};
+Terrain.prototype.getVerticalDimension = function _() {
+	if (this.cameraOrientation == Side.N || this.cameraOrientation == Side.S) {
+		return Terrain.height;
+	} else {
+		return Terrain.width;
+	}
+};
+Terrain.prototype.getCell = function _(x, y) {
+	if (!this.getChunkWithCell(x,y)) {
+		return null;
+	}
+	return this.getChunkWithCell(x,y).getAbsoluteCell(x,y);
+};
+Terrain.prototype.getChunkRoundedCoord = function(coord) {
+	return (coord < 0) ? coord-((coord%this.CHUNK_WIDTH==0) ? 0 : this.CHUNK_WIDTH)-coord%this.CHUNK_WIDTH : coord-coord%this.CHUNK_WIDTH;
+};
+/**
+ * 
+ * @param x
+ * @param y
+ * @returns {Chunk} A chunk containing cell x:y.
+ */
+Terrain.prototype.getChunkWithCell = function (x, y) {
+	return this.getChunkByCoord(
+		this.getChunkRoundedCoord(x), 
+		this.getChunkRoundedCoord(y)
+	);
+};
+/**
+ * 
+ * @param x
+ * @param y
+ * @returns {Chunk} A chunk containing cell x:y.
+ */
+Terrain.prototype.getChunkByCoord = function _(x, y) {
+	if (this.chunks.containsKey(x)) {
+		if (this.chunks.get(x).containsKey(y)) {
+			return this.chunks.get(x).get(y);
+		}
+		return null;
+//			throw new Error("No chunk "+x+" "+y);
+	}
+	return null;
+//		throw new Error("No chunk column "+x);
+};
+/**
+ * Creates a new chunk of terrain where you can put loaded objects. Do not use 
+ * new Chunk() directly to create chunks — those are only containers!
+ * 
+ * @see Terrain#PASS_FREE
+ * @param {number} x
+ * @param {number} y
+ * @param {number} type Type of object
+ */
+Terrain.prototype.createChunk = function(x, y, data) {
+	var column;
+	if (!this.chunks.containsKey(x)) {
+		column = this.chunks.put(x, new HashMap());
+	} else {
+		column = this.chunks.get(x);
+	}
+	return column.put(y, new Chunk(x, y, data));
+};
+/**
+ * Sets passability value for a cell. 
+ * 
+ * @see Terrain#PASS_FREE
+ * @param {number} x
+ * @param {number} y
+ * @param {number} type Type of object
+ */
+Terrain.prototype.setPassability = function(x, y, value) {
+	this.getChunkWithCell(x, y).getAbsoluteCell(x,y).passability = value;
+};
+/**
+ * Creates an object . Do not use new GameObject() directly to create objects —
+ * those are only containers!
+ * 
+ * @param {number} x
+ * @param {number} y
+ * @param {number} type Type of object
+ */
+Terrain.prototype.createObject = function(x, y, type) {
+	var cell = this.getCell(x, y);
+	if (isWall(type)) {
+	// Wall
+		cell.object = cell.wall = new Wall(x, y, type);
+	} else if (isDoor(type)) {
+	// Door
+		cell.object = new Door(x, y, type);
+	} else {
+	// Common object
+		cell.object = new GameObject(x, y, type);
+	}
+	Terrain.setPassability(x, y, objectProperties[type][2]);
+};
+Terrain.prototype.displayObject = function(x, y) {
+	this.getCell(x, y).object.display(x, y);
+};
+Terrain.prototype.removeObject = function(x, y) {
+	var cell = this.getCell(x, y);
+	cell.object.remove();
+	cell.object = null;
+	this.setPassability(x, y, this.PASS_FREE);
+};
+Terrain.prototype.shadeCell = function(x,y) {
+	var chunk = this.getChunkWithCell(x, y);
+	chunk.getAbsoluteCell(x,y).shade(chunk,x,y);
+};
+Terrain.prototype.unshadeCell = function(x,y) {
+	var chunk = this.getChunkWithCell(x, y);
+	chunk.getAbsoluteCell(x,y).unshade(chunk,x,y);
+};
+/**
+ * Checks whether chunk in certain cell already exists or not.
+ * 
+ * @param x
+ * @param y
+ * @returns {boolean}
+ */
+Terrain.prototype.chunkExists = function(x, y) {
+	return this.chunks.containsKey(x) && this.chunks.get(x).containsKey(y);
+};
+/**
+ * Remove chunk and undisplay its contents
+ * @param x
+ * @param y
+ */
+Terrain.prototype.removeChunk = function(x,y) {
+	if (!this.chunkExists(x, y)) {
+		throw new Error("Trying to remove chunk "+x+":"+y+" that does not exist");
+	}
+	var chunk = this.getChunkByCoord(x, y);
+	for (var i=0; i<this.CHUNK_WIDTH; i++) {
+	// Remove objects
+		for (var j=0; j<this.CHUNK_WIDTH; j++) {
+			if (chunk.cells[i][j].object !== null) {
+				chunk.cells[i][j].object.remove(chunk.x+i, chunk.y+j);
+			}
+		}
+	}
+	// Remove canvas
+	chunk.canvas.parentNode.removeChild(chunk.canvas);
+	this.chunks.get(x).remove(y);
+};
 
+
+var Terrain = new Terrain();
 // Переменные соединения
 var servers=[[]]; // Список всех серверов с логинами и паролями к персонажу на них, берётся из localStorage
 var session="";

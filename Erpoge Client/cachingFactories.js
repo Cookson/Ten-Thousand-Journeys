@@ -460,10 +460,11 @@ HashMap.prototype.forEach = function forEach(func, context) {
 	}
 };
 HashMap.prototype.remove = function remove(key) {
-	if (!(key.hashCode() in this._contents)) {
+	key = ((typeof key !== "object") ? key : key.hashCode());
+	if (!(key in this._contents)) {
 		throw new Error("HashMap doesn't have key "+key.__proto__.constructor.name+" "+key.hashCode());
 	}
-	delete this._contents[key.hashCode()];
+	delete this._contents[key];
 };
 /**
  * Removes value under a key with certain hashCode.

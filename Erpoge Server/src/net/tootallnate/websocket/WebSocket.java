@@ -17,8 +17,8 @@ import net.tootallnate.websocket.exeptions.InvalidHandshakeException;
 
 import java.util.concurrent.BlockingQueue;
 
-import erpoge.PlayerHandler;
-import erpoge.characters.PlayerCharacter;
+import erpoge.core.characters.PlayerCharacter;
+import erpoge.core.net.PlayerHandler;
 
 /**
  * Represents one end (client or server) of a single WebSocket connection.

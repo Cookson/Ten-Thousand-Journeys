@@ -7,6 +7,7 @@
 	this.ceiling = null;
 	this.items = new ItemSet();
 	this.floor = null;
+	this.soundSource = null;
 	this.character = null;
 	this.visible = false;
 	this.passability = Terrain.PASS_FREE;
@@ -19,7 +20,7 @@ Cell.prototype.show = function(chunk, x, y) {
 	if (this.object !== null) {
 		this.object.show(x, y);
 	}
-	if (this.character) {
+	if (this.character !== null) {
 		this.character.showModel();
 	}
 	if (this.ceiling !== null) {
@@ -65,12 +66,6 @@ Cell.prototype.unshade = function(chunk, x, y) {
 	this.floor.unshade(chunk, x, y);
 	if (this.object !== null) {
 		this.object.unshade();
-	}
-	if (this.forest !== null) {
-		this.forest.unshade();
-	}
-	if (this.path !== null) {
-		this.path.unshade();
 	}
 	if (this.character !== null) {
 		this.character.showModel();
@@ -193,10 +188,10 @@ GameObject.prototype.show = function() {
 GameObject.prototype.hide = function() {
 	this.image.style.display = "none";
 };
-GameObject.prototype.remove = function() {
+GameObject.prototype.remove = function(x,y) {
 	this.image.parentNode.removeChild(this.image);
-	Terrain.cells[this.x][this.y].object = null;
-	Terrain.cells[this.x][this.y].passability = Terrain.PASS_FREE;
+	Terrain.getCell(x,y).object = null;
+	Terrain.getCell(x,y).passability = Terrain.PASS_FREE;
 };
 GameObject.prototype.shade = function() {
 	this.image.style.opacity = "0.5";
@@ -254,7 +249,6 @@ Wall.prototype.newDoorSide = function(x,y,side) {
 	img.style.left = viewIndent.left+(-parseInt(objectProperties[this.type][0])+32)/2+"px";
 	img.style.zIndex = (100000+y)*2+1;
 	this._doorSides[initialSide] = img;
-	console.log("new door side ", img, this.image);
 };
 Wall.prototype.hide = function() {
 	this.image.style.display = "none";
@@ -689,7 +683,7 @@ Chunk.prototype.show = function() {
 	// Redraw walls on border of neighbor chunks
 	var chunk;
 	// From top
-	if (chunk = Terrain.getChunk(this.x,this.y-Terrain.CHUNK_WIDTH)) {
+	if (chunk = Terrain.getChunkByCoord(this.x,this.y-Terrain.CHUNK_WIDTH)) {
 		for (var x=0; x<Terrain.CHUNK_WIDTH; x++) {
 			if (chunk.cells[x][Terrain.CHUNK_WIDTH-1].wall !== null) { 
 				chunk.cells[x][Terrain.CHUNK_WIDTH-1].wall
@@ -698,7 +692,7 @@ Chunk.prototype.show = function() {
 		}
 	}
 	// From right
-	if (chunk = Terrain.getChunk(this.x+Terrain.CHUNK_WIDTH,this.y)) {
+	if (chunk = Terrain.getChunkByCoord(this.x+Terrain.CHUNK_WIDTH,this.y)) {
 		var col = chunk.cells[0];
 		for (var y=0; y<Terrain.CHUNK_WIDTH; y++) {
 			if (col[y].wall !== null) {
@@ -707,7 +701,7 @@ Chunk.prototype.show = function() {
 		}
 	}
 	// From bottom
-	if (chunk = Terrain.getChunk(this.x,this.y+Terrain.CHUNK_WIDTH)) {
+	if (chunk = Terrain.getChunkByCoord(this.x,this.y+Terrain.CHUNK_WIDTH)) {
 		for (var x=0; x<Terrain.CHUNK_WIDTH; x++) {
 			if (chunk.cells[x][0].wall !== null) {
 				chunk.cells[x][0].wall.updateView(this.x+x, this.y+Terrain.CHUNK_WIDTH);
@@ -715,7 +709,7 @@ Chunk.prototype.show = function() {
 		}
 	}
 	// From left
-	if (chunk = Terrain.getChunk(this.x-Terrain.CHUNK_WIDTH,this.y)) {
+	if (chunk = Terrain.getChunkByCoord(this.x-Terrain.CHUNK_WIDTH,this.y)) {
 		var col = chunk.cells[Terrain.CHUNK_WIDTH-1];
 		for (var y=0; y<Terrain.CHUNK_WIDTH; y++) {
 			if (col[y].wall !== null) {
@@ -757,22 +751,22 @@ function anyItemsInCell(x, y) {
 function getObject(x, y) {
 	// Возвращает объект стены или объект GameObject, если один из них есть в
 	// клетке x:y, иначе - false
-	var cell = Terrain.getCell(x,y);
-	return cell && (cell.wall||cell.object);
+	var cell = Terrain.getCell(x, y);
+	return cell && (cell.wall || cell.object);
 }
 // Функции типов объектов
 function isDoor(type) {
 	return (type>=40&&type<50);
 }
 function isOpenDoor(type) {
-	return isDoor(type)&&(type%2==1);
+	return isDoor(type) && (type%2==1);
 }
 function isWall(type) {
-	return type<40&&type>0;
+	return type<40 && type>0;
 }
 function isContainer(type) {
-	return type>=60&&type<70;
+	return type>=60 && type<70;
 }
 function wallConnectsOnlyWithItself(wallId) {
-	return wallId==6;
+	return wallId == 6;
 }

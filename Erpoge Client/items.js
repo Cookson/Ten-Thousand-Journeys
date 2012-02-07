@@ -263,11 +263,13 @@ Equipment.prototype = new HashMap();
  * @param {Array} data
  */
 Equipment.prototype.getFromData = function(data) {
-	for (var slot in data) {
-		if (slot == 9 && this.hasItemInSlot(9)) {
-			slot = 10;
+// data: [typeId, itemId, typeId, itemId...] in slot order
+// Missing items are 0,0
+	for (var i=0, slot=0; i<data.length; i+=2, slot++) {
+		if (data[i] === 0) {
+			continue;
 		}
-		this.putOnToSlot(slot, new UniqueItem(data[slot][0], data[slot][1]));
+		this.putOnToSlot(slot, new UniqueItem(data[i], data[i+1]));
 	}
 };
 /**

@@ -6,7 +6,6 @@
 	this.x = x;
 	this.y = y;
 	this.isClientPlayer = false;
-	console.log(arguments);
 	Terrain.getCell(x,y).character = this;
 	Terrain.getCell(x,y).passability = Terrain.PASS_SEE;
 	this.characterId = id;
@@ -17,8 +16,7 @@
 		this.name = characterTypes[type][0];
 	}
 
-	this.fraction = (fraction==undefined) ? (this.characterId==0) ? 1 : 0
-			: fraction;
+	this.fraction = (fraction==undefined) ? (this.characterId==0) ? 1 : 0 : fraction;
 
 	this.aimcharacter = -1;
 	this.cls = null;
@@ -38,7 +36,7 @@
 	this.cellWrap.style.top = viewIndent.top+"px";
 	this.cellWrap.style.left = viewIndent.left+"px";
 	this.cellWrap.style.opacity = "0";
-	this.cellWrap.style.zIndex = this.y*2+2;
+	this.cellWrap.style.zIndex = (100000+this.y)*2+1;
 
 	this.equipment = new Equipment();
 	this.effects = {};
@@ -49,6 +47,8 @@
 	this.spellX = -1;
 	this.spellY = -1;
 }
+/* Constants */
+Character.prototype.PATH_TABLE_WIDTH = 41;
 /* View */
 Character.prototype.display = function() {
 	// Initiates character view
@@ -90,7 +90,7 @@ Character.prototype.placeSprite = function(x, y) {
 	var viewIndent = Terrain.getViewIndentation(x, y, 1);
 	this.cellWrap.style.left = viewIndent.left*32+"px";
 	this.cellWrap.style.top = viewIndent.top*32+"px";
-	this.cellWrap.style.zIndex = viewIndent.top*2+1;
+	this.cellWrap.style.zIndex = (100000+viewIndent.top)*2+1;
 };
 Character.prototype.showModel = function() {
 	this.cellWrap.style.opacity = "1";
@@ -103,7 +103,7 @@ Character.prototype.hideModel = function() {
 	this.cellWrap.style.opacity = "0";
 	this.visible = false;
 	this.hideHpBar();
-	for ( var i in this.effects) {
+	for (var i in this.effects) {
 		this.effects[i].pause();
 		this.effects[i].clear();
 	}
@@ -187,8 +187,8 @@ Character.prototype.showSpeech = function(message) {
 	text.className = "speechBubbleText";
 	text.innerText = message;
 
-	wrap.style.zIndex = 9000;
-	wrap2.style.zIndex = 9000;
+	wrap.style.zIndex = 2147483647;
+	wrap2.style.zIndex = 2147483647;
 	text.style.zIndex = 1;
 
 	wrap2.appendChild(text);
@@ -206,7 +206,7 @@ Character.prototype.showSpeech = function(message) {
 	wrap.setAttribute("isMouseOver", "0");
 	wrap.setAttribute("time", new Date().getTime());
 	setTimeout(function() {
-		if (wrap.getAttribute("isMouseOver")=="0") {
+		if (wrap.getAttribute("isMouseOver") == "0") {
 			gameField.removeChild(wrap);
 			return false;
 		}
@@ -230,11 +230,12 @@ Character.prototype.canSee = function(x, y, setVisibleCells, forceCompute) {
 	 * peaceful location.
 	 */
 	// return true;
-	if (this.isNear(x, y)||this.x==x&&this.y==y||Terrain.isPeaceful
-			&& !forceCompute) {
+	var absDx = this.x-this.VISION_RANGE;
+	var absDy = this.y-this.VISION_RANGE;
+	if (this.isNear(x, y) || this.x==x && this.y==y && !forceCompute) {
 		// Если клетка рядом или персонаж на ней стоит - то её точно видно
 		if (setVisibleCells) {
-			this.visibleCells[x][y] = true;
+			this.visibleCells[x-absDx][y-absDy] = true;
 		}
 		return true;
 	}
@@ -245,32 +246,32 @@ Character.prototype.canSee = function(x, y, setVisibleCells, forceCompute) {
 	// и целевой клетки,
 	// поскольку в значительной части случаев расчёт можно упростить. Алгоритм
 	// для общего случая рассматривается последним.
-	if (x==this.x||y==this.y) {
+	if (x==this.x || y==this.y) {
 		// Для случая, когда тангенс прямой (угловой коэффициент) равен
 		// бесконечности или 0
 		// (т.е. когда в цикле в else может быть деление на ноль т.к. абсцисы
 		// или ординаты конца и начала равны)
 		// В этом случае придётся сделать только одну проверку по линии (не
 		// таким методом, как в else для прямых с tg!=0 и tg!=1)
-		if (x==this.x) {
+		if (x == this.x) {
 			// Для вертикальных линий
 			var dy = Math.abs(y-this.y)/(y-this.y);
-			for ( var i = this.y+dy; i!=y; i += dy) {
-				if (Terrain.cells[x][i].passability==Terrain.PASS_BLOCKED) {
+			for (var i=this.y+dy; i!=y; i+=dy) {
+				if (Terrain.getCell(x,i).passability == Terrain.PASS_BLOCKED) {
 					return false;
 				}
 			}
 		} else {
 			// Для горизонтальных линий
 			var dx = Math.abs(x-this.x)/(x-this.x);
-			for ( var i = this.x+dx; i!=x; i += dx) {
-				if (Terrain.cells[i][y].passability==Terrain.PASS_BLOCKED) {
+			for (var i = this.x+dx; i!=x; i += dx) {
+				if (Terrain.getCell(i,y).passability==Terrain.PASS_BLOCKED) {
 					return false;
 				}
 			}
 		}
 		if (setVisibleCells) {
-			this.visibleCells[x][y] = true;
+			this.visibleCells[x-absDx][y-absDy] = true;
 		}
 		return true;
 	} else if (Math.abs(x-this.x)==1) {
@@ -278,78 +279,77 @@ Character.prototype.canSee = function(x, y, setVisibleCells, forceCompute) {
 		// соседних вертикальных линиях
 		var yMin = Math.min(y, this.y);
 		var yMax = Math.max(y, this.y);
-		for ( var i = yMin+1; i<yMax; i++ ) {
-			if (Terrain.cells[x][i].passability==Terrain.PASS_BLOCKED) {
+		for (var i=yMin+1; i<yMax; i++) {
+			if (Terrain.getCell(x,i).passability == Terrain.PASS_BLOCKED) {
 				break;
 			}
-			if (i==yMax-1) {
+			if (i == yMax-1) {
 				if (setVisibleCells) {
-					this.visibleCells[x][y] = true;
+					this.visibleCells[x-absDx][y-absDy] = true;
 				}
 				return true;
 			}
 		}
-		for ( var i = yMin+1; i<yMax; i++ ) {
-			if (Terrain.cells[this.x][i].passability==Terrain.PASS_BLOCKED) {
+		for (var i=yMin+1; i<yMax; i++) {
+			if (Terrain.getCell(this.x,i).passability == Terrain.PASS_BLOCKED) {
 				break;
 			}
-			if (i==yMax-1) {
+			if (i == yMax-1) {
 				if (setVisibleCells) {
-					this.visibleCells[x][y] = true;
+					this.visibleCells[x-absDx][y-absDy] = true;
 				}
 				return true;
 			}
 		}
 		return false;
-	} else if (Math.abs(y-this.y)==1) {
+	} else if (Math.abs(y-this.y) == 1) {
 		// Тот же случай, что и предыдущий, но для горизонтальных линий
 		var xMin = Math.min(x, this.x);
 		var xMax = Math.max(x, this.x);
 		for ( var i = xMin+1; i<xMax; i++ ) {
-			if (Terrain.cells[i][y].passability==Terrain.PASS_BLOCKED) {
+			if (Terrain.getCell(i,y).passability == Terrain.PASS_BLOCKED) {
 				break;
 			}
 			if (i==xMax-1) {
 				if (setVisibleCells) {
-					this.visibleCells[x][y] = true;
+					this.visibleCells[x-absDx][y-absDy] = true;
 				}
 				return true;
 			}
 		}
-		for ( var i = xMin+1; i<xMax; i++ ) {
-			if (Terrain.cells[i][this.y].passability==Terrain.PASS_BLOCKED) {
+		for (var i=xMin+1; i<xMax; i++) {
+			if (Terrain.getCell(i,this.y).passability == Terrain.PASS_BLOCKED) {
 				break;
 			}
-			if (i==xMax-1) {
+			if (i == xMax-1) {
 				if (setVisibleCells) {
-					this.visibleCells[x][y] = true;
+					this.visibleCells[x-absDx][y-absDy] = true;
 				}
 				return true;
 			}
 		}
 		return false;
-	} else if (Math.abs(x-this.x)==Math.abs(y-this.y)) {
+	} else if (Math.abs(x-this.x) == Math.abs(y-this.y)) {
 		// Случай, когда линия образует с осями угол 45 градусов (abs(tg)==1)
 		var dMax = Math.abs(x-this.x);
-		var dx = x>this.x ? 1 : -1;
-		var dy = y>this.y ? 1 : -1;
+		var dx = (x>this.x) ? 1 : -1;
+		var dy = (y>this.y) ? 1 : -1;
 		var cx = this.x;
 		var cy = this.y;
-		for ( var i = 1; i<dMax; i++ ) {
+		for (var i=1; i<dMax; i++) {
 			cx += dx;
 			cy += dy;
-			if (Terrain.cells[cx][cy].passability==Terrain.PASS_BLOCKED) {
+			if (Terrain.getCell(cx,cy).passability == Terrain.PASS_BLOCKED) {
 				return false;
 			}
-
 		}
 		if (setVisibleCells) {
-			this.visibleCells[x][y] = true;
+			this.visibleCells[x-absDx][y-absDy] = true;
 		}
 		return true;
 	} else {
 		// Общий случай
-		var start = [ [], []];
+		var start = [[], []];
 		var end = [];
 		// x и y концов соответствуют x и y центра клетки или её ближайшего угла
 		// (значения перебираются в цикле по k каждое с каждым)
@@ -364,10 +364,10 @@ Character.prototype.canSee = function(x, y, setVisibleCells, forceCompute) {
 		// start[1][0]=this.x;
 		start[1][1] = (y>this.y) ? this.y+0.5 : this.y-0.5;
 		var rays = this.rays(this.x, this.y, x, y);
-		jump: for ( var k = 0; k<3; k++ ) {
+		jump: for (var k = 0; k<3; k++ ) {
 			var endNumX = (k==0||k==1) ? 0 : 2;
 			var endNumY = (k==0||k==2) ? 1 : 3;
-			for (j = 0; j<1; j++ ) {
+			for (j = 0; j<1; j++) {
 				// Новый алгоритм расчёта видимости строится на том, есть ли
 				// точки,
 				// которые находятся ближе, чем на 0.5 клетки от прямой -
@@ -377,30 +377,33 @@ Character.prototype.canSee = function(x, y, setVisibleCells, forceCompute) {
 				// горизонтали.
 				// В этом случае нужно сделать максимум шесть проверок (3 цикла
 				// по k - точки конца - и два по j - точки начала)
-				if (start[j][0]==this.x&&start[j][1]==this.y) {
+				if (start[j][0]==this.x && start[j][1]==this.y) {
 					continue;
 				}
 				var xEnd = end[endNumX];
 				var yEnd = end[endNumY];
 				var xStart = start[j][0];
 				var yStart = start[j][1];
-				for ( var i in rays) {
+				for (var i in rays) {
 					/* */// Здесь x|yPoint - глобальные переменные.
 							// Пофиксить.
 					xPoint = rays[i][0];
 					yPoint = rays[i][1];
-					if (Terrain.cells[xPoint][yPoint].passability==Terrain.PASS_BLOCKED) {
+					if (Terrain.getCell(xPoint,yPoint).passability == Terrain.PASS_BLOCKED) {
 						// Проверяем каждую клетку
-						if (xPoint==this.x&&yPoint==this.y||xPoint==x
-								&&yPoint==y) {
+						if (
+							xPoint==this.x && yPoint==this.y 
+							|| xPoint==x && yPoint==y
+						) {
 							continue;
 						}
-						if (Math
-								.abs(((yStart-yEnd)*xPoint+(xEnd-xStart)*yPoint+(xStart
+						if (
+							Math.abs(((yStart-yEnd)*xPoint+(xEnd-xStart)*yPoint+(xStart
 										*yEnd-yStart*xEnd))
 										/Math.sqrt(Math.abs((xEnd-xStart)
 												*(xEnd-xStart)+(yEnd-yStart)
-												*(yEnd-yStart))))<=0.5) {
+												*(yEnd-yStart))))<=0.5
+						) {
 							// Если расстояние до точки не больше 0.5, проверяем
 							// следующую из 6 линий
 							continue jump;
@@ -408,7 +411,7 @@ Character.prototype.canSee = function(x, y, setVisibleCells, forceCompute) {
 					}
 				}
 				if (setVisibleCells) {
-					this.visibleCells[x][y] = true;
+					this.visibleCells[x-absDx][y-absDy] = true;
 				}
 				return true;
 			}
@@ -419,7 +422,7 @@ Character.prototype.canSee = function(x, y, setVisibleCells, forceCompute) {
 Character.prototype.ray = function(startX, startY, endX, endY) {
 	// Вспомогательная функция для this->canSee(). Возвращает клетки линии от
 	// xStart:yStart до xEnd:yEnd
-	if (startX==endX&&startY==endY) {
+	if (startX==endX && startY==endY) {
 		return [startX, startY];
 	}
 	var x = [];
@@ -429,7 +432,7 @@ Character.prototype.ray = function(startX, startY, endX, endY) {
 	var L = Math.round(Math.max(Math.abs(endX-x[0]), Math.abs(endY-y[0])));
 	var dX = (endX-x[0])/L;
 	var dY = (endY-y[0])/L;
-	for ( var i = 1; i<L; i++ ) {
+	for (var i=1; i<L; i++ ) {
 		x[i] = x[i-1]+dX;
 		y[i] = y[i-1]+dY;
 	}
@@ -437,7 +440,7 @@ Character.prototype.ray = function(startX, startY, endX, endY) {
 	y.push(endY);
 	var result = [];
 	for (i = 0; i<=L; i++ ) {
-		result.push( [Math.round(x[i]), Math.round(y[i])]);
+		result.push([Math.round(x[i]), Math.round(y[i])]);
 	}
 	return result;
 };
@@ -452,76 +455,138 @@ Character.prototype.rays = function(startX, startY, endX, endY) {
 					+(endY>startY ? -1 : 1)));
 };
 Character.prototype.getPathTable = function(ignorecharacters) {
-	// Получает таблицу путей по волновому алгоритму
-	// Отключено для возможности использования объектов
-	// if
-	// (Terrain.cells[this.destX][this.destY].passability==Terrain.PASS_BLOCKED)
-	// {
-	// this.destX=this.x;
-	// this.destY=this.y;
-	// }
-	this.pathTable = blank2dArray();
-	var destcharacterCoordX = (this.aimcharacter!= -1) ? this.aimcharacter.x
-			: this.x;
-	var destcharacterCoordY = (this.aimcharacter!= -1) ? this.aimcharacter.y
-			: this.y;
+	/* Path table has relative indexes of cells: pathTable itself is a
+	 * this.PATH_TABLE_WIDTH * this.PATH_TABLE_WIDTH square, character's coord
+	 * in it is {this.PATH_TABLE_WIDTH/2,this.PATH_TABLE_WIDTH/2} rounded down.
+	 * But cell objects in newFront and oldFront contain absolute coordinates!
+	 */
+	this.pathTable = blank2dArray(this.PATH_TABLE_WIDTH,this.PATH_TABLE_WIDTH);
+	// Difference between cell's absolute coordinate and its coordinate in
+	// the pathTable.
+	var dX = this.x-Math.floor(this.PATH_TABLE_WIDTH/2);
+	var dY = this.y-Math.floor(this.PATH_TABLE_WIDTH/2);
 	var isPathFound = false;
 	var oldFront = [];
 	var newFront = [];
 	newFront[0] = {
 		x : this.x,
 		y : this.y
-	}; // От какой клетки начинать отсчёт; было так: newFront[0]=[this.coord];
-	for ( var i = 0; i<Terrain.height; i++ ) {
-		this.pathTable[i] = [];
-	}
-	this.pathTable[this.x][this.y] = 0;
+	};
+	this.pathTable[this.x-dX][this.y-dY] = 0;
 	var t = 0;
 	do {
 		oldFront = newFront;
 		newFront = [];
-		if (isPathFound===null) {
+		if (isPathFound === null) {
 			isPathFound = true;
 		}
-		for ( var i = 0; i<oldFront.length; i++ ) {
-			// Двигает фронт на восемь доступных сторон от каждой клетки
+		for (var i=0; i<oldFront.length; i++) {
+		// Moves front to 8 available sides from each cell
+			// These four have absolute coordinates
 			var x = oldFront[i].x;
 			var y = oldFront[i].y;
 			var adjactentX = [x+1, x, x, x-1, x+1, x+1, x-1, x-1];
 			var adjactentY = [y, y-1, y+1, y, y+1, y-1, y+1, y-1];
-			for ( var j = 0; j<8; j++ ) {
-				var thisNumX = adjactentX[j];
-				var thisNumY = adjactentY[j];
-
-				if (thisNumX<0||thisNumX>=Terrain.width||thisNumY<0
-						||thisNumY>=Terrain.height
-						||this.pathTable[thisNumX][thisNumY]!=undefined) {
+			for (var j = 0; j<8; j++) {
+			// Index of cell in pathTable (relative coordinates)
+				var thisNumX = adjactentX[j]-dX;
+				var thisNumY = adjactentY[j]-dY;
+				if (
+					thisNumX<0 || thisNumX>=this.PATH_TABLE_WIDTH || thisNumY<0
+					|| thisNumY>=this.PATH_TABLE_WIDTH
+					|| this.pathTable[thisNumX][thisNumY]!=undefined
+				) {
+				// If the new cell is not in pathTable or it is already in pathTable
 					continue;
 				}
-				if (thisNumX==this.destX&&thisNumY==this.destY) {
+				if (thisNumX+dX==this.destX && thisNumY+dY==this.destY) {
+				// So in the next iteration the function will know that path is found
 					isPathFound = null;
 				}
-				if (Terrain.cells[thisNumX][thisNumY].passability!=Terrain.PASS_BLOCKED
-						&&Terrain.cells[thisNumX][thisNumY].passability!=Terrain.PASS_SEE
-						||Terrain.cells[thisNumX][thisNumY].object
-						&&isDoor(Terrain.cells[thisNumX][thisNumY].object.type)/* *//*
-																					 * &&
-																					 * this.seenCells[thisNumX][thisNumY]!=undefined
-																					 */) {
+				if (
+					Terrain.getCell(thisNumX+dX,thisNumY+dY).passability!=Terrain.PASS_BLOCKED
+					&& Terrain.getCell(thisNumX+dX,thisNumY+dY).passability!=Terrain.PASS_SEE
+					|| Terrain.getCell(thisNumX+dX,thisNumY+dY).object
+					&& isDoor(Terrain.getCell(thisNumX+dX,thisNumY+dY).object.type)
+				) {
+				// If character can step to a cell, add it to the pathTable
 					this.pathTable[thisNumX][thisNumY] = t+1;
 					newFront[newFront.length] = {
-						x : thisNumX,
-						y : thisNumY
+						x : adjactentX[j],
+						y : adjactentY[j]
 					};
 				}
 			}
 		}
 		t++ ;
 		if (t>900) {
-			throw new Error("long get path table cycle");
+			throw new Error("Too long getPathTable cycle");
 		}
-	} while (newFront.length>0&& !isPathFound&&t<900);
+	} while (newFront.length>0 && !isPathFound && t<900);
 	return t;
+};
+Character.prototype.getPath = function(destX, destY) {
+	// Получить путь до клетки в виде массива координат (0 - первый шаг и т. д.)
+	if (destX==undefined || destY==undefined) {
+		destX = this.destX;
+		destY = this.destY;
+	}
+	if (destX==this.x && destY==this.y) {
+		throw new Error("Gets path to its own x:y");
+	}
+	if (this.isNear(destX, destY)) {
+		return [{
+			x : destX,
+			y : destY
+		}];
+	}
+
+	var bufX = this.destX;
+	var bufY = this.destY;
+	var path = [];
+	var currentNumX = destX;
+	var currentNumY = destY;
+	var x = currentNumX;
+	var y = currentNumY;
+	var dX = this.x-Math.floor(this.PATH_TABLE_WIDTH/2);
+	var dY = this.y-Math.floor(this.PATH_TABLE_WIDTH/2);
+	var t = 0;
+	for (var j = this.pathTable[currentNumX-dX][currentNumY-dY]; j>0; j = this.pathTable[currentNumX-dX][currentNumY-dY]) {
+		// Счётчик: от кол-ва шагов до клетки dest до начальной клетки (шаг 1)
+		path.push( {
+			x : currentNumX,
+			y : currentNumY
+		});
+		var adjactentX = [x, x+1, x, x-1, x+1, x+1, x-1, x-1];
+		var adjactentY = [y-1, y, y+1, y, y+1, y-1, y+1, y-1];
+		for (var i = 0; i<8; i++) {
+			var thisNumX = adjactentX[i]-dX;
+			if (thisNumX<0 || thisNumX>=this.PATH_TABLE_WIDTH) {
+				continue;
+			}
+			var thisNumY = adjactentY[i]-dY;
+			if (thisNumY<0 || thisNumY>=this.PATH_TABLE_WIDTH) {
+				continue;
+			}
+			if (
+				this.pathTable[thisNumX][thisNumY]==j-1
+			) {
+			// Если клетка в этой стороне является предыдущим шагом, перейти
+			// на неё
+				currentNumX = adjactentX[i];
+				currentNumY = adjactentY[i];
+				x = currentNumX;
+				y = currentNumY;
+				break;
+			}
+		}
+		t++ ;
+		if (t==900) {
+			throw new Error("get path: exit with error");
+			break;
+		}
+	}
+	return path.reverse();
 };
 Character.prototype.distance = function(x, y) {
 	return Math.sqrt(Math.pow(this.x-x, 2)+Math.pow(this.y-y, 2));
@@ -532,18 +597,29 @@ Character.prototype.getVisibleCells = function() {
 		return;
 	}
 	this.prevVisibleCells = this.visibleCells;
-	this.visibleCells = blank2dArray();
-	this.visibleCells[this.x][this.y] = true;
+	this.visibleCells = blank2dArray(this.VISION_RANGE*2+1,this.VISION_RANGE*2+1);
+	var dx = this.x-this.VISION_RANGE;
+	var dy = this.y-this.VISION_RANGE;
+	this.visibleCells[this.VISION_RANGE+1][this.VISION_RANGE+1] = true;
 
 	var minX = Math.max(this.x-this.VISION_RANGE, 0);
 	var minY = Math.max(this.y-this.VISION_RANGE, 0);
 	var maxX = Math.min(this.x+this.VISION_RANGE, Terrain.width-1);
 	var maxY = Math.min(this.y+this.VISION_RANGE, Terrain.height-1);
 
-	for ( var i = minX; i<=maxX; i++ ) {
+	for (var i = minX; i<=maxX; i++) {
 		for ( var j = minY; j<=maxY; j++ ) {
 			this.canSee(i, j, true);
 		}
+	}
+};
+Character.prototype.showPathTable = function() {
+	for (var j=0; j<this.PATH_TABLE_WIDTH; j++) {
+		var str = "";
+		for (var i=0; i<this.PATH_TABLE_WIDTH; i++) {
+			str += this.pathTable[i][j] === undefined ? "." : this.pathTable[i][j]%10;
+		}
+		console["log"](str);
 	}
 };
 Character.prototype.comeTo = function(x, y) {
@@ -558,22 +634,24 @@ Character.prototype.comeTo = function(x, y) {
 	}
 	var dists = [x-1, y, x+1, y, x, y-1, x, y+1, x+1, y+1, x-1, y+1, x+1, y-1,
 			x-1, y-1];
+	var dX = this.x-Math.floor(this.PATH_TABLE_WIDTH/2);
+	var dY = this.y-Math.floor(this.PATH_TABLE_WIDTH/2);
 	var dist = 9000;
-	var destX; // Конечное направление
-	var destY; // Конечное направление
+	var destX; // End direction
+	var destY; // End direction
 	var allPathsAreAvailable = false;
 	var destXBuf = this.destX;
 	var destYBuf = this.destY;
 	for ( var i = 0; i<8&& !allPathsAreAvailable; i++ ) {
 		this.destX = dists[i*2];
 		this.destY = dists[i*2+1];
-		if (Terrain.cells[this.destX][this.destY].passability!=Terrain.PASS_FREE) {
+		if (Terrain.getCell(this.destX,this.destY).passability!=Terrain.PASS_FREE) {
 			continue;
 		}
 		var allPathsAreAvailable = true;
 		// this.getPathTable();
-		for ( var j = 0; j<8; j++ ) {
-			if ( !this.pathTable[dists[i*2]][dists[i*2+1]]) {
+		for (var j = 0; j<8; j++) {
+			if ( !this.pathTable[dists[i*2]-dX][dists[i*2+1]-dY]) {
 				allPathsAreAvailable = false;
 				break;
 			}
@@ -581,12 +659,13 @@ Character.prototype.comeTo = function(x, y) {
 	}
 	this.destX = destXBuf;
 	this.destY = destYBuf;
-	var atLeastOnePath = false; // Найден ли хотя бы один путь. Функция
-								// возвращает значение этой переменной
-	for ( var i = 0; i<8; i++ ) {
-		var steps = this.pathTable[dists[i*2]][dists[i*2+1]];
-		if (steps&&steps<dist&&steps>0
-				&& !(dists[i*2]==this.x&&dists[i*2+1]==this.y)) {
+	var atLeastOnePath = false; // Has at least one path been found
+	for (var i = 0; i<8; i++) {
+		var steps = this.pathTable[dists[i*2]-dX][dists[i*2+1]-dY];
+		if (
+			steps && steps<dist && steps>0
+			&& !(dists[i*2]==this.x&&dists[i*2+1]==this.y)
+		) {
 			atLeastOnePath = true;
 			dist = steps;
 			destX = dists[i*2];
@@ -601,74 +680,6 @@ Character.prototype.comeTo = function(x, y) {
 		this.destY = this.y;
 	}
 	return atLeastOnePath;
-};
-Character.prototype.getPath = function(destX, destY) {
-	// Получить путь до клетки в виде массива координат (0 - первый шаг и т. д.)
-	if (destX==undefined||destY==undefined) {
-		destX = this.destX;
-		destY = this.destY;
-	}
-	if (destX==this.x&&destY==this.y) {
-		throw new Error("Gets path to its own x:y");
-	}
-	if (this.isNear(destX, destY)) {
-		return [{
-			x : destX,
-			y : destY
-		}];
-	}
-
-	var bufX = this.destX;
-	var bufY = this.destY;
-	// this.destX=destX;
-	// this.destY=destY;
-	var path = [];
-	// Нахождение пути
-	var currentNumX = destX;
-	var currentNumY = destY;
-	var x = currentNumX;
-	var y = currentNumY;
-	/* */var diff = [ -Terrain.width, 1, Terrain.width, -1];
-	var t = 0;
-	for ( var j = this.pathTable[currentNumX][currentNumY]; j>0; j = this.pathTable[currentNumX][currentNumY]) {
-		// Счётчик: от кол-ва шагов до клетки dest до начальной клетки (шаг 1)
-		path.push( {
-			x : currentNumX,
-			y : currentNumY
-		});
-		var diff = [ -Terrain.width, 1, Terrain.width, -1, Terrain.width+1,
-				-Terrain.width+1, Terrain.width-1, -Terrain.width-1];
-		var adjactentX = [x, x+1, x, x-1, x+1, x+1, x-1, x-1];
-		var adjactentY = [y-1, y, y+1, y, y+1, y-1, y+1, y-1];
-		for ( var i = 0; i<8; i++ ) {
-			// Для каждой из доступных сторон (С, Ю, З, В)
-			var thisNumX = adjactentX[i];
-			if (thisNumX<0||thisNumX>=Terrain.width) {
-				continue;
-			}
-			var thisNumY = adjactentY[i];
-			if (thisNumY<0||thisNumY>=Terrain.height) {
-				continue;
-			}
-			if (this.pathTable[thisNumX][thisNumY]==j-1
-					&& !(currentNumX==0&&thisNumX==currentNumX-1||currentNumX==Terrain.width-1
-							&&thisNumX==currentNumX+1)) {
-				// Если клетка в этой стороне является предыдущим шагом, перейти
-				// на неё
-				currentNumX = adjactentX[i];
-				currentNumY = adjactentY[i];
-				x = currentNumX;
-				y = currentNumY;
-				break;
-			}
-		}
-		t++ ;
-		if (t==900) {
-			console["log"]("get path: exit with error");
-			break;
-		}
-	}
-	return path.reverse();
 };
 Character.prototype.updateVisibility = function() {
 	if (Terrain.isPeaceful) {
@@ -853,30 +864,30 @@ Character.prototype.showMove = function(nextCellX, nextCellY) {
 	}
 	var top = 0;
 	var left = 0;
-	Terrain.cells[this.x][this.y].character = undefined;
-	Terrain.cells[this.x][this.y].passability = Terrain.PASS_FREE;
+	Terrain.getCell(this.x,this.y).character = undefined;
+	Terrain.getCell(this.x,this.y).passability = Terrain.PASS_FREE;
 
 	var viewIndent = Terrain.getViewIndentation(nextCellX, nextCellY, 1);
 
 	this.cellWrap.style.top = viewIndent.top*32+"px";
 	this.cellWrap.style.left = viewIndent.left*32+"px";
-	this.cellWrap.style.zIndex = viewIndent.top*2+2;
+	this.cellWrap.style.zIndex = (100000+viewIndent.top)*2+1;
 	this.x = nextCellX;
 	this.y = nextCellY;
-	Terrain.cells[this.x][this.y].passability = Terrain.PASS_SEE;
-	Terrain.cells[this.x][this.y].character = this;
-	if (this.visible&& !Player.visibleCells[this.x][this.y]) {
+	Terrain.getCell(this.x,this.y).passability = Terrain.PASS_SEE;
+	Terrain.getCell(this.x,this.y).character = this;
+	if (this.visible && !Terrain.getCell(this.x,this.y).visible) {
 		this.hideModel();
-	} else if ( !this.visible&&Player.visibleCells[this.x][this.y]) {
+	} else if (!this.visible && Terrain.getCell(this.x,this.y).visible) {
 		this.showModel();
 	}
 	if (this.isClientPlayer) {
 		moveGameField(this.x, this.y);
 		this.updateVisibility();
-		renderView();
+//		renderView();
 	}
-	for ( var i in this.effects) {
-		var viewIndent = Terrain.getViewIndentation(this.x, this.y, 1);
+	for (var i in this.effects) {
+		var viewIndent = Terrain.getViewIndentation(this.x,this.y,1);
 		this.effects[i].move(viewIndent.left, viewIndent.top);
 	}
 	handleNextEvent();
@@ -1031,7 +1042,6 @@ function ClientPlayer() {
 	/** @public @type ItemSet */
 	this.items = new ItemSet();
 	this.spells = [];
-	this.isClientPlayer = true;
 	
 	// These three will be initiated by blank2dArray in
 	// Character.initVisiblilty() on location/global map enter.
@@ -1098,7 +1108,6 @@ ClientPlayer.prototype.init = function init(data) {
 	 * (12)str, (13)dex, (14)wis, (15)itl, (16)items[], (17)equipment[],
 	 * (18)spells[], (19)skills[], (20)ac, (21)ev, (22)resistances[]]
 	 */
-	console.log(data);
 	Character.apply(this, [data[2], "player", data[0], data[1], 1]);
 	characters[data[2]] = this;
 	this.x = data[0];
@@ -1122,6 +1131,7 @@ ClientPlayer.prototype.init = function init(data) {
 	this.attributes.fireRes = data[22][0];
 	this.attributes.coldRes = data[22][1];
 	this.attributes.poisonRes = data[22][2];
+	this.isClientPlayer = true;
 
 	// Inventory
 	for (var i = 0; i<data[16].length; i+=2) {
@@ -1169,12 +1179,6 @@ ClientPlayer.prototype.showDamage = function _(amount, type) {
 	Character.prototype.showDamage.apply(this, arguments);
 	UI.notify("healthChange");
 };
-ClientPlayer.prototype.sendTakeOff = function _(item) {
-	Net.send( {
-		a : Net.TAKE_OFF,
-		itemId : item.itemId
-	});
-};
 ClientPlayer.prototype.putOn = function _(itemId) {
 	Character.prototype.putOn.apply(this, [itemId]);
 	this.items.removeUnique(itemId);
@@ -1190,7 +1194,7 @@ ClientPlayer.prototype.autoSetMissileType = function _() {
 	if (this.missileType!=null) {
 		return;
 	}
-	for ( var i in this.items.itemPiles) {
+	for (var i in this.items.itemPiles) {
 		if (isMissile(this.items.itemPiles[i].typeId)) {
 			this.setMissileType(this.items.itemPiles[i].typeId);
 			return;
@@ -1306,9 +1310,10 @@ ClientPlayer.prototype.doActionFromQueue = function _() {
 	this.actionQueueParams.shift();
 };
 ClientPlayer.prototype.locationClickHandler = function _(x, y, e) {
-	UI.notify("alert",x+" "+y);
-	moveGameField(x, y);
-	return;
+//	UI.notify("alert",Terrain.getCell(x, y).passability);
+//	moveGameField(x, y);
+//	performAction("move", [x, y]);
+//	return;
 	if (this.x!=this.destX||this.y!=this.destY) {
 		return;
 	}
@@ -1321,34 +1326,34 @@ ClientPlayer.prototype.locationClickHandler = function _(x, y, e) {
 	if (x==this.x && y==this.y) {
 		performAction("idle");
 	} else if (
-		(aim = Terrain.cells[shiftX][shiftY].character)
+		(aim = Terrain.getCell(shiftX,shiftY).character)
 		&& this.isEnemy(aim)
 	) {
 		// Attack
 		performAction("attack", [aim]);
 	} else if (
-		(aim = Terrain.cells[x][y].character)
-		&& this != Terrain.cells[x][y].character 
+		(aim = Terrain.getCell(x,y).character)
+		&& this != Terrain.getCell(x,y).character 
 		&& !this.isEnemy(aim)
 	) {
 		this.sendStartConversation(aim.characterId);
 	} else if (
-		Terrain.cells[x][y].object
-		&& isDoor(Terrain.cells[x][y].object.type)
-		&& (!isOpenDoor(Terrain.cells[x][y].object.type) || shiftKey)
+		Terrain.getCell(x,y).object
+		&& isDoor(Terrain.getCell(x,y).object.type)
+		&& (!isOpenDoor(Terrain.getCell(x,y).object.type) || e.shiftKey)
 		&& this.isNear(x, y)
 	) {
 		// Open door
-		this.sendUseObject(x, y);
-	} else if (Terrain.cells[x][y].object && this.isNear(x, y)
-			&& isContainer(Terrain.cells[x][y].object.type)) {
+		performAction("useObject",[x,y]);
+	} else if (Terrain.getCell(x,y).object && this.isNear(x, y)
+			&& isContainer(Terrain.getCell(x,y).object.type)) {
 		// Open cotainer
 		Global.container.x = x;
 		Global.container.y = y;
 		this.sendOpenContainer();
 	} else if (
-		Terrain.cells[x][y].passability == Terrain.PASS_BLOCKED
-		|| Terrain.cells[x][y].passability == Terrain.PASS_SEE
+		Terrain.getCell(x,y).passability == Terrain.PASS_BLOCKED
+		|| Terrain.getCell(x,y).passability == Terrain.PASS_SEE
 			
 	) {
 		// Go to object

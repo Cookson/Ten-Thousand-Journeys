@@ -511,24 +511,6 @@ function readLocation(data) {
 		}
 	}
 }
-function enterArea(callback) {
-// Войти в область [Player.worldX,Player.worldY] и загрузить информацию о
-// персонаже
-	showLoadingScreen();
-	Net.send({
-		a:Net.ENTER_LOCATION,
-		x:worldPlayers[Player.characterId].x,
-		y:worldPlayers[Player.characterId].y,
-		characterId:Player.characterId
-	},handlers.net.loadContents);
-//	Net.send({a:Net.APPEAR,n:Player.name,x:Player.worldX,y:Player.worldY,pid:Player.partyId,islead:Player.isPartyLeader},handlers.net.appear);
-}
-function leaveLocation(callback) {
-// Выйти из области или загрузить мир при загрузке игры, в т. ч. загрузить
-// информацию об игроке
-	showLoadingScreen();
-	Net.send({a:Net.LEAVE_LOCATION},handlers.net.loadContents);
-}
 function readOnlinePlayers(data) {
 // Отобразить список игроков онлайн и сохранить его в переменной
 // in: [[characterId,name,class,race,party,worldX,worldY]xN]

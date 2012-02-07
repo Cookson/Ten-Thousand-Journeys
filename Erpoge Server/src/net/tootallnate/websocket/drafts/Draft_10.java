@@ -10,7 +10,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-import erpoge.Main;
+import erpoge.core.Main;
 
 import net.tootallnate.websocket.Base64;
 import net.tootallnate.websocket.Draft;

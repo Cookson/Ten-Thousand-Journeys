@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import erpoge.Main;
+import erpoge.core.Main;
 
 public abstract class Language {
 	public static Language instance = new English();

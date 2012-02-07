@@ -1,18 +1,19 @@
 function handleNextEvent() {
 	if (serverAnswerIterator >= serverAnswer.length) {
 		if (Player.name !== null) {
-		// IF player is locaded, then check out after displaying all the events
+		// If player is loaded, then check out after displaying all the events
 			Net.send({a:Net.CHECK_OUT});
 		}
 		return;
 	}
 	var value = serverAnswer[serverAnswerIterator++];
 	if (serverAnswerHandlers[value.e]) {
+		console["log"](value.e, serverAnswerIterator);
 		serverAnswerHandlers[value.e](value);
 	} else {
 		throw new Error("Unknown type of non-synchronized answer: "+value.e);
 	}
-	console["log"](value.e);
+	
 }
 var serverAnswerHandlers = {
 	wt: function serverEventWorldTravel(value) {
@@ -53,7 +54,7 @@ var serverAnswerHandlers = {
 		}
 		handleNextEvent();
 	},
-	authentificationSuccessful: function _() {
+	authentificationSuccessful: function _(value) {
 	// Preparing map after login
 		UI.setClickHandler(Player.locationClickHandler, Player);
 		if (characters[1]) {
@@ -70,10 +71,13 @@ var serverAnswerHandlers = {
 		if (Player.cls == undefined) {
 			Player.init(data.data);
 		}
+		Player.display();
+		Player.showModel();
 		UI.notify("locationLoad");
 		UI.setKeyMapping("Default");
 		recountWindowSize();
 		hideLoadingScreen();
+		moveGameField(Player.x, Player.y, false);
 		handleNextEvent();
 	},
 	loadContents: function serverEventLoadContents(data) {
@@ -159,11 +163,16 @@ var serverAnswerHandlers = {
 	},
 	chunkContents : function serverEventChunkContents(data) {
 		var chunk = Terrain.createChunk(data.x, data.y, data);
+		console.log(chunk.x, chunk.y);
 		chunk.loadData(data);
 		chunk.show();
 		recountWindowSize();
 		moveGameField(-10,-10);
 		hideLoadingScreen();
+		handleNextEvent();
+	},
+	excludeChunk: function(value) {
+		Terrain.removeChunk(value.x, value.y);
 		handleNextEvent();
 	},
 	serverInfo: function serverEventServerInfo(data) {
@@ -416,12 +425,13 @@ var serverAnswerHandlers = {
 		handleNextEvent();
 	},
 	objectAppear: function serverEventObjectAppear(value) {
-		new GameObject(value.x, value.y, value.object).show();
+		Terrain.createObject(value.x, value.y, value.object);
+		Terrain.displayObject(value.x, value.y);
 		Player.updateVisibility();
 		handleNextEvent();
 	},
 	objectDisappear: function serverEventObjectDisappear(value) {
-		Terrain.cells[value.x][value.y].object.remove();
+		Terrain.getCell(value.x,value.y).object.remove(value.x,value.y);
 		Player.updateVisibility();
 		handleNextEvent();
 	},	
