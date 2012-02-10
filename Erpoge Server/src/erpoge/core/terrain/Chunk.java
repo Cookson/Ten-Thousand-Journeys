@@ -9,6 +9,7 @@ import erpoge.core.characters.NonPlayerCharacter;
 import erpoge.core.characters.PlayerCharacter;
 import erpoge.core.characters.TimeStream;
 import erpoge.core.inventory.Item;
+import erpoge.core.inventory.ItemMap;
 import erpoge.core.inventory.ItemPile;
 import erpoge.core.inventory.UniqueItem;
 import erpoge.core.itemtypes.Attribute;
@@ -226,7 +227,10 @@ public class Chunk extends TerrainBasics {
 		}		                            
 		throw new Error("Sound source at "+x+":"+y+" not found");
 	}
-
+	/**
+	 * @param x Relative coordinates
+	 * @param y Relative coordinates
+	 */
 	public void addItem(UniqueItem item, int x, int y) {
 		super.addItem(item, x, y);
 		timeStream.addEvent(new EventItemAppear(item.getType().getTypeId(), item.getItemId(), this.x+x ,this.y+y));
@@ -258,5 +262,24 @@ public class Chunk extends TerrainBasics {
 			}
 		}
 		return contents;
+	}
+	public Integer[] getItemsAsIntegerArray() {
+		// [x,y,typeId,param, x,y,typeId,param, ...]
+		ArrayList<Integer> contents = new ArrayList<Integer>();
+		int u=0;
+		for (int y=0; y<Chunk.WIDTH; y++) {
+			for (int x=0; x<Chunk.WIDTH; x++) {
+				ItemMap map = cells[x][y].items;
+				if (map.size() > 0) {
+					for (Item item : map.values()) {
+						contents.add(this.x+x);
+						contents.add(this.y+y);
+						contents.add(item.getTypeId());
+						contents.add(item.getParam());
+					}
+				}
+			}
+		}
+		return contents.toArray(new Integer[] {});
 	}
 }

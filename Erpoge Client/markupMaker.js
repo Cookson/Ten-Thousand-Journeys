@@ -14,7 +14,7 @@ function MarkupMaker() {
  * Adds new node to the end of the fragment
  * 
  * @param {String} tagName
- * @returns {MarkupMaker}
+ * @return {MarkupMaker}
  */
 MarkupMaker.prototype.add = function(tagName) {
 
@@ -26,7 +26,7 @@ MarkupMaker.prototype.add = function(tagName) {
  * Put text to the last element
  * 
  * @param {String} text
- * @returns {MarkupMaker}
+ * @return {MarkupMaker}
  */
 MarkupMaker.prototype.text = function(text) {
 	this.lastChild.appendChild(document.createTextNode(text));
@@ -39,7 +39,7 @@ MarkupMaker.prototype.text = function(text) {
  * (borderColor instead of border-color etc) and values are values of 
  * style properties, for example:
  * {color: "#fde", textAlign: "center"}
- * @returns {MarkupMaker}
+ * @return {MarkupMaker}
  */
 MarkupMaker.prototype.style = function(params) {
 	for (var i in params) {
@@ -53,7 +53,7 @@ MarkupMaker.prototype.style = function(params) {
  * 
  * new MarkupMaker().add("div").cls("description").cls("item").complete();
  * @param {String} cls Class name
- * @returns {MarkupMaker}
+ * @return {MarkupMaker}
  */
 MarkupMaker.prototype.cls = function(cls) {
 	this.lastElement.addClass(cls);
@@ -67,7 +67,7 @@ MarkupMaker.prototype.cls = function(cls) {
  * or any similar methods, so all the elements from that DocumentFragment will 
  * be placed to DOM at that particular place.
  * 
- * @returns {DocumentFragment}
+ * @return {DocumentFragment}
  */
 MarkupMaker.prototype.getDocumentFragment = function() {
 	return this.fragment;
@@ -75,7 +75,7 @@ MarkupMaker.prototype.getDocumentFragment = function() {
 /**
  * Returns a div with all contents inside.
  * 
- * @returns {HTMLDivElement}
+ * @return {HTMLDivElement}
  */
 MarkupMaker.prototype.getWrappedContents = function() {
 	var div = document.createElement("div");

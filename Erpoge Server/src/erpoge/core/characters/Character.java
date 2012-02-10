@@ -179,45 +179,48 @@ public abstract class Character extends Coordinate {
 	/**
 	 * Pick up an item lying on the same cell where the character stands.
 	 */
-		getTimeStream().addEvent(new EventPickUp(characterId, item.getTypeId(), item.getItemId()));
+		timeStream.addEvent(new EventPickUp(characterId, item.getTypeId(), item.getItemId()));
 		getItem(item);
-		plane.getChunkWithCell(x,y).removeItem(item, x, y);
+		Chunk chunk = plane.getChunkWithCell(x,y);
+		chunk.removeItem(item, x-chunk.getX(), y-chunk.getY());
 		moveTime(500);
 	}
 	protected void drop(UniqueItem item) {
 		loseItem(item);
-		plane.getChunkWithCell(x,y).addItem(item, x, y);
-		getTimeStream().addEvent(new EventDropItem(characterId, item.getTypeId(), item.getItemId()));
+		Chunk chunk = plane.getChunkWithCell(x,y);
+		chunk.addItem(item, x-chunk.getX(), y-chunk.getY());
+		timeStream.addEvent(new EventDropItem(characterId, item.getTypeId(), item.getItemId()));
 		moveTime(500);
 	}
 	protected void drop(ItemPile pile) {
 		loseItem(pile);
-		plane.getChunkWithCell(x,y).addItem(pile, x, y);
-		getTimeStream().addEvent(new EventDropItem(characterId, pile.getType().getTypeId(), pile.getAmount()));
+		Chunk chunk = plane.getChunkWithCell(x,y);
+		chunk.addItem(pile, x-chunk.getX(), y-chunk.getY());
+		timeStream.addEvent(new EventDropItem(characterId, pile.getType().getTypeId(), pile.getAmount()));
 		moveTime(500);
 	}
 	protected void takeFromContainer(ItemPile pile, Container container) {
 		getItem(pile);
 		container.removePile(pile);
-		getTimeStream().addEvent(new EventTakeFromContainer(characterId, pile.getTypeId(), pile.getAmount(), x, y));
+		timeStream.addEvent(new EventTakeFromContainer(characterId, pile.getTypeId(), pile.getAmount(), x, y));
 		moveTime(500);
 	}
 	protected void takeFromContainer(UniqueItem item, Container container) {
 		getItem(item);
 		container.removeUnique(item);
-		getTimeStream().addEvent(new EventTakeFromContainer(characterId, item.getTypeId(), item.getItemId(), x, y));
+		timeStream.addEvent(new EventTakeFromContainer(characterId, item.getTypeId(), item.getItemId(), x, y));
 		moveTime(500);
 	}
 	protected void putToContainer(ItemPile pile, Container container) {
 		loseItem(pile);
 		container.add(pile);
-		getTimeStream().addEvent(new EventPutToContainer(characterId, pile.getTypeId(), pile.getAmount(), x, y));
+		timeStream.addEvent(new EventPutToContainer(characterId, pile.getTypeId(), pile.getAmount(), x, y));
 		moveTime(500);
 	}
 	protected void putToContainer(UniqueItem item, Container container) {
 		loseItem(item);
 		container.add(item);
-		getTimeStream().addEvent(new EventPutToContainer(characterId, item.getTypeId(), item.getItemId(), x, y));
+		timeStream.addEvent(new EventPutToContainer(characterId, item.getTypeId(), item.getItemId(), x, y));
 		moveTime(500);
 	}
 	protected void useObject(int x, int y) {

@@ -148,7 +148,6 @@ var serverAnswerHandlers = {
 			
 		} else {
 		// Area loading
-			
 			if (Player.cls == null) {
 				Player.init(data.p);
 			}
@@ -216,6 +215,10 @@ var serverAnswerHandlers = {
 		if (value.characterId == Player.characterId) {
 			if (!Player.lootLetterAssigner.isEmpty()) {
 				Player.lootLetterAssigner.empty();
+			}
+			var cellItems = Terrain.getCell(value.x, value.y).items;
+			if (cellItems !== null) {
+				cellItems.forEach(handlers.assignLetterToItemOnFloor);
 			}
 			UI.notify("lootChange");
 		}
@@ -349,11 +352,10 @@ var serverAnswerHandlers = {
 			var item;
 			if (isUnique(value.typeId)) {
 				item = new UniqueItem(value.typeId, value.param);
-				
 			} else {
 				item = new ItemPile(value.typeId, value.param);
 			}
-			Terrain.cells[value.x][value.y].addItem(item);
+			Terrain.createItem(value.x, value.y, item);
 			if (Player.x == value.x && Player.y == value.y) {
 				Player.lootLetterAssigner.addObject(item);
 				UI.notify("lootChange");
@@ -372,7 +374,7 @@ var serverAnswerHandlers = {
 			} else {
 				item = new ItemPile(value.typeId, value.param);
 			}
-			Terrain.cells[value.x][value.y].removeItem(value.typeId, value.param);
+			Terrain.getCell(value.x,value.y).removeItem(value.typeId, value.param);
 			if (value.x == Player.x && value.y == Player.y) {
 				Player.lootLetterAssigner.removeObject(item);
 				UI.notify("lootChange");
@@ -427,12 +429,13 @@ var serverAnswerHandlers = {
 	objectAppear: function serverEventObjectAppear(value) {
 		Terrain.createObject(value.x, value.y, value.object);
 		Terrain.displayObject(value.x, value.y);
-		Player.updateVisibility();
+		Terrain.showObject(value.x,value.y);
+		Player.updateVisibility(0,0);
 		handleNextEvent();
 	},
 	objectDisappear: function serverEventObjectDisappear(value) {
 		Terrain.getCell(value.x,value.y).object.remove(value.x,value.y);
-		Player.updateVisibility();
+		Player.updateVisibility(0,0);
 		handleNextEvent();
 	},	
 	characterAppear: function serverEventCharacterAppear(value) {

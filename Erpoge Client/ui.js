@@ -213,7 +213,7 @@ var UI = {
  * @param {mixed}
  *            data Any data object or primitive that will be passed to
  *            UIElements' event handlers
- * @returns {Boolean} true if has any elements, otherwise false.
+ * @return {Boolean} true if has any elements, otherwise false.
  * @memberOf UI
  */
 UI.notify = function(groupName, data) {
@@ -690,7 +690,7 @@ UI.addWindow = function _(properties) {
  *            hash Key where structure is saved/must be saved.
  * @param {Function}
  *            func Function that generates and returns the structure.
- * @returns {HTMLDivElement}
+ * @return {HTMLDivElement}
  */
 UI.getStaticDOMStructure = function _(hash, func) {
 	if (!(hash in this._savedDOMStructures)) {
@@ -732,7 +732,7 @@ UI.registerAction = function _(name, context, handler) {
  *            function {@link UniqueItem} itself to not set src of image (is
  *            useful for preloading UI elements before Player is loaded).
  * 
- * @returns {HTMLDivElement} A div (with set data) containing other nodes.
+ * @return {HTMLDivElement} A div (with set data) containing other nodes.
  */
 function ItemView(item) {
 /** @private */
@@ -764,7 +764,7 @@ ItemView.prototype._itemViewNumProto = document.createElement("div");
 /**
  * Get HTMLElement containing all the nodes.
  * 
- * @returns {HTMLDivElement}
+ * @return {HTMLDivElement}
  */
 ItemView.prototype.getNode = function() {
 	return this.rootElement;
@@ -772,7 +772,7 @@ ItemView.prototype.getNode = function() {
 /**
  * Get HTMLImageElement of item image.
  * 
- * @returns {HTMLImageElement}
+ * @return {HTMLImageElement}
  */
 ItemView.prototype.getImg = function() {
 	return this.rootElement.children[0];
@@ -799,7 +799,7 @@ ItemView.prototype.changeAmount = function(amount) {
  * Checks if the ItemView is displayed or not (not append as a child to any
  * other elements).
  * 
- * @returns {Boolean}
+ * @return {Boolean}
  */
 ItemView.prototype.isDisplayed = function() {
 	return this.rootElement.parentNode !== null;

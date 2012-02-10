@@ -150,7 +150,7 @@ var CellCursor = {
 					|| (!Terrain.isPeaceful || !Player.canSee(x,y,false,true)))
 				) {
 					this.shadedCells.push(Terrain.cells[x][y]);
-					Terrain.cells[x][y].shade();
+					Terrain.getCell(x,y).shade();
 				} else {
 					this.availableCells.push(Terrain.cells[x][y]);
 				}

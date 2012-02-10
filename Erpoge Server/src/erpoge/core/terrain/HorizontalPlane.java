@@ -112,7 +112,7 @@ public class HorizontalPlane {
 	 * Round a coordinate (x or y, works equal) down to the nearest value in 
 	 * which may be a corner of a chunk.
 	 * @param x x or y coordinate.
-	 * @returns Rounded coordinate value.
+	 * @return Rounded coordinate value.
 	 */
 	public int getChunkRoundedCoord(int coord) {
 		return (coord < 0) ? coord-((coord%Chunk.WIDTH==0) ? 0 : Chunk.WIDTH)-coord%Chunk.WIDTH : coord-coord%Chunk.WIDTH;
@@ -151,7 +151,7 @@ public class HorizontalPlane {
 	public void generateTerrain(int x, int y, int width, int height) {
 		RectangleSystem graph = new RectangleSystem(x, y, width, height, 40, 0);
 		for (RectangleArea r : graph) {
-			generateLocation(r.x, r.y, r.width, r.height, "Forest");
+			generateLocation(r.x, r.y, r.width, r.height, "BuildingTest");
 		}
 	}
 	public void openDoor(int x, int y) {

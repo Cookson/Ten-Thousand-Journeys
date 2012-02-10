@@ -22,4 +22,8 @@ public class UniqueItem extends Item {
 	public static UniqueItem createItemByClass(int classId, int indexInType) {
 		return new UniqueItem(classId*ItemsTypology.CLASS_LENGTH + indexInType);
 	}
+	@Override
+	public int getParam() {
+		return itemId;
+	}
 }

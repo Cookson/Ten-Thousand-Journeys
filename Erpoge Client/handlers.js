@@ -213,6 +213,9 @@ handlers={
 			return false;
 		}
 	},
+	assignLetterToItemOnFloor: function(item) {
+		Player.lootLetterAssigner.addObject(item);
+	},
 	net: {
 		
 	},

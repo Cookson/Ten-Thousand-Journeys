@@ -23,7 +23,7 @@ HTMLElement.prototype.addClass = function(className) {
  * can't be keys.
  * 
  * @param {mixed} value
- * @returns {mixed} Returns parameter value.
+ * @return {mixed} Returns parameter value.
  */
 HTMLElement.prototype.setData = function _(key, value) {
 	if (typeof this.data === "undefined") {
@@ -36,7 +36,7 @@ HTMLElement.prototype.setData = function _(key, value) {
  * 
  * @see HTMLElement#setData
  * @param {String} key
- * @returns {mixed} Value at that key
+ * @return {mixed} Value at that key
  */
 HTMLElement.prototype.getData = function _(key) {
 	if (typeof this.data === "undefined" || typeof this.data[key] === "undefined") {
@@ -59,7 +59,7 @@ String.prototype.equals = function(object) {
  * contain only hashable objects of the same type as the sought-for object.
  * 
  * @param {Object} Hashable object.
- * @returns {Number} Index of object in array if has one, -1 otherwise.
+ * @return {Number} Index of object in array if has one, -1 otherwise.
  */
 function indexOfByHash(array, object) {
 	for (var i=0; i<array.length; i++) {
@@ -393,7 +393,7 @@ function getOffsetRect(elem) {
  * @param {Object[]} set2 Same as set1. Set1 and set2 may be even of different
  * prototypes, but if their .getValues() returns objects of the same type,
  * it will work fine.
- * @returns {Object[3][]}
+ * @return {Object[3][]}
  */
 function getSetsDifferences(set1, set2) {
 	if (Interface.objectImplements(set1, "Arrayable")) {

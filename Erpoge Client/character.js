@@ -25,7 +25,7 @@
 		this.maxHp = maxHp;
 	}
 
-	this.VISION_RANGE = 5;
+	this.VISION_RANGE = 8;
 	this.visible;
 
 	this.cellWrap = document.createElement("div");
@@ -691,8 +691,12 @@ Character.prototype.comeTo = function(x, y) {
 };
 /**
  * Hides and shows cells according to player's vision
+ * 
+ * @param {number} dx Difference by x-axis between previous player's position
+ * and current position.
+ * @para, {number} dy Same for y-axis.
  */
-Character.prototype.updateVisibility = function() {
+Character.prototype.updateVisibility = function(dx,dy) {
 	this.getVisibleCells();
 	var range = this.VISION_RANGE*2+1;
 	var sh=0,hi=0;
@@ -702,10 +706,9 @@ Character.prototype.updateVisibility = function() {
 			var y = this.y-this.VISION_RANGE+j;
 			if (
 				this.visibleCells[i][j] 
-				&& (i+this.visibilityDX<0 || i+this.visibilityDX>=range
-				|| j+this.visibilityDY<0 || j+this.visibilityDY>=range
-//				&& (!this.prevVisibleCells[i+this.visibilityDX]
-				|| !this.prevVisibleCells[i+this.visibilityDX][j+this.visibilityDY])
+				&& (i+dx<0 || i+dx>=range
+				|| j+dy<0 || j+dy>=range
+				|| !this.prevVisibleCells[i+dx][j+dy])
 			) {
 //				if (cell.visible) {
 //					Terrain.cells[i][j].unshade();
@@ -718,19 +721,18 @@ Character.prototype.updateVisibility = function() {
 			// because if visibilityDX/DY
 			if (
 				this.prevVisibleCells[i][j] 
-                && (i-this.visibilityDX<0 || i-this.visibilityDX>=range
-           		|| j-this.visibilityDY<0 || j-this.visibilityDY>=range
-				|| !this.visibleCells[i-this.visibilityDX][j-this.visibilityDY])
+                && (i-dx<0 || i-dx>=range
+           		|| j-dy<0 || j-dy>=range
+				|| !this.visibleCells[i-dx][j-dy])
 			) {
-				var prevX = x-this.visibilityDX;
-				var prevY = y-this.visibilityDY;
+				var prevX = x-dx;
+				var prevY = y-dy;
 				Terrain.getCell(prevX,prevY)
 					.hide(Terrain.getChunkWithCell(prevX,prevY),prevX,prevY);
 				hi++;
 			}
 		}
 	}
-	console.log(sh,"shown",hi,"hidden");
 };
 Character.prototype.initVisibility = function() {
 	if (
@@ -882,10 +884,9 @@ Character.prototype.showMove = function(nextCellX, nextCellY) {
 		this.destX = nextCellX;
 		this.destY = nextCellY;
 	}
-	this.visibilityDX = nextCellX-this.x;
-	this.visibilityDY = nextCellY-this.y;
 	var top = 0;
 	var left = 0;
+	var prevX = this.x, prevY = this.y;
 	Terrain.getCell(this.x,this.y).character = null;
 	Terrain.getCell(this.x,this.y).passability = Terrain.PASS_FREE;
 
@@ -905,7 +906,7 @@ Character.prototype.showMove = function(nextCellX, nextCellY) {
 	}
 	if (this.isClientPlayer) {
 		moveGameField(this.x, this.y);
-		this.updateVisibility();
+		this.updateVisibility(nextCellX-prevX,nextCellY-prevY);
 //		renderView();
 	}
 	for (var i in this.effects) {
@@ -1075,9 +1076,6 @@ function ClientPlayer() {
 	this.seenCells = [[]];
 
 	
-	/** @public @type number */
-	this.visibilityDX = 0;
-	this.visibilityDY = 0;
 	/** @public @type string[] */
 	this.actionQueue = [];
 	/** @public @type Array[] */

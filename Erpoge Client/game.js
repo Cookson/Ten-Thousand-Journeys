@@ -438,79 +438,7 @@ function readWorld(data) {
 	rendCY=Math.floor(Terrain.height/2);
 	renderView();
 }
-function readLocation(data) {
-// Reads location contents got from server
-/*
-	Format: {
-		w:xSize,
-		h:ySize,
-		c:[[floor,object,items,river,race,[objects]]xN]
-	}
-*/
-	Terrain.width = data.w;
-	Terrain.height = data.h;
-//	for (var x=0;x<Terrain.width;x++) {
-//		Player.seenCells[x]=[];
-//		for (var y=0;y<Terrain.height;y++) {
-//			Player.seenCells[x][y]=true;
-//		}
-//	}
-	prepareArea(true);
-	var contents=data.c;
-	var x=0, y=0;
-	for (var i=0;i<contents.length;i++) {
-		x++;
-		if (x == Terrain.width) {
-			x=0;
-			y++;
-		}
-	}
-	x=0;
-	y=0;
-	var u=0;
-	var cell;
-	for (var num=0;num<contents.length;num++) {
-		cell = contents[x+y*Terrain.width];
-		Terrain.cells[x][y].floor = new Floor(x,y,contents[num][0]);
-		if (cell[1]!=0) {
-			if (isWall(cell[1])) {
-				new Wall(x, y, cell[1]);					
-			} else {
-				new GameObject(x, y, cell[1]);
-			}
-		}
-		if (cell[2]) {
-			for (var i=0; i<cell[2].length; i++) {
-				var typeId = cell[2][i][0];
-				var param = cell[2][i][1];
-				if (isUnique(typeId)) {
-				// Здесь нужно именно так, чтобы не вызывалось отображение добавляемого предмета
-					Terrain.cells[x][y].addItemWithoutShowing(new UniqueItem(typeId, param));
-				} else {
-				// Здесь нужно именно так, чтобы не вызывалось отображение добавляемого предмета
-					Terrain.cells[x][y].addItemWithoutShowing(new ItemPile(typeId, param));
-				}
-			}
-		}
-		x++;
-		if (x == Terrain.width) {
-			x=0;
-			y++;
-		}
-		
-	}
-	// Read sounds
-	if (data.s) {
-		for (var i in data.s) {
-			new SoundSource(data.s[i][0], data.s[i][1], data.s[i][2]);
-		}
-	}
-	if (data.ceilings) {
-		for (var i=0; i<data.ceilings.length; i++) {
-			new Ceiling(data.ceilings[i][0],data.ceilings[i][1],data.ceilings[i][2],data.ceilings[i][3]);
-		}
-	}
-}
+
 function readOnlinePlayers(data) {
 // Отобразить список игроков онлайн и сохранить его в переменной
 // in: [[characterId,name,class,race,party,worldX,worldY]xN]
@@ -526,17 +454,6 @@ function readChatMessages(data) {
 		chat.push([data[i*2],data[i*2+1]]);
 	}
 	UI.notify("chatMessage");
-}
-function isChatOpen() {
-	// Ищем #chatForm > div.wrap и выходим из выполнения функции, если у него
-	// display!="none"
-	var nlChatMessages=document.getElementById("chatForm").getElementsByTagName("div");
-	for (var i=0;i<nlChatMessages.length;i++) {
-		if (nlChatMessages[i].className=="wrap" && nlChatMessages[i].style.display!="none") {
-			return true;
-		}
-	}
-	return false;
 }
 function readInvite(data) {
 // Отобразить приглашение

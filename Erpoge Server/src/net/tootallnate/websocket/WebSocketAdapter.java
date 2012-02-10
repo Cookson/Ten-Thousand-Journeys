@@ -51,7 +51,7 @@ public class WebSocketAdapter implements WebSocketListener {
 	* This is specifically implemented for gitime's WebSocket client for Flash:
 	*     http://github.com/gimite/web-socket-js
 	*
-	* @returns An XML String that comforms to Flash's security policy. You MUST
+	* @return An XML String that comforms to Flash's security policy. You MUST
 	*         not include the null char at the end, it is appended automatically.
 	*/
 	

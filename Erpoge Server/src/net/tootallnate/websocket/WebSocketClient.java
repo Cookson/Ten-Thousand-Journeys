@@ -92,7 +92,7 @@ public abstract class WebSocketClient extends WebSocketAdapter implements Runnab
   // PUBLIC INSTANCE METHODS /////////////////////////////////////////////////
   /**
    * Gets the URI that this WebSocketClient is connected to.
-   * @returns The <tt>URI</tt> for this WebSocketClient.
+   * @return The <tt>URI</tt> for this WebSocketClient.
    */
   public URI getURI() {
     return uri;

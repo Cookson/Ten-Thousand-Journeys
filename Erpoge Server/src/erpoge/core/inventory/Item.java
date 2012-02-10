@@ -17,6 +17,7 @@ public abstract class Item extends ItemSystemMetaInfo {
 	public ItemType getType() {
 		return type;
 	}
+	public abstract int getParam();
 	public abstract String toJson();
 	public abstract String toString();
 }

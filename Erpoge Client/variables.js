@@ -98,7 +98,14 @@ Terrain.prototype.getVerticalDimension = function _() {
 		return Terrain.width;
 	}
 };
-Terrain.prototype.getCell = function _(x, y) {
+/**
+ * Returns a cell by its absolute coordinates.
+ * 
+ * @param {number} x
+ * @param {number} y
+ * @return {Cell}
+ */
+Terrain.prototype.getCell = function(x, y) {
 	if (!this.getChunkWithCell(x,y)) {
 		return null;
 	}
@@ -111,7 +118,7 @@ Terrain.prototype.getChunkRoundedCoord = function(coord) {
  * 
  * @param x
  * @param y
- * @returns {Chunk} A chunk containing cell x:y.
+ * @return {Chunk} A chunk containing cell x:y.
  */
 Terrain.prototype.getChunkWithCell = function (x, y) {
 	return this.getChunkByCoord(
@@ -123,7 +130,7 @@ Terrain.prototype.getChunkWithCell = function (x, y) {
  * 
  * @param x
  * @param y
- * @returns {Chunk} A chunk containing cell x:y.
+ * @return {Chunk} A chunk containing cell x:y.
  */
 Terrain.prototype.getChunkByCoord = function _(x, y) {
 	if (this.chunks.containsKey(x)) {
@@ -144,6 +151,7 @@ Terrain.prototype.getChunkByCoord = function _(x, y) {
  * @param {number} x
  * @param {number} y
  * @param {number} type Type of object
+ * @return {Chunk}
  */
 Terrain.prototype.createChunk = function(x, y, data) {
 	var column;
@@ -190,6 +198,9 @@ Terrain.prototype.createObject = function(x, y, type) {
 Terrain.prototype.displayObject = function(x, y) {
 	this.getCell(x, y).object.display(x, y);
 };
+Terrain.prototype.showObject = function(x,y) {
+	this.getCell(x,y).object.show(x,y);
+};
 Terrain.prototype.removeObject = function(x, y) {
 	var cell = this.getCell(x, y);
 	cell.object.remove();
@@ -205,17 +216,57 @@ Terrain.prototype.unshadeCell = function(x,y) {
 	chunk.getAbsoluteCell(x,y).unshade(chunk,x,y);
 };
 /**
+ * Creates a view of an item or item pile lying on the floor, or just adds 
+ * items to a corresponding ItemPile if there is one in cell x:y.
+ * 
+ * @param {number} x
+ * @param {number} y
+ * @param {UniqueItem|ItemPile} item
+ */
+Terrain.prototype.createItem = function(x,y,item) {
+	var cell = this.getCell(x, y);
+	if (cell.items === null) {
+		cell.items = new ItemSet();
+	}
+	cell.addItem(x,y,item);
+};
+/**
+ * Removes a view of an item or item pile lying on the floor, or just removes 
+ * items from a corresponding ItemPile if there is one in cell x:y.
+ * 
+ * @param {number} x
+ * @param {number} y
+ * @param {UniqueItem|ItemPile} item
+ */
+Terrain.prototype.removeItem = function(x,y,item) {
+	var cell = this.getCell(x, y);
+	if (cell.items === null) {
+		throw new Error("Cannot remove item "+item+": cell "+x+":"+y+" has no items");
+	}
+	cell.items.remove(item);
+};
+/**
+ * 
+ */
+Terrain.prototype.getItemsOnCell = function(x,y) {
+	var cell = this.getCell(x, y);
+	if (cell.items === null) {
+		return [];
+	}
+	return cell.items.getValues();
+};
+/**
  * Checks whether chunk in certain cell already exists or not.
  * 
  * @param x
  * @param y
- * @returns {boolean}
+ * @return {boolean}
  */
 Terrain.prototype.chunkExists = function(x, y) {
 	return this.chunks.containsKey(x) && this.chunks.get(x).containsKey(y);
 };
 /**
- * Remove chunk and undisplay its contents
+ * Remove a chunk and undisplay its contents
  * @param x
  * @param y
  */

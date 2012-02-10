@@ -135,7 +135,7 @@ public class TimeStream {
 	}
 	/**
 	 * Get the next character in turn queue.
-	 * @returns Character
+	 * @return Character
 	 */
 	public Character next() {
 		Character nextCharacter = null;

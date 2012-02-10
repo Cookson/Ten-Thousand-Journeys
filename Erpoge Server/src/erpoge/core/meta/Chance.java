@@ -12,7 +12,7 @@ public class Chance {
 	}
 	/**
 	 * Get true of false.
-	 * @returns true with probability this.value%
+	 * @return true with probability this.value%
 	 */
 	public boolean roll() {
 		return Math.random() * 100 < value;
@@ -24,7 +24,7 @@ public class Chance {
 	 * The static method to return a random integer or long from range [a..b].
 	 * @param a	min value
 	 * @param b max value
-	 * @returns true with probability this.value%
+	 * @return true with probability this.value%
 	 */
 	public static int rand(int a, int b) {
 		// �������� ��������� �������� �� a �� b

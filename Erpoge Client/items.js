@@ -116,7 +116,7 @@ ItemSet.prototype = new HashSet();
  * @param {Number} param If type typeId is type of UniqueItem, then this must 
  * be itemId of this item, otherwise, if that is ItemPile type, this must be 
  * amount of items in pile.
- * @returns {mixed} New created {@link UniqueItem} or {@link ItemType}
+ * @return {mixed} New created {@link UniqueItem} or {@link ItemType}
  */
 ItemSet.prototype.addNewItem = function addNewItem(typeId, param) {
 	if (isUnique(typeId)) {
@@ -167,7 +167,7 @@ ItemSet.prototype.removePile = function(typeId, amount) {
  * @see ItemSet#getPile
  * @see ItemSet#getItem
  * @param {Number} itemId
- * @returns {UniqueItem} Returns null if there's no UniqueItem with such 
+ * @return {UniqueItem} Returns null if there's no UniqueItem with such 
  * itemId.
  */
 ItemSet.prototype.getUnique = function(itemId) {
@@ -179,7 +179,7 @@ ItemSet.prototype.getUnique = function(itemId) {
  * @see ItemSet#getUnique
  * @see ItemSet#getItem
  * @param {Number} typeId
- * @returns {ItemPile} Returns null if there's no ItemPile with such 
+ * @return {ItemPile} Returns null if there's no ItemPile with such 
  * typeId.
  */
 ItemSet.prototype.getPile = function(typeId) {
@@ -197,7 +197,7 @@ ItemSet.prototype.getPile = function(typeId) {
  * @see ItemSet#getUnique
  * @see ItemSet#getPile
  * @param typeId
- * @returns {mixed} Returns UnqiueItem/ItemPile, or returns null if there's no 
+ * @return {mixed} Returns UnqiueItem/ItemPile, or returns null if there's no 
  * UniqueItem with such itemId or ItemPile with such typeId.
  */
 ItemSet.prototype.getItem = function(typeId, param) {
@@ -212,7 +212,7 @@ ItemSet.prototype.getItem = function(typeId, param) {
  * Checks if ItemSet has {@link UniqueItem} with particular itemId.
  * 
  * @param {Number} itemId
- * @returns {Boolean} True if has such UniqueItem, false otherwise.
+ * @return {Boolean} True if has such UniqueItem, false otherwise.
  */
 ItemSet.prototype.hasUnique = function(itemId) {
 	return this._contents["u"+itemId] != undefined;
@@ -223,7 +223,7 @@ ItemSet.prototype.hasUnique = function(itemId) {
  * 
  * @param {Number} typeId
  * @param amount
- * @returns {Boolean} True if has and has enough of such ItemPile, false 
+ * @return {Boolean} True if has and has enough of such ItemPile, false 
  * otherwise.
  */
 ItemSet.prototype.hasPile = function(typeId, amount) {
@@ -237,7 +237,7 @@ ItemSet.prototype.hasPile = function(typeId, amount) {
  * object.
  * 
  * @param {UniqueItem|ItemPile} item 
- * @returns {Boolean} True if it contains such object, false otherwise.
+ * @return {Boolean} True if it contains such object, false otherwise.
  */
 ItemSet.prototype.hasItem = HashSet.prototype.has;
 /** @private @const */
@@ -293,7 +293,7 @@ Equipment.prototype.putOnToSlot = function(slot, item) {
 };
 /**
  * Returns an {@link UniqueItem} object of item in particular slot.
- * @returns {UniqueItem}
+ * @return {UniqueItem}
  */
 Equipment.prototype.getItemInSlot = function(slot) {
 	return this._contents[slot] || null;
@@ -303,7 +303,7 @@ Equipment.prototype.getItemInSlot = function(slot) {
  * 
  * @see UniqueItem
  * @param {Number} itemId
- * @returns {UniqueItem} Or null if item is not found.
+ * @return {UniqueItem} Or null if item is not found.
  */
 Equipment.prototype.getItemById = function(itemId) {
 	for (var i in this._contents) {
@@ -331,7 +331,7 @@ Equipment.prototype.takeOffItem = function(item) {
 /**
  * Checks if Equipment has any item in particular slot.
  * 
- * @returns {Boolean} True if Equipment has an item, false otherwise.
+ * @return {Boolean} True if Equipment has an item, false otherwise.
  */
 Equipment.prototype.hasItemInSlot = function (slot) {
 	return slot in this._contents;
@@ -388,7 +388,7 @@ function UniqueItem(typeId, itemId) {
 /**
  * Checks if this UniqueItem is a melee weapon or not.
  * 
- * @returns {Boolean}
+ * @return {Boolean}
  */
 UniqueItem.prototype.isMelee = function () {
 	return !this.isRanged();
@@ -396,7 +396,7 @@ UniqueItem.prototype.isMelee = function () {
 /**
  * Checks if this UniqueItem is a ranged weapon or not.
  * 
- * @returns {Boolean}
+ * @return {Boolean}
  */
 UniqueItem.prototype.isRanged = function(typeId) {
 	return items[this.typeId][1]==7;
@@ -404,7 +404,7 @@ UniqueItem.prototype.isRanged = function(typeId) {
 /**
  * Returns a name of this item's type.
  * 
- * @returns {String}
+ * @return {String}
  */
 UniqueItem.prototype.toString = function () {
 	return items[this.typeId][0];

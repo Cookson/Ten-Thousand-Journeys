@@ -193,7 +193,7 @@ Keys.universalKeyDownHandler = function universalKeyDownHandler(e) {
  * @param {Number} alt 0 or 1
  * @param {Number} shift 0 or 1
  * @param {Number} keyCode
- * @returns {HTMLDivElement}
+ * @return {HTMLDivElement}
  */
 Keys.getCombinationAsTextInDiv = function getCombinationAsTextInDiv(ctrl, alt, shift, keyCode) {
 	var text = [];
@@ -588,7 +588,7 @@ LetterAssigner.prototype.unbookLetterForObject = function unbookLetterForObject(
 };
 /**
  * 
- * @returns {Number} Reverse ASCII code, if the letter is booked, -1 otherwise.
+ * @return {Number} Reverse ASCII code, if the letter is booked, -1 otherwise.
  */
 LetterAssigner.prototype.getBookedLetter = function getBookedLetter(object) {
 	Interface.check(object, "Hashable");
@@ -608,7 +608,7 @@ LetterAssigner.prototype.getBookedLetter = function getBookedLetter(object) {
  * Checks if this key already has an action.
  * 
  * @param {Number} keyCode Reverse ASCII code of letter.
- * @returns {Boolean}
+ * @return {Boolean}
  */
 LetterAssigner.prototype.isLetterOccupied = function isLetterOccupied(keyCode) {
 	return keyCode in this.occupiedLetters;
@@ -619,7 +619,7 @@ LetterAssigner.prototype.isLetterOccupied = function isLetterOccupied(keyCode) {
  * lowercase letters, so uppercase letters shouldn't be assigned until all the
  * lowercase letters are assigned.
  * 
- * @returns {Boolean}
+ * @return {Boolean}
  */
 LetterAssigner.prototype.hasFreeLowercase = function hasFreeLowercase() {
 	for (var i=65; i<=90; i++) {
@@ -633,7 +633,7 @@ LetterAssigner.prototype.hasFreeLowercase = function hasFreeLowercase() {
  * Returns a letter linked with object.
  * 
  * @param {Object} object
- * @returns {String} 1 character string — the letter for object.
+ * @return {String} 1 character string — the letter for object.
  */
 LetterAssigner.prototype.getLetter = function getLetter(object) {
 	Interface.check(object, "Hashable");
@@ -650,7 +650,7 @@ LetterAssigner.prototype.getLetter = function getLetter(object) {
  * Returns ASCII code of the firse unoccupied character. Uppercase character
  * codes are lowwercase character codes plus 32 (just as in ASCII).
  * @private
- * @returns {Number} Key code of character for lowercase caharacter, keyCode*2
+ * @return {Number} Key code of character for lowercase caharacter, keyCode*2
  * for uppercase character.
  */
 LetterAssigner.prototype.getUnoccupiedCharacter = function getUnoccupiedCharacter() {

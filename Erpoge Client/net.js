@@ -42,7 +42,7 @@ Net = {
 	MAKE_SOUND              : 203,
 	JUMP                    : 204,
 	SHIELD_BASH             : 205,
-	serverAddress : "ws://"+window.location.host+":8787",
+	serverAddress : "ws://localhost:8787",
 	websocket : null,
 	accountPlayers : [],
 	send : function _(data, onmessage, callback) {

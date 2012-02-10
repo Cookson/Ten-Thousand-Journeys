@@ -5,6 +5,7 @@ import java.util.ArrayList;
 
 import net.tootallnate.websocket.WebSocket;
 
+import erpoge.core.Main;
 import erpoge.core.net.serverevents.ServerEvent;
 
 public class EventQueue {

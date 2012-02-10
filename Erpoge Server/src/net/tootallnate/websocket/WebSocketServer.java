@@ -158,7 +158,7 @@ public abstract class WebSocketServer extends WebSocketAdapter implements Runnab
 
   /**
    * Returns a WebSocket[] of currently connected clients.
-   * @returns The currently connected clients in a WebSocket[].
+   * @return The currently connected clients in a WebSocket[].
    */
   public WebSocket[] connections() {
     return this.connections.toArray(new WebSocket[0]);
@@ -174,7 +174,7 @@ public abstract class WebSocketServer extends WebSocketAdapter implements Runnab
 
   /**
    * Gets the port number that this server listens on.
-   * @returns The port number.
+   * @return The port number.
    */
   public int getPort() {
     return this.port;
@@ -273,7 +273,7 @@ public abstract class WebSocketServer extends WebSocketAdapter implements Runnab
    * This is specifically implemented for gitime's WebSocket client for Flash:
    *     http://github.com/gimite/web-socket-js
    *
-   * @returns An XML String that comforms to Flash's security policy. You MUST
+   * @return An XML String that comforms to Flash's security policy. You MUST
    *         not include the null char at the end, it is appended automatically.
    */
   protected String getFlashSecurityPolicy() {
@@ -290,7 +290,7 @@ public abstract class WebSocketServer extends WebSocketAdapter implements Runnab
    * if it is valid, or closes the connection if it is not.
    * @param conn The {@link WebSocket} instance who's handshake has been recieved.
    * @param handshake The entire UTF-8 decoded handshake from the connection.
-   * @returns True if the client sent a valid WebSocket handshake and this server
+   * @return True if the client sent a valid WebSocket handshake and this server
    *         successfully sent a WebSocket server handshake, false otherwise.
    * @throws IOException When socket related I/O errors occur.
    * @throws NoSuchAlgorithmException 

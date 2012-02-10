@@ -37,4 +37,8 @@ public class ItemPile extends Item {
 	public static ItemPile createPileFromClass(int classId, int indexInClass, int amount) {
 		return new ItemPile(classId*CLASS_LENGTH+indexInClass, amount);
 	}
+	@Override
+	public int getParam() {
+		return amount;
+	}
 }

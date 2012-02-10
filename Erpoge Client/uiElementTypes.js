@@ -1009,7 +1009,7 @@ UIElementTypes.iconsLoot = {
 	listeners: {
 		lootChange: function _() {
 	 		var count = 0;
-	 		var items = Terrain.getCell(Player.x,Player.y).items.getValues();
+	 		var items = Terrain.getItemsOnCell(Player.x,Player.y);
 	 		var displayedItemViews = this.getData("displayedItemViews");
 	 		displayedItemViews.empty();
 	 		while (this.rootElement.children.length > 0) {
@@ -1071,9 +1071,9 @@ UIElementTypes.iconsLoot = {
 			var item;
 			if (isUnique(typeId)) {
 				var param = this.getData("param");
-				item = Terrain.cells[Player.x][Player.y].items.getUnique(param);
+				item = Terrain.getCell(Player.x,Player.y).items.getUnique(param);
 			} else {
-				item =  Terrain.cells[Player.x][Player.y].items.getPile(typeId);
+				item =  Terrain.getCell(Player.x,Player.y).items.getPile(typeId);
 			}
 			performAction("pickUp", [item]);
 		},

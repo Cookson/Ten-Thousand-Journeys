@@ -255,7 +255,7 @@ Side.prototype.side2d = function() {
  * Returns an integer corresponding to cardinal side as if there were no ordinal
  * sides.
  * 
- * @returns {number} 0 for N, 1 for E, 2 for S and 3 for W.
+ * @return {number} 0 for N, 1 for E, 2 for S and 3 for W.
  */
 Side.prototype.getCardinalInt = function() {
 	switch (this.value) {

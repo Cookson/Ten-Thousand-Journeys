@@ -263,7 +263,6 @@ onLoadEvents["defaultUIActions"] = function() {
 			&& isDoor(Terrain.getCell(nextCellX,nextCellY).object.type)
 		) {
 		// Open door
-			Player.addActionToQueue("move");
 			performAction("useObject", [nextCellX, nextCellY]);
 		}
 		Net.send({

@@ -21,7 +21,7 @@ function CachingFactory() {
  * Returns a stored or new value object corresponding to key object.
  * 
  * @param {Object} object Key object.
- * @returns {Object} Value object.
+ * @return {Object} Value object.
  */
 CachingFactory.prototype.get = function get(object) {
 	Interface.check(object, "Hashable");
@@ -49,7 +49,7 @@ CachingFactory.prototype.get = function get(object) {
  * 
  * @private
  * @param {Object} object Key in map of 
- * @returns Object
+ * @return Object
  */
 CachingFactory.prototype.createNewValue = function createNewValue(object) {
 	throw new Error("Method createNewValue must be overriden in CachingFactory descendants!");
@@ -58,7 +58,7 @@ CachingFactory.prototype.createNewValue = function createNewValue(object) {
  * Abstract method that must tell if the object is free for reusing or not.
  * 
  * @param {Object} object Value object.
- * @returns {Boolean}
+ * @return {Boolean}
  */
 CachingFactory.prototype.isValueFree = function isValueFree(value) {
 	throw new Error("Method isValueFree must be overriden in CachingFactory descendants!");
@@ -105,7 +105,7 @@ MultitypeCachingFactory.prototype = new CachingFactory();
 /**
  * @see CachingFactory#get
  * @param {Object} object Key object.
- * @returns {Object} Value object.
+ * @return {Object} Value object.
  */
 MultitypeCachingFactory.prototype.get = function get(object) {
 	Interface.check(object, "Hashable");
@@ -155,7 +155,7 @@ CachingLetterFactory.__proto__ = new CachingMonoFactory();
  *            className Name of CSS class of div element.
  * @param {String}
  *            letter A string of 1 character to put inside HTMLDivElement.
- * @returns {HTMLDivElement}
+ * @return {HTMLDivElement}
  */
 CachingLetterFactory.get = function get(className, letter) {
 	var nDiv = CachingMonoFactory.prototype.get.apply(this);
@@ -230,7 +230,7 @@ CachingItemViewFactory.__proto__ = new CachingMonoFactory();
  * 
  * @param {UniqueItem|ItemPile} item
  * @param {String} bg Postfix for background node CSS class.
- * @returns {ItemView} Created ItemView
+ * @return {ItemView} Created ItemView
  */
 CachingItemViewFactory.get = function get(item, bg) {
 	if (bg === undefined) {
@@ -273,7 +273,7 @@ CachingItemViewFactory.isValueFree = function isValueFree(element) {
 /**
  * Get array of all the item objects to which ItemViews are associated.
  * 
- * @returns Object[] Array of {@link UniqueItem}s and {@link ItemPiles}.
+ * @return Object[] Array of {@link UniqueItem}s and {@link ItemPiles}.
  *          Unique items, if the CachingItemViewFactory has any, go first.
  */
 CachingItemViewFactory.getValues = function getValues() {
@@ -292,7 +292,7 @@ CachingItemViewFactory.getValues = function getValues() {
  * Error if ItemView for item is not created in this cache.
  * 
  * @param {UniqueItem|ItemPile} item Key.
- * @returns {ItemView} Value.
+ * @return {ItemView} Value.
  */
 CachingItemViewFactory.getCreatedItem = function getCreatedItem(item) {
 	return this.cache[item.__proto__.constructor.name][item.hashCode()]
@@ -340,7 +340,7 @@ MultitypeSet.prototype.remove = function remove(object) {
  * Checks if set has object of certain type with certain hash code or not.
  * 
  * @param {Object} object Object we are checking for.
- * @returns {Boolean}
+ * @return {Boolean}
  */
 MultitypeSet.prototype.has = function has(object) {
 	var type = object.__proto__.constructor.name;
@@ -363,7 +363,7 @@ MultitypeSet.prototype.empty = function empty() {
 /**
  * Returns an array of all the objects stored in this set.
  * 
- * @returns {Object[]} Arrays of all the objects in MultitypeSet
+ * @return {Object[]} Arrays of all the objects in MultitypeSet
  */
 MultitypeSet.prototype.getValues = function getValues() {
 	var answer = [];
