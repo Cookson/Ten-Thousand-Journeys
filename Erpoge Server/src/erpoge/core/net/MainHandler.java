@@ -2,6 +2,9 @@ package erpoge.core.net;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -24,6 +27,7 @@ import erpoge.core.terrain.HorizontalPlane;
 import erpoge.core.terrain.Location;
 import erpoge.core.terrain.Portal;
 import net.tootallnate.websocket.Draft;
+import net.tootallnate.websocket.Handshakedata;
 import net.tootallnate.websocket.WebSocket;
 import net.tootallnate.websocket.WebSocketServer;
 import net.tootallnate.websocket.drafts.Draft_10;
@@ -33,7 +37,7 @@ import net.tootallnate.websocket.drafts.Draft_76;
 
 
 public class MainHandler extends WebSocketServer {
-	public static final MainHandler instance = new MainHandler(8787);
+	public static MainHandler instance;
 	public static final int 
 	SERVER_INFO             = 0,
 	ATTACK                  = 1,
@@ -80,11 +84,16 @@ public class MainHandler extends WebSocketServer {
     	.create();
 	private HorizontalPlane defaultPlane;
 
-	public MainHandler(int port) {
-		super(port, new Draft_75());
-		Main.outln("Start listening on port " + port);
+	public MainHandler() throws UnknownHostException {
+		super(new InetSocketAddress(InetAddress.getByName( "localhost" ), WebSocket.DEFAULT_PORT), new Draft_17());
+		Main.outln("Start listening on port "+WebSocket.DEFAULT_PORT);
 	}
 	public static void startServer() {
+		try {
+			instance = new MainHandler();
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}
 		instance.start();
 	}
 	public static void showConnections() {
@@ -99,12 +108,12 @@ public class MainHandler extends WebSocketServer {
 		instance.defaultPlane = plane;
 	}
 	/* Handlers */
-	private void aServerInfo(String message, WebSocket conn) throws IOException {
+	private void aServerInfo(String message, WebSocket conn) throws InterruptedException {
 		// ping
 		conn.send("[{\"e\":\"serverInfo\",\"serverName\":\"Erpoge Server\",\"online\":31337}]");
-		Main.log("[{\"e\":\"serverInfo\",\"serverName\":\"Erpoge Server\",\"online\":31337}]");
+//		Main.log("[{\"e\":\"serverInfo\",\"serverName\":\"Erpoge Server\",\"online\":31337}]");
 	}
-	private void aLoadPassiveContents(String message, WebSocket conn) throws IOException {
+	private void aLoadPassiveContents(String message, WebSocket conn) throws InterruptedException {
 	/**
 	 * Sends only contents of world without any login information.
 	 * Used, for example, in world preview in client.
@@ -116,7 +125,7 @@ public class MainHandler extends WebSocketServer {
 		queue.addEvent(new EventChunkContents(defaultPlane.getChunkWithCell(  0,  0)));
 		queue.flush();
 	}
-	private void aLogin(String message, WebSocket conn) throws IOException {
+	private void aLogin(String message, WebSocket conn) throws InterruptedException {
 		/* 	in: {
 				l: String login,
 				p: String password,
@@ -139,7 +148,7 @@ public class MainHandler extends WebSocketServer {
 			conn.send("[{\"e\":\"login\",\"error\":3}]");
 		}
 	}
-	private void aLoadContents(String message, WebSocket conn) throws IOException {
+	private void aLoadContents(String message, WebSocket conn) throws InterruptedException {
 		// Almost the same as LOAD_LOCATON_CONTENTS
 		ClientMessageAuth clientData = gson.fromJson(message, ClientMessageAuth.class);
 		if (clientData.login.equals("")) {
@@ -159,12 +168,22 @@ public class MainHandler extends WebSocketServer {
 		} else if (!account.hasCharacterWithId(clientData.characterId)) {
 			conn.send("[{\"e\":\"loadContents\",\"error\":4}]");
 		} else {
-		// Everything is okay
-			conn.character = CharacterManager.getPlayerById(clientData.characterId);
-			if (!conn.character.isAuthorized()) {
-				conn.character.authorize();
-				conn.character.setConnection(conn);
+		// Player login data is correct
+			PlayerHandler player = CharacterManager.getPlayerById(clientData.characterId);
+			if (player.isAuthorized()) {
+				if (player.connection.isClosed()) {
+					conn.character = player;
+				} else {
+				// Error: player has already authorized
+					conn.send("[{\"e\":\"loadContents\",\"error\":5}]");
+					return;
+				}
+			} else {
+			// If that player is not authorized
+				conn.character = player;
 			}
+			conn.character.authorize();
+			conn.character.setConnection(conn);
 			conn.character.getEnteringEventQueue();
 		}
 	}
@@ -279,18 +298,28 @@ public class MainHandler extends WebSocketServer {
 			default:
 				throw new Error("Unhandlable action code "+action+" came from a client");
 			}
-		} catch (IOException e) {
+		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	public void onIOError(IOException ex) {
+		ex.printStackTrace();
+	}
+	@Override
+	public void onClientClose(WebSocket conn, int code, String reason,
+			boolean remote) {
 		// TODO Auto-generated method stub
 		
 	}
 	@Override
-	public void onError(Throwable ex) {
+	public void onClientOpen(WebSocket conn, Handshakedata handshake) {
 		// TODO Auto-generated method stub
 		
 	}
+	@Override
+	public void onError(WebSocket conn, Exception ex) {
+		ex.printStackTrace();
+	}
+	
 }

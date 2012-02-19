@@ -49,8 +49,6 @@ public class NonPlayerCharacter extends Character {
 		destX = x;
 		destY = y;
 		characterType = CharacterTypes.getType(type);
-		notifyNeighborsVisiblilty();
-		getVisibleEntities();
 	}
 	/* Observations */
 	public void updateObservation(Character character, int x, int y) {

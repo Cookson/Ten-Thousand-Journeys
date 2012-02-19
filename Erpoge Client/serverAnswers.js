@@ -8,7 +8,7 @@ function handleNextEvent() {
 	}
 	var value = serverAnswer[serverAnswerIterator++];
 	if (serverAnswerHandlers[value.e]) {
-//		console["log"](value.e, serverAnswerIterator);
+		console["log"]("recieve", value.e, value);
 		serverAnswerHandlers[value.e](value);
 	} else {
 		throw new Error("Unknown type of non-synchronized answer: "+value.e);
@@ -170,7 +170,7 @@ var serverAnswerHandlers = {
 		hideLoadingScreen();
 		handleNextEvent();
 	},
-	excludeChunk: function(value) {
+	excludeChunk: function _(value) {
 		Terrain.removeChunk(value.x, value.y);
 		handleNextEvent();
 	},

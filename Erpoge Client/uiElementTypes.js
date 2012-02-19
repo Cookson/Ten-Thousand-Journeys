@@ -188,7 +188,7 @@ UIElementTypes.windowAccountCharacters = {
 			}
 			// Формируем новый список игроков
 			var nDivPrototype = document.createElement("div");
-			for (var i=0;i<data.length;i++) {
+			for (var i=0; i<data.length; i++) {
 				var nDiv = document.createElement("div");
 				this.addCustomClass(nDiv, "Player");
 				this.addEventListener(nDiv, "click", "playerClick");

@@ -57,12 +57,12 @@ public abstract class Character extends Coordinate {
 	public static final String DEFAULT_NAME = "Default Name";
 	public static final double VISION_RANGE = 8;
 	
-	protected int hp;
-	protected int mp;
+	public int hp;
+	public int mp;
 	protected int ep;
 	protected int energy;
-	protected int maxHp;
-	protected int maxMp;
+	public int maxHp;
+	public int maxMp;
 	protected int maxEp;
 	protected int armor;
 	protected int evasion;
@@ -71,7 +71,7 @@ public abstract class Character extends Coordinate {
 	protected int poisonRes = 0;
 	protected int acidRes = 0;
 	protected int actionPoints = 0;
-	protected int fraction;
+	public int fraction;
 	public HorizontalPlane plane;
 	public Chunk chunk;
 	public final String name;
@@ -98,6 +98,7 @@ public abstract class Character extends Coordinate {
 		this.name = name;
 		this.type = type;
 		this.plane = plane;
+		this.chunk = plane.getChunkWithCell(x, y);
 		fraction = 0;
 	}
 	/* Actions */
@@ -298,7 +299,7 @@ public abstract class Character extends Coordinate {
 		moveTime(500);
 	}
 	/* Vision */
-	protected void notifyNeighborsVisiblilty() {
+	public void notifyNeighborsVisiblilty() {
 	/**
 	 * This method's name sucks, but I don't know how to call it : (
 	 * 
@@ -306,7 +307,7 @@ public abstract class Character extends Coordinate {
 	 * so nearby characters can update status of this character as
 	 * seen / unseen.
 	 */
-		for (NonPlayerCharacter character : getNearbyNonPlayerCharacters()) {
+		for (NonPlayerCharacter character : timeStream.nonPlayerCharacters) {
 			character.tryToSee(this);
 		}
 		notifyObservers();
@@ -321,7 +322,7 @@ public abstract class Character extends Coordinate {
 	 * in square with VISION_RANGE*2+1 side length.
 	 */
 		HashSet<NonPlayerCharacter> answer = new HashSet<NonPlayerCharacter>();
-		for (NonPlayerCharacter character : getTimeStream().nonPlayerCharacters) {
+		for (NonPlayerCharacter character : timeStream.nonPlayerCharacters) {
 		// Quickly select characters that could be seen (including this Seer itself)
 			if (
 				Math.abs(character.x - x) <= Character.VISION_RANGE && 

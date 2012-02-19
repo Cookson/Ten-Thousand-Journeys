@@ -34,7 +34,7 @@ var CellCursor = {
 	shadedCells: [],
 	availableCells: [],
 	move: function _(x,y) {
-		if (this.isSelectionMode && this.availableCells.indexOf(Terrain.cells[x][y])==-1) {
+		if (this.isSelectionMode && this.availableCells.indexOf(Terrain.getCell(x,y))==-1) {
 			this.changeStyle("Unavailable");
 		} else if (this.isSelectionMode) {
 			this.changeStyle("CellAction");
@@ -145,14 +145,14 @@ var CellCursor = {
 		for (var x = startX; x<=endX; x++) {
 			for (var y = startY; y<=endY; y++) {
 				if (
-					Player.visibleCells[x][y] 
+					Player.visibleCells[x-Player.x+Player.VISION_RANGE][y-Player.y+Player.VISION_RANGE] 
 					&& (Math.floor(distance(zoneCenter.x,zoneCenter.y,x,y)) > maximumDistance
-					|| (!Terrain.isPeaceful || !Player.canSee(x,y,false,true)))
+					|| !Player.canSee(x,y,false,true))
 				) {
-					this.shadedCells.push(Terrain.cells[x][y]);
+					this.shadedCells.push(Terrain.getCell(x,y));
 					Terrain.getCell(x,y).shade();
 				} else {
-					this.availableCells.push(Terrain.cells[x][y]);
+					this.availableCells.push(Terrain.getCell(x,y));
 				}
 			}
 		}

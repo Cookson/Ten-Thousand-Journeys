@@ -3,6 +3,6 @@
 	<classpathentry excluding="erpoge/location/terraingeneration/|erpoge/location/Event.java|erpoge/location/TerrainGenerator.java|net/_tootallnate/websocket/|_net/tootallnate/websocket/" kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/home/cookson/workspace/Erpoge Server/bin/gson-1.7.1.jar"/>
+	<classpathentry kind="lib" path="src/gson-1.7.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -72,7 +72,6 @@ Cell.prototype.hide = function(chunk, x, y) {
 		
 		var values = this.items.getValues();
 		for (var i=0; i<values.length; i++) {
-			console.log(values[i])
 			values[i]._img.style.display = "none";
 		}
 	}
@@ -141,7 +140,6 @@ Cell.prototype.hasItem = function(typeId, param) {
 	return false;
 };
 Cell.prototype.addItem = function(x,y,item) {
-	console.log(x,y,item)
 	if (item instanceof UniqueItem || !this.items.hasPile(item.typeId, item.amount)) {
 		this.items.add(item);
 		var viewIndent = Terrain.getViewIndentation(x,y,32);
@@ -161,7 +159,6 @@ Cell.prototype.addItem = function(x,y,item) {
 };
 Cell.prototype.removeItem = function(typeId, param) {
 	var item = this.items.getItem(typeId, param);
-	console.log(item);
 	this.items.remove(item);
 	if (!this.items.contains(item)) {
 		item._img.parentNode.removeChild(item._img);
@@ -589,7 +586,11 @@ Door.prototype.remove = function(x,y) {
 	// "this" here is a Side object, the function is applied to each cardinal side.
 		var d = this.side2d();
 		var cell = Terrain.getCell(x+d[0], y+d[1]);
-		if (cell !== null && (cell.object instanceof Wall)) {
+		if (
+			cell !== null 
+			&& (cell.object instanceof Wall) 
+			&& cell.object._doorSides[this.opposite().getCardinalInt()] !== undefined
+		) {
 			cell.object.removeDoorSide(this.opposite());
 		}
 	}, []);
@@ -793,7 +794,6 @@ Chunk.prototype.loadData = function(data) {
 		} else {
 			item = new ItemPile(data.i[i+2], data.i[i+3]);
 		}
-		console.log(item)
 		Terrain.createItem(data.i[i],data.i[i+1],item);
 		if (x === Terrain.CHUNK_WIDTH-1) {
 			y++;
@@ -801,6 +801,10 @@ Chunk.prototype.loadData = function(data) {
 		} else {
 			x++;
 		}
+	}
+	// Characters loading
+	for (var i=0; i<data.ch.length; i++) {
+		
 	}
 };
 Chunk.prototype.getAbsoluteCell = function(x, y) {

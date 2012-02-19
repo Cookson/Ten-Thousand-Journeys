@@ -1,6 +1,7 @@
 package erpoge.core.terrain;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 
 import erpoge.core.Main;
@@ -119,18 +120,21 @@ public class Chunk extends TerrainBasics {
 		return getContainer(x,y).jsonGetContents();
 	}
 	public NonPlayerCharacter createCharacter(int x, int y, String type, String name, int fraction) {
-		NonPlayerCharacter ch = new NonPlayerCharacter(plane, x, y, type, name);
-		ch.setFraction(fraction);
-		characters.add(ch);
-		nonPlayerCharacters.add(ch);
-		cells[x][y].character(ch);
+		NonPlayerCharacter character = new NonPlayerCharacter(plane, x, y, type, name);
+		character.setTimeStream(timeStream);
+		timeStream.addNonPlayerCharacter(character);
+		character.setFraction(fraction);
+		characters.add(character);
+		nonPlayerCharacters.add(character);
+		cells[x][y].character(character);
 		timeStream.addEvent(new EventCharacterAppear(
-				ch.characterId, ch.x, ch.y, ch.type, ch.name,
-				ch.getAttribute(Attribute.MAX_HP), ch.getAttribute(Attribute.HP),
-				ch.getAttribute(Attribute.MAX_MP), ch.getAttribute(Attribute.MP),
-				ch.getEffects(), ch.getEquipment(), ch.getFraction()));
-		ch.getVisibleEntities();
-		return ch;
+				character.characterId, character.x, character.y, character.type, character.name,
+				character.getAttribute(Attribute.MAX_HP), character.getAttribute(Attribute.HP),
+				character.getAttribute(Attribute.MAX_MP), character.getAttribute(Attribute.MP),
+				character.getEffects(), character.getEquipment(), character.getFraction()));
+		character.notifyNeighborsVisiblilty();
+		character.getVisibleEntities();
+		return character;
 	}	
 
 	public void addCharacter(PlayerCharacter ch, Portal portal) {
@@ -266,7 +270,6 @@ public class Chunk extends TerrainBasics {
 	public Integer[] getItemsAsIntegerArray() {
 		// [x,y,typeId,param, x,y,typeId,param, ...]
 		ArrayList<Integer> contents = new ArrayList<Integer>();
-		int u=0;
 		for (int y=0; y<Chunk.WIDTH; y++) {
 			for (int x=0; x<Chunk.WIDTH; x++) {
 				ItemMap map = cells[x][y].items;
@@ -281,5 +284,26 @@ public class Chunk extends TerrainBasics {
 			}
 		}
 		return contents.toArray(new Integer[] {});
+	}
+	public ArrayList[] getCharacters() {
+		ArrayList[] answer = new ArrayList[characters.size()];
+		int u = 0;
+		for (Character character : characters) {
+			ArrayList chdata = new ArrayList();
+			chdata.add(character.characterId);
+			chdata.add(character.x);
+			chdata.add(character.y);
+			chdata.add(character.type);
+			chdata.add(character.name);
+			chdata.add(character.maxHp);
+			chdata.add(character.hp);
+			chdata.add(character.maxMp);
+			chdata.add(character.mp);
+			chdata.add(character.getEffects());
+			chdata.add(character.getEquipment());
+			chdata.add(character.fraction);
+			answer[u++] = chdata;
+		}
+		return answer;
 	}
 }

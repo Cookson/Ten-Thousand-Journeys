@@ -51,6 +51,7 @@ Net = {
 		onmessage && (this.onmessage = onmessage);
 		callback && (this.callback = callback);
 		this.websocket.send(JSON.stringify(data));
+		console.log("send", data);
 	},
 	init : function _() {
 		

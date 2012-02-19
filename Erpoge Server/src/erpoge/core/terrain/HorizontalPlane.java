@@ -157,9 +157,7 @@ public class HorizontalPlane {
 	public void openDoor(int x, int y) {
 		Chunk chunk = getChunkWithCell(x, y);
 		int doorId = chunk.getCell(x,y).object();
-		Main.console("remove");
 		chunk.removeObject(x-chunk.x,y-chunk.y);
-		Main.console("create");
 		if (doorId % 2 == 0) { 
 		// The door is closed, open the door
 			chunk.setObject(x-chunk.x,y-chunk.y,doorId-1);	

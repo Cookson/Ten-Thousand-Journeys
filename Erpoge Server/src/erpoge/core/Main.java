@@ -95,5 +95,5 @@ public class Main {
 		
 		MainHandler.startServer();
 		MainHandler.setDefaultPlane(plane);
-	}	
+	}
 }

@@ -67,7 +67,7 @@ public class PlayerHandler extends PlayerCharacter {
 	
 	/* Action handlers */
 	
-	public void aAccountRegister(String message) throws IOException {
+	public void aAccountRegister(String message) throws InterruptedException {
 		ClientMessageAccountRegister accountRegsterData = gson.fromJson(message, ClientMessageAccountRegister.class);
 		if (Accounts.hasAccount(accountRegsterData.l)) {
 			connection.send("{\"a\":"+MainHandler.ACCOUNT_REGISTER+",\"error\":1}");
@@ -84,7 +84,7 @@ public class PlayerHandler extends PlayerCharacter {
 			connection.send("[{\"e\":\"login\","+account.jsonPartGetCharactersAuthInfo()+"}]");
 		}
 	}
-	public void aPlayerCreate(String message) throws IOException {
+	public void aPlayerCreate(String message) throws InterruptedException {
 		ClientMessagePlayerCreate playerCreateData = gson.fromJson(message, ClientMessagePlayerCreate.class);
 		Account accountPlayerCreate = Accounts.account(playerCreateData.account);
 		PlayerCharacter newPlayer = CharacterManager.createPlayer(
@@ -96,18 +96,18 @@ public class PlayerHandler extends PlayerCharacter {
 		accountPlayerCreate.accountStatistic();
 		connection.send("[{\"e\":\"login\","+accountPlayerCreate.jsonPartGetCharactersAuthInfo()+"}]");
 	}
-	public void aAttack(String message) throws IOException {
-		ClientMessageAttack messageAttack = gson.fromJson(message, ClientMessageAttack.class);
-		for (Character ch : getTimeStream().characters) {
-			if (ch.characterId == messageAttack.aimId) {
+	public void aAttack(String message) throws InterruptedException {
+		ClientMessageAttack data = gson.fromJson(message, ClientMessageAttack.class);
+		for (Character ch : timeStream.characters) {
+			if (ch.characterId == data.aimId) {
 				attack(ch);
 				getTimeStream().flushEvents();
 				return;
 			}
 		}
-		throw new Error("No character with id "+messageAttack.aimId);
+		throw new Error("No character with id "+data.aimId);
 	}
-	public void aStep(String message) throws IOException {
+	public void aStep(String message) throws InterruptedException {
 		int dx, dy;
 		switch (gson.fromJson(message, ClientMessageStep.class).dir) {
 			case 0: dx =  0; dy = -1; break;
@@ -122,14 +122,14 @@ public class PlayerHandler extends PlayerCharacter {
 		step(x + dx, y + dy);
 		getTimeStream().flushEvents();
 	}
-	public void aPutOn(String message) throws IOException {
+	public void aPutOn(String message) throws InterruptedException {
 		// put on an item
 		// v - item id
 		int itemId = gson.fromJson(message,	ClientMessagePutOn.class).itemId;
 		putOn(inventory.getUnique(itemId), false);
 		getTimeStream().flushEvents();
 	}
-	public void aTakeOff(String message) throws IOException {
+	public void aTakeOff(String message) throws InterruptedException {
 		// take off an item
 		// v - item id
 		int itemId = gson.fromJson(message,
@@ -137,47 +137,47 @@ public class PlayerHandler extends PlayerCharacter {
 		takeOff(equipment.getUnique(itemId));
 		getTimeStream().flushEvents();
 	}
-	public void aPickUpPile(String message) throws IOException {
+	public void aPickUpPile(String message) throws InterruptedException {
 		ClientMessagePickUpPile data = gson.fromJson(message,
 				ClientMessagePickUpPile.class);
 		connection.character.pickUp(plane.getCell(x,y).items.getPile(data.typeId).separatePile(data.amount));
 		getTimeStream().flushEvents();
 	}
-	public void aPickUpUnique(String message) throws IOException {
+	public void aPickUpUnique(String message) throws InterruptedException {
 		ClientMessagePickUpUnique data = gson.fromJson(message,
 				ClientMessagePickUpUnique.class);
 		pickUp(plane.getCell(x, y).items.getUnique(data.itemId));
 		getTimeStream().flushEvents();
 	}
-	public void aDropPile(String message) throws IOException {
+	public void aDropPile(String message) throws InterruptedException {
 		// drop an item
 		ClientMessageDropPile data = gson.fromJson(message,
 				ClientMessageDropPile.class);
 		drop(inventory.getPile(data.typeId).separatePile(data.amount));
 		getTimeStream().flushEvents();
 	}
-	public void aDropUnique(String message) throws IOException {
+	public void aDropUnique(String message) throws InterruptedException {
 		// drop an item
 		ClientMessageDropUnique data = gson.fromJson(message,
 				ClientMessageDropUnique.class);
 		drop(inventory.getUnique(data.itemId));
 		getTimeStream().flushEvents();
 	}
-	public void aDeauth(String message) throws IOException {
+	public void aDeauth(String message) throws InterruptedException {
 		if (connection.character != null) {
 			connection.character.deauthorize();
 		}
 	}
-	public void aChatMessage(String message) throws IOException {
+	public void aChatMessage(String message) throws InterruptedException {
 		ClientMessageChatMessage data = gson.fromJson(message, ClientMessageChatMessage.class);
 		connection.character.say(data.text);
 	}
-	public void aOpenContainer(String message) throws IOException {
+	public void aOpenContainer(String message) throws InterruptedException {
 		ClientMessageCoordinate data = gson.fromJson(message, ClientMessageCoordinate.class);
 		connection.send("[{\"e\":\"openContainer\",\"items\":["+
 				plane.getChunkWithCell(data.x, data.y).jsonGetContainerContents(data.x, data.y)+"]}]");
 	}
-	public void aTakeFromContainer(String message) throws IOException {
+	public void aTakeFromContainer(String message) throws InterruptedException {
 		ClientMessageTakeFromContainer data = gson.fromJson(message, ClientMessageTakeFromContainer.class);
 		Container container = plane.getChunkWithCell(data.x, data.y).getContainer(data.x, data.y);
 		if (ItemsTypology.item(data.typeId).isUnique()) {
@@ -187,7 +187,7 @@ public class PlayerHandler extends PlayerCharacter {
 		}			
 		getTimeStream().flushEvents();
 	}
-	public void aPutToContainer(String message) throws IOException {
+	public void aPutToContainer(String message) throws InterruptedException {
 		ClientMessageTakeFromContainer data = gson.fromJson(message, ClientMessageTakeFromContainer.class);
 		Container container = plane.getChunkWithCell(data.x, data.y).getContainer(data.x, data.y);
 		if (ItemsTypology.item(data.typeId).isUnique()) {
@@ -197,29 +197,29 @@ public class PlayerHandler extends PlayerCharacter {
 		}
 		timeStream.flushEvents();
 	}
-	public void aCastSpell(String message) throws IOException {
+	public void aCastSpell(String message) throws InterruptedException {
 		ClientMessageCastSpell data = gson.fromJson(message, ClientMessageCastSpell.class);
 		connection.character.castSpell(data.spellId, data.x, data.y);
 		timeStream.flushEvents();
 	}
-	public void aShootMissile(String message) throws IOException {
+	public void aShootMissile(String message) throws InterruptedException {
 		ClientMessageShootMissile data = gson.fromJson(message, ClientMessageShootMissile.class);
 		shootMissile(data.x, data.y, inventory.getPile(data.missile).separatePile(1));
 		timeStream.flushEvents();
 	}
-	public void aUseObject(String message) throws IOException {
+	public void aUseObject(String message) throws InterruptedException {
 		ClientMessageUseObject data = gson.fromJson(message, ClientMessageUseObject.class);
 		connection.character.useObject(data.x, data.y);
 		timeStream.flushEvents();
 	}
-	public void aCheckOut(String message) throws IOException {
+	public void aCheckOut(String message) throws InterruptedException {
 		timeStream.checkOut(this);
 	}
-	public void aAnswer(String message) throws IOException {
+	public void aAnswer(String message) throws InterruptedException {
 		ClientMessageAnswer messageAnswer = gson.fromJson(message, ClientMessageAnswer.class);
 		connection.character.dialogueAnswer(messageAnswer.answerId);
 	}
-	public void aStartConversation(String message) throws IOException {
+	public void aStartConversation(String message) throws InterruptedException {
 		ClientMessageStartConversation data = gson.fromJson(message, ClientMessageStartConversation.class);
 		startConversation(data.characterId);
 	}

@@ -51,7 +51,7 @@ public class TimeStream {
 		for (WebSocket conn : targetConnections) {
 			try {
 				conn.send(data);
-			} catch (IOException e) {
+			} catch (Exception e) {
 				throw new Error("Data sending error");
 			}
 		}
@@ -82,12 +82,12 @@ public class TimeStream {
 		for (PlayerHandler player : players) {
 			try {
 				player.connection.send(data);
-			} catch (IOException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 				throw new Error("Data sending error");
 			}
 		}
-		Main.log(data);
+//		Main.log(data);
 		events.clear();
 	}
 	public void addEvent(ServerEvent event) {
@@ -98,6 +98,13 @@ public class TimeStream {
 		characters.add(character);
 		players.add(character);
 		loadApproachedChunks(character.plane, character.x, character.y);
+	}
+	public void addNonPlayerCharacter(NonPlayerCharacter character) {
+		if (!chunks.contains(character.chunk)) {
+			throw new Error(character+" must be in a timeStream's chynk to be added to timeStream");
+		}
+		nonPlayerCharacters.add(character);
+		characters.add(character);
 	}
 	public void checkOut(PlayerCharacter player) {
 		if (player.checkedOut) {

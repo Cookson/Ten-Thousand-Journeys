@@ -10,6 +10,7 @@ import erpoge.core.inventory.Item;
 import erpoge.core.inventory.UniqueItem;
 import erpoge.core.objects.GameObjects;
 import erpoge.core.objects.Sound;
+import erpoge.core.terrain.Chunk;
 
 public final class Spells {
 	private static final Spells instance = new Spells();
@@ -32,7 +33,8 @@ public final class Spells {
 		});
 		spells.put(SPELL_SUMMON_ITEM, new Spell() {
 			public void cast(Character caster, int x, int y) {
-				caster.plane.getChunkWithCell(x, y).createCharacter(x, y, "bear", "Чужой миша", 0);
+				Chunk chunk = caster.plane.getChunkWithCell(x, y);
+				chunk.createCharacter(x-chunk.getX(), y-chunk.getY(), "bear", "Чужой миша", 0);
 //				if (caster.location.cells[x][y].object() != GameObjects.OBJ_VOID) {
 //					caster.location.removeObject(x, y);
 //				} else {
