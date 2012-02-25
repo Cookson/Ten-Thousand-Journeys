@@ -9,6 +9,7 @@ import java.util.Set;
 
 import net.tootallnate.websocket.WebSocket;
 
+import erpoge.core.Character;
 import erpoge.core.Main;
 import erpoge.core.inventory.Item;
 import erpoge.core.inventory.ItemPile;
@@ -24,6 +25,7 @@ import erpoge.core.terrain.Container;
 import erpoge.core.terrain.HorizontalPlane;
 import erpoge.core.terrain.Location;
 import erpoge.core.terrain.Portal;
+import erpoge.core.terrain.TerrainBasics;
 
 public class PlayerCharacter extends Character {
 	protected final String cls;
@@ -49,12 +51,12 @@ public class PlayerCharacter extends Character {
 			"demonology", "mental", "magicItems", "craft", "traps",
 			"effraction", "mechanics", "alchemy"};
 	public WebSocket connection;
-	protected HorizontalPlane plane;
 	public PlayerCharacter(HorizontalPlane plane, int x, int y, String name, Race race, String cls) {
 		super(plane, x, y, "player", name);
 		this.cls = cls;
 		this.race = race;
 		this.plane = plane;
+		this.plane.getCell(x, y).setPassability(TerrainBasics.PASSABILITY_SEE);
 		maxMp = 30000;
 		maxHp = 100000;
 		maxEp = 100;

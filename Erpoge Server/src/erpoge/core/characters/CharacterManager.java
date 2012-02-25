@@ -3,7 +3,8 @@ package erpoge.core.characters;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import erpoge.core.characters.Character;
+import erpoge.core.Character;
+import erpoge.core.TimeStream;
 import erpoge.core.net.PlayerHandler;
 import erpoge.core.terrain.Chunk;
 import erpoge.core.terrain.HorizontalPlane;
@@ -15,6 +16,7 @@ public class CharacterManager {
 		PlayerHandler player = new PlayerHandler(plane, x, y, name, race, cls);
 		players.put(player.characterId, player);
 		player.setTimeStream(new TimeStream(player));
+		plane.getCell(x, y).character(player);
 		return player;
 	}
 	public static void createCharacter(HorizontalPlane plane, int x, int y, String type, String name) {

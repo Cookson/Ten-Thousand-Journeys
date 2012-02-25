@@ -1,6 +1,6 @@
 package erpoge.core.itemtypes;
 
-import erpoge.core.characters.Character;
+import erpoge.core.Character;
 
 public class Useable extends ItemType {
 	public Useable(String name, int cls, int weight, int price, int material) {

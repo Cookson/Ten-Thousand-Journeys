@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
+import erpoge.core.Character;
 import erpoge.core.Main;
 
 public class DialoguePoint {

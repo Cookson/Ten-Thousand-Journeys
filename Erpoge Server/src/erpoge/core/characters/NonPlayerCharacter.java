@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import erpoge.core.Character;
 import erpoge.core.Main;
 import erpoge.core.inventory.Item;
 import erpoge.core.itemtypes.ItemType;
@@ -14,12 +15,14 @@ import erpoge.core.meta.Coordinate;
 import erpoge.core.meta.Side;
 import erpoge.core.net.serverevents.EventDialogueEnd;
 import erpoge.core.net.serverevents.EventDialoguePoint;
+import erpoge.core.terrain.Cell;
 import erpoge.core.terrain.Chunk;
 import erpoge.core.terrain.HorizontalPlane;
 import erpoge.core.terrain.Location;
 import erpoge.core.terrain.TerrainBasics;
 
 public class NonPlayerCharacter extends Character {
+	private static final int PATH_TABLE_WIDTH = 41;
 	private int destX;
 	private int destY;
 	private Character activeEnemy; // Enemy in plain sight
@@ -39,13 +42,14 @@ public class NonPlayerCharacter extends Character {
 		super(plane, x, y, type, name);
 		Chunk chunk = plane.getChunkWithCell(x, y);
 		chunk.getCell(x, y).setPassability(TerrainBasics.PASSABILITY_SEE);
+		this.chunk = chunk;
 		hp = CharacterTypes.getType(type).hp;
 		mp = CharacterTypes.getType(type).mp;
 		ep = 100;
 		maxHp = CharacterTypes.getType(type).hp;
 		maxMp = CharacterTypes.getType(type).mp;
 		maxEp = 100;
-		pathTable = new int[Chunk.WIDTH*3][Chunk.WIDTH*3];
+		pathTable = new int[PATH_TABLE_WIDTH][PATH_TABLE_WIDTH];
 		destX = x;
 		destY = y;
 		characterType = CharacterTypes.getType(type);
@@ -68,8 +72,10 @@ public class NonPlayerCharacter extends Character {
 	}
 	/* NPC behaviour functions */
 	private void setDestNearEntity(Coordinate entity) {
-		// Set character's destX and destY to the closest cell near the given
-		// entity
+	// Set character's destX and destY to the closest cell near the given
+	// entity
+		int dX = this.x-(PATH_TABLE_WIDTH-1)/2;
+		int dY = this.y-(PATH_TABLE_WIDTH-1)/2;
 		if (isNear(entity.x, entity.y)) {
 			// ������ �� �����, ���� ���� �� �������� ������
 			destX = x;
@@ -78,21 +84,23 @@ public class NonPlayerCharacter extends Character {
 		}
 		int curX = entity.x;
 		int curY = entity.y;
-		int[] dists = new int[]{curX - 1, curY, curX + 1, curY, curX, curY - 1,
-				curX, curY + 1, curX + 1, curY + 1, curX - 1, curY + 1,
-				curX + 1, curY - 1, curX - 1, curY - 1};
+		int[] dists = new int[]{curX-1, curY, curX+1, curY, curX, curY-1,
+				curX, curY+1, curX+1, curY+1, curX-1, curY+1,
+				curX+1, curY-1, curX-1, curY-1};
 		int dist = Integer.MAX_VALUE;
 		int curDestX = -1, curDestY = -1;
 		// ����� ��������� �� ���
-		for (int i = 0; i < 8; i++) {
-			if (plane.getCell(curX, curY).getPassability() == 0
-					&& getPathTableCell(curX, curY) <= dist
-					&& (curDestX == -1 || distance(curX, curY) < distance(
-							curDestX, curDestY)) && pathTable[curX][curY] > 0
-					&& !(curX == x && curY == y)) {
-				dist = pathTable[curX][curY];
-				curDestX = curX;
-				curDestY = curY;
+		for (int i=0; i<8; i++) {
+			if (
+				plane.getCell(dists[i*2], dists[i*2+1]).getPassability() == TerrainBasics.PASSABILITY_FREE
+				&& pathTable[dists[i*2]-dX][dists[i*2+1]-dY] <= dist
+				&& (curDestX == -1 || distance(dists[i*2], dists[i*2+1])<distance(curDestX, curDestY)) 
+				&& pathTable[dists[i*2]-dX][dists[i*2+1]-dY] > 0
+				&& !(dists[i*2] == x && dists[i*2+1] == y)
+			) {
+				dist = pathTable[dists[i*2]-dX][dists[i*2+1]-dY];
+				curDestX = dists[i*2];
+				curDestY = dists[i*2+1];
 			}
 		}
 		if (curDestX != -1 || curDestY != -1) {
@@ -100,14 +108,10 @@ public class NonPlayerCharacter extends Character {
 			destY = curDestY;
 		} else {
 			// showPathTable();
-			// throw new
-			// Error("Could not set dest for "+name+" at "+x+":"+y+" (dest "+destX+":"+destY+") to entity at "+entity.x+":"+entity.y);
 			destX = x;
 			destY = y;
+			throw new Error("Could not set dest for "+name+" at "+x+":"+y+" (dest "+destX+":"+destY+") to entity at "+entity.x+":"+entity.y);
 		}
-	}
-	private int getPathTableCell(int x, int y) {
-		return this.pathTable[Chunk.WIDTH+Chunk.WIDTH/2+x-this.x][Chunk.WIDTH+Chunk.WIDTH/2+y-this.y];
 	}
 	private boolean getEnemy() {
 	/** 
@@ -240,19 +244,21 @@ public class NonPlayerCharacter extends Character {
 		return characterType.isCaster;
 	}
 	private boolean canComeTo(Coordinate c) {
+		int dX = this.x-(PATH_TABLE_WIDTH-1)/2;
+		int dY = this.y-(PATH_TABLE_WIDTH-1)/2;
 		return isNear(c.x, c.y) 
-			|| pathTable[c.x  ][c.y-1] != 0
-			|| pathTable[c.x+1][c.y-1] != 0
-			|| pathTable[c.x+1][c.y  ] != 0
-			|| pathTable[c.x+1][c.y+1] != 0
-			|| pathTable[c.x  ][c.y+1] != 0
-			|| pathTable[c.x-1][c.y+1] != 0
-			|| pathTable[c.x-1][c.y  ] != 0
-			|| pathTable[c.x-1][c.y-1] != 0;			
+			|| pathTable[c.x  -dX][c.y-1-dY] != 0
+			|| pathTable[c.x+1-dX][c.y-1-dY] != 0
+			|| pathTable[c.x+1-dX][c.y  -dY] != 0
+			|| pathTable[c.x+1-dX][c.y+1-dY] != 0
+			|| pathTable[c.x  -dX][c.y+1-dY] != 0
+			|| pathTable[c.x-1-dX][c.y+1-dY] != 0
+			|| pathTable[c.x-1-dX][c.y  -dY] != 0
+			|| pathTable[c.x-1-dX][c.y-1-dY] != 0;			
 	}
 	public void action() {
 		getPathTableToAllSeenCharacters();
-		if (hp < maxHp / 2) {
+		if (hp < maxHp/2) {
 		// If hp is too low, then retreat
 			Coordinate retreatCoord = getRetreatCoord();
 			step(retreatCoord.x, retreatCoord.y);
@@ -271,6 +277,7 @@ public class NonPlayerCharacter extends Character {
 				destX = activeEnemy.x;
 				destY = activeEnemy.y;
 				setDestNearEntity(activeEnemy);
+				Main.console(name+" goes to "+destX+" "+destY+" near "+activeEnemy.x+" "+activeEnemy.y);
 				if (destX == x && destY == y) {
 					idle();
 				} else {
@@ -283,10 +290,13 @@ public class NonPlayerCharacter extends Character {
 				}
 			} else {
 			// If sees enemy, but path to him is blocked
+				Main.console("ELSE");
 				/* */ // Maybe this part should be main, and main part should be deleted?!
 				// If we always use imaginary table.
+				int dX = this.x-(PATH_TABLE_WIDTH-1)/2;
+				int dY = this.y-(PATH_TABLE_WIDTH-1)/2;
 				int [][] imaginaryPathTable = getImaginaryPathTable(activeEnemy.x, activeEnemy.y);
-				if (imaginaryPathTable[activeEnemy.x][activeEnemy.y] != 0) {
+				if (imaginaryPathTable[activeEnemy.x-dX][activeEnemy.y-dY] != 0) {
 				// If path is blocked by characters
 					ArrayList<Coordinate> imaginaryPath = 
 							getPathOnCustomPathTable(imaginaryPathTable, activeEnemy.x, activeEnemy.y);
@@ -374,30 +384,32 @@ public class NonPlayerCharacter extends Character {
 	}
 	/* Pathfinding */
 	public void showPathTable() {
-//		for (int i = 0; i < location.height; i++) {
-//			for (int j = 0; j < location.width; j++) {
-//				Main.out(pathTable[j][i]);
-//			}
-//			Main.outln();
-//		}
-//		Main.outln("------");
+		for (int i=0; i<PATH_TABLE_WIDTH; i++) {
+			for (int j=0; j<PATH_TABLE_WIDTH; j++) {
+				Main.out(pathTable[j][i]%10);
+			}
+			Main.outln();
+		}
+		Main.outln("------");
 	}
 	public int[][] getImaginaryPathTable(int destX, int destY) {
 	/**
 	 * Gets path table using special rules.
 	 * There is almost the same code as in getPathTable
 	 */
+		int dX = this.x-(PATH_TABLE_WIDTH-1)/2;
+		int dY = this.y-(PATH_TABLE_WIDTH-1)/2;
 		boolean isPathFound = false;
 		ArrayList<Coordinate> oldFront = new ArrayList<Coordinate>();
 		ArrayList<Coordinate> newFront = new ArrayList<Coordinate>();
 		newFront.add(new Coordinate(x, y));
-		int[][] imaginaryPathTable = new int[Chunk.WIDTH*3][Chunk.WIDTH*3];
-		for (int i = 0; i<Chunk.WIDTH*3; i++) {
-			for (int j = 0; j<Chunk.WIDTH*3; j++) {
+		int[][] imaginaryPathTable = new int[PATH_TABLE_WIDTH][PATH_TABLE_WIDTH];
+		for (int i=0; i<PATH_TABLE_WIDTH; i++) {
+			for (int j=0; j<PATH_TABLE_WIDTH; j++) {
 				imaginaryPathTable[i][j] = 0;
 			}
 		}
-		imaginaryPathTable[x][y] = 0;
+		imaginaryPathTable[x-dX][y-dY] = 0;
 		int t = 0;
 		do {
 			oldFront = newFront;
@@ -405,29 +417,29 @@ public class NonPlayerCharacter extends Character {
 			for (int i = 0; i < oldFront.size(); i++) {
 				int x = oldFront.get(i).x;
 				int y = oldFront.get(i).y;
-				int[] adjactentX = new int[]{x + 1, x, x, x - 1, x + 1, x + 1,
-						x - 1, x - 1};
-				int[] adjactentY = new int[]{y, y - 1, y + 1, y, y + 1, y - 1,
-						y + 1, y - 1};
-				for (int j = 0; j < 8; j++) {
-					int thisNumX = adjactentX[j];
-					int thisNumY = adjactentY[j];
-					if (thisNumX < 0 || thisNumX >= Chunk.WIDTH*3
-							|| thisNumY < 0 || thisNumY >= Chunk.WIDTH*3
-							|| imaginaryPathTable[thisNumX][thisNumY] != 0) {
+				int[] adjactentX = new int[]{x+1, x, x, x-1, x+1, x+1, x-1, x-1};
+				int[] adjactentY = new int[]{y, y-1, y+1, y, y+1, y-1, y+1, y-1};
+				for (int j=0; j<8; j++) {
+					int thisNumX = adjactentX[j]-dX;
+					int thisNumY = adjactentY[j]-dY;
+					if (
+						thisNumX<0 || thisNumX>=PATH_TABLE_WIDTH
+						|| thisNumY<0 || thisNumY>=PATH_TABLE_WIDTH
+						|| imaginaryPathTable[thisNumX][thisNumY]!=0
+					) {
 						continue;
 					}
-					if (thisNumX == destX && thisNumY == destY) {
+					if (adjactentX[j] == destX && adjactentY[j] == destY) {
 						isPathFound = true;
 					}
 					// This next condition is the difference between this method and getPathTable()
 					if (
-						(plane.getCell(thisNumX, thisNumY).hasCharacter() ||
-						plane.getCell(thisNumX, thisNumY).getPassability() == TerrainBasics.PASSABILITY_FREE)
-						&& !(thisNumX == this.x && thisNumY == this.y)
+						(plane.getCell(adjactentX[j], adjactentY[j]).hasCharacter() ||
+						plane.getCell(adjactentX[j], adjactentY[j]).getPassability()==TerrainBasics.PASSABILITY_FREE)
+						&& !(adjactentX[j]==this.x && adjactentY[j]==this.y)
 					) {
-						imaginaryPathTable[thisNumX][thisNumY] = t + 1;
-						newFront.add(new Coordinate(thisNumX, thisNumY));
+						imaginaryPathTable[thisNumX][thisNumY] = t+1;
+						newFront.add(new Coordinate(adjactentX[j], adjactentY[j]));
 					}
 				}
 			}
@@ -443,50 +455,55 @@ public class NonPlayerCharacter extends Character {
 	 * Gets path table using special rules.
 	 * There is almost the same code as in getPathTable
 	 */
+		int dX = this.x-(PATH_TABLE_WIDTH-1)/2;
+		int dY = this.y-(PATH_TABLE_WIDTH-1)/2;
 		boolean isPathFound = false;
 		ArrayList<Coordinate> oldFront = new ArrayList<Coordinate>();
 		ArrayList<Coordinate> newFront = new ArrayList<Coordinate>();
 		newFront.add(new Coordinate(x, y));
-		int[][] imaginaryPathTable = new int[Chunk.WIDTH*3][Chunk.WIDTH*3];
-		for (int i = 0; i < Chunk.WIDTH*3; i++) {
-			for (int j = 0; j < Chunk.WIDTH*3; j++) {
+		int[][] imaginaryPathTable = new int[PATH_TABLE_WIDTH][PATH_TABLE_WIDTH];
+		for (int i=0; i<PATH_TABLE_WIDTH; i++) {
+			for (int j=0; j<PATH_TABLE_WIDTH; j++) {
 				imaginaryPathTable[i][j] = 0;
 			}
 		}
-		imaginaryPathTable[x][y] = 0;
+		imaginaryPathTable[x-dX][y-dY] = 0;
 		int t = 0;
 		int charactersLeft = seenCharacters.size();
+		HashSet<Character> foundCharacters = new HashSet<Character>();
 		do {
 			oldFront = newFront;
 			newFront = new ArrayList<Coordinate>();
 			for (int i = 0; i < oldFront.size(); i++) {
 				int x = oldFront.get(i).x;
 				int y = oldFront.get(i).y;
-				int[] adjactentX = new int[]{x + 1, x, x, x - 1, x + 1, x + 1,
-						x - 1, x - 1};
-				int[] adjactentY = new int[]{y, y - 1, y + 1, y, y + 1, y - 1,
-						y + 1, y - 1};
-				for (int j = 0; j < 8; j++) {
-					int thisNumX = adjactentX[j];
-					int thisNumY = adjactentY[j];
-					if (thisNumX < 0 || thisNumX >= Chunk.WIDTH*3
-							|| thisNumY < 0 || thisNumY >= Chunk.WIDTH*3
-							|| imaginaryPathTable[thisNumX][thisNumY] != 0) {
+				int[] adjactentX = new int[]{x+1, x, x, x-1, x+1, x+1, x-1, x-1};
+				int[] adjactentY = new int[]{y, y-1, y+1, y, y+1, y-1, y+1, y-1};
+				for (int j=0; j<8; j++) {
+					int thisNumX = adjactentX[j]-dX;
+					int thisNumY = adjactentY[j]-dY;
+					if (
+						thisNumX<0 || thisNumX>=PATH_TABLE_WIDTH
+						|| thisNumY<0 || thisNumY>=PATH_TABLE_WIDTH
+						|| imaginaryPathTable[thisNumX][thisNumY]!=0
+					) {
 						continue;
 					}
-					if (thisNumX == destX && thisNumY == destY) {
+					if (thisNumX+dX==destX && thisNumY+dY==destY) {
 						isPathFound = true;
 					}
 					// This next condition is the difference between this method and getPathTable()
 					if (
-						(plane.getCell(thisNumX,thisNumY).hasCharacter() ||
-						plane.getCell(thisNumX,thisNumY).getPassability() == TerrainBasics.PASSABILITY_FREE)
-						&& !(thisNumX == this.x && thisNumY == this.y)
+						(plane.getCell(adjactentX[j],adjactentY[j]).hasCharacter() 
+						|| plane.getCell(adjactentX[j],adjactentY[j]).getPassability()==TerrainBasics.PASSABILITY_FREE)
+						&& !(adjactentX[j]==this.x && adjactentY[j]==this.y)
 					) {
-						imaginaryPathTable[thisNumX][thisNumY] = t + 1;
-						newFront.add(new Coordinate(thisNumX, thisNumY));
+						imaginaryPathTable[thisNumX][thisNumY] = t+1;
+						newFront.add(new Coordinate(adjactentX[j], adjactentY[j]));
 					}
-					if (seenCharacters.contains(plane.getCell(thisNumX,thisNumY).character())) {
+					Character characterInCell = plane.getCell(thisNumX+dX, thisNumY+dY).character();
+					if (seenCharacters.contains(characterInCell) && !foundCharacters.contains(characterInCell)) {
+						foundCharacters.add(characterInCell);
 						charactersLeft--;
 					}
 				}
@@ -503,69 +520,76 @@ public class NonPlayerCharacter extends Character {
 	 * Builds pathTable until paths to all seenCharacters are found
 	 * or waves limit is exceeded.
 	 */
+		int dX = this.x-(PATH_TABLE_WIDTH-1)/2;
+		int dY = this.y-(PATH_TABLE_WIDTH-1)/2;
 		boolean isPathFound = false;
 		ArrayList<Coordinate> oldFront = new ArrayList<Coordinate>();
 		ArrayList<Coordinate> newFront = new ArrayList<Coordinate>();
 		newFront.add(new Coordinate(x, y));
-		for (int i = 0; i<Chunk.WIDTH*3; i++) {
-			for (int j = 0; j<Chunk.WIDTH*3; j++) {
+		for (int i = 0; i<PATH_TABLE_WIDTH; i++) {
+			for (int j = 0; j<PATH_TABLE_WIDTH; j++) {
 				pathTable[i][j] = 0;
 			}
 		}
-		pathTable[x][y] = 0;
+		pathTable[x-dX][y-dY] = 0;
 		int t = 0;
 		int charactersLeft = seenCharacters.size();
+		HashSet<Character> foundCharacters = new HashSet<Character>();
 		do {
 			oldFront = newFront;
 			newFront = new ArrayList<Coordinate>();
 			for (int i = 0; i < oldFront.size(); i++) {
 				int x = oldFront.get(i).x;
 				int y = oldFront.get(i).y;
-				int[] adjactentX = new int[]{x + 1, x, x, x - 1, x + 1, x + 1,
-						x - 1, x - 1};
-				int[] adjactentY = new int[]{y, y - 1, y + 1, y, y + 1, y - 1,
-						y + 1, y - 1};
+				int[] adjactentX = new int[]{x+1, x, x, x-1, x+1, x+1, x-1, x-1};
+				int[] adjactentY = new int[]{y, y-1, y+1, y, y+1, y-1, y+1, y-1};
 				for (int j = 0; j < 8; j++) {
-					int thisNumX = adjactentX[j];
-					int thisNumY = adjactentY[j];
-					if (thisNumX < 0 || thisNumX >= Chunk.WIDTH*3
-							|| thisNumY < 0 || thisNumY >= Chunk.WIDTH*3
-							|| pathTable[thisNumX][thisNumY] != 0) {
+					int thisNumX = adjactentX[j]-dX;
+					int thisNumY = adjactentY[j]-dY;
+					if (
+						thisNumX<0 || thisNumX>=PATH_TABLE_WIDTH
+						|| thisNumY < 0 || thisNumY>=PATH_TABLE_WIDTH
+						|| pathTable[thisNumX][thisNumY]!=0
+						|| (thisNumX+dX == this.x && thisNumY+dY == this.y)
+					) {
 						continue;
 					}
+					Cell cell = plane.getCell(thisNumX+dX, thisNumY+dY);
 					if (
-						(plane.getCell(thisNumX, thisNumY).getPassability() == TerrainBasics.PASSABILITY_FREE
-						|| !initialCanSee(thisNumX, thisNumY)
-						&& plane.getCell(thisNumX, thisNumY).getPassability() != TerrainBasics.PASSABILITY_NO)
-							&& !(thisNumX == this.x && thisNumY == this.y)
+						(cell.getPassability()==TerrainBasics.PASSABILITY_FREE
+						|| !initialCanSee(thisNumX+dX, thisNumY+dY)
+						&& cell.getPassability()!=TerrainBasics.PASSABILITY_NO)
 					) {
 					// Step to cell if character can see it and it is free
 					// or character cannot see it and it is not PASSABILITY_NO
-						pathTable[thisNumX][thisNumY] = t + 1;
-						newFront.add(new Coordinate(thisNumX, thisNumY));
-					} else if (seenCharacters.contains(plane.getCell(thisNumX, thisNumY).character())) {
-						charactersLeft--;
+						pathTable[thisNumX][thisNumY] = t+1;
+						newFront.add(new Coordinate(adjactentX[j], adjactentY[j]));
+					} else {
+						Character characterInCell = cell.character();
+						if (seenCharacters.contains(characterInCell) && !foundCharacters.contains(characterInCell)) {
+							foundCharacters.add(characterInCell);
+							charactersLeft--;
+						}
 					}
 				}
 			}
 			t++;
-			// if (t>25) {
-			// throw new Error("long get path table cycle");
-			// }
 		} while (charactersLeft > 0 && newFront.size() > 0 && t < 25);
 		return true;
 	}
 	public boolean getPathTable() {
+		int dX = this.x-(PATH_TABLE_WIDTH-1)/2;
+		int dY = this.y-(PATH_TABLE_WIDTH-1)/2;
 		boolean isPathFound = false;
 		ArrayList<Coordinate> oldFront = new ArrayList<Coordinate>();
 		ArrayList<Coordinate> newFront = new ArrayList<Coordinate>();
 		newFront.add(new Coordinate(x, y));
-		for (int i = 0; i < Chunk.WIDTH*3; i++) {
-			for (int j = 0; j < Chunk.WIDTH*3; j++) {
+		for (int i=0; i<PATH_TABLE_WIDTH; i++) {
+			for (int j=0; j<PATH_TABLE_WIDTH; j++) {
 				pathTable[i][j] = 0;
 			}
 		}
-		pathTable[x][y] = 0;
+		pathTable[x-dX][y-dY] = 0;
 		int t = 0;
 		do {
 			oldFront = newFront;
@@ -573,26 +597,25 @@ public class NonPlayerCharacter extends Character {
 			for (int i = 0; i < oldFront.size(); i++) {
 				int x = oldFront.get(i).x;
 				int y = oldFront.get(i).y;
-				int[] adjactentX = new int[]{x + 1, x, x, x - 1, x + 1, x + 1,
-						x - 1, x - 1};
-				int[] adjactentY = new int[]{y, y - 1, y + 1, y, y + 1, y - 1,
-						y + 1, y - 1};
-				for (int j = 0; j < 8; j++) {
-					int thisNumX = adjactentX[j];
-					int thisNumY = adjactentY[j];
-					if (thisNumX < 0 || thisNumX >= Chunk.WIDTH*3
-							|| thisNumY < 0 || thisNumY >= Chunk.WIDTH*3
-							|| pathTable[thisNumX][thisNumY] != 0) {
+				int[] adjactentX = new int[]{x+1, x, x, x-1, x+1, x+1, x-1, x-1};
+				int[] adjactentY = new int[]{y, y-1, y+1, y, y+1, y-1, y+1, y-1};
+				for (int j=0; j<8; j++) {
+					int thisNumX = adjactentX[j]-dX;
+					int thisNumY = adjactentY[j]-dY;
+					if (thisNumX<0 || thisNumX>=PATH_TABLE_WIDTH
+						|| thisNumY<0 || thisNumY>=PATH_TABLE_WIDTH
+						|| pathTable[thisNumX][thisNumY]!=0
+					) {
 						continue;
 					}
-					if (thisNumX == this.destX && thisNumY == this.destY) {
+					if (thisNumX+dX == this.destX && thisNumY+dY == this.destY) {
 						isPathFound = true;
 					}
 					if (
-						(plane.getCell(thisNumX, thisNumY).getPassability() == TerrainBasics.PASSABILITY_FREE
-						|| !initialCanSee(thisNumX, thisNumY)
-						&& plane.getCell(thisNumX, thisNumY).getPassability() != TerrainBasics.PASSABILITY_NO)
-						&& !(thisNumX == this.x && thisNumY == this.y)
+						(plane.getCell(thisNumX+dX, thisNumY+dY).getPassability() == TerrainBasics.PASSABILITY_FREE
+						|| !initialCanSee(thisNumX+dX, thisNumY+dY)
+						&& plane.getCell(thisNumX+dX, thisNumY+dY).getPassability() != TerrainBasics.PASSABILITY_NO)
+						&& !(thisNumX+dX == this.x && thisNumY+dY == this.y)
 					) {
 					// Step to cell if character can see it and it is free
 					// or character cannot see it and it is not PASSABILITY_NO
@@ -609,53 +632,9 @@ public class NonPlayerCharacter extends Character {
 		return true;
 	}
  	public ArrayList<Coordinate> getPath(int destinationX, int destinationY) {
-		// �������� ���� �� ������ � ���� ������� ��������� (0 - ������ ��� � �.
-		// �.)
-		if (destinationX == this.x && destinationY == this.y) {
-			throw new Error("Getting path to itself");
-		}
-		ArrayList<Coordinate> path = new ArrayList<Coordinate>();
-		if (this.isNear(destinationX, destinationY)) {
-			path.add(new Coordinate(destinationX, destinationY));
-			return path;
-		}
-		// ���������� ����
-		int currentNumX = destinationX;
-		int currentNumY = destinationY;
-		int x = currentNumX;
-		int y = currentNumY;
-		for (int j = this.pathTable[currentNumX][currentNumY]; j > 0; j = this.pathTable[currentNumX][currentNumY]) {
-			// �������: �� ���-�� ����� �� ������ dest �� ��������� ������ (���
-			// 1)
-			path.add(0, new Coordinate(currentNumX, currentNumY));
-			int[] adjactentX = {x, x + 1, x, x - 1, x + 1, x + 1, x - 1, x - 1};
-			int[] adjactentY = {y - 1, y, y + 1, y, y + 1, y - 1, y + 1, y - 1};
-			for (int i = 0; i < 8; i++) {
-				// ��� ������ �� ��������� ������ (�, �, �, �)
-				int thisNumX = adjactentX[i];
-				if (thisNumX < 0 || thisNumX >= Chunk.WIDTH*3) {
-					continue;
-				}
-				int thisNumY = adjactentY[i];
-				if (thisNumY < 0 || thisNumY >= Chunk.WIDTH*3) {
-					continue;
-				}
-				if (pathTable[thisNumX][thisNumY] == j - 1) {
-					// ���� ������ � ���� ������� �������� ���������� �����,
-					// ������� �� ��
-					currentNumX = adjactentX[i];
-					currentNumY = adjactentY[i];
-					x = currentNumX;
-					y = currentNumY;
-					break;
-				}
-			}
-		}
-		return path;
+ 		return getPathOnCustomPathTable(pathTable, destinationX, destinationY);
 	}
  	public ArrayList<Coordinate> getPathOnCustomPathTable(int[][] customPathTable, int destinationX, int destinationY) {
-		// �������� ���� �� ������ � ���� ������� ��������� (0 - ������ ��� � �.
-		// �.)
 		if (destinationX == this.x && destinationY == this.y) {
 			throw new Error("Getting path to itself");
 		}
@@ -664,30 +643,26 @@ public class NonPlayerCharacter extends Character {
 			path.add(new Coordinate(destinationX, destinationY));
 			return path;
 		}
-		// ���������� ����
 		int currentNumX = destinationX;
 		int currentNumY = destinationY;
 		int x = currentNumX;
 		int y = currentNumY;
-		for (int j = customPathTable[currentNumX][currentNumY]; j > 0; j = customPathTable[currentNumX][currentNumY]) {
-			// �������: �� ���-�� ����� �� ������ dest �� ��������� ������ (���
-			// 1)
+		int dX = this.x-(this.PATH_TABLE_WIDTH-1)/2;
+		int dY = this.y-(this.PATH_TABLE_WIDTH-1)/2;
+		for (int j=customPathTable[currentNumX-dX][currentNumY-dY]; j>0; j=customPathTable[currentNumX-dX][currentNumY-dY]) {
 			path.add(0, new Coordinate(currentNumX, currentNumY));
-			int[] adjactentX = {x, x + 1, x, x - 1, x + 1, x + 1, x - 1, x - 1};
-			int[] adjactentY = {y - 1, y, y + 1, y, y + 1, y - 1, y + 1, y - 1};
-			for (int i = 0; i < 8; i++) {
-				// ��� ������ �� ��������� ������ (�, �, �, �)
-				int thisNumX = adjactentX[i];
-				if (thisNumX < 0 || thisNumX >= Chunk.WIDTH*3) {
+			int[] adjactentX = {x, x+1, x, x-1, x+1, x+1, x-1, x-1};
+			int[] adjactentY = {y-1, y, y+1, y, y+1, y-1, y+1, y-1};
+			for (int i=0; i<8; i++) {
+				int thisNumX = adjactentX[i]-dX;
+				if (thisNumX<0 || thisNumX>=PATH_TABLE_WIDTH) {
 					continue;
 				}
-				int thisNumY = adjactentY[i];
-				if (thisNumY < 0 || thisNumY >= Chunk.WIDTH*3) {
+				int thisNumY = adjactentY[i]-dY;
+				if (thisNumY<0 || thisNumY>=PATH_TABLE_WIDTH) {
 					continue;
 				}
-				if (customPathTable[thisNumX][thisNumY] == j - 1) {
-					// ���� ������ � ���� ������� �������� ���������� �����,
-					// ������� �� ��
+				if (customPathTable[thisNumX][thisNumY] == j-1) {
 					currentNumX = adjactentX[i];
 					currentNumY = adjactentY[i];
 					x = currentNumX;

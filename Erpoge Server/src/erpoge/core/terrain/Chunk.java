@@ -4,11 +4,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 
-import erpoge.core.Main;
-import erpoge.core.characters.Character;
+import erpoge.core.Character;
+import erpoge.core.TimeStream;
 import erpoge.core.characters.NonPlayerCharacter;
 import erpoge.core.characters.PlayerCharacter;
-import erpoge.core.characters.TimeStream;
 import erpoge.core.inventory.Item;
 import erpoge.core.inventory.ItemMap;
 import erpoge.core.inventory.ItemPile;
@@ -119,14 +118,14 @@ public class Chunk extends TerrainBasics {
 	public String jsonGetContainerContents(int x, int y) {
 		return getContainer(x,y).jsonGetContents();
 	}
-	public NonPlayerCharacter createCharacter(int x, int y, String type, String name, int fraction) {
-		NonPlayerCharacter character = new NonPlayerCharacter(plane, x, y, type, name);
+	protected NonPlayerCharacter createCharacter(int relX, int relY, String type, String name, int fraction) {
+		NonPlayerCharacter character = new NonPlayerCharacter(plane, x+relX, y+relY, type, name);
 		character.setTimeStream(timeStream);
 		timeStream.addNonPlayerCharacter(character);
 		character.setFraction(fraction);
 		characters.add(character);
 		nonPlayerCharacters.add(character);
-		cells[x][y].character(character);
+		cells[relX][relY].character(character);
 		timeStream.addEvent(new EventCharacterAppear(
 				character.characterId, character.x, character.y, character.type, character.name,
 				character.getAttribute(Attribute.MAX_HP), character.getAttribute(Attribute.HP),
@@ -290,18 +289,18 @@ public class Chunk extends TerrainBasics {
 		int u = 0;
 		for (Character character : characters) {
 			ArrayList chdata = new ArrayList();
-			chdata.add(character.characterId);
-			chdata.add(character.x);
-			chdata.add(character.y);
-			chdata.add(character.type);
-			chdata.add(character.name);
-			chdata.add(character.maxHp);
-			chdata.add(character.hp);
-			chdata.add(character.maxMp);
-			chdata.add(character.mp);
-			chdata.add(character.getEffects());
-			chdata.add(character.getEquipment());
-			chdata.add(character.fraction);
+			/* 0 */chdata.add(character.characterId);
+			/* 1 */chdata.add(character.x);
+			/* 2 */chdata.add(character.y);
+			/* 3 */chdata.add(character.type);
+			/* 4 */chdata.add(character.name);
+			/* 5 */chdata.add(character.maxHp);
+			/* 6 */chdata.add(character.hp);
+			/* 7 */chdata.add(character.maxMp);
+			/* 8 */chdata.add(character.mp);
+			/* 9 */chdata.add(character.getEffects());
+			/*10 */chdata.add(character.getEquipment());
+			/*11 */chdata.add(character.fraction);
 			answer[u++] = chdata;
 		}
 		return answer;

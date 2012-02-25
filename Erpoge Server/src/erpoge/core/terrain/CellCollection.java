@@ -3,8 +3,8 @@ package erpoge.core.terrain;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 
+import erpoge.core.Character;
 import erpoge.core.Main;
-import erpoge.core.characters.Character;
 import erpoge.core.characters.GeneratorCharacterGroup;
 import erpoge.core.meta.Chance;
 import erpoge.core.meta.Coordinate;

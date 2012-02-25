@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 
+import erpoge.core.Character;
 import erpoge.core.Main;
-import erpoge.core.characters.Character;
 import erpoge.core.graphs.CustomRectangleSystem;
 import erpoge.core.graphs.RectangleSystem;
 import erpoge.core.inventory.ItemPile;
@@ -32,8 +32,8 @@ public abstract class TerrainBasics {
 		PASSABILITY_FREE = 0,
 		PASSABILITY_SEE = 3,
 		PASSABILITY_NO = 1;
-	protected final int x;
-	protected final int y;
+	public final int x;
+	public final int y;
 	public HashMap<Integer, Character> characters = new HashMap<Integer, Character>();
 	public HashMap<Integer, Container> containers = new HashMap<Integer, Container>();
 	public ArrayList<Ceiling> ceilings;

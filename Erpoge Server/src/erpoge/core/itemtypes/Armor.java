@@ -1,6 +1,6 @@
 package erpoge.core.itemtypes;
 
-import erpoge.core.characters.Character;
+import erpoge.core.Character;
 
 public class Armor extends ItemType {
 	public final int armor;

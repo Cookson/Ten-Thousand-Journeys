@@ -11,8 +11,8 @@ import java.util.Iterator;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import erpoge.core.Character;
 import erpoge.core.Main;
-import erpoge.core.characters.Character;
 import erpoge.core.characters.CharacterManager;
 import erpoge.core.characters.PlayerCharacter;
 import erpoge.core.inventory.Item;

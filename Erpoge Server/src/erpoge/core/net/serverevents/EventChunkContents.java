@@ -7,7 +7,6 @@ import erpoge.core.terrain.Chunk;
 
 public class EventChunkContents extends ServerEvent {
 	public static final String e = "chunkContents";
-	
 	public int x;
 	public int y;
 	public int[] c;

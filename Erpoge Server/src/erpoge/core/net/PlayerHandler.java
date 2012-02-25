@@ -9,12 +9,12 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import net.tootallnate.websocket.WebSocket;
+import erpoge.core.Character;
 import erpoge.core.Main;
-import erpoge.core.characters.Character;
+import erpoge.core.TimeStream;
 import erpoge.core.characters.CharacterManager;
 import erpoge.core.characters.PlayerCharacter;
 import erpoge.core.characters.Race;
-import erpoge.core.characters.TimeStream;
 import erpoge.core.itemtypes.ItemsTypology;
 import erpoge.core.meta.Side;
 import erpoge.core.net.clientmessages.*;

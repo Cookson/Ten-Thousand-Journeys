@@ -13,8 +13,8 @@ import java.io.IOException;
 
 import net.tootallnate.websocket.WebSocket;
 
+import erpoge.core.Character;
 import erpoge.core.Main;
-import erpoge.core.characters.Character;
 import erpoge.core.characters.NonPlayerCharacter;
 import erpoge.core.characters.PlayerCharacter;
 import erpoge.core.graphs.CustomRectangleSystem;

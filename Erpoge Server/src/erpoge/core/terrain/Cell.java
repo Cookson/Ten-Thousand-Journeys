@@ -1,8 +1,8 @@
 package erpoge.core.terrain;
 import java.util.HashSet;
 
+import erpoge.core.Character;
 import erpoge.core.Main;
-import erpoge.core.characters.Character;
 import erpoge.core.inventory.Item;
 import erpoge.core.inventory.ItemMap;
 import erpoge.core.inventory.ItemPile;

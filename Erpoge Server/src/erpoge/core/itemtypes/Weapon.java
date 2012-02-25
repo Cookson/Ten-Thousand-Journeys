@@ -1,6 +1,6 @@
 package erpoge.core.itemtypes;
 
-import erpoge.core.characters.Character;
+import erpoge.core.Character;
 import erpoge.core.characters.CustomCharacterAction;
 
 public class Weapon extends ItemType {

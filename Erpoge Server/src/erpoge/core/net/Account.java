@@ -2,8 +2,9 @@ package erpoge.core.net;
 
 import java.util.HashSet;
 import java.util.Iterator;
+
+import erpoge.core.Character;
 import erpoge.core.Main;
-import erpoge.core.characters.Character;
 import erpoge.core.characters.PlayerCharacter;
 import erpoge.core.net.clientmessages.ServerMessageCharacterAuthInfo;
 public class Account {

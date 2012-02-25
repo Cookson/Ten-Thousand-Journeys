@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Map;
 
 import erpoge.core.Main;
+import erpoge.core.characters.NonPlayerCharacter;
 import erpoge.core.graphs.Graph;
 import erpoge.core.graphs.RectangleSystem;
 import erpoge.core.inventory.ItemPile;
@@ -165,5 +166,8 @@ public class HorizontalPlane {
 			chunk.setObject(x-chunk.x,y-chunk.y,doorId+1);
 		}
 	}	
-	
+	public NonPlayerCharacter createCharacter(int absX, int absY, String type, String name, int fraction) {
+		Chunk chunk = getChunkWithCell(absX, absY);
+		return chunk.createCharacter(absX-chunk.x, absY-chunk.y, type, name, fraction);
+	}
 }

@@ -1,4 +1,7 @@
 package erpoge.core.characters;
+
+import erpoge.core.Character;
+
 public abstract class CharacterEffect {
 	public int id;
 	public int effectType;

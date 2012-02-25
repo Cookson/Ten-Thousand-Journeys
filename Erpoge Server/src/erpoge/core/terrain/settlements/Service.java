@@ -2,7 +2,7 @@ package erpoge.core.terrain.settlements;
 
 import java.util.HashMap;
 
-import erpoge.core.characters.Character;
+import erpoge.core.Character;
 
 public class Service {
 	public int id;

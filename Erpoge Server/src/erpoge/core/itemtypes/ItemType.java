@@ -2,7 +2,7 @@ package erpoge.core.itemtypes;
 
 import java.util.HashMap;
 
-import erpoge.core.characters.Character;
+import erpoge.core.Character;
 import erpoge.core.itemtypes.Attribute;
 
 public abstract class ItemType extends ItemSystemMetaInfo {
