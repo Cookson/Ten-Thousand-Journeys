@@ -213,12 +213,6 @@ handlers={
 			return false;
 		}
 	},
-	assignLetterToItemOnFloor: function(item) {
-		Player.lootLetterAssigner.addObject(item);
-	},
-	net: {
-		
-	},
 	initWindows: function _() {
 	// Windows are initiated before other ui elements, but after panels
 		UI.addWindow({

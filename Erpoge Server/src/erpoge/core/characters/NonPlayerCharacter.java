@@ -380,7 +380,7 @@ public class NonPlayerCharacter extends Character {
 	}
 	public void die() {
 		super.die();
-		getTimeStream().nonPlayerCharacters.remove(this);
+		timeStream.removeCharacter(this);
 	}
 	/* Pathfinding */
 	public void showPathTable() {

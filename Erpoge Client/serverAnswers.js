@@ -8,7 +8,7 @@ function handleNextEvent() {
 	}
 	var value = serverAnswer[serverAnswerIterator++];
 	if (serverAnswerHandlers[value.e]) {
-		console["log"]("recieve", value.e, value);
+//		console["log"]("recieve", value.e, value);
 		serverAnswerHandlers[value.e](value);
 	} else {
 		throw new Error("Unknown type of non-synchronized answer: "+value.e);
@@ -213,13 +213,6 @@ var serverAnswerHandlers = {
 		characters[value.characterId].showMove(value.x, value.y);	
 		UI.notify("environmentChange");
 		if (value.characterId == Player.characterId) {
-			if (!Player.lootLetterAssigner.isEmpty()) {
-				Player.lootLetterAssigner.empty();
-			}
-			var cellItems = Terrain.getCell(value.x, value.y).items;
-			if (cellItems !== null) {
-				cellItems.forEach(handlers.assignLetterToItemOnFloor);
-			}
 			UI.notify("lootChange");
 		}
 	},
@@ -357,7 +350,6 @@ var serverAnswerHandlers = {
 			}
 			Terrain.createItem(value.x, value.y, item);
 			if (Player.x == value.x && Player.y == value.y) {
-				Player.lootLetterAssigner.addObject(item);
 				UI.notify("lootChange");
 			}
 		}
@@ -376,7 +368,6 @@ var serverAnswerHandlers = {
 			}
 			Terrain.getCell(value.x,value.y).removeItem(value.typeId, value.param);
 			if (value.x == Player.x && value.y == Player.y) {
-				Player.lootLetterAssigner.removeObject(item);
 				UI.notify("lootChange");
 			}
 		}
@@ -504,6 +495,13 @@ var serverAnswerHandlers = {
 		var character = characters[value.characterId];
 		character.destX = character.x;
 		character.destY = character.y;
+		handleNextEvent();
+	},
+	enterState: function serverEventEnterState(value) {
+		characters[value.characterId].stateId = value.stateId;
+		if (Player.characterId === value.characterId) {
+			UI.notify("stateEntered");
+		}
 		handleNextEvent();
 	}
 };

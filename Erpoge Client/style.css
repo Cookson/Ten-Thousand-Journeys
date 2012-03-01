@@ -566,7 +566,6 @@ div.key {
 }
 
 div.arrow {
-	z-index: 30;
 	position: relative;
 	display: block;
 }
@@ -725,12 +724,16 @@ img.itemImg {
 	top: 0px;
 	left: 0px;
 }
-div.itemView {
+div.iconWrap {
 	display: inline-block;
 	position: relative;
 	width: 32px;
 	height: 32px;
 	vertical-align: middle;
+}
+div.spellView {
+	background-image: url('./images/intf/spellBg.png');
+	border: 1px solid #534511;
 }
 div.itemViewInventory {
 	background-image: url('./images/intf/itemBg.png');

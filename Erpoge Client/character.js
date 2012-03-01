@@ -6,18 +6,22 @@
 	this.x = x;
 	this.y = y;
 	this.isClientPlayer = false;
-	Terrain.getCell(x,y).character = this;
+	try {
+		Terrain.getCell(x,y).character = this;
+	} catch (e) {
+		throw new Error("No cell "+x+" "+y+" in character "+type+" constructor");
+	}
 	Terrain.getCell(x,y).passability = Terrain.PASS_SEE;
 	this.characterId = id;
 	this.destX = this.x;
 	this.destY = this.y;
 	this.type = (type!=undefined) ? type : "player";
-	if (this.type!="player") {
+	if (this.type != "player") {
 		this.name = characterTypes[type][0];
 	}
 
 	this.fraction = (fraction==undefined) ? (this.characterId==0) ? 1 : 0 : fraction;
-
+	this.stateId = 0;
 	this.aimcharacter = -1;
 	this.cls = null;
 	if (this.type!="player") {
@@ -25,7 +29,7 @@
 		this.maxHp = maxHp;
 	}
 
-	this.VISION_RANGE = 8;
+	this.VISION_RANGE = 14;
 	this.visible;
 
 	this.cellWrap = document.createElement("div");
@@ -348,7 +352,7 @@ Character.prototype.canSee = function(x, y, setVisibleCells, forceCompute) {
 		}
 		return true;
 	} else {
-		// Общий случай
+	// Общий случай
 		var start = [[], []];
 		var end = [];
 		// x и y концов соответствуют x и y центра клетки или её ближайшего угла
@@ -419,6 +423,261 @@ Character.prototype.canSee = function(x, y, setVisibleCells, forceCompute) {
 		return false;
 	}
 };
+Character.prototype.altCanSee = function(x, y, setVisibleCells, forceCompute) {
+	/**
+	 * Checks if the cell is on line of sight
+	 * 
+	 * setVisibleCells - sets this.visibleCells[x][y] to true if can see, to
+	 * false otherwise. forceCompute - compute visibility even if it is a
+	 * peaceful location.
+	 */
+	// return true;
+	var absDx = this.x-this.VISION_RANGE;
+	var absDy = this.y-this.VISION_RANGE;
+	if (this.isNear(x, y) || this.x==x && this.y==y) {
+		// Если клетка рядом или персонаж на ней стоит - то её точно видно
+		if (setVisibleCells) {
+			this.visibleCells[x-absDx][y-absDy] = true;
+		}
+		return true;
+	}
+	if (Math.floor(this.distance(x, y))>this.VISION_RANGE) {
+		return false;
+	}
+	// Алгоритм рассматривает несколько случаев взаимного расположения начальной
+	// и целевой клетки,
+	// поскольку в значительной части случаев расчёт можно упростить. Алгоритм
+	// для общего случая рассматривается последним.
+	if (x==this.x || y==this.y) {
+		// Для случая, когда тангенс прямой (угловой коэффициент) равен
+		// бесконечности или 0
+		// (т.е. когда в цикле в else может быть деление на ноль т.к. абсцисы
+		// или ординаты конца и начала равны)
+		// В этом случае придётся сделать только одну проверку по линии (не
+		// таким методом, как в else для прямых с tg!=0 и tg!=1)
+		if (x == this.x) {
+			// Для вертикальных линий
+			var dy = Math.abs(y-this.y)/(y-this.y);
+			for (var i=this.y+dy; i!=y; i+=dy) {
+				if (Terrain.getCell(x,i).passability == Terrain.PASS_BLOCKED) {
+					return false;
+				}
+				if (setVisibleCells) {
+					this.visibleCells[x-absDx][i-absDy] = true;
+				}
+			}
+		} else {
+			// Для горизонтальных линий
+			var dx = Math.abs(x-this.x)/(x-this.x);
+			for (var i=this.x+dx; i!=x; i += dx) {
+				if (Terrain.getCell(i,y).passability==Terrain.PASS_BLOCKED) {
+					return false;
+				}
+				if (setVisibleCells) {
+					this.visibleCells[i-absDx][y-absDy] = true;
+				}
+			}
+		}
+		if (setVisibleCells) {
+			this.visibleCells[x-absDx][y-absDy] = true;
+		}
+		return true;
+	} else if (Math.abs(x-this.x)==1) {
+		// Для случая, когда координаты конца и начала находятся на двух
+		// соседних вертикальных линиях
+		var dy = y>this.y ? 1 : -1;
+		for (var i=this.y+1; i!=y; i+=dy) {
+			if (setVisibleCells) {
+				this.visibleCells[x-absDx][i-absDy] = true;
+			}
+			if (Terrain.getCell(x,i).passability == Terrain.PASS_BLOCKED) {
+				break;
+			}
+			if (i == y-dy) {
+				if (setVisibleCells) {
+					this.visibleCells[x-absDx][y-absDy] = true;
+				}
+				return true;
+			}
+		}
+		for (var i=this.y+1; i!=y; i+=dy) {
+			if (setVisibleCells) {
+				this.visibleCells[this.x-absDx][i-absDy] = true;
+			}
+			if (Terrain.getCell(this.x,i).passability == Terrain.PASS_BLOCKED) {
+				break;
+			}
+			if (i == y-dy) {
+				if (setVisibleCells) {
+					this.visibleCells[x-absDx][y-absDy] = true;
+				}
+				return true;
+			}
+		}
+		return false;
+	} else if (Math.abs(y-this.y) == 1) {
+		// Тот же случай, что и предыдущий, но для горизонтальных линий
+		var dx = x>this.x ? 1 : -1;
+		for (var i=this.x+1; i!=x; i+=dx) {
+			if (setVisibleCells) {
+				this.visibleCells[i-absDx][y-absDy] = true;
+			}
+			if (Terrain.getCell(i,y).passability == Terrain.PASS_BLOCKED) {
+				break;
+			}
+			if (i==x-dx) {
+				if (setVisibleCells) {
+					this.visibleCells[x-absDx][y-absDy] = true;
+				}
+				return true;
+			}
+		}
+		for (var i=this.x+1; i!=x; i+=dx) {
+			if (setVisibleCells) {
+				this.visibleCells[i-absDx][this.y-absDy] = true;
+			}
+			if (Terrain.getCell(i,this.y).passability == Terrain.PASS_BLOCKED) {
+				break;
+			}
+			if (i == x-dx) {
+				if (setVisibleCells) {
+					this.visibleCells[x-absDx][y-absDy] = true;
+				}
+				return true;
+			}
+		}
+		return false;
+	} else if (Math.abs(x-this.x) == Math.abs(y-this.y)) {
+		// Случай, когда линия образует с осями угол 45 градусов (abs(tg)==1)
+		var dMax = Math.abs(x-this.x);
+		var dx = (x>this.x) ? 1 : -1;
+		var dy = (y>this.y) ? 1 : -1;
+		var cx = this.x;
+		var cy = this.y;
+		for (var i=1; i<dMax; i++) {
+			cx += dx;
+			cy += dy;
+			if (Terrain.getCell(cx,cy).passability == Terrain.PASS_BLOCKED) {
+				return false;
+			}
+			if (setVisibleCells) {
+				this.visibleCells[cx-absDx][cy-absDy] = true;
+			}
+		}
+		if (setVisibleCells) {
+			this.visibleCells[x-absDx][y-absDy] = true;
+		}
+		return true;
+	} else {
+	// Общий случай
+		var dx = (this.x-x)/Math.abs((this.x-x));
+		var dy = (this.y-y)/Math.abs((this.y-y));
+		var currentX = this.x;
+		var currentY = this.y;
+		var availableCells = {0:[]};
+		var trail = [{x:this.x,y:this.y}];
+		var deletedCells = {};
+		for (var delx=Math.min(this.x,x), delmax=Math.max(this.x,x); delx<=delmax; delx++) {
+			deletedCells[delx] = {};
+		}
+		// Index of current cell in trail
+		var t = 1;
+		var u = 0;
+		while (true) {
+			// Cells that may be in trail
+			var trailCandidates = [];
+			var nextCells = [
+				{x:currentX-dx, y:currentY}, 
+				{x:currentX, y:currentY-dy}, 
+				{x:currentX-dx, y:currentY-dy}
+			];
+			for (var i=0; i<nextCells.length; i++) {
+			// Get visible cells from three sides
+				var cellX = nextCells[i].x, cellY = nextCells[i].y;
+				if (deletedCells[cellX] === undefined) {
+					deletedCells[cellX] = {};
+				}
+				if (
+					deletedCells[cellX][cellY] === undefined
+					&& Terrain.getCell(cellX,cellY).passability != Terrain.PASS_BLOCKED
+					&& distanceToLine(this.x, this.y, x, y, cellX, cellY)<=
+					// Without this condition characters won't be able to 
+					// properly look around a corner staying near a wall, 
+					// beacuse a wall will be too close to character
+						(Math.abs(this.x-x)==2 && Math.abs(this.y-y)>6 
+						|| Math.abs(this.y-y)==2 && Math.abs(this.x-x)>6 ? 1 : 0.71)
+				) {
+				// If cell is visible and close enough to line to be a part of 
+				// trail, add it to trail candidates
+					trailCandidates.push({x:cellX,y:cellY});
+					if (setVisibleCells) {
+						this.visibleCells[cellX-absDx][cellY-absDy] = true;
+					}
+				}
+				if (cellX === x && cellY === y) {
+					if (setVisibleCells) {
+						this.visibleCells[x-absDx][y-absDy] = true;
+					}
+					return true;
+				}
+			}
+			if (trailCandidates.length == 0) {
+			// If we can't go anywhere from current cell, step back until we 
+			// can find a step with available cells
+				while (availableCells[t-1].length == 0) {
+					t--;
+					if (t === 0) {
+					// If we return to the first cell, then there's no line of 
+					// sight to x:y
+						return false;
+					}
+					delete availableCells[t];
+					var deletedCell = trail.pop();
+					// Now there is definitely no line to destination cell
+					// through this cell, so we can mark it as deleted and 
+					// treat it like it blocks the line of sight, so we don't
+					// need to compute extra iterations later.
+					deletedCells[deletedCell.x][deletedCell.y] = true;
+				}
+				// 
+				var cellToStartAgain = availableCells[t-1].pop();
+				currentX = cellToStartAgain.x;
+				currentY = cellToStartAgain.y;
+			} else {
+				var bestCellIndex = 0;
+				var minDistanceToLine = distanceToLine(
+						this.x, this.y, x, y, 
+						trailCandidates[0].x, trailCandidates[0].y);
+				for (var i=1; i<trailCandidates.length; i++) {
+				// Find a cell that is the closest to default line from start coord 
+				// to end coord.
+					var curDistanceToLine = distanceToLine(
+							this.x, this.y, x, y, 
+							trailCandidates[0].x, trailCandidates[0].y);
+					if (curDistanceToLine < minDistanceToLine) {
+						bestCellIndex = i;
+						minDistanceToLine = curDistanceToLine;
+					}
+				}
+				availableCells[t] = [];
+				for (var i=0; i<trailCandidates.length; i++) {
+				// Add other trail candidates to available cells list
+					if (i != bestCellIndex) {
+						availableCells[t].push(trailCandidates[i]);
+					}
+				}
+				trail.push(trailCandidates[bestCellIndex]);
+				currentX = trail[t].x;
+				currentY = trail[t].y;
+				t++;
+			}
+			if (++u === 10000) {
+				throw new Error("Too much");
+			}
+		}
+	}
+};
+Character.prototype.canSee = Character.prototype.altCanSee;
 Character.prototype.ray = function(startX, startY, endX, endY) {
 	// Вспомогательная функция для this->canSee(). Возвращает клетки линии от
 	// xStart:yStart до xEnd:yEnd
@@ -487,7 +746,7 @@ Character.prototype.getPathTable = function(ignorecharacters) {
 			var y = oldFront[i].y;
 			var adjactentX = [x+1, x, x, x-1, x+1, x+1, x-1, x-1];
 			var adjactentY = [y, y-1, y+1, y, y+1, y-1, y+1, y-1];
-			for (var j = 0; j<8; j++) {
+			for (var j=0; j<8; j++) {
 			// Index of cell in pathTable (relative coordinates)
 				var thisNumX = adjactentX[j]-dX;
 				var thisNumY = adjactentY[j]-dY;
@@ -551,7 +810,7 @@ Character.prototype.getPath = function(destX, destY) {
 	var dX = this.x-(this.PATH_TABLE_WIDTH-1)/2;
 	var dY = this.y-(this.PATH_TABLE_WIDTH-1)/2;
 	var t = 0;
-	for (var j = this.pathTable[currentNumX-dX][currentNumY-dY]; j>0; j = this.pathTable[currentNumX-dX][currentNumY-dY]) {
+	for (var j=this.pathTable[currentNumX-dX][currentNumY-dY]; j>0; j=this.pathTable[currentNumX-dX][currentNumY-dY]) {
 		// Счётчик: от кол-ва шагов до клетки dest до начальной клетки (шаг 1)
 		path.push( {
 			x : currentNumX,
@@ -605,12 +864,22 @@ Character.prototype.getVisibleCells = function() {
 	var minY = this.y-this.VISION_RANGE;
 	var maxX = this.x+this.VISION_RANGE;
 	var maxY = this.y+this.VISION_RANGE;
-
+	var t = new Date().getTime();
 	for (var i=minX; i<=maxX; i++) {
-		for (var j=minY; j<=maxY; j++) {
-			this.canSee(i, j, true);
+		for (var j=minY; j<=this.x; j++) {
+			if (!this.visibleCells[i-dx][j-dy]) {
+				this.canSee(i, j, true);
+			}
 		}
 	}
+	for (var i=minX; i<=maxX; i++) {
+		for (var j=maxY; j>this.x; j--) {
+			if (!this.visibleCells[i-dx][j-dy]) {
+				this.canSee(i, j, true);
+			}
+		}
+	}
+	console.log(new Date().getTime()-t);
 };
 Character.prototype.showPathTable = function() {
 	for (var j=0; j<this.PATH_TABLE_WIDTH; j++) {
@@ -831,7 +1100,7 @@ Character.prototype.animateSpell = function(spellId, aimId, spellX, spellY,
 };
 Character.prototype.showDeath = function() {
 	this.cellWrap.parentNode.removeChild(this.cellWrap);
-	Terrain.cells[this.x][this.y].passability = Terrain.PASS_FREE;
+	Terrain.getCell(this.x,this.y).passability = Terrain.PASS_FREE;
 	if (this===Player) {
 		UI.notify("death");
 		var nlEffects = document.getElementById("effectsList").children;
@@ -839,7 +1108,7 @@ Character.prototype.showDeath = function() {
 			nlEffects[0].parentNode.removeChild(nlEffects[0]);
 		}
 	}
-	Terrain.cells[this.x][this.y].character = undefined;
+	Terrain.getCell(this.x,this.y).character = undefined;
 	delete characters[this.characterId];
 	handleNextEvent();
 };
@@ -988,7 +1257,7 @@ Character.prototype.showMissileFlight = function(fromX, fromY, toX, toY,
 	nWrap.appendChild(nImg);
 	nWrap.style.top = (fromY*32-16)+"px";
 	nWrap.style.left = (fromX*32)+"px";
-	nWrap.style.zIndex = fromY+2;
+	nWrap.style.zIndex = (100000+this.y)*2+2;
 	gameField.appendChild(nWrap);
 	// Missile animation
 	qanimate(nImg, [(b.x-a.x)*32, (b.y-a.y)*32], distance(fromX, fromY, toX,
@@ -1004,7 +1273,6 @@ Character.prototype.loseItem = function(typeId, param) {
 	} else {
 		this.items.removePile(typeId, param);
 	}
-	UI.notify("inventoryChange");
 };
 Character.prototype.getItem = function(typeId, param) {
 	this.items.addNewItem(typeId, param);
@@ -1056,15 +1324,16 @@ Character.prototype.changeAttribute = function _(attrId, value) {
  * @param {mixed[]} data
  */
 function ClientPlayer() {
+	
+	/** @public @type ItemSet */
+	this.items = new ItemSet();
+	this.spells = [];
 	/** @public @type LetterAssigner */
 	this.itemsLetterAssigner = new LetterAssigner("Inventory");
 	/** @public @type LetterAssigner */
 	this.spellsLetterAssigner = new LetterAssigner("Spells");
 	/** @public @type LetterAssigner */
 	this.lootLetterAssigner = new LetterAssigner("Loot");
-	/** @public @type ItemSet */
-	this.items = new ItemSet();
-	this.spells = [];
 	
 	// These three will be initiated by blank2dArray in
 	// Character.initVisiblilty() on location/global map enter.
@@ -1122,6 +1391,8 @@ function ClientPlayer() {
 	this.attributes.poisonRes = 0;
 	/** @public @type Doll */
 	this.doll = null;
+	/** @public @type number */
+	this.selectedMissile = null;
 }
 ClientPlayer.prototype = new Character(-1);
 /** @name Player @type ClientPlayer */
@@ -1159,7 +1430,7 @@ ClientPlayer.prototype.init = function init(data) {
 	this.isClientPlayer = true;
 
 	// Inventory
-	for (var i = 0; i<data[16].length; i+=2) {
+	for (var i=0; i<data[16].length; i+=2) {
 		var typeId = data[16][i];
 		var param = data[16][i+1];
 		var item;
@@ -1170,13 +1441,9 @@ ClientPlayer.prototype.init = function init(data) {
 			item = new ItemPile(typeId, param);
 			this.items.add(item);
 		}
-		this.itemsLetterAssigner.addObject(item);
 	}
 
 	this.equipment.getFromData(data[17]);
-	this.equipment.forEach(function(item) {
-		Player.itemsLetterAssigner.addObject(item);
-	});
 
 	// Spells
 	this.spells = data[18];
@@ -1193,9 +1460,12 @@ ClientPlayer.prototype.init = function init(data) {
 	this.doll = new Doll(this);
 	this.cellWrap.appendChild(this.doll.DOMNode);
 	this.initHpBar();
+	this.itemsLetterAssigner._setSources(this.items, this.equipment);
+	this.spellsLetterAssigner._setSources(this.spells);
 	UI.notify("attributesInit");
 };
 ClientPlayer.prototype.actions = ["push", "changePlaces", "makeSound", "shieldBash", "jump"];
+ClientPlayer.prototype.states = ["default", "run", "sneak", "sleep", "aim"];
 ClientPlayer.prototype.display = function _() {
 	gameField.appendChild(this.cellWrap);
 	this.doll.draw();
@@ -1216,78 +1486,50 @@ ClientPlayer.prototype.takeOff = function _(itemId) {
 	// to slot information, not itemId information.
 };
 ClientPlayer.prototype.autoSetMissileType = function _() {
-	if (this.missileType!=null) {
+	if (this.selectedMissile != null) {
 		return;
 	}
-	for (var i in this.items.itemPiles) {
-		if (isMissile(this.items.itemPiles[i].typeId)) {
-			this.setMissileType(this.items.itemPiles[i].typeId);
-			return;
+	this.items.forEach(function(item) {
+		if (isMissile(item.typeId)) {
+			performAction("selectMissile", [item]);
+			return HashSet.BREAK;
 		}
-	}
-	for ( var i in this.items.uniqueItems) {
-		if (isMissile(this.items.uniqueItems[i].typeId)) {
-			this.setMissileType(this.items.uniqueItems[i].typeId);
-			return;
-		}
-	}
-};
-ClientPlayer.prototype.setMissileType = function _(type) {
-	this.missileType = type;
-	UI.notify("missileTypeChange");
+	}, this);
 };
 /* Setters */
-ClientPlayer.prototype.getItem = function _(typeId, param) {
+ClientPlayer.prototype.getItem = function (typeId, param) {
 	Character.prototype.getItem.apply(this, arguments);
 	var item = this.items.getItem(typeId, param);
-	if (!this.itemsLetterAssigner.hasLetterForObject(item)) {
-		this.itemsLetterAssigner.addObject(item);
-	}
 };
-ClientPlayer.prototype.loseItem = function _(typeId, param) {
+ClientPlayer.prototype.loseItem = function (typeId, param) {
 	var item = this.items.getItem(typeId, param);
 	Character.prototype.loseItem.apply(this, arguments);
-	this.itemsLetterAssigner.removeObject(item);
+	UI.notify("inventoryChange");
+	if (this.selectedMissile == item && !this.items.hasItem(item)) {
+		performAction("selectMissile", [null]);
+		this.autoSetMissileType();
+	}
 };
 
 /* Interface methods */
-ClientPlayer.prototype.selectMissileType = function _(type) {
-	this.missileType = type||null;
-};
-ClientPlayer.prototype.selectMissile = function _() {
-	// Enter missile mode
-	if (this.equipment.getItemInSlot(0)
-			&&this.equipment.getItemInSlot(0).isRanged()) {
-		var aimcharacter;
-		if (aimcharacter = this.findEnemy()) {
-			CellCursor.move(aimcharacter.x, aimcharacter.y);
-		} else {
-			CellCursor.move(this.x, this.y);
-		}
 
-		UI.notify("missileSelect");
-
-	} else {
-		UI.notify("alert", "Игрок не держит в руках оружия дальнего боя!");
-	}
-};
-ClientPlayer.prototype.selectSpell = function _(spellId) {
-	// Enter spell casting mode
-	this.spellId = spellId;
-	CellCursor.enterSelectionMode("castSpell");
-	UI.notify("spellSelect");
-};
-ClientPlayer.prototype.cellCursorSpellSelectCallback = function _() {
-	this.sendCastSpell(CellCursor.x, CellCursor.y);
-	this.unselectSpell();
-};
-ClientPlayer.prototype.unselectSpell = function _() {
-	// Exit spell casting mode
-	UI.notify("spellUnselect");
-	this.spellId = -1;
-	UI.setKeyMapping("Default");
-	CellCursor.exitSelectionMode();
-};
+//ClientPlayer.prototype.selectMissile = function _() {
+//	// Enter missile mode
+//	if (this.equipment.getItemInSlot(0)
+//			&&this.equipment.getItemInSlot(0).isRanged()) {
+//		var aimcharacter;
+//		if (aimcharacter = this.findEnemy()) {
+//			CellCursor.move(aimcharacter.x, aimcharacter.y);
+//		} else {
+//			CellCursor.move(this.x, this.y);
+//		}
+//
+//		UI.notify("missileSelect");
+//
+//	} else {
+//		UI.notify("alert", "Игрок не держит в руках оружия дальнего боя!");
+//	}
+//};
 ClientPlayer.prototype.cellChooseAction = function _() {
 	// Совершить действие на координате под курсором
 	var x = CellCursor.x;

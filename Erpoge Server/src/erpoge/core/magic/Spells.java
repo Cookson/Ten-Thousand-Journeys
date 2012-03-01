@@ -48,7 +48,11 @@ public final class Spells {
 		});
 	}
 	public static void cast(Character caster, int spellId, int x, int y) {
-		instance.spells.get(spellId).cast(caster, x, y);
+		try {
+			instance.spells.get(spellId).cast(caster, x, y);
+		} catch (Exception e) {
+			throw new Error("Spell "+spellId+" doesn't exist");
+		}
 	}
 	public interface Spell {
 		public void cast(Character caster, int x, int y);

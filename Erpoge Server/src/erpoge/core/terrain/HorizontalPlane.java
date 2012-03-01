@@ -14,6 +14,7 @@ import erpoge.core.inventory.UniqueItem;
 import erpoge.core.meta.Coordinate;
 import erpoge.core.net.RectangleArea;
 import erpoge.core.net.serverevents.EventItemAppear;
+import erpoge.core.objects.SoundType;
 import erpoge.locationtypes.BuildingTest;
 import erpoge.locationtypes.Empty;
 import erpoge.locationtypes.Forest;
@@ -169,5 +170,21 @@ public class HorizontalPlane {
 	public NonPlayerCharacter createCharacter(int absX, int absY, String type, String name, int fraction) {
 		Chunk chunk = getChunkWithCell(absX, absY);
 		return chunk.createCharacter(absX-chunk.x, absY-chunk.y, type, name, fraction);
+	}
+	public void addItem(ItemPile pile, int x, int y) {
+		Chunk chunk = getChunkWithCell(x, y);
+		chunk.addItem(pile, x-chunk.x, y-chunk.y);
+	}
+	public void addItem(UniqueItem item, int x, int y) {
+		Chunk chunk = getChunkWithCell(x, y);
+		chunk.addItem(item, x-chunk.x, y-chunk.y);
+	}
+	public void removeItem(ItemPile pile, int x, int y) {
+		Chunk chunk = getChunkWithCell(x, y);
+		chunk.removeItem(pile, x-chunk.x, y-chunk.y);
+	}
+	public void removeItem(UniqueItem item, int x, int y) {
+		Chunk chunk = getChunkWithCell(x, y);
+		chunk.removeItem(item, x-chunk.x, y-chunk.y);
 	}
 }

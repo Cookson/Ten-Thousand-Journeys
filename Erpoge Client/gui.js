@@ -34,7 +34,7 @@ var CellCursor = {
 	shadedCells: [],
 	availableCells: [],
 	move: function _(x,y) {
-		if (this.isSelectionMode && this.availableCells.indexOf(Terrain.getCell(x,y))==-1) {
+		if (this.isSelectionMode && this.availableCells.indexOf(x+";"+y)==-1) {
 			this.changeStyle("Unavailable");
 		} else if (this.isSelectionMode) {
 			this.changeStyle("CellAction");
@@ -48,10 +48,10 @@ var CellCursor = {
 		this.y=y;
 	},
 	hide: function _() {
-		this.elem.style.display="none";
+		this.elem.style.display = "none";
 	},
 	show: function _() {
-		this.elem.style.display="block";
+		this.elem.style.display = "block";
 	},
 	init: function _() {
 		this.elem = document.createElement("div");
@@ -62,20 +62,6 @@ var CellCursor = {
 		gameField.appendChild(this.elem);
 		this.changeStyle("Main");
 		this.move(0,0);
-	},
-	invoke: function _(x,y) {
-		if (x==undefined) {
-			if (this.character) {
-				x=this.character.x;
-				y=this.character.y;
-			} else {
-				x=mapCursorX || Player.x;
-				y=mapCursorY || Player.y;
-			}
-		}
-		UI.setKeyMapping("CellCursor");
-		this.move(x,y);
-		this.show();
 	},
 	withdraw: function _() {
 		this.hide();
@@ -125,37 +111,28 @@ var CellCursor = {
 		
 		UI.setKeyMapping("CellCursor");
 		UI.setClickHandler(this.chooseCurrentCell, this);
-		this.changeStyle("CellAction");
 		// Shade cells
 		this.shadedCells = [];
 		var startX, startY, endX, endY;
-		if (Terrain.isPeaceful) {
-			var bounds = UI.getViewCellBounds();
-			startX = bounds[0];
-			startY = bounds[1];
-			endX = startX+bounds[2];
-			endY = startY+bounds[3];
-		} else {
-			startX = zoneCenter.x-Player.VISION_RANGE;
-			startY = zoneCenter.y-Player.VISION_RANGE;
-			endX = zoneCenter.x+Player.VISION_RANGE;
-			endY = zoneCenter.y+Player.VISION_RANGE;
-		}
+		startX = Player.x-Player.VISION_RANGE;
+		startY = Player.y-Player.VISION_RANGE;
+		endX = Player.x+Player.VISION_RANGE;
+		endY = Player.y+Player.VISION_RANGE;
 		// Shade cells that are unavailable
-		for (var x = startX; x<=endX; x++) {
-			for (var y = startY; y<=endY; y++) {
-				if (
-					Player.visibleCells[x-Player.x+Player.VISION_RANGE][y-Player.y+Player.VISION_RANGE] 
-					&& (Math.floor(distance(zoneCenter.x,zoneCenter.y,x,y)) > maximumDistance
-					|| !Player.canSee(x,y,false,true))
-				) {
-					this.shadedCells.push(Terrain.getCell(x,y));
-					Terrain.getCell(x,y).shade();
-				} else {
-					this.availableCells.push(Terrain.getCell(x,y));
+		for (var x=startX; x<=endX; x++) {
+			for (var y=startY; y<=endY; y++) {
+				if (Terrain.getCell(x, y).visible) {
+					if (Math.floor(distance(zoneCenter.x,zoneCenter.y,x,y)) > maximumDistance) {
+						this.shadedCells.push(x);
+						this.shadedCells.push(y);
+						Terrain.shadeCell(x,y);
+					} else {
+						this.availableCells.push(x+";"+y);
+					}
 				}
 			}
 		}
+		this.move(this.x, this.y);
 	},
 	chooseCurrentCell: function _() {
 	/**
@@ -179,10 +156,11 @@ var CellCursor = {
 		UI.setKeyMapping("Default");
 		UI.setClickHandler(Player.locationClickHandler, Player);
 		this.changeStyle("Main");
-		for (var i in this.shadedCells) {
-			this.shadedCells[i].unshade();
+		for (var i=0; i<this.shadedCells.length; i+=2) {
+			Terrain.unshadeCell(this.shadedCells[i], this.shadedCells[i+1]);
 		}
 		this.shadedCells = [];
+		this.availableCells = [];
 	}
 };
 function showLoadingScreen() {

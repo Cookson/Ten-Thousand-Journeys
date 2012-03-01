@@ -70,6 +70,7 @@ public class MainHandler extends WebSocketServer {
 	ACCOUNT_REGISTER        = 28,
 	PLAYER_CREATE           = 29,
 	IDLE                    = 30,
+	ENTER_STATE             = 31,
 	
 	/* Player special actions */
 	PUSH                    = 201,
@@ -294,6 +295,9 @@ public class MainHandler extends WebSocketServer {
 				break;
 			case SHIELD_BASH:
 				conn.character.aShieldBash(message);
+				break;
+			case ENTER_STATE:
+				conn.character.aEnterState(message);
 				break;
 			default:
 				throw new Error("Unhandlable action code "+action+" came from a client");

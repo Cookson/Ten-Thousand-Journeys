@@ -351,7 +351,7 @@ UIKeymapping.prototype.strictRemoveHandler = function strictRemoveHandler(ctrl, 
 };
 /**
  * Starts listening to {@link LetterAssigner}. Whenever letter assigner assigns
- * a letter for an object, this UIKeymapping adds handler for that letter 
+ * a letter for an object, this UIKeymapping adds a handler for that letter.
  * 
  * @public
  * @param {LetterAssigner} assigner LetterAssigner to listen to.
@@ -362,7 +362,7 @@ UIKeymapping.prototype.listenToLetterAssigner = function listenToLetterAssigner(
 		throw new Error("Wrong arguments: "+assigner+", "+action);
 	}
 	if (typeof action != "string") {
-		throw new Error("The second arguments must be action name!");
+		throw new Error("The second argument must be action name!");
 	}
 	if (this.listensToLetterAssigner) {
 		throw new Error("UIKeymapping "+this.name+" already listens to a letter assigner.");
@@ -371,7 +371,6 @@ UIKeymapping.prototype.listenToLetterAssigner = function listenToLetterAssigner(
 	this.assignedLetters = new HashMap();
 	assigner.listeners.push(this);
 	assigner.listenerActions.push(action);
-	
 };
 /**
  * 
@@ -416,9 +415,24 @@ function LetterAssigner(name) {
  * 
  * @private 
  * @type Object
- */
+ */ 
+	this.name = name;
+
+	/**
+	 * An Iterable object where LetterAssigner takes its "key" object from.
+	 * @private
+	 * @type Object
+	 */
+	this._sources = [];
+	if (arguments.length > 1) {
+		var sources = [];
+		for (var i=1; i<arguments.length; i++) {
+			sources.push(arguments[i]);
+		}
+		this._setSources.apply(this,sources);
+	}
 	this._contents = {};
-/** @private @type Boolean */
+/** @private @type boolean */
 	this.allLowercaseOccupied = false;
 /**
  * Keys — reverse ASCII codes, values: {c:{String} constructor function name, 
@@ -447,6 +461,15 @@ function LetterAssigner(name) {
 	this.occupiedLetters = {};
 }
 LetterAssigner.prototype = new HashMap();
+LetterAssigner.prototype._setSources = function() {
+	this._sources = [];
+	for (var i=0; i<arguments.length; i++) {
+		if (!(Interface.objectImplements(arguments[i], "Iterable"))) {
+			throw new Error("Cannot set source of LetterAssigner "+name+": source is not Iterable");
+		}
+		this._sources.push(arguments[i]);
+	}
+};
 /**
  * Links object with letter. Letter is chosen automatically, though may be
  * pre-assigned (see {@link LetterAssigner#bookLetterForObject}). 
@@ -459,7 +482,7 @@ LetterAssigner.prototype = new HashMap();
  * @param {Object} object
  * @param {String} actionName Name of registered UIAction
  */
-LetterAssigner.prototype.addObject = function addObject(object) {
+LetterAssigner.prototype._addObject = function addObject(object) {
 	Interface.check(object, "Hashable");
 	var hashCode = object.hashCode();
 	if (hashCode in this._contents) {
@@ -473,16 +496,16 @@ LetterAssigner.prototype.addObject = function addObject(object) {
 		if (newKeyCode in this.occupiedLetters) {
 		// If booked letter is already assigned, reassign it.
 			objectToReassign = this.getObjectAtLetter(newKeyCode);
-			this.removeObject(objectToReassign);
+			this._removeObject(objectToReassign);
 		}		
 	} else {
 	// If the letter for this object is not booked.
-		var newKeyCode = this.getUnoccupiedCharacter();
+		var newKeyCode = this._getUnoccupiedCharacter();
 	}
 	this._contents[hashCode] = newKeyCode;
 	this.occupiedLetters[newKeyCode] = true;
 	if (objectToReassign !== null) {
-		this.addObject(objectToReassign);
+		this._addObject(objectToReassign);
 	}
 	// Update all the listeners
 	var shift = 0;
@@ -504,10 +527,10 @@ LetterAssigner.prototype.addObject = function addObject(object) {
  * Unlink object and its letter. If any {@link UIKeymapping}s are listening to 
  * this LetterAssigner, they will remove handler for that letter.
  * 
- * @public
+ * @private
  * @param {Object} object
  */
-LetterAssigner.prototype.removeObject = function removeObject(object) {
+LetterAssigner.prototype._removeObject = function removeObject(object) {
 	Interface.check(object, "Hashable");
 	var hashCode = object.hashCode();
 	var keyCode = this._contents[hashCode];
@@ -528,12 +551,34 @@ LetterAssigner.prototype.removeObject = function removeObject(object) {
 		this.listeners[i].assignedLetters.remove(object);
 	}
 };
+LetterAssigner.prototype._removeObjectByHashCode = function removeObject(hashCode) {
+	if (typeof hashCode !== "string") {
+		throw new Error("Wrong hash code "+hashCode);
+	}
+	var keyCode = this._contents[hashCode];
+	var shift = 0;
+	delete this.occupiedLetters[keyCode];
+	if (keyCode > 90) {
+	// If removed letter is uppercase
+		shift = 1;
+		keyCode -= 32;
+	} else {
+	// If removed letter is lowercase
+		this.allLowercaseOccupied = false;
+	}
+	delete this._contents[hashCode];
+	
+	for (var i=0; i<this.listeners.length; i++) {
+		this.listeners[i].strictRemoveHandler(0, 0, shift, keyCode);
+		this.listeners[i].assignedLetters.remove(object);
+	}
+};
 /**
  * Remove letter assigned with object with particular hashCode.
- * 
+ * @private
  * @param {string} hashCode
  */
-LetterAssigner.prototype.removeObjectByHashCode = function(hashCode) {
+LetterAssigner.prototype._removeObjectByHashCode = function(hashCode) {
 	var keyCode = this._contents[hashCode];
 	var shift = 0;
 	delete this.occupiedLetters[keyCode];
@@ -653,7 +698,7 @@ LetterAssigner.prototype.getLetter = function getLetter(object) {
  * @return {Number} Key code of character for lowercase caharacter, keyCode*2
  * for uppercase character.
  */
-LetterAssigner.prototype.getUnoccupiedCharacter = function getUnoccupiedCharacter() {
+LetterAssigner.prototype._getUnoccupiedCharacter = function getUnoccupiedCharacter() {
 	if (!this.allLowercaseOccupied) {
 	// Try to get lowercase character.
 		for (var i=65; i<=90; i++) {
@@ -684,18 +729,43 @@ LetterAssigner.prototype.hasLetterForObject = function hasLetterForObject(object
  */
 LetterAssigner.prototype.empty = function() {
 	for (var i in this._contents) {
-		this.removeObjectByHashCode(i);
+		this._removeObjectByHashCode(i);
 	}
 };
 /**
- * Add to this LetterAssigner all the values from an iterable object.
- * 
- * @param {Object} object Iterable object containing values to which you need
- * to assign letters in this LetterAssigner.
+ * Assigns letters to all the objects from source that still don't have a 
+ * letter and removes all the letter-object pairs whose objects are not in the 
+ * source anymore. Leaves the other object-letter pairs (that were and still
+ * are in the source) as they are. May have any number of arguments, each of 
+ * which is an Iterable source object.
  */
-LetterAssigner.prototype.fillFromIterable = function(object) {
-	Interface.check(object, "Iterable");
-	object.forEach(this.addObject, this);
+LetterAssigner.prototype.synchronizeWithSource = function() {
+	if (arguments.length > 0) {
+		this._setSources.apply(this, arguments);
+	} else if (this._sources.length === 0) {
+		throw new Error("LetterAssigner "+this.name+" doesn't have a source");
+	}
+	// If source is an array, then sourceValues is the array itself, 
+	// otherwise it is getValues() of Arrayable
+	var sourceValues = [];
+	for (var i=0; i<this._sources.length; i++) {
+		var values = this._sources[i].getValues();
+		for (var j=0; j<values.length; j++) {
+			sourceValues.push(values[j]);
+		}
+	}
+	var sourceHashes = [];
+	for (var i=0; i<sourceValues.length; i++) {
+		sourceHashes.push(sourceValues[i].hashCode());
+		if (!(sourceHashes[i] in this._contents)) {
+			this._addObject(sourceValues[i]);
+		}
+	}
+	for (var i in this._contents) {
+		if (sourceHashes.indexOf(i) === -1) {
+			this._removeObjectByHashCode(i);
+		}
+	}
 };
 
 

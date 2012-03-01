@@ -110,16 +110,23 @@ Cell.prototype.unshade = function(chunk, x, y) {
 	}
 };
 Cell.prototype.unshadeItems = function() {
+	if (this.items === null) {
+		return;
+	}
 	var values = this.items.getValues();
 	for (var i in values) {
 		values[i].itemImage.unshade();
 	}
 };
 Cell.prototype.shadeItems = function() {
+	if (this.items === null) {
+		return;
+	}
 	var values = this.items.getValues();
 	for (var i in values) {
 		values[i].itemImage.shade();
 	}
+	
 };
 /**
  * Checks if cell has a certain item or not.
@@ -141,7 +148,7 @@ Cell.prototype.hasItem = function(typeId, param) {
 };
 Cell.prototype.addItem = function(x,y,item) {
 	if (item instanceof UniqueItem || !this.items.hasPile(item.typeId, item.amount)) {
-		this.items.add(item);
+		this.items.addItem(item);
 		var viewIndent = Terrain.getViewIndentation(x,y,32);
 		// Here we add to item's fields a new one, used only in lying items'
 		// handling.
@@ -154,7 +161,7 @@ Cell.prototype.addItem = function(x,y,item) {
 		item._img.style.zIndex = 2;
 		gameField.appendChild(item._img);
 	} else {
-		this.items.add(item);
+		this.items.addItem(item);
 	}
 };
 Cell.prototype.removeItem = function(typeId, param) {
@@ -312,7 +319,7 @@ Wall.prototype.shade = function() {
 		if (this._doorSides[i] === undefined) {
 			continue;
 		}
-		this._doorSides[i].style.opacity = "0.5";
+		this._doorSides[i]._img.style.opacity = "0.5";
 	}
 };
 Wall.prototype.cursorShade = function() {
@@ -326,11 +333,11 @@ Wall.prototype.cursorShade = function() {
 };
 Wall.prototype.unshade = function() {
 	this.image.style.opacity = "1";
-	for (var i = 0; i<this.doorSides.length; i++) {
+	for (var i=0; i<this._doorSides.length; i++) {
 		if (this._doorSides[i] === undefined) {
 			continue;
 		}
-		this._doorSides[i].style.opacity = "1";
+		this._doorSides[i]._img.style.opacity = "1";
 	}
 };
 function Floor(type) {
@@ -506,40 +513,40 @@ Floor.prototype.hide = function(chunk,x,y) {
 };
 Floor.prototype.shade = function(chunk, x, y) {
 	var ctx = chunk.canvas.getContext("2d");
-	var imgData = ctx.getImageData(x*32, y*32, 32, 32);
+	var imgData = ctx.getImageData((x-chunk.x)*32, (y-chunk.y)*32, 32, 32);
 	var len = imgData.width*imgData.height; // Количество пикселей в
 	// выделенной зоне
 	// (количество элементов в массиве - в 4 раза больше (RGBA))
 	for ( var i = 0; i<len; i++ ) {
 		imgData.data[i*4+3] = 128;
 	}
-	ctx.putImageData(imgData, x*32, y*32);
-	if ( +localStorage.getItem(2)) {
-		var imageData = ctx.getImageData(x*32, y*32, 32, 32);
-		// Отрисовка сетки
-		for (var i = 0; i<32; i++) {
-			var pix = getPixel(imageData, i, 0);
-			pix[3] = 140;
-			setPixel(imageData, i, 0, pix);
-		}
-		for (var j = 0; j<32; j++) {
-			var pix = getPixel(imageData, 0, j);
-			pix[3] = 140;
-			setPixel(imageData, 0, j, pix);
-		}
-		ctx.putImageData(imageData, x*32, y*32);
-	}
+	ctx.putImageData(imgData, (x-chunk.x)*32, (y-chunk.y)*32);
+//	if ( +localStorage.getItem(2)) {
+//		var imageData = ctx.getImageData(x*32, y*32, 32, 32);
+//		// Отрисовка сетки
+//		for (var i = 0; i<32; i++) {
+//			var pix = getPixel(imageData, i, 0);
+//			pix[3] = 140;
+//			setPixel(imageData, i, 0, pix);
+//		}
+//		for (var j = 0; j<32; j++) {
+//			var pix = getPixel(imageData, 0, j);
+//			pix[3] = 140;
+//			setPixel(imageData, 0, j, pix);
+//		}
+//		ctx.putImageData(imageData, x*32, y*32);
+//	}
 };
 Floor.prototype.unshade = function(chunk, x, y) {
 	var ctx = chunk.canvas.getContext("2d");
-	var imgData = ctx.getImageData(x*32, y*32, 32, 32);
+	var imgData = ctx.getImageData((x-chunk.x)*32, (y-chunk.y)*32, 32, 32);
 	var len = imgData.width*imgData.height; // Количество пикселей в
 	// выделенной зоне
 	// (количество элементов в массиве - в 4 раза больше (RGBA))
 	for ( var i = 0; i<len; i++ ) {
 		imgData.data[i*4+3] = 255;
 	}
-	ctx.putImageData(imgData, x*32, y*32);
+	ctx.putImageData(imgData, (x-chunk.x)*32, (y-chunk.y)*32);
 };
 function Door(x,y,type) {
 	GameObject.apply(this, [x, y, type]);
@@ -750,9 +757,9 @@ function Chunk(x, y, data) {
 	document.getElementById("gameField").appendChild(this.canvas);
 }
 Chunk.prototype.loadData = function(data) {
-	/*
-	 * data: {x:int,y:int,c:[floor,object, floor,object...]}
-	 */
+/*
+ * data: {x:int,y:int,c:[floor,object, floor,object...],ch:[]}
+ */
 	for (var i=0, x=0, y=0; i<data.c.length; i+=2) {
 		this.cells[x][y] = new Cell();
 		if (x === Terrain.CHUNK_WIDTH-1) {
@@ -803,8 +810,12 @@ Chunk.prototype.loadData = function(data) {
 		}
 	}
 	// Characters loading
+	
 	for (var i=0; i<data.ch.length; i++) {
-		
+		characters[data.ch[i][0]] = new Character(data.ch[i][0], 
+				data.ch[i][3], data.ch[i][1]+data.x, data.ch[i][2]+data.y,
+				data.ch[i][11], data.ch[i][6], data.ch[i][7]);
+		characters[data.ch[i][0]].display();
 	}
 };
 Chunk.prototype.getAbsoluteCell = function(x, y) {

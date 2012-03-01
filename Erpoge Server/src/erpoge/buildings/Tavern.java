@@ -2,7 +2,7 @@ package erpoge.buildings;
 
 import java.awt.Rectangle;
 
-import erpoge.core.characters.Character;
+import erpoge.core.Character;
 import erpoge.core.characters.CharacterCondition;
 import erpoge.core.characters.CustomCharacterAction;
 import erpoge.core.characters.Dialogue;

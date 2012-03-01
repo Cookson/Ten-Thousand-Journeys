@@ -474,6 +474,12 @@ UIElementTypes.iconsInventory = {
  				["Esc", "quitSelection"]
  		));
  		this.getData("keymappingPutToContainer").listenToLetterAssigner(Player.itemsLetterAssigner, "putToContainer");
+ 		this.setData("keymappingSelectMissile", new UIKeymapping(
+ 				"Icons inventory select missile",
+ 				["Esc", "quitSelection"],
+ 				["?", "showCurrentKeymapping"]
+ 		));
+ 		this.getData("keymappingSelectMissile").listenToLetterAssigner(Player.itemsLetterAssigner, "selectMissile");
  		this.setData("displayedItemViews", new HashSet());
  	},
  	listeners: {
@@ -511,7 +517,6 @@ UIElementTypes.iconsInventory = {
 	 			if (!Player.items.contains(view.item)) {
 	 				uiElement.rootElement.removeChild(view.rootElement);
 	 				displayedItemViews.remove(view);
-	 				uiElement.clearEventListeners(view.rootElement);
 	 			}
 	 		});
 	 		while (count%6 != 0) {
@@ -533,10 +538,8 @@ UIElementTypes.iconsInventory = {
  		worldLoad: "inventoryChange"
  	},
  	keysActions: {
- 		startMissileSelect: function _() {
-			
-		},
-		iconsInventoryShowKeysToPutOn: function _() {
+ 		iconsInventoryShowKeysToPutOn: function _() {
+ 			Player.itemsLetterAssigner.synchronizeWithSource();
 			var itemViews = this.getData("displayedItemViews");
 			var uiElement = this;
 			var keymapping = this.getData("keymappingPutOn");
@@ -552,6 +555,7 @@ UIElementTypes.iconsInventory = {
 			UI.setKeyMapping("Icons inventory put on");
 		},
 		iconsInventoryShowKeysToDrop: function _() {
+			Player.itemsLetterAssigner.synchronizeWithSource();
 			var itemViews = this.getData("displayedItemViews");
 			var uiElement = this;
 			itemViews.forEach(function(itemView) {
@@ -563,6 +567,22 @@ UIElementTypes.iconsInventory = {
 				uiElement.getData("itemLetters").push(nLetter);
 			});
 			UI.setKeyMapping("Icons inventory drop");
+		},
+		iconsInventoryShowKeysToSelectMissile: function _() {
+			Player.itemsLetterAssigner.synchronizeWithSource();
+			var itemViews = this.getData("displayedItemViews");
+			var uiElement = this;
+			var keymapping = this.getData("keymappingSelectMissile");
+			var itemLetters = this.getData("itemLetters");
+			itemViews.forEach(function(itemView) {
+				var nLetter = CachingLetterFactory.get(
+					"defaultLetter", 
+					keymapping.assignedLetters.get(itemView)
+				);
+				itemView.getNode().appendChild(nLetter);
+				itemLetters.push(nLetter);
+			});
+			UI.setKeyMapping("Icons inventory select missile");
 		}
  	},
  	handlers: {
@@ -589,7 +609,7 @@ UIElementTypes.iconsInventory = {
 				}
 			} else if (isUsable(typeId)) {
 			// Если предмет можно использовать (на локальной карте), то использовать его
-				Player.sendUseItem(typeId);
+				performAction("useItem", [Player.items.getItem(typeId, param)]);
 			} else if (isEquipment(typeId)) {
 			// Если предмет можно надеть, то надеть его
 				var slot = getSlotFromClass(items[typeId][1]);
@@ -848,12 +868,17 @@ UIElementTypes.iconMissileType = {
 		this.setData("imgNode", itemView.getImg());
 	},
 	listeners: {
-		missileTypeChange: function _() {
-			if (Player.missileType == null) {
+		missileSelect: function _() {
+			if (Player.selectedMissile === null) {
 				this.getData("imgNode").setAttribute("src", "./images/intf/nothing.png");
 			} else {
-				this.getData("imgNode").setAttribute("src", "./images/items/"+Player.missileType+".png");
+				this.getData("imgNode").setAttribute("src", "./images/items/"+Player.selectedMissile.typeId+".png");
 			}
+		}
+	},
+	keysAction: {
+		iconMissileTypeSelect: function _() {
+			
 		}
 	},
 	handlers: {},
@@ -915,7 +940,7 @@ UIElementTypes.iconsEquipment = {
 		worldLoad: "equipmentChange"
 	},
 	keysActions: {
-		iconsEquipmentTakeOff: function(item) {
+		iconsEquipmentTakeOff: function _(item) {
 			var displayedLetters = this.setData("displayedLetters", []);
 			var keymapping = this.getData("keymappingTakeOff");
 			for (var i=0; i<this.rootElement.children.length; i++) {
@@ -1014,7 +1039,6 @@ UIElementTypes.iconsLoot = {
 	 		displayedItemViews.empty();
 	 		while (this.rootElement.children.length > 0) {
 	 		// Remove all the children.
-	 			this.clearEventListeners(this.rootElement.children[0]);
 	 			this.rootElement.removeChild(this.rootElement.children[0]);
 	 		}
 	 		for (var i in items) {
@@ -1045,14 +1069,12 @@ UIElementTypes.iconsLoot = {
 	},
 	keysActions: {
 		iconsLootShowKeysToPickUp: function _() {
+			Player.lootLetterAssigner
+				.synchronizeWithSource(Terrain.getCell(Player.x, Player.y).items);
 			var itemViews = this.getData("displayedItemViews");
 			var uiElement = this;
 			var itemsLetters = this.getData("itemLetters");
 			var keymapping = this.getData("keymappingPickUp");
-			if (Player.lootLetterAssigner.isEmpty()) {
-				Player.lootLetterAssigner
-					.fillFromIterable(Terrain.cells[Player.x][Player.y].items)
-			}
 			itemViews.forEach(function(itemView) {
 				var nLetter = CachingLetterFactory.get(
 					"defaultLetter", 
@@ -1124,7 +1146,7 @@ UIElementTypes.iconsSpells = {
     	
     },
     listeners: {
-    	spellUnselect: function _(notifier) {
+    	unselectCellAction: function _(notifier) {
     	// Refresh highlighted spell icon
 	    	var nlSpells = this.rootElement.getElementsByTagName("img");
 	    	for (var i=0;i<nlSpells.length;i++) {
@@ -1135,55 +1157,42 @@ UIElementTypes.iconsSpells = {
 	    			throw new Error("Highlighted spell icon not found!");
 	    		}
 	    	}
-    		
 		},
 		locationLoad: function _() {
     	// Build UIElement's contents from scratch
-    		while (this.rootElement.children.length>0) {
+    		while (this.rootElement.children.length > 0) {
         		this.rootElement.removeChild(this.rootElement.children[0]);
         	}
         	for (var i=0; (i<Player.spells.length || i%6!=0); i++) {
-        		var nSpellImg = document.createElement("img");
-        		var nSpellWrap=document.createElement("div");
+        		var nSpellWrap = CachingSpellFactory.get(i<Player.spells.length ? Player.spells[i] : null);
+        		this.addEventListener(nSpellWrap.children[0], "click", "click");
+        		this.addEventListener(nSpellWrap.children[0], "contextmenu", "contextmenu");
+        		this.addEventListener(nSpellWrap.children[0], "mouseout",  "mouseout");
         		
-        		this.addEventListener(nSpellImg, "click", "click");
-        		this.addEventListener(nSpellImg, "contextmenu", "contextmenu");
-        		this.addEventListener(nSpellImg, "mouseout",  "mouseout");
-        		nSpellImg.setData("spellId", ((i<Player.spells.length)?Player.spells[i]:-1));
-        		nSpellImg.setAttribute("src", "./images/"+((i<Player.spells.length)?"spells/"+Player.spells[i]:"intf/spellBg")+".png");
-        		
-        		nSpellWrap.appendChild(nSpellImg);
         		this.rootElement.appendChild(nSpellWrap);
         	}
-    	},
-    	spellSelect: function _() {
-//    		this.UIElementType.keysActions.unselectSpell.apply(this);
     	}
     },
-    keysActions: {
-    	unselectSpell: function _() {
-    		Player.unselectSpell();
-    	}
-    },
+    keysActions: {},
  	handlers: {
-    	click:function _() {
-			document.getElementById("itemInfo").style.display="none";
+    	click: function _() {
+			document.getElementById("itemInfo").style.display = "none";
 			var spellId = this.getData("spellId");
 			if (Player.spellId == spellId) {
 			// If this spell is already chosen, unchoose it
-				Player.unselectSpell();
+				performAction("unselectCellAction");
 				this.applyStyle({
 					opacity: "1"
 				});
 			} else {
-				Player.selectSpell(spellId);
+				performAction("selectSpell", [spellId]);
 				if (spells[spellId].onlyOnSelf) {
 					Player.sendCastSpell(Player.x, Player.y);
 				} else {
 					this.applyStyle({
 						opacity: "0.5"
 					});
-					Player.selectSpell(spellId);
+					performAction("selectSpell", [spellId]);
 					// Spell cursor positioning
 					var spell = spells[Player.spellId];
 					var aimcharacter;
@@ -1218,18 +1227,6 @@ UIElementTypes.iconsSpells = {
     		padding: 0px 0px 0px 0px;	\
     		width: 204px;				\
     		max-width: 204px;			\
-    	}								\
-     	div.$type$ > div {				\
-    		display: inline-block;		\
-    		width: 32px;				\
-    		height: 32px;				\
-    		background-image: url('./images/intf/spellBg.png');	\
-    		border: 1px solid #534511;	\
-    		vertical-align: middle;		\
-    	}								\
-    	div.$type$ > img {				\
-    		width: 32px;				\
-    		height: 32px;				\
     	}								\
     	";
     }
@@ -2538,6 +2535,7 @@ UIElementTypes.attributeList = {
 };
 UIElementTypes.actionsPanel = {
 	onInit: function _() {
+		this.setData("activeState",0);
 		for (var i in Player.actions) {
 			var nDiv = document.createElement("div");
 			this.addCustomClass(nDiv,"Action");
@@ -2545,8 +2543,28 @@ UIElementTypes.actionsPanel = {
 			this.addEventListener(nDiv,"click", Player.actions[i]);
 			this.rootElement.appendChild(nDiv);
 		}
+		var states = this.setData("nlStates",{});
+		for (var i=1; i<Player.states.length; i++) {
+			var nDiv = document.createElement("div");
+			nDiv.setData("stateId", i);
+			this.addCustomClass(nDiv,"InactiveState");
+			nDiv.appendChild(document.createTextNode(Player.states[i].substring(0,3)));
+			this.addEventListener(nDiv, "click", "state");
+			this.rootElement.appendChild(nDiv);
+			states[i] = nDiv;
+		}
 	},
-	listeners: {},
+	listeners: {
+		stateEntered: function _() {
+			if (this.getData("activeState") !== 0) {
+				this.setCustomClass(this.getData("nlStates")[this.getData("activeState")], "InactiveState");
+			}
+			if (Player.stateId !== 0) {
+				this.setCustomClass(this.getData("nlStates")[Player.stateId], "ActiveState");
+			}
+			this.setData("activeState",Player.stateId);
+		}
+	},
 	keysActions: {},
 	handlers: {
 		push: function _() {
@@ -2554,7 +2572,7 @@ UIElementTypes.actionsPanel = {
 		},
 		changePlaces: function _() {
 			CellCursor.enterSelectionMode("changePlaces", 1, function(x,y){
-				return [Terrain.cells[x][y]];
+				return [Terrain.getCell(x,y)];
 			});
 		},
 		makeSound: function () {
@@ -2562,11 +2580,18 @@ UIElementTypes.actionsPanel = {
 		},
 		shieldBash: function() {
 			CellCursor.enterSelectionMode("shieldBash", 1, function(x,y){
-				return [Terrain.cells[x][y]];
+				return [Terrain.getCell(x,y)];
 			});
 		},
 		jump: function _() {
 			CellCursor.enterSelectionMode("jump", 2);
+		},
+		state: function () {
+			if (this.getData("stateId") === Player.stateId) {
+				performAction("enterState", [0]);
+			} else {
+				performAction("enterState", [this.getData("stateId")]);
+			}
 		}
 	},
 	cssRules: function _() {
@@ -2580,6 +2605,30 @@ UIElementTypes.actionsPanel = {
 			border: 1px solid #333;	\
 			overflow: hidden;		\
 			background-color: #000;	\
+			color: #fff;			\
+			width: 32px;			\
+			height: 32px;			\
+			text-align: center;		\
+			line-height: 32px;		\
+		}							\
+		div.$type$ActiveState {			\
+			display: inline-block;	\
+			cursor: pointer;		\
+			border: 1px solid #333;	\
+			overflow: hidden;		\
+			background-color: #444;	\
+			color: #fff;			\
+			width: 32px;			\
+			height: 32px;			\
+			text-align: center;		\
+			line-height: 32px;		\
+		}							\
+		div.$type$InactiveState {			\
+			display: inline-block;	\
+			cursor: pointer;		\
+			border: 1px solid #333;	\
+			overflow: hidden;		\
+			background-color: #4aa;	\
 			color: #fff;			\
 			width: 32px;			\
 			height: 32px;			\

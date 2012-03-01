@@ -6,8 +6,8 @@ import java.util.Set;
 
 import erpoge.buildings.BuildingType;
 import erpoge.buildings.Inn;
+import erpoge.core.Character;
 import erpoge.core.Main;
-import erpoge.core.characters.Character;
 import erpoge.core.graphs.RectangleSystem;
 import erpoge.core.meta.Chance;
 import erpoge.core.meta.Utils;

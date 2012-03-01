@@ -99,11 +99,7 @@ public class PlayerCharacter extends Character {
 	}
 	public void die() {
 		super.die();
-		try {
-			connection.send("["+jsonPartGetEnteringData()+"]");
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		timeStream.removeCharacter(this);
 	}
 	public void startConversation(int characterId) {
 		dialoguePartner = (NonPlayerCharacter) timeStream.getCharacterById(characterId);

@@ -122,7 +122,30 @@ ItemSet.prototype.addNewItem = function addNewItem(typeId, param) {
 	if (isUnique(typeId)) {
 		this.add(new UniqueItem(typeId, param));
 	} else {
-		this.add(new ItemPile(typeId, param));
+		if (param < 1) {
+			throw new Error("Wrong amount: "+param);
+		}
+		if ("p"+typeId in this._contents) {
+			this._contents["p"+typeId].amount += param;
+		} else {
+			this.add(new ItemPile(typeId, param));
+		}
+	}
+};
+/**
+ * Adds item object to ItemSet.
+ * @param {UniqueItem|ItemPile}item
+ * @return
+ */
+ItemSet.prototype.addItem = function (item) {
+	if (item instanceof UniqueItem) {
+		this.add(item);
+	} else {
+		if ("p"+item.typeId in this._contents) {
+			this._contents["p"+item.typeId].amount += item.amount;
+		} else {
+			this.add(item);
+		}
 	}
 };
 /**
@@ -239,7 +262,7 @@ ItemSet.prototype.hasPile = function(typeId, amount) {
  * @param {UniqueItem|ItemPile} item 
  * @return {Boolean} True if it contains such object, false otherwise.
  */
-ItemSet.prototype.hasItem = HashSet.prototype.has;
+ItemSet.prototype.hasItem = HashSet.prototype.contains;
 /** @private @const */
 ItemSet.prototype.PILE = 0xB00B1E5;
 /** @private @const */

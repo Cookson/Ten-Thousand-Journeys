@@ -13,6 +13,7 @@ import erpoge.core.Character;
 import erpoge.core.Main;
 import erpoge.core.TimeStream;
 import erpoge.core.characters.CharacterManager;
+import erpoge.core.characters.CharacterState;
 import erpoge.core.characters.PlayerCharacter;
 import erpoge.core.characters.Race;
 import erpoge.core.itemtypes.ItemsTypology;
@@ -120,14 +121,14 @@ public class PlayerHandler extends PlayerCharacter {
 			default: dx = -1; dy = -1;
 		}
 		step(x + dx, y + dy);
-		getTimeStream().flushEvents();
+		timeStream.flushEvents();
 	}
 	public void aPutOn(String message) throws InterruptedException {
 		// put on an item
 		// v - item id
 		int itemId = gson.fromJson(message,	ClientMessagePutOn.class).itemId;
 		putOn(inventory.getUnique(itemId), false);
-		getTimeStream().flushEvents();
+		timeStream.flushEvents();
 	}
 	public void aTakeOff(String message) throws InterruptedException {
 		// take off an item
@@ -135,19 +136,19 @@ public class PlayerHandler extends PlayerCharacter {
 		int itemId = gson.fromJson(message,
 				ClientMessageTakeOff.class).itemId;
 		takeOff(equipment.getUnique(itemId));
-		getTimeStream().flushEvents();
+		timeStream.flushEvents();
 	}
 	public void aPickUpPile(String message) throws InterruptedException {
 		ClientMessagePickUpPile data = gson.fromJson(message,
 				ClientMessagePickUpPile.class);
 		connection.character.pickUp(plane.getCell(x,y).items.getPile(data.typeId).separatePile(data.amount));
-		getTimeStream().flushEvents();
+		timeStream.flushEvents();
 	}
 	public void aPickUpUnique(String message) throws InterruptedException {
 		ClientMessagePickUpUnique data = gson.fromJson(message,
 				ClientMessagePickUpUnique.class);
 		pickUp(plane.getCell(x, y).items.getUnique(data.itemId));
-		getTimeStream().flushEvents();
+		timeStream.flushEvents();
 	}
 	public void aDropPile(String message) throws InterruptedException {
 		// drop an item
@@ -185,7 +186,7 @@ public class PlayerHandler extends PlayerCharacter {
 		} else {
 			takeFromContainer(container.getPile(data.typeId).separatePile(data.param), container);
 		}			
-		getTimeStream().flushEvents();
+		timeStream.flushEvents();
 	}
 	public void aPutToContainer(String message) throws InterruptedException {
 		ClientMessageTakeFromContainer data = gson.fromJson(message, ClientMessageTakeFromContainer.class);
@@ -204,7 +205,12 @@ public class PlayerHandler extends PlayerCharacter {
 	}
 	public void aShootMissile(String message) throws InterruptedException {
 		ClientMessageShootMissile data = gson.fromJson(message, ClientMessageShootMissile.class);
-		shootMissile(data.x, data.y, inventory.getPile(data.missile).separatePile(1));
+		Main.console(data.x+" "+data.y+" "+data.missile+" "+data.unique);
+		if (data.unique) {
+			shootMissile(data.x, data.y, inventory.getUnique(data.missile));
+		} else {
+			shootMissile(data.x, data.y, inventory.getPile(data.missile).separatePile(1));
+		}
 		timeStream.flushEvents();
 	}
 	public void aUseObject(String message) throws InterruptedException {
@@ -225,7 +231,7 @@ public class PlayerHandler extends PlayerCharacter {
 	}
 	public void aIdle(String message) {
 		idle();
-		getTimeStream().flushEvents();
+		timeStream.flushEvents();
 	}
 	public boolean isAuthorized() {
 		return isAuthorized;
@@ -233,17 +239,17 @@ public class PlayerHandler extends PlayerCharacter {
 	public void aPush(String message) {
 		ClientMessagePush data = gson.fromJson(message, ClientMessagePush.class);
 		push(plane.getChunkWithCell(x, y).getCell(data.x, data.y).character(), Side.int2side(data.direction));
-		getTimeStream().flushEvents();
+		timeStream.flushEvents();
 	}
 	public void aChangePlaces(String message) {
 		ClientMessageChangePlaces data = gson.fromJson(message, ClientMessageChangePlaces.class);
 		changePlaces(plane.getChunkWithCell(x, y).getCell(data.x, data.y).character());
-		getTimeStream().flushEvents();
+		timeStream.flushEvents();
 	}
 	public void aMakeSound(String message) {
 		ClientMessageMakeSound data = gson.fromJson(message, ClientMessageMakeSound.class);
 		makeSound(SoundType.int2type(data.type));
-		getTimeStream().flushEvents();
+		timeStream.flushEvents();
 	}
 	public void aJump(String message) {
 		ClientMessageJump data = gson.fromJson(message, ClientMessageJump.class);
@@ -258,7 +264,7 @@ public class PlayerHandler extends PlayerCharacter {
 		} else {
 			shieldBash(aim);
 		}
-		getTimeStream().flushEvents();		
+		timeStream.flushEvents();		
 	}
 	public boolean inTimeStream(TimeStream timeStream) {
 		return this.getTimeStream() == timeStream; 
@@ -304,5 +310,10 @@ public class PlayerHandler extends PlayerCharacter {
 		
 		queue.addEvent(new EventPlayerData(collection));
 		queue.flush();
+	}
+	public void aEnterState(String message) {
+		ClientMessageEnterState data = gson.fromJson(message, ClientMessageEnterState.class);
+		enterState(CharacterState.int2state(data.stateId));
+		timeStream.flushEvents();
 	}
 }

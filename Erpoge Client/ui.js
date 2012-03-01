@@ -141,7 +141,6 @@ var UI = {
 		attributesInit : {},
 		chatMessage : {},
 		environmentChange : {},
-		missileTypeChange : {},
 		spellCast : {},
 		titleChange : {},
 		skillChange : {},
@@ -150,9 +149,11 @@ var UI = {
 		dialogueEnd : {},
 		containerOpen : {},
 		containerChange : {},
-		cameraRotation : {},
+		stateEntered : {},
 		/* Interface events */
+		cameraRotation : {},
 		quitSelection : {},
+		unselectCellAction : {},
 		spellSelect : {},
 		spellUnselect : {},
 		missileSelect : {},
@@ -805,7 +806,7 @@ ItemView.prototype.isDisplayed = function() {
 	return this.rootElement.parentNode !== null;
 };
 ItemView.prototype.setBackground = function(bg) {
-	this.rootElement.children[0].className = "itemView";
+	this.rootElement.children[0].className = "iconWrap";
 	this.rootElement.children[0].addClass("itemView"+bg);
 };
 /**
@@ -990,7 +991,7 @@ UIElement.prototype.setData = function(name, data) {
 	return this.data[name] = data;
 };
 UIElement.prototype.getData = function(name) {
-	return this.data[name] || null;
+	return this.data[name] === undefined ? null : this.data[name];
 };
 UIElement.prototype.hide = function() {
 	this.rootElement.style.display = "none";
@@ -1036,8 +1037,7 @@ UIElement.prototype.onBottomLayer = function _() {
  * @param {Function}
  *            handlerName
  */
-UIElement.prototype.bindHandlerToUIElementContext = function _(element,
-		eventName, handlerName) {
+UIElement.prototype.bindHandlerToUIElementContext = function _(element, eventName, handlerName) {
 	var uiElement = this;
 	var handler = this.UIElementType.handlers[handlerName];
 	element.addEventListener(eventName, function(e) {
@@ -1068,7 +1068,7 @@ UIElement.prototype.addEventListener = function _(element, eventName,
 		element.eventHandlers = [];
 	}
 	element.eventTypes.push(eventName);
-	element.eventTypes.push(this.UIElementType.handlers[handlerName]);
+	element.eventHandlers.push(this.UIElementType.handlers[handlerName]);
 };
 /**
  * Adds a class name, that will most likely be uniqe, to an element. For
@@ -1084,7 +1084,6 @@ UIElement.prototype.addEventListener = function _(element, eventName,
  * @see HTMLElement#addClass
  */
 UIElement.prototype.addCustomClass = function _(element, postfix) {
-
 	if (element.className=="") {
 		element.className = this.type+postfix;
 	} else {
@@ -1098,7 +1097,7 @@ UIElement.prototype.addCSSRules = function _(ruleSet) {
 	/*
 	 * Adds custom rules of UIElements.
 	 * 
-	 * ruleset - (usually not set) string in format of .css file (see examples
+	 * ruleset - (usually not given) string in format of .css file (see examples
 	 * of ruleset in any UIElementType.cssRules section)
 	 * 
 	 * If ruleSet is not provided, it is taken from this.cssRules() (and this is
@@ -1111,17 +1110,17 @@ UIElement.prototype.addCSSRules = function _(ruleSet) {
 	 * "div.$type$LeftSide, div.$type$RightSide { \ border: 1px solid black; \ }"
 	 */
 
-	if ( typeof ruleSet==="undefined") {
+	if (typeof ruleSet === "undefined") {
 		var ruleSet = this.UIElementType.cssRules();
 	}
 	var selector;
 	var rule;
 	var lastPoint = 0;
-	for ( var i = 0; i<ruleSet.length; i++ ) {
+	for (var i=0; i<ruleSet.length; i++) {
 		if (ruleSet[i]=="}") {
 			rule = ruleSet.substring(lastPoint, i+1);
 			var selectorLastPoint = 0;
-			for ( var j = 1; rule[j]!="{"; j++ ) {
+			for (var j = 1; rule[j]!="{"; j++) {
 				// Change substring "$type$" to this.type
 				// Selector may have several $type$
 				if (rule[j]=="$") {
@@ -1131,19 +1130,6 @@ UIElement.prototype.addCSSRules = function _(ruleSet) {
 			UI.styleSheet.insertRule(rule, 0);
 			lastPoint = i+1;
 		}
-	}
-};
-/**
- * Removes all the event listeners that were added to an element using 
- * UIElement.addEventListener().
- * @param {HTMLElement} element
- */
-UIElement.prototype.clearEventListeners = function(element) {
-	if (!("eventTypes" in element)) {
-		return;
-	}
-	for (var i=0; i<element.eventTypes.length; i++) {
-		element.removeEventListener(element.eventTypes[i], element.eventHandlers[i], false);
 	}
 };
 /**
@@ -1200,7 +1186,7 @@ onLoadEvents['uiWindowPrototype'] = function _() {
 	};
 
 	ItemView.prototype._itemViewImgProto.addClass("itemImg");
-	ItemView.prototype._itemViewWrapProto.addClass("itemView");
+	ItemView.prototype._itemViewWrapProto.addClass("iconWrap");
 	ItemView.prototype._itemViewNumProto.addClass("itemAmount");
 	ItemView.prototype._itemViewNumProto.appendChild(document
 			.createTextNode(""));

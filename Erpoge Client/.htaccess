@@ -1,5 +1,0 @@
-Options +Indexes
-addType text/html .html
-addType image/png .png
-addType text/javascript .js
-ExpiresActive off

@@ -1,22 +1,20 @@
 package erpoge.core;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.swing.plaf.SliderUI;
 
 import net.tootallnate.websocket.WebSocket;
 
 import erpoge.core.characters.NonPlayerCharacter;
 import erpoge.core.characters.PlayerCharacter;
-import erpoge.core.meta.Coordinate;
 import erpoge.core.net.MainHandler;
 import erpoge.core.net.PlayerHandler;
 import erpoge.core.net.serverevents.EventChunkContents;
 import erpoge.core.net.serverevents.EventExcludeChunk;
 import erpoge.core.net.serverevents.EventNextTurn;
+import erpoge.core.net.serverevents.EventSound;
 import erpoge.core.net.serverevents.ServerEvent;
 import erpoge.core.objects.SoundType;
 import erpoge.core.terrain.Chunk;
@@ -100,6 +98,20 @@ public class TimeStream {
 		players.add(character);
 		loadApproachedChunks(character.plane, character.x, character.y);
 	}
+	public void removeCharacter(PlayerCharacter player) {
+		if (!characters.contains(player)) {
+			throw new Error("Player "+player+" is not in this time stream");
+		}
+		characters.remove(player);
+		players.remove(player);
+	}
+	public void removeCharacter(NonPlayerCharacter character) {
+		if (!characters.contains(character)) {
+			throw new Error("Character "+character+" is not in this time stream");
+		}
+		characters.remove(character);
+		nonPlayerCharacters.remove(character);
+	}
 	public void addNonPlayerCharacter(NonPlayerCharacter character) {
 		if (!chunks.contains(character.chunk)) {
 			throw new Error(character+" must be in a timeStream's chunk to be added to timeStream" +
@@ -131,8 +143,7 @@ public class TimeStream {
 		}
 	}
 	public void makeSound(int x, int y, SoundType type) {
-		// TODO Auto-generated method stub
-		
+		addEvent(new EventSound(type.type2int(), x, y));
 	}
 	public Character getCharacterById(int characterId) {
 		for (Character character : characters) {

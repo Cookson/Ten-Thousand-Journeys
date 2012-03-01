@@ -47,7 +47,8 @@ onLoadEvents["defaultUIActions"] = function() {
 			a : Net.SHOOT_MISSILE,
 			x : x,
 			y : y,
-			missile : this.missileType
+			unique : this.selectedMissile instanceof UniqueItem ? true : false,
+			missile : this.selectedMissile instanceof UniqueItem ? this.selectedMissile.itemId : this.selectedMissile.typeId
 		});
 	});
 	UI.registerAction("openContainer", Player, function (x, y) {
@@ -80,6 +81,7 @@ onLoadEvents["defaultUIActions"] = function() {
 			x : x,
 			y : y
 		});
+		performAction("unselectCellAction");
 	});
 	UI.registerAction("drop", Player, function (item, amount) {
 		if (this.items.contains(item)) {
@@ -118,11 +120,11 @@ onLoadEvents["defaultUIActions"] = function() {
 		// This action calls action "choosePushDirection", which calls action
 		// "push", which sends the query to server.
 		CellCursor.enterSelectionMode("choosePushDirection", 1, function(x,y){
-			return [Terrain.cells[x][y]];
+			return [Terrain.getCell(x,y).character];
 		});
 	});
 	UI.registerAction("choosePushDirection", Player, function (entity) {
-		// Chooses the direction 
+		// Chooses the direction
 		CellCursor.enterSelectionMode("push", 1, function(x, y){
 			return [entity, Side.d2side(x-entity.x, y-entity.y)];
 		}, entity);
@@ -204,7 +206,7 @@ onLoadEvents["defaultUIActions"] = function() {
 		 */
 		Global.playerLogin = login;
 		Global.playerPassword = password;
-		Net.send({a:Net.LOGIN,l:login,p:password}, handlers.net.login);
+		Net.send({a:Net.LOGIN,l:login,p:password});
 	});
 	UI.registerAction("logInForCharacter", Player, function (name) {
 		/**
@@ -284,7 +286,22 @@ onLoadEvents["defaultUIActions"] = function() {
 		 */
 		this.notify("quitSelection");
 	});
-	
+	UI.registerAction("selectSpell", Player, function(spellId) {
+		Player.spellId = spellId;
+		CellCursor.enterSelectionMode("castSpell");
+		UI.notify("spellSelect");
+	});
+	UI.registerAction("selectMissile", Player, function(item) {
+		Player.selectedMissile = item;
+		UI.notify("missileSelect");
+		UI.notify("quitSelection");
+	});
+	UI.registerAction("enterState", Player, function(stateId) {
+		Net.send({
+			a: Net.ENTER_STATE,
+			stateId: stateId
+		});
+	});
 };
 UI.defaultUIActions = {
 	leaveLocation: function _() {
@@ -322,11 +339,15 @@ UI.defaultUIActions = {
 			UI.disable();
 		}
 	},
-	selectMissile: function _() {
+	aimMissile: function _() {
 		CellCursor.enterSelectionMode("shootMissile", 11);
 	},
 	unselectCellAction: function _() {
 		CellCursor.exitSelectionMode();
+		UI.notify("unselectCellAction");
+		if (Player.spellId !== -1) {
+			Player.spellId = -1;
+		}
 	},
 	chooseCell: function _() {
 		CellCursor.chooseCurrentCell();

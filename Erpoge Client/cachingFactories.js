@@ -78,20 +78,28 @@ function CachingMonoFactory() {
 CachingMonoFactory.prototype = new CachingFactory();
 /**
  * Returns cached value object if has any, or creates a new value object and 
- * returns it.
+ * returns it. Provided arguments must describe how to modify the value.
+ * 
  * @return
  */
 CachingMonoFactory.prototype.get = function get() {
 	for (var i=0; i<this.cache.length; i++) {
 		if (this.isValueFree(this.cache[i])) {
+			this.modifyCached.apply(this.cache[i], arguments);
 			return this.cache[i];
 		}
 	}
 	// If there's no free element
+	
 	var newValue = this.createNewValue();
 	this.cache.push(newValue);
+	this.modifyCached.apply(this.cache[i], arguments);
 	return newValue;
 };
+CachingMonoFactory.prototype.modifyCached = function() {
+	throw new Error("modifyCached must be overridden by descendant!");
+};
+
 /**
  * MultitypeCachingFactory is an abstract CachingFactory that can take objects 
  * of any number of different types as keys.
@@ -147,21 +155,9 @@ var CachingLetterFactory = new (function CachingLetterFactory() {
 	CachingMonoFactory.apply(this);
 });
 CachingLetterFactory.__proto__ = new CachingMonoFactory();
-/**
- * Returns an HTMLDivElement containing particular letter as inner text.
- * 
- * @memberOf CachingLetterFactory
- * @param {String}
- *            className Name of CSS class of div element.
- * @param {String}
- *            letter A string of 1 character to put inside HTMLDivElement.
- * @return {HTMLDivElement}
- */
-CachingLetterFactory.get = function get(className, letter) {
-	var nDiv = CachingMonoFactory.prototype.get.apply(this);
-	nDiv.className = className;
-	nDiv.firstChild.nodeValue = letter;
-	return nDiv;
+CachingLetterFactory.modifyCached = function(className, letter) {
+	this.className = className;
+	this.firstChild.nodeValue = letter;
 };
 CachingLetterFactory.createNewValue = function createNewValue() {
 	var nDiv = document.createElement("div");
@@ -195,19 +191,16 @@ NullCachingItemViewFactory.isValueFree = function(value) {
 NullCachingItemViewFactory.createNewValue = function createNewValue(background) {
 	return new ItemView(null);
 };
-NullCachingItemViewFactory.get = function get(bg) {
-	var itemView = CachingMonoFactory.prototype.get.apply(this);
-	itemView.rootElement.setData("typeId", -1);
-	itemView.rootElement.setData("param", -1);
-	itemView.getImg().setAttribute("src", "./images/intf/nothing.png");
+NullCachingItemViewFactory.modifyCached = function(bg) {
+	this.rootElement.setData("typeId", -1);
+	this.rootElement.setData("param", -1);
+	this.getImg().setAttribute("src", "./images/intf/nothing.png");
 	// This is because of the next line: otherwise element will have all the 
 	// classes set by .addClass().
-	itemView.getNode().className = "itemView";
-	itemView.getNode().addClass("itemView"+bg);
-	itemView.changeAmount(1);
-	return itemView;
+	this.getNode().className = "iconWrap";
+	this.getNode().addClass("itemView"+bg);
+	this.changeAmount(1);
 };
-
 
 /**
  * Data structure that creates and caches {@link ItemView}s. Cached ItemViews
@@ -221,42 +214,33 @@ NullCachingItemViewFactory.get = function get(bg) {
  * class. See {@link CachingItemViewFactory#get}
  */
 CachingItemViewFactory = {
-/** @public @type String */
+	
 };
 CachingItemViewFactory.__proto__ = new CachingMonoFactory();
-/**
- * Gets {@link ItemView} from chace and modifies cached ItemView so it 
- * represents UniqueItem|ItemPile item with background CSS class "itemView"+bg.
- * 
- * @param {UniqueItem|ItemPile} item
- * @param {String} bg Postfix for background node CSS class.
- * @return {ItemView} Created ItemView
- */
-CachingItemViewFactory.get = function get(item, bg) {
+CachingItemViewFactory.modifyCached = function(item, bg) {
 	if (bg === undefined) {
 		throw new Error("You must provide bg!");
 	}
-	var itemView = CachingMonoFactory.prototype.get.apply(this);
-	itemView.item = item;
+	this.item = item;
 	// This is because of the next line: otherwise element will have all the 
 	// classes set by .addClass().
-	itemView.getNode().className = "itemView"; 
-	itemView.getNode().addClass("itemView"+bg);
+	this.getNode().className = "iconWrap"; 
+	this.getNode().addClass("itemView"+bg);
 	if (item instanceof ItemPile) {
-		itemView.changeAmount(item.amount);
+		this.changeAmount(item.amount);
 	} else {
-		itemView.changeAmount(1);
+		this.changeAmount(1);
 	}
-	itemView.getImg().setAttribute("src", "./images/items/"+item.typeId+".png");
-	itemView.rootElement.setData("typeId", item.typeId);
+	this.getImg().setAttribute("src", "./images/items/"+item.typeId+".png");
+	this.rootElement.setData("typeId", item.typeId);
 	if (item instanceof UniqueItem) {
-		itemView.rootElement.setData("param", item.itemId);
-		itemView.changeAmount(1);
+		this.rootElement.setData("param", item.itemId);
+		this.changeAmount(1);
 	} else {
-		itemView.rootElement.setData("param", item.amount);
-		itemView.changeAmount(item.amount);
+		this.rootElement.setData("param", item.amount);
+		this.changeAmount(item.amount);
 	}
-	return itemView;
+	this.getNode().clearEventListeners();
 };
 /**
  * @private
@@ -266,9 +250,8 @@ CachingItemViewFactory.get = function get(item, bg) {
 CachingItemViewFactory.createNewValue = function createNewValue(item) {
 	return new ItemView(item, this.bg);
 };
-
-CachingItemViewFactory.isValueFree = function isValueFree(element) {
-	return element.parentNode === null;
+CachingItemViewFactory.isValueFree = function isValueFree(itemView) {
+	return itemView.getNode().parentNode === null;
 };
 /**
  * Get array of all the item objects to which ItemViews are associated.
@@ -287,17 +270,31 @@ CachingItemViewFactory.getValues = function getValues() {
 	}
 	return answer;
 };
-/**
- * Returns an ItemView ot an item that is already created or throws an
- * Error if ItemView for item is not created in this cache.
- * 
- * @param {UniqueItem|ItemPile} item Key.
- * @return {ItemView} Value.
- */
-CachingItemViewFactory.getCreatedItem = function getCreatedItem(item) {
-	return this.cache[item.__proto__.constructor.name][item.hashCode()]
-};
 
+var CachingSpellFactory = {};
+CachingSpellFactory.__proto__ = new CachingMonoFactory();
+CachingSpellFactory.createNewValue = function createNewValue() {
+	var nDiv = document.createElement("div");
+	var nImg = document.createElement("img");
+	nDiv.className = "iconWrap";
+	nDiv.addClass("spellView");
+	nDiv.appendChild(nImg);
+	return nDiv;
+};
+CachingSpellFactory.isValueFree = function(div) {
+	return div.parentode === null;
+};
+CachingSpellFactory.modifyCached = function(spellId) {
+	if (spellId === null) {
+		this.children[0].setData("spellId", -1);
+		this.children[0].setAttribute("src", "");
+	} else {
+		this.children[0].setData("spellId", spellId);
+		this.children[0].setAttribute("src", "./images/spells/"+spellId+".png");
+	}
+	this.clearEventListeners();
+	this.children[0].clearEventListeners();
+};
 
 /**
  * MultitypeSet is a data structure for storing hashable objects of different
@@ -377,6 +374,7 @@ MultitypeSet.prototype.getValues = function getValues() {
 function HashSet() {
 	this._contents = {};
 };
+HashSet.prototype.BREAK = {};
 HashSet.prototype.add = function add(object) {
 	Interface.check(object, "Hashable");
 	var hash = object.hashCode();
@@ -397,6 +395,10 @@ HashSet.prototype.contains = function contains(object) {
 	Interface.check(object, "Hashable");
 	return object.hashCode() in this._contents;
 };
+/**
+ * A synonym for HashSet.contains
+ */
+HashSet.prototype.containsValue = HashSet.prototype.contains;
 HashSet.prototype.getValues = function getValues() {
 	var answer = [];
 	for (var i in this._contents) {
@@ -439,6 +441,9 @@ HashMap.prototype.put = function put(key, value) {
 HashMap.prototype.containsKey = function containsKey(key) {
 	return ((typeof key != "object") ? key : key.hashCode()) in this._contents;
 };
+HashMap.prototype.contains = function() {
+	throw new Error("HashMap has no method HashMap.contains; did you mean .containsValue or .containsKey?");
+};
 HashMap.prototype.containsValue = function containsValue(value) {
 	for (var i in this._contetns) {
 		if (this._contents[i].equals(value)) {
@@ -456,7 +461,9 @@ HashMap.prototype.forEach = function forEach(func, context) {
 		context = window;
 	}
 	for (var i in this._contents) {
-		func.apply(context, [this._contents[i]]);
+		if (func.apply(context, [this._contents[i]]) == this.BREAK) {
+			break;
+		}
 	}
 };
 HashMap.prototype.remove = function remove(key) {
@@ -483,6 +490,12 @@ HashMap.prototype.getValues = function getValues() {
 		answer.push(this._contents[i]);
 	}
 	return answer;
+};
+HashMap.prototype.getKeys = function() {
+	var answer = [];
+	for (var i in this._contents) {
+		
+	}
 };
 HashMap.prototype.isEmpty = function () {
 	for (var i in this._contents) {

@@ -165,14 +165,10 @@ public class Chunk extends TerrainBasics {
 		characters.add(ch);
 	}	
 	public void removeCharacter(Character character) {
-		cells[character.x][character.y].setPassability(PASSABILITY_FREE);
-		characters.remove(character.characterId);
-	}
-	public void removeCharacter(PlayerCharacter character) {
-		cells[character.x][character.y].setPassability(PASSABILITY_FREE);
+		cells[character.x-x][character.y-y].setPassability(PASSABILITY_FREE);
+		cells[character.x-x][character.y-y].character(false);
 		characters.remove(character);
 	}
-	
 	public void setFloor(int x, int y, int type) {
 		super.setFloor(x, y, type);
 		timeStream.addEvent(new EventFloorChange(type, this.x+x ,this.y+y));
@@ -210,9 +206,6 @@ public class Chunk extends TerrainBasics {
 	}
 	public void setCharacter(int x, int y, String t, int fraction) {
 		createCharacter(x, y, t, "", 0);
-	}
-	public void makeSound(int x, int y, SoundType type) {
-		timeStream.addEvent(new EventSound(type.type2int(), x, y));
 	}
 	public void createSoundSource(int x, int y, SoundType type) {
 		soundSources.add(new SoundSource(x, y, type, 1000));

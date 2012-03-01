@@ -44,6 +44,20 @@ HTMLElement.prototype.getData = function _(key) {
 	}
 	return this.data[key];
 };
+/**
+ * Removes all the event listeners that were added to an element using 
+ * UIElement.addEventListener().
+ */
+HTMLElement.prototype.clearEventListeners = function() {
+	if (!("eventTypes" in this)) {
+		return;
+	}
+	for (var i=0; i<this.eventTypes.length; i++) {
+		this.removeEventListener(this.eventTypes[i], this.eventHandlers[i], false);
+	}
+	this.eventTypes = undefined;
+	this.eventHandlers = undefined;
+};
 /*
  * Make Strings hahsable
  */
@@ -51,7 +65,7 @@ String.prototype.hashCode = function() {
 	return this.valueOf();
 };
 String.prototype.equals = function(object) {
-	return this.valueOf() === object.hashCode()
+	return this.valueOf() === object.hashCode();
 };
 /**
  * Similar to Array.indexOf, but searches not for "javascriptly-equal" element, 
@@ -155,6 +169,25 @@ function blank2dArray(i) {
 }
 function distance(startX, startY, endX, endY) {
 	return Math.sqrt(Math.pow(startX-endX, 2)+Math.pow(startY-endY, 2));
+}
+/**
+ * Calculates the distance from a point to a line (i.e. the length of the normal
+ * to line from that point).
+ * 
+ * @param {number} xStart Coordinates of a line
+ * @param {number} yStart
+ * @param {number} xEnd
+ * @param {number} yEnd
+ * @param {number} xPoint Coordinates of a point
+ * @param {number} yPoint
+ * @return
+ */
+function distanceToLine(xStart, yStart, xEnd, yEnd, xPoint, yPoint) {
+	return Math.abs(((yStart-yEnd)*xPoint+(xEnd-xStart)*yPoint+(xStart
+			*yEnd-yStart*xEnd))
+			/Math.sqrt(Math.abs((xEnd-xStart)
+					*(xEnd-xStart)+(yEnd-yStart)
+					*(yEnd-yStart))));
 }
 function getNum(x, y) {
 	return parseInt(y)*Terrain.width+parseInt(x);

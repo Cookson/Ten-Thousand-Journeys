@@ -30,6 +30,7 @@ import erpoge.core.net.serverevents.EventDeath;
 import erpoge.core.net.serverevents.EventDropItem;
 import erpoge.core.net.serverevents.EventEffectEnd;
 import erpoge.core.net.serverevents.EventEffectStart;
+import erpoge.core.net.serverevents.EventEnterState;
 import erpoge.core.net.serverevents.EventGetItemPile;
 import erpoge.core.net.serverevents.EventGetUniqueItem;
 import erpoge.core.net.serverevents.EventJump;
@@ -106,22 +107,32 @@ public abstract class Character extends Coordinate {
 	}
 	/* Actions */
 	protected void attack(Character aim) {
-		getTimeStream().addEvent(new EventMeleeAttack(characterId, aim.characterId));
+		timeStream.addEvent(new EventMeleeAttack(characterId, aim.characterId));
 		aim.getDamage(7 , DamageType.PLAIN);
 		moveTime(500);
 	}
 	protected void shootMissile(int toX, int toY, ItemPile missile) {
 		loseItem(missile);
 		Coordinate end = getRayEnd(toX, toY);
-		getTimeStream().addEvent(new EventMissileFlight(x, y, end.x, end.y, 1));
-		plane.getChunkWithCell(end.x, end.y).addItem(missile, end.x, end.y);
+		timeStream.addEvent(new EventMissileFlight(x, y, end.x, end.y, 1));
+		plane.addItem(missile, end.x, end.y);
+		Cell aimCell = plane.getCell(toX, toY);
+		if (aimCell.character() != null) {
+			aimCell.character().getDamage(10, DamageType.PLAIN);
+		}
+	}
+	protected void shootMissile(int toX, int toY, UniqueItem item) {
+		loseItem(item);
+		Coordinate end = getRayEnd(toX, toY);
+		timeStream.addEvent(new EventMissileFlight(x, y, end.x, end.y, item.getTypeId()));
+		plane.addItem(item, end.x, end.y);
 		Cell aimCell = plane.getCell(toX, toY);
 		if (aimCell.character() != null) {
 			aimCell.character().getDamage(10, DamageType.PLAIN);
 		}
 	}
 	protected void castSpell(int spellId, int x, int y) {
-		getTimeStream().addEvent(new EventCastSpell(characterId, spellId, x, y));
+		timeStream.addEvent(new EventCastSpell(characterId, spellId, x, y));
 		Spells.cast(this, spellId, x, y);
 		changeMana(-25);
 		moveTime(500);
@@ -134,7 +145,7 @@ public abstract class Character extends Coordinate {
 			character.discoverDeath(this);
 		}
 		plane.getChunkWithCell(x,y).removeCharacter(this);
-		getTimeStream().addEvent(new EventDeath(characterId));
+		timeStream.addEvent(new EventDeath(characterId));
 	}
 	protected void putOn(UniqueItem item, boolean omitEvent) {
 	// Main put on function
@@ -176,7 +187,7 @@ public abstract class Character extends Coordinate {
 	 */
 		getTimeStream().addEvent(new EventPickUp(characterId, pile.getType().getTypeId(), pile.getAmount()));
 		getItem(pile);
-		plane.getChunkWithCell(x,y).removeItem(pile, x, y);
+		plane.removeItem(pile, x, y);
 		moveTime(500);
 	}
 	protected void pickUp(UniqueItem item) {
@@ -241,10 +252,20 @@ public abstract class Character extends Coordinate {
 	}
 	protected void step(int x, int y) {
 		move(x,y);
-		moveTime(500);
+		if (state == CharacterState.RUNNING) {
+			changeEnergy(-30);
+			moveTime(200);
+		} else {
+			moveTime(500);
+		}
+		
 	} 
 	protected void makeSound(SoundType type) {
 		timeStream.makeSound(x,y,type);
+	}
+	protected void enterState(CharacterState state) {
+		this.state = state;
+		timeStream.addEvent(new EventEnterState(characterId, state));
 	}
 	/* Special actions */
 	protected void push(Character character, Side side) {
@@ -694,7 +715,11 @@ public abstract class Character extends Coordinate {
 		amount = Math.min(amount, maxEp-ep);
 		if (amount != 0) {
 			ep += amount;
-			getTimeStream().addEvent(new EventChangeEnergy(characterId, ep));
+			timeStream.addEvent(new EventChangeEnergy(characterId, ep));
+		} else {
+			if (state == CharacterState.RUNNING) {
+				enterState(CharacterState.DEFAULT);
+			}
 		}
 	}
 	protected void changeMana(int amount) {
@@ -748,13 +773,15 @@ public abstract class Character extends Coordinate {
 		effects.remove(effectId);
 		getTimeStream().addEvent(new EventEffectEnd(characterId, effectId));
 	}
-	public void moveTime(int amount) {
+	protected void moveTime(int amount) {
 		actionPoints -= amount;
 		for (Character.Effect e : effects.values()) {
 			e.duration -= amount;
 			if (e.duration < 0) {
 				removeEffect(e.effectId);
 			}
+		}
+		switch (state) {
 		}
 		changeEnergy(10);
 	}

@@ -36,6 +36,7 @@ Net = {
 	ACCOUNT_REGISTER		: 28,
 	PLAYER_CREATE			: 29,
 	IDLE					: 30,
+	ENTER_STATE				: 31,
 	/* Special actions */
 	PUSH                    : 201,
 	CHANGE_PLACES           : 202,
@@ -51,7 +52,7 @@ Net = {
 		onmessage && (this.onmessage = onmessage);
 		callback && (this.callback = callback);
 		this.websocket.send(JSON.stringify(data));
-		console.log("send", data);
+//		console["log"]("send", data);
 	},
 	init : function _() {
 		
