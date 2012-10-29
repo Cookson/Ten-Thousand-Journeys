@@ -1,80 +1,493 @@
-﻿// По загрузке документа выполнить:
+﻿window.onunload = function () {
+// Разлогинивание персонажа при перезагрузке, если перезагрузка - не quickRefresh
+	if (localStorage.getItem(101) == "0") {
+		Net.send({a:Net.DEAUTH});
+	}
+};
 window.onload = function _() {
-	// Чтобы надпись "Загрузка" в начале была выравнена по вертикали
-	recountWindowSize();
-	document.getElementById("stLoad").style.color="#fff";
-	// Собственно, загрузка
-	// Задержка нужна для того, чтобы отобразилась надпись "Загрузка"
-	
 	setTimeout(function _() {
 		onLoadEvents['customStylesheets']();
 		onLoadEvents['game']();
 		onLoadEvents['uiWindowPrototype']();
 		onLoadEvents['defaultUIActions']();
-		onLoadEvents['gui']();
 		onLoadEvents['storage']();
-		onLoadEvents['ajax']();
-		onLoadEvents['keys']();
+
+
+		// onLoadEvents['keys']();
+		// setTimeout(function() {
+		// 	var head = document.getElementsByTagName("head")[0];
+		// 	for (var i=0; i<EnabledModules.length; i++) {
+		// 		var script = document.createElement("script");
+		// 		script.setAttribute("src", "./modules/"+EnabledModules[i]+"/module.js");
+		// 		head.appendChild(script);
+		// 	}
+		// },1);
+		
+		GameField.init();
+		GameFrame.init(1024, 600);
+		serverAddress = localStorage.getItem("serverAddress");
+		Net.readStorageToServers();
+		Net.init();
+		Events.fire("engineLoad");
 	}, 1);
+	document.getElementById("intfWindowWrap").style.width = localStorage.getItem(3)+"px";
+	document.getElementById("intfWindowWrap").style.height = localStorage.getItem(4)+"px";
+	(function() {
+		var /** @type {GameFrame} */ instance;
+		var gameField;
+		/**
+		 * Represents the viewport (the rectangle-shaped "window", or "camera")
+		 * through which player looks at the world. Not to be mixed up with
+		 * {@link GameField}
+		 * 
+		 * @see GameField 
+		 * @constructor
+		 * @singleton
+		 * @return {GameFrame}
+		 */
+		function GameFrame() {
+			var inited = false,
+			    w = undefined,
+			    h = undefined,
+			    events = {};
+			if (typeof instance !== 'undefined') {
+				return instance;
+			}
+			instance = this;
+			/** 
+			 * @type HTMLDivElement
+			 */
+			
+			this.showSound = function(x, y, type) {
+				var wrap = document.createElement("div");
+				var text = document.createElement("div");
+				wrap.className = "wrap";
+				text.className = "speechBubbleText";
+				text.innerText = soundTypes[type].name;
+				wrap.style.zIndex = 9000;
+				wrap.appendChild(text);
+				gameField.appendChild(wrap);
+				wrap.style.top = (32*y-text.clientHeight-12) + "px";
+				wrap.style.left = (32*x-text.clientWidth/2+16) + "px"; 
+				qanimate(wrap, [0,-32], 1000, function(obj) {
+					gameField.removeChild(obj);
+					handleNextEvent();
+				});
+			};
+			/**
+			 * Returns GameFrame's main element width in pixels (the visible width 
+			 * of game frame).
+			 * 
+			 * @return {number} Width of #intfGameZone in pixels
+			 */
+			this.getWidth = function() {
+				return w;
+			};
+			/**
+			 * Returns GameFrame's main element height in pixels (the visible 
+			 * height of game frame).
+			 * 
+			 * @return {number} Height of #intfGameZone in pixels
+			 */
+			this.getHeight = function() {
+				return h;
+			};
+			this.clearGameZone = function() {
+				while (gameField.children.length>0) {
+				// Remove all the children of #gameField, except of gameFieldFloor, 
+				// cellCursor and UI._gameFieldElementsContainer
+					gameField.removeChild(GameField.nGameField.children[0]);
+				}
+			};
+			this.setViewPort = function(cx, cy) {
+				if (typeof cx !== "number" || typeof cy !== "number") {
+					throw new Error("Wrong arguments for setViewPort: ", arguments); 
+				}
+	//			if (typeof w === "number") {
+	//				if (w % 2 !== 1) {
+	//					throw new Error("Viewport width and height must be odd numbers (now w = "+w+")");
+	//				}
+	//				rendW = w;
+	//			}
+	//			if (typeof h === "number") {
+	//				if (h % 2 !== 1) {
+	//					throw new Error("Viewport width and height must be odd numbers (now h = "+h+")");
+	//				}
+	//				rendH = h;
+	//			}
+				var x=cx, y=cy;
+				var normal = GameField.getViewIndentation(x,y,32);
+				x = normal.left;
+				y = normal.top;
+	//			var xCells=x;
+	//			var yCells=y;
+				x-= w/2;
+	//			x-=(x%32==0)?0:16;
+	//			x=(x<0)?((GameField.getHorizontalDimension()-xCells-1)*32<UI.visibleWidth/2)?UI.visibleWidth-GameField.getHorizontalDimension()*32:x:0;
+	//			if (GameField.getHorizontalDimension()*32<UI.visibleWidth) {
+	//				x=0;
+	//			}
+				y-= h/2;
+	//			y-=(y%32==0)?0:16;
+	//			y=(y<0)?((GameField.getVerticalDimension()-yCells-1)*32<UI.visibleHeight/2)?UI.visibleHeight-GameField.getVerticalDimension()*32:y:0;
+	//			if (GameField.getVerticalDimension()*32<UI.visibleHeight) {
+	//				y=0;
+	//			}
+				// Here x and y contain indentations in pixels.
+				gameField.style.left = -x+"px";
+				gameField.style.top = -y+"px";		
+	//			if (weatherEffect) {
+	//				var wx = Player.x;
+	//				var wy = Player.y;
+	// throw new Error("Not implemented weather!");
+	//				weatherEffect.move(Math.min(Math.max(wx, rendCX), GameField.width-rendCX), Math.min(Math.max(wy, rendCY), GameField.height-rendCY));
+	//			}
+			};
+			/**
+			 * This method should be called to start working with the GameFrame
+			 * 
+			 * @param {number} width Width of GameFrame in pixels
+			 * @param {number} height Width of GameFrame in pixels
+			 */
+			this.init = function(width, height) {
+				if (inited) {
+					throw new Error("GameFrame is already init!");
+				}
+				w = width;
+				h = height;
+				inited = true;
+				gameField = GameField.getGameFieldElement();
+				document.getElementById("intfGameZone").style.width = w+"px";
+				document.getElementById("intfGameZone").style.height = h+"px";
+			};
+			/**
+			 * MouseHandler handles mouse actions (clicks, moves etc) on GameFrame
+			 * element. It controls different in-game types of cursors.
+			 * 
+			 * @constructor
+			 * @singleton
+			 */
+			
+			return this;
+		};
+		window.GameFrame = new GameFrame();
+	})();
+	
+	(function() {
+		var /** @type MouseHandler */ instance;
+		var player;
+		Events.addListener("playerDataLoaded", this, function() {
+			player = Characters.getInstance().player;
+		});
+		function MouseHandler(element) {
+			if (typeof instance !== "undefined") {
+				return instance;
+			}
+			instance = this;
+			var currentCursor,
+			    prevClientX, 
+			    prevClientY,
+			    mouseCursorAbsCellX,
+			    mouseCursorAbsCellY,
+			    mouseCursor = new CellCursor();
+			element.addEventListener("click", function mouseHandlerClick(e) {
+				var elementCoord = getOffsetRect(GameField.getGameFieldElement());
+				var xPx = Math.floor((e.clientX-elementCoord.left)/32);
+				var yPx = Math.floor((e.clientY-elementCoord.top)/32);
+				var normal = GameField.getNormalView(xPx, yPx);
+				var x = normal.x;
+				var y = normal.y;
+				var dest = Player.getDestination();
+				if (
+					player.x != dest.x
+					|| player.y != dest.y
+				) {
+					return;
+				}
+				var aim;
+				// If we click behind a character who we can attack
+				var dx = x-player.x;
+				var shiftX = dx==0 ? player.x : player.x+dx/Math.abs(dx);
+				var dy = y-player.y;
+				var shiftY = dy==0 ? player.y : player.y+dy/Math.abs(dy);
+				var cache; // User in several conditions below
+				if (x === Characters.player("x") && y === Characters.player("y")) {
+					performAction("idle");
+				} else if (
+					(aim = World.character(shiftX, shiftY))
+					&& player.isEnemy(aim)
+				) {
+					// Attack
+					performAction("attack", [aim]);
+				} else if (
+					(aim = World.character(x,y))
+					&& Character.player !== World.character(x, y)
+					&& !Player.isEnemy(aim)
+				) {
+					player.sendStartConversation(aim.characterId);
+				} else if (
+					(cache = World.object(x, y)) !== null
+					&& StaticData.object(cache).type === StaticData.OBJECT_TYPE_DOOR
+					&& (!isOpenDoor(cache) || e.shiftKey)
+					&& isNear(Characters.player("x"), Characters.player("y"), x, y)
+				) {
+				// Open or close door
+					performAction("useObject",[x, y]);
+				} else if (World.object(x,y) && isNear(x, y, Characters.player("x"), Characters.player("y")) && isContainer(0)) {
+					throw new Error("Not implemented!");
+				// Open cotainer
+					Global.container.x = x;
+					Global.container.y = y;
+					player.sendOpenContainer();
+				} else if (
+					World.passability(x, y) === StaticData.PASSABILITY_BLOCKED
+					|| World.passability(x, y) === StaticData.PASSABILITY_SEE
+				) {
+				// Come to an object
+					if (isNear(x, y, Characters.player("x"), Characters.player("y"))) {
+						return false;
+					}
+					cache = Player.getComeToDest(x, y);
+					performAction("goTo", [cache.x, cache.y]);
+				} else {
+					// If Player goes to cell
+					Player.destX = x;
+					Player.destY = y;
+					performAction("goTo", [x, y]);
+				}
+			});
+			element.addEventListener("contextmenu", function mouseHandlerContextmenu(e) {
+				if (e.shiftKey) {
+					return;
+				}
+				var elementCoord=getOffsetRect(gameField);
+				var x=Math.floor((e.clientX-elementCoord.left)/32);
+				var y=Math.floor((e.clientY-elementCoord.top)/32);
+				
+				mapCursorX = x;
+				mapCursorY = y;
+				
+				return false;
+			});
+			element.addEventListener("mousemove", function mouseHandlerMove(e) {
+				// Передвижение указателя клетки
+				if (e.clientX==prevClientX && e.clientY==prevClientY) {
+					return;
+				}
+				prevClientX = e.clientX;
+				prevClientY = e.clientY;
+				var elementCoord = getOffsetRect(GameField.getGameFieldElement());
+				var normal = GameField.getNormalView(
+						Math.floor((e.clientX-elementCoord.left)/32),
+						Math.floor((e.clientY-elementCoord.top)/32));
+				var x=normal.x;
+				var y=normal.y;
+				if (x==mapCursorX && y==mapCursorY) {
+					return;
+				}
+				// Распрозрачивание горизонтального ряда объектов, закрывающих обзор
+	//			for (var dy=1; !getObject(x,y+dy-1) && World.cells[x][y+dy]; dy++) {
+	//				if (hiddenBotheringObjects.indexOf(getNum(x,y+dy))==-1) {
+	//				// Если при движении мыши скрывается один и тот же ряд объектов, то ничего не делать, 
+	//				// иначе распрозрачить предыдущие запрозраченные объекты
+	//					var obj;
+	//					for (var i=0;obj=getObject(
+	//						getX(hiddenBotheringObjects[i]),
+	//						getY(hiddenBotheringObjects[i])
+	//					);i++) {
+	//						if (obj.image) {
+	//						// Если объект не скрылся от того, что персонаж двигается, и вместе с ним двигается камера
+	//							if (!player.canSee(obj.x,obj.y)) {
+	//								obj.shade();
+	//							} else {
+	//								obj.unshade();
+	//							}
+	//						}
+	//					}
+	//					hiddenBotheringObjects=[];
+	//				}
+	//			}
+				mouseCursorAbsCellX = x;
+				mouseCursorAbsCellY = y;
+				mouseCursor.move(x,y);
+	//			if (Player.spellId != -1) {
+	//				cellCursorSec.move(x,y);
+	//			} else {
+	//				cellCursorPri.move(x,y);
+	////				this.cellInfo.style.display="none";
+	//				// var nCurrentCell=document.getElementById("cellCursorPri");
+	//				// nCurrentCell.style.top=y*32+"px";
+	//				// nCurrentCell.style.left=x*32+"px";
+	//				// if (Player.seenCells[x][y]) {
+	//					// nCurrentCell.style.borderColor="#ff0";
+	//				// } else {
+	//					// nCurrentCell.style.borderColor="#f00";
+	//				// }
+	//			}
+				// Запрозрачивание горизонтального ряда объектов, закрывающих обзор
+	//			var objUnderCursor=getObject(x,y);
+	//			for (var dy=1;!getObject(x,y+dy-1) && World.cells[x][y+dy];dy++) {
+	//				if (hiddenBotheringObjects.indexOf(getNum(x,y+dy))==-1 && player.seenCells[x][y] && (!objUnderCursor || objectProperties[objUnderCursor.type][2]==1)) {
+	//				// Если при движении мыши скрывается один и тот же ряд объектов, то ничего не делать, 
+	//				// иначе запрозрачить предыдущие распрозраченные объекты
+	//					var objectLower=getObject(x,y+dy);
+	//					if (objectLower && objectProperties[objectLower.type][1]>dy*32) {
+	//					// Если есть мешающий объект и он закрывает своей высотой обзор
+	//						// var obj=World.cells[mapCursorX][mapCursorY+1].wall || World.cells[mapCursorX][mapCursorY+1].object;
+	//						// obj.hide();
+	//						// obj.show();
+	//						// if (!Player.canSee(mapCursorX,mapCursorY+1)) {
+	//							// obj.shade();
+	//						// }
+	//						// От мешающего объекта идём влево. Если объект слева тоже мешающий, то продолжаем, иначе останавливаемся
+	//						var leftestObject=objectLower;
+	//						var i=x;
+	//						while ((leftestObject=getObject(--i,y+dy)) &&  leftestObject.image && objectProperties[leftestObject.type][1]>32 && !objectProperties[leftestObject.type][2] && Player.seenCells[i][y] && (!getObject(i,y) || objectProperties[getObject(i,y).type][2]==1)) { 
+	//						// Получаем объект слева так же, как и objectLower
+	//						}
+	//						// Теперь в i мы получили x-координату левейшего мешающего объекта.
+	//						// Идём от этого объекта направо и скрываем все мешающие объекты
+	//						var obj;
+	//						while ((obj=getObject(++i,y+dy)) &&  obj.image && objectProperties[obj.type][1]>32 && !objectProperties[obj.type][2] && Player.seenCells[i][y] && (!getObject(i,y) || objectProperties[getObject(i,y).type][2]==1)) {
+	//							try {
+	//								obj.cursorShade();
+	//								// obj.image.style.opacity="0.3";
+	//							} catch (e) {
+	//								
+	//							}
+	//							hiddenBotheringObjects.push(getNum(i,y+dy));
+	//						}
+	//					}
+	//				}
+	//			}
+			});
+			/**
+			 * Returns the {@Link CellCursor} object that is used to display the
+			 * mouse cursor.
+			 * 
+			 * @see CellCursor 
+			 * @return {CellCursor}
+			 */
+			this.getMouseCursor = function() {
+				return mouseCursor;
+			};
+		};
+		Events.addListener("engineLoad", window, function() {
+			window.MouseHandler = new MouseHandler(GameField.getGameFieldElement());
+		});
+	})();
+	Events.addListener("connectionEstablished", window, function() {
+		performAction("login",["1","1"]);
+		setTimeout(function() {
+			performAction("logInForCharacter", ["Alvoi"]);
+		}, 30);
+	});
 };
+(function() {
+	var /** @type Events */ instance;
+	/**
+	 * @singleton
+	 * @constructor
+	 */
+	function Events() {
+		if (typeof instance !== "undefined") {
+			return instance;
+		}
+		instance = this;
+		var events = {};
+		var lastListenerId = 0; // Used to assign unique ids to event listeners
+		var listenerIndexes = {}; // Links a listener id to its index in events[eventName] array
+		// Default events
+		/**
+		 * Fires an event. It results in calling all the functions that were
+		 * assigned to this event.
+		 * 
+		 * @param {string} name Name of event.
+		 * @param {mixed} data Some custom data to pass to the functions.
+		 */
+		this.fire = function(eventName, data) {
+			if (!(eventName in events)) {
+				throw new Error("Attempting to fire an undefined event \""+eventName+"\"");
+			}
+			var listeners = events[eventName];
+			for (var i=0; i<listeners.length; i++) {
+				var e = listeners[i];
+				e.func.apply(e.context, [data]);
+			}
+		};
+		/**
+		 * 
+		 * @param {string} eventName
+		 * @param {mixed} func May be any custom function or a string — a name
+		 * of {@link PlayerAction}
+		 * @param {object} context
+		 * @returns {object} A unique object identifying this listener function,
+		 * @see Events#removeListener
+		 */
+		this.addListener = function(eventName, context, func) {
+			if (eventName in events) {
+				listenerIndexes[lastListenerId] = events[eventName].length;
+				events[eventName].push({func:func,context:context});
+			} else {
+				throw new Error("Attempting to add a listener to an undefined event \""+eventName+"\"");
+			}
+			return {n: eventName, i: lastListenerId++};
+		};
+		/**
+		 * Remove a function added by {@link Events#addListener} that listens 
+		 * for a certain event.
+		 * @param {object} listenerDescriptor An object that is returned by
+		 * {@link Events#addListener}
+		 */
+		this.removeListener = function(listenerDescriptor) {
+			events[listenerDescriptor.n].splice([listenerIndexes[listenerDescriptor.i]], 1);
+		};
+		/**
+		 * Makes a new event available for firing.
+		 * @param {string} name
+		 */
+		this.registerEvent = function(name) {
+			if (name in events) {
+				throw new Error("Event \""+name+"\" is already registered!");
+			}
+			events[name] = [];
+		};
+		/**
+		 * @inner
+		 * @param {Array[string]} eventNames
+		 */
+		function init(eventNames) {
+			for (var i=0,l=eventNames.length; i<l; i++) {
+				instance.registerEvent(eventNames[i]);
+			}
+		}
+		init([
+			// Cell selection
+			"exitCellSelectionMode",
+			"enterCellSelectionMode",
+			"chooseCell",
+			"objectDisappear",
+			"characterDisappear",
+			"characterAppear",
+			"playerDataLoaded",
+			"locationLoad",
+			"engineLoad",
+			"connectionEstablished",
+			"connectionAborted",
+			"playerMove",
+			"nextTurn",
+			"chunkLoad",
+			"chunkUnload",
+			"environmentExplored"
+		]);
+	};
+	window.Events = new Events();
+})();
 onLoadEvents['game'] = function _() {
-	if (!document.head) {
-		document.head = document.getElementsByTagName("head")[0];
-	}
 	cacheImages();
-	saveParticlesImageData();
+	// saveParticlesImageData();
 	Keys.formReverseKeyCodesTable();
 };
-function moveGameField(x,y,initiate) {
-	var normal = Terrain.getViewIndentation(x,y,32);
-	x = normal.left;
-	y = normal.top;
-//	var xCells=x;
-//	var yCells=y;
-	x-= UI.visibleWidth/2;
-//	x-=(x%32==0)?0:16;
-//	x=(x<0)?((Terrain.getHorizontalDimension()-xCells-1)*32<UI.visibleWidth/2)?UI.visibleWidth-Terrain.getHorizontalDimension()*32:x:0;
-//	if (Terrain.getHorizontalDimension()*32<UI.visibleWidth) {
-//		x=0;
-//	}
-	y-= UI.visibleHeight/2;
-//	y-=(y%32==0)?0:16;
-//	y=(y<0)?((Terrain.getVerticalDimension()-yCells-1)*32<UI.visibleHeight/2)?UI.visibleHeight-Terrain.getVerticalDimension()*32:y:0;
-//	if (Terrain.getVerticalDimension()*32<UI.visibleHeight) {
-//		y=0;
-//	}
-	// Here x and y contain indentations in pixels.
-	gameField.style.left=-x+"px";
-	gameField.style.top=-y+"px";		
-//	if (weatherEffect) {
-//		var wx = Player.x;
-//		var wy = Player.y;
-//		weatherEffect.move(Math.min(Math.max(wx, rendCX), Terrain.width-rendCX), Math.min(Math.max(wy, rendCY), Terrain.height-rendCY));
-//	}
-}
-function centerWorldCamera(x,y,initiate) {
-	moveGameField(x,y,initiate);
-	rendCX=x;
-	rendCY=y;
-	renderView();
-}
-/**
- * @private
- * 
- * @param {Boolean} isWorld True is world loading, false if location loading.
- */
-function prepareArea(isWorld) {
-// Подготавливает область для загрузки в неё данных с сервера
-// Если isWorld - загружется мир, иначе - область
-	while (gameField.children.length>1) {
-	// Remove all the children of #gameField, except of gameFieldFloor and cellCursor
-		gameField.removeChild(gameField.children[1]);
-	}
-	rendCX = -1;
-	rendCY = -1;
-	prevRendCX = -1;
-	prevRendCY = -1;
-}
 function performAction(actionName, args) {
 	if (!(actionName in UI.registeredActions)) {
 		throw new Error("No action "+actionName+" registered");
@@ -85,388 +498,23 @@ function performAction(actionName, args) {
 	UI.registeredActions[actionName]._handler
 		.apply(UI.registeredActions[actionName]._context, args);
 }
-function renderView() {
-// Прорисовка содержимого ячеек
-	if (rendCX-(rendW-1)/2 < 0) {
-	// Чтобы область прорисовки была полностью на игровом поле
-	// По оси X
-		rendCX = (rendW-1)/2;
-	} else if (rendCX+(rendW-1)/2 >= Terrain.width) {
-		rendCX = Terrain.width-1-(rendW-1)/2;
-	}
-	if (rendCY-(rendH-1)/2 < 0) {
-	// По оси Y
-		rendCY = (rendH-1)/2;
-	} else if (rendCY+(rendH-1)/2 >= Terrain.height) {
-		rendCY = Terrain.height-1-(rendH-1)/2;
-	}
-	if (prevRendCX==-1) {
-		var startX = rendCX-(rendW-1)/2;
-		var startY = rendCY-(rendH-1)/2;
-		var maxX = rendCX+(rendW-1)/2;
-		var maxY = rendCY+(rendH-1)/2;
-	} else {
-		var startX = Math.min(rendCX-(rendW-1)/2, prevRendCX-(rendW-1)/2);
-		var startY = Math.min(rendCY-(rendH-1)/2, prevRendCY-(rendH-1)/2);
-		var maxX = Math.max(rendCX+(rendW-1)/2, prevRendCX+(rendW-1)/2);
-		var maxY = Math.max(rendCY+(rendH-1)/2, prevRendCY+(rendH-1)/2);
-	}
-	startX = (startX<0) ? 0 : startX;
-	startY = (startY<0) ? 0 : startY;
-	maxX = (maxX>=Terrain.width)?Terrain.width-1:maxX;
-	maxY = (maxY>=Terrain.height)?Terrain.height-1:maxY;
-	var newCells = 0;
-	var shown = 0;
-	var hidden= 0 ;
-	var shaded = 0;
-	var unshaded = 0;
-	var shadedD = "";
-	if (!Terrain.isPeaceful) {		
-		for (var i=0; i<=maxX-startX; i++) {
-			for (var j=0; j<=maxY-startY; j++) {
-			// Переделать на циклы по x и y, как исправлю
-				var x = startX+i;
-				var y = startY+j;
-				if (!Terrain.onGlobalMap && Player.sawCell(x,y)) {
-					if (isInPlayerVis(x,y) && !isInPlayerPrevVis(x,y)) {
-						if (Terrain.cells[x][y].floor == null) {
-							if (Terrain.cells[x][y].visible) {
-							}
-							Terrain.cells[x][y].show();
-							shown++;
-						}
-						// Terrain.cells[x][y].unshade();
-						unshaded++;
-					} else if (!isInPlayerVis(x,y) && isInPlayerPrevVis(x,y)) {
-						// shadedD+=x+", "+y+"(Player.visibleCells["+x+"]["+y+"]) -
-						// "+Player.visibleCells[x][y]+"\n"
-						Terrain.cells[x][y].shade();
-						shaded++;
-					} else if (isInRendRange(x,y) && !isInPrevRendRange(x,y) && prevRendCX!=-1) {
-						Terrain.cells[x][y].show();
-						shown++;
-						if (Player.visibleCells[x][y] === undefined) {
-							Terrain.cells[x][y].shade();
-						}
-					}
-				} else if (Terrain.onGlobalMap && !isInPrevRendRange(x,y) && isInRendRange(x,y)) {
-					// Показать новые
-					Terrain.cells[x][y].show();
-					shown++;
-				}
-				if (isInPrevRendRange(x,y) && !isInRendRange(x,y) && (Player.seenCells[x][y] || Terrain.onGlobalMap) && prevRendCX!=-1) {
-					// Спрятать старые
-					Terrain.cells[x][y].hide();
-					hidden++;
-				}
-			}
-		}
-//		Player.prevVisibleCells = Player.visibleCells;
-	}
-	prevRendCX = rendCX;
-	prevRendCY = rendCY;	
-}
-function rotateCamera(side) {
-	if (!(side instanceof Side)) {
-		throw new Error("This function must get instance of Side as parameter!");
-	}
-	Terrain.cameraOrientation = side;
-	for (var y=0; y<Terrain.height; y++) {
-		for (var x=0; x<Terrain.width; x++) {
-			Terrain.cells[x][y].hide();
-		}
-	}
-	floorCanvas.width=Terrain.getHorizontalDimension()*32;
-	floorCanvas.height=Terrain.getVerticalDimension()*32;
-	for (var y=0; y<Terrain.height; y++) {
-		for (var x=0; x<Terrain.width; x++) {
-			Terrain.cells[x][y].show();
-		}
-	}
-	for (var ch in characters) {
-		characters[ch].placeSprite();
-	}
-	moveGameField(Player.x, Player.y, true);
-	UI.notify("cameraRotation");
-}
-function showSound(x, y, type) {
-	var wrap = document.createElement("div");
-	var text = document.createElement("div");
-	wrap.className = "wrap";
-	text.className = "speechBubbleText";
-	text.innerText = soundTypes[type].name;
-	wrap.style.zIndex = 9000;
-	wrap.appendChild(text);
-	gameField.appendChild(wrap);
-	wrap.style.top = (32*y-text.clientHeight-12) + "px";
-	wrap.style.left = (32*x-text.clientWidth/2+16) + "px"; 
-	qanimate(wrap, [0,-32], 1000, function(obj) {
-		gameField.removeChild(obj);
-		handleNextEvent();
-	});
-}
 function readCharacters(data) {
-/*
-in : [[
-0	characterId,
-1	x,
-2	y,
-3	name,
-4	fraction,
-5	maxHp,
-6	hp,
-7	maxMp,
-8	mp,
-9	effects,
-10	equipment,
-	(cls,race)
-	|(type)
-	]xM],
- */
-	for (var i=0;i<data.length;i++) {
-		if (data[i][3] == Player.name) {
-			continue;
-		}
-		
-		var isPlayer = data[i].length == 13;
-		new Character(
-			data[i][0],
-			isPlayer ? "player" : data[i][11], 
-			data[i][1], 
-			data[i][2], 
-			data[i][4],
-			data[i][6],
-			data[i][5]
-		);
-		var character = characters[data[i][0]];
-		character.display();
-	}
+	/*
+	in : [[
+	0	characterId,
+	1	x,
+	2	y,
+	3	name,
+	4	fraction,
+	5	maxHp,
+	6	hp,
+	7	maxMp,
+	8	mp,
+	9	effects,
+	10	equipment,
+		(cls,race)
+		|(type)
+		]xM],
+	 */
 }
-function worldMapRenderView() {
-// Отображение вида глобальной карты
-// Использует функцию renderView()
-	if (prevRendCX == -1) {
-		var startX = rendCX-(rendW-1)/2;
-		var startY = rendCY-(rendH-1)/2;
-		var maxX = rendCX+(rendW-1)/2;
-		var maxY = rendCY+(rendH-1)/2;
-	} else {
-		var startX = Math.min(rendCX-(rendW-1)/2, prevRendCX-(rendW-1)/2);
-		var startY = Math.min(rendCY-(rendH-1)/2, prevRendCY-(rendH-1)/2);
-		var maxX = Math.max(rendCX+(rendW-1)/2, prevRendCX+(rendW-1)/2);
-		var maxY = Math.max(rendCY+(rendH-1)/2, prevRendCY+(rendH-1)/2);
-	}
-	startX = (startX < 0) ? 0 : startX;
-	startY = (startY < 0) ? 0 : startY;
-	maxX = (maxX >= Terrain.width) ? Terrain.width-1 : maxX;
-	maxY = (maxY >= Terrain.height) ? Terrain.height-1 : maxY;
-//	Player.visibleCells = blank2dArray();
-//	for (var i=startX; i<=maxX; i++) {
-//		for (var j=startY; j<=maxY; j++) {
-//			Player.visibleCells[i][j] = true;
-//		}
-//	}
-	
-	renderView();
-//	Player.prevVisibleCells = Player.visibleCells;
-}
-function drawWorldMapFloor(ctx,x,y,floor) {
-// Создаёт изображение поверхности глобальной карты (только для floor, объекты
-// отрисовываются так же, как и на локальной карте)
-	// Получаем типы соседних тайлов или тип этого тайла, если такого соседнего
-	// тайла нет (если этот тайл на границе)
-	var up = (y==0) ? floor : Terrain.cells[x][y-1].floor.type;
-	var right = (x==Terrain.width-1) ? floor : Terrain.cells[x+1][y].floor.type;
-	var down = (y==Terrain.height-1) ? floor : Terrain.cells[x][y+1].floor.type;
-	var left = (x==0) ? floor : Terrain.cells[x-1][y].floor.type;
-	
-	var tileType="t"+floor+","+up+","+right+","+down+","+left;
-	if (up!=floor || right!=floor || down!=floor || left!=floor) {
-		if (floorImages[tileType]!==undefined) {
-		// Если изображение такого тайла уже использовалось, и поэтому
-		// сгенерировано
-			ctx.putImageData(floorImages[tileType],x*32,y*32);
-		} else {
-		// Если изображение такого тайла ещё не сгенерировано, то создать его
-			ctx.drawImage(tiles[floor][0],x*32,y*32);
-			// Отрисовка переходов
-			var neighbors=[up,right,down,left];
-//			for (var i=0;i<4;i++) {
-//				if (neighbors[i]!=floor) {
-//					ctx.getTransition(neighbors[i],i,true,x*32,y*32);
-//				}
-//			}
-//			try {
-				floorImages[tileType]=ctx.getImageData(x*32,y*32,32,32);
-//			} catch (e) {
-//				alert("Необходимо включить возможность открытия локальных файлов в canvas");
-//			}
-		}
-	} else {
-		ctx.drawImage(tiles[floor][getNumFromSeed(x,y,NUM_OF_TILES[floorNames[floor]])], x*32, y*32);
-	}
-	if (+localStorage.getItem(2)) {
-		var imageData=ctx.getImageData(x*32,y*32,32,32);
-		// Отрисовка сетки
-		for (var i=0;i<32;i++) {
-			var pix=getPixel(imageData,i,0);
-			pix[3]=200;
-			setPixel(imageData,i,0,pix);
-		}
-		for (var j=0;j<32;j++) {
-			var pix=getPixel(imageData,0,j);
-			pix[3]=200;
-			setPixel(imageData,0,j,pix);
-		}
-		ctx.putImageData(imageData,x*32,y*32);
-	}
-}
-function readWorld(data) {
-// Отобразить карту мира
-/*
-	Format: {
-		w:xSize,
-		h:ySize,
-		c:[[ground,forest,road,river,race,[objects]]xN]
-	}
-*/
-	Terrain.width = data.w;
-	Terrain.height = data.h;
-//	Player.seenCells = blank2dArray();
-//	for (var x=0;x<Terrain.width;x++) {
-//		Player.seenCells[x]=[];
-//		for (var y=0;y<Terrain.height;y++) {
-//			Player.seenCells[x][y]=true;
-//		}
-//	}
-	prepareArea(true);
-	var contents=data.c;
-	var x=0, y=0;
-	for (var i=0; i<contents.length; i++) {
-		x++;
-		if (x==Terrain.width) {
-			x=0;
-			y++;
-		}
-	}
-	x=0;
-	y=0;
-	var u=0;
-	// Отрисовано ли уже изображение поверхности мира
-	var worldFloorImageDrawn=!!worldMapFloorCanvas;
-	if (!worldFloorImageDrawn) {
-	// Если изображение поверхности мира ещё не отрисовано, то создать для него
-	// канвас
-		worldMapFloorCanvas=document.createElement("canvas");
-		worldMapFloorCanvas.width=Terrain.width*32;
-		worldMapFloorCanvas.height=Terrain.height*32;
-		var ctx=worldMapFloorCanvas.getContext("2d");
-	} else {
-		worldMapFloorCanvas.getContext("2d").clearRect(0,0,Terrain.width*32, Terrain.height*32);
-	}
-	
-	for (var num=0; num<contents.length; num++) {
-		Terrain.cells[x][y].floor = new Floor(x,y,contents[num][0]);
-		x++;
-		if (x==Terrain.width) {
-			x=0;
-			y++;
-		}
-	}
-	
-	x=0;
-	y=0;
-	for (var num=0;num<contents.length;num++) {
-		// (пол создавался выше)
-		Terrain.cells[x][y].floor.show();
-		if (contents[x+y*Terrain.width][1]==901) {
-			new WorldObject(x,y,901);
-		} else if (contents[x+y*Terrain.width][1] != 0) {
-		// Лес
-			if (contents[x+y*Terrain.width][1]==900) {
-				Terrain.cells[x][y].forest = new Forest(x,y,900);
-			} else if (contents[x+y*Terrain.width][1]==903) {
-				new Wall(x,y,903);
-				Terrain.cells[x][y].wall.show();
-			} else if (contents[x+y*Terrain.width][1]==904) {
-				new WorldObject(x,y,904);
-			}
-		}
-		var isRiver = contents[x+y*Terrain.width][3] > 0;
-		var isRoad = contents[x+y*Terrain.width][2] > 0;
-		if (isRiver) {
-		// Река
-			Terrain.cells[x][y].path = new Path(x,y,21);
-		} else if (isRoad) {
-		// Дорога
-			Terrain.cells[x][y].path = new Path(x,y,31);
-		}
-		if (isRiver || isRoad) {
-			if (x-1>=0 && Terrain.cells[x-1][y].wall) {
-				Terrain.cells[x-1][y].wall.hide(); Terrain.cells[x-1][y].wall.show();
-			}
-			if (x+1<Terrain.width && Terrain.cells[x+1][y].wall) { 
-				Terrain.cells[x+1][y].wall.hide(); Terrain.cells[x+1][y].wall.show(); 
-			}
-			if (y+1<Terrain.height && Terrain.cells[x][y+1].wall) { 
-				Terrain.cells[x][y+1].wall.hide(); Terrain.cells[x][y+1].wall.show();
-			}
-			if (y-1>=0 && Terrain.cells[x][y-1].wall) { 
-				Terrain.cells[x][y-1].wall.hide(); Terrain.cells[x][y-1].wall.show();
-			}
-		}
-		if (contents[x+y*Terrain.width][3]!=0) {
-			for (var i=0;i<contents[x+y*Terrain.width][3].length;i++) {
-				new WorldObject(x,y,contents[x+y*Terrain.width][3][i]);
-				Terrain.cells[x][y].object.show();
-			}
-		}
-		x++;
-		if (x == Terrain.width) {
-			x = 0;
-			y++;
-		}
-	}
-	// Обернуть изображение поверхности и добавить к карте мира
-	var worldGroundWrap=document.createElement("div");
-	worldGroundWrap.className="wrap";
-	worldGroundWrap.appendChild(worldMapFloorCanvas);
-	document.getElementById("gameField").appendChild(worldGroundWrap);
-	
-	moveGameField(Math.floor(Terrain.width/2),Math.floor(Terrain.height/2), true);
-	rendCX=Math.floor(Terrain.width/2);
-	rendCY=Math.floor(Terrain.height/2);
-	renderView();
-}
-
-function readOnlinePlayers(data) {
-// Отобразить список игроков онлайн и сохранить его в переменной
-// in: [[characterId,name,class,race,party,worldX,worldY]xN]
-	for (var i in data) {
-		new WorldPlayer(data[i][0], data[i][1], data[i][2], data[i][3], data[i][4], data[i][5], data[i][6]);
-	}
-}
-function readChatMessages(data) {
-// Отобразить полученные сообщения в окне чата
-// Формат: [name,message, name,message...]
-	var len=data.length/2;
-	for (var i=0;i<len;i++) {
-		chat.push([data[i*2],data[i*2+1]]);
-	}
-	UI.notify("chatMessage");
-}
-function readInvite(data) {
-// Отобразить приглашение
-// in: [inviterId,inviterName]
-	if (data===0) {
-		return false;
-	}
-	inviterPlayerId=data[0];
-	document.getElementById("inviteName").innerHTML=data[1];
-	document.getElementById("infoInvite").style.visibility="visible";
-}
-function readEntering(data) {
-	if (data) {
-		enterArea();
-	}
-}
+ 

@@ -1,49 +1,14 @@
 ﻿function Character(id, type, x, y, fraction, hp, maxHp) {
-	if (id== -1) {
-		return;
-	}
-	characters[id] = this;
-	this.x = x;
-	this.y = y;
-	this.isClientPlayer = false;
-	try {
-		Terrain.getCell(x,y).character = this;
-	} catch (e) {
-		throw new Error("No cell "+x+" "+y+" in character "+type+" constructor");
-	}
-	Terrain.getCell(x,y).passability = Terrain.PASS_SEE;
-	this.characterId = id;
-	this.destX = this.x;
-	this.destY = this.y;
-	this.type = (type!=undefined) ? type : "player";
-	if (this.type != "player") {
-		this.name = characterTypes[type][0];
-	}
-
-	this.fraction = (fraction==undefined) ? (this.characterId==0) ? 1 : 0 : fraction;
-	this.stateId = 0;
-	this.aimcharacter = -1;
-	this.cls = null;
-	if (this.type!="player") {
-		this.hp = hp;
-		this.maxHp = maxHp;
-	}
-
-	this.VISION_RANGE = 14;
 	this.visible;
 
 	this.cellWrap = document.createElement("div");
-	this.cellWrap.className = "cellWrap";
-	this.cellWrap.setAttribute("id", "character"+this.characterId);
 
-	var viewIndent = Terrain.getViewIndentation(this.x, this.y, 32);
+	var viewIndent = GameField.getViewIndentation(playerData.x, playerData.y, 32);
 	this.cellWrap.style.top = viewIndent.top+"px";
 	this.cellWrap.style.left = viewIndent.left+"px";
 	this.cellWrap.style.opacity = "0";
-	this.cellWrap.style.zIndex = (100000+this.y)*2+1;
+	this.cellWrap.style.zIndex = (100000+playerData.y)*2+1;
 
-	this.equipment = new Equipment();
-	this.effects = {};
 
 	// Spell
 	this.spellId = -1;
@@ -51,1596 +16,1118 @@
 	this.spellX = -1;
 	this.spellY = -1;
 }
-/* Constants */
-Character.prototype.PATH_TABLE_WIDTH = 41;
 /* View */
-Character.prototype.display = function() {
-	// Initiates character view
-	// This method is overriden in Player class
-	gameField.appendChild(this.cellWrap);
-	var nCharacterImage = document.createElement("img");
-	nCharacterImage
-			.setAttribute("src", "./images/characters/"+this.type+".png");
-	if (this.typeincharacterSpriteSizes) {
-		// If this character's sprite has irregular size (not 32х32)
-		nCharacterImage.style.left = ((32-characterSpriteSizes[this.type][0])/2)
-				+"px";
-		nCharacterImage.style.top = ((16-characterSpriteSizes[this.type][1]))
-				+"px";
-	}
-	this.cellWrap.appendChild(nCharacterImage);
-	if (this.fraction == 1) {
-		// Friend marker
-		var nWrap = document.createElement("div");
-		nWrap.className = "wrap";
-		var nFriendMarker = document.createElement("img");
-		nFriendMarker.className = "cellFriendMarker";
-		nFriendMarker.src = "./images/intf/friendMarker.png";
-		nWrap.appendChild(nFriendMarker);
-		this.cellWrap.insertBefore(nWrap, this.cellWrap.children[0]);
-	}
-	if (Player.canSee(this.x, this.y)) {
-		this.showModel();
-	}
-	// HP strip
-	this.initHpBar();
-};
-Character.prototype.placeSprite = function(x, y) {
-	// Разместить спрайт персонажа на конкретной клетке
-	if (x===undefined) {
-		x = this.x;
-		y = this.y;
-	}
-	var viewIndent = Terrain.getViewIndentation(x, y, 1);
-	this.cellWrap.style.left = viewIndent.left*32+"px";
-	this.cellWrap.style.top = viewIndent.top*32+"px";
-	this.cellWrap.style.zIndex = (100000+viewIndent.top)*2+1;
-};
-Character.prototype.showModel = function() {
-	this.cellWrap.style.opacity = "1";
-	this.visible = true;
-	for ( var i in this.effects) {
-		this.effects[i].resume();
-	}
-};
-Character.prototype.hideModel = function() {
-	this.cellWrap.style.opacity = "0";
-	this.visible = false;
-	this.hideHpBar();
-	for (var i in this.effects) {
-		this.effects[i].pause();
-		this.effects[i].clear();
-	}
-};
-Character.prototype.showAttackResult = function(res) {
-	handleNextEvent();
-	// this.graphicEffect("blood",function() {
-	//		
-	// });
-};
-Character.prototype.redrawDoll = function() {
-	// Отобразить амуницию
-	// prevEquipment - предыдущее значение this.equipment
-	if (Player.canSee(this.x, this.y)) {
-		this.doll.draw();
-	}
-};
-Character.prototype.initHpBar = function() {
-	// Creates HP bar element
-	this.nHpBar = document.createElement("div");
-	this.nHpBar.className = "cellHp";
-	this.cellWrap.appendChild(this.nHpBar);
-	if (this.typeincharacterSpriteSizes) {
-		this.nHpBar.style.top = ((16-characterSpriteSizes[this.type][1]))+"px";
-	}
-	this.nHpBar.className = "cellHp";
-	this.refreshHpBar();
-};
-Character.prototype.hideHpBar = function() {
-	this.nHpBar.display = "none";
-};
-Character.prototype.showHpBar = function() {
-	this.nHpBar.display = "block";
-};
-Character.prototype.refreshHpBar = function() {
-	// Adjusts HP bar length and color.
-	// if (this.hp==this.maxHp) {
-	// // If HP is max then hide bar
-	// this.hideHpBar();
-	// return false;
-	// } else {
-	// Else change it's length and color
-	var w = ((BARwidth/this.maxHp*this.hp>=BARwidth) ? BARwidth : Math
-			.ceil(BARwidth/this.maxHp*this.hp));
-	this.nHpBar.style.width = w+"px";
-	this.nHpBar.style.borderRight = (BARwidth-w)+"px solid #000";
-	// Colors of HP bar
-	if (w<=BARwidth/4) {
-		// Very low hp
-		this.nHpBar.style.backgroundColor = "#ff2400";
-	} else if (w<=BARwidth/2) {
-		// Low hp
-		this.nHpBar.style.backgroundColor = "#e6dc0d";
-	} else {
-		// Normal hp
-		this.nHpBar.style.backgroundColor = "#34c924";
-	}
-	// }
-};
-Character.prototype.refreshMpBar = function() {
-	document.getElementById("barsMpValue").innerHTML = this.mp+"/"+this.maxMp;
-	document.getElementById("barsMpStrip").style.width = (106*this.mp/this.maxMp)
-			+"px";
-};
-Character.prototype.showAttack = function(aimId, ranged) {
-	handleNextEvent();
-};
-Character.prototype.showDamage = function(amount, type) {
-	this.showAttackResult();
-	this.hp -= amount;
-	this.refreshHpBar();
-};
-Character.prototype.showSpeech = function(message) {
-	var bg = document.createElement("div");
-	var text = document.createElement("div");
-	var wrap = document.createElement("div");
-	var wrap2 = document.createElement("div");
-	wrap.className = "wrap";
-	wrap2.className = "wrap";
-	bg.className = "speechBubbleBg";
-	text.className = "speechBubbleText";
-	text.innerText = message;
-
-	wrap.style.zIndex = 2147483647;
-	wrap2.style.zIndex = 2147483647;
-	text.style.zIndex = 1;
-
-	wrap2.appendChild(text);
-	wrap.appendChild(wrap2);
-	wrap.appendChild(bg);
-
-	gameField.appendChild(wrap);
-	bg.style.height = text.clientHeight-8+"px";
-	bg.style.width = text.clientWidth-8+"px";
-	wrap.style.top = (32*this.y-text.clientHeight-12)+"px";
-	wrap.style.left = (32*this.x-text.clientWidth/2+16)+"px";
-	wrap.onclick = handlers.speechBubble.click;
-	wrap.onmouseover = handlers.speechBubble.mouseover;
-	wrap.onmouseout = handlers.speechBubble.mouseout;
-	wrap.setAttribute("isMouseOver", "0");
-	wrap.setAttribute("time", new Date().getTime());
-	setTimeout(function() {
-		if (wrap.getAttribute("isMouseOver") == "0") {
-			gameField.removeChild(wrap);
-			return false;
-		}
-	}, 2000);
-};
-Character.prototype.showEffectStart = function(effectId) {
-	this.effects[effectId] = new effectTypes[effectId](this.x, this.y, this.x,
-			this.y, 100, 100, 100, 100);
-};
-Character.prototype.showEffectEnd = function(effectId) {
-	this.effects[effectId].markForDestruction();
-	delete this.effects[effectId];
-};
 /* Calculations */
-Character.prototype.canSee = function(x, y, setVisibleCells, forceCompute) {
-	/**
-	 * Checks if the cell is on line of sight
-	 * 
-	 * setVisibleCells - sets this.visibleCells[x][y] to true if can see, to
-	 * false otherwise. forceCompute - compute visibility even if it is a
-	 * peaceful location.
-	 */
-	// return true;
-	var absDx = this.x-this.VISION_RANGE;
-	var absDy = this.y-this.VISION_RANGE;
-	if (this.isNear(x, y) || this.x==x && this.y==y) {
-		// Если клетка рядом или персонаж на ней стоит - то её точно видно
-		if (setVisibleCells) {
-			this.visibleCells[x-absDx][y-absDy] = true;
-		}
-		return true;
-	}
-	if (Math.floor(this.distance(x, y))>this.VISION_RANGE) {
-		return false;
-	}
-	// Алгоритм рассматривает несколько случаев взаимного расположения начальной
-	// и целевой клетки,
-	// поскольку в значительной части случаев расчёт можно упростить. Алгоритм
-	// для общего случая рассматривается последним.
-	if (x==this.x || y==this.y) {
-		// Для случая, когда тангенс прямой (угловой коэффициент) равен
-		// бесконечности или 0
-		// (т.е. когда в цикле в else может быть деление на ноль т.к. абсцисы
-		// или ординаты конца и начала равны)
-		// В этом случае придётся сделать только одну проверку по линии (не
-		// таким методом, как в else для прямых с tg!=0 и tg!=1)
-		if (x == this.x) {
-			// Для вертикальных линий
-			var dy = Math.abs(y-this.y)/(y-this.y);
-			for (var i=this.y+dy; i!=y; i+=dy) {
-				if (Terrain.getCell(x,i).passability == Terrain.PASS_BLOCKED) {
-					return false;
-				}
-			}
-		} else {
-			// Для горизонтальных линий
-			var dx = Math.abs(x-this.x)/(x-this.x);
-			for (var i=this.x+dx; i!=x; i += dx) {
-				if (Terrain.getCell(i,y).passability==Terrain.PASS_BLOCKED) {
-					return false;
-				}
-			}
-		}
-		if (setVisibleCells) {
-			this.visibleCells[x-absDx][y-absDy] = true;
-		}
-		return true;
-	} else if (Math.abs(x-this.x)==1) {
-		// Для случая, когда координаты конца и начала находятся на двух
-		// соседних вертикальных линиях
-		var yMin = Math.min(y, this.y);
-		var yMax = Math.max(y, this.y);
-		for (var i=yMin+1; i<yMax; i++) {
-			if (Terrain.getCell(x,i).passability == Terrain.PASS_BLOCKED) {
-				break;
-			}
-			if (i == yMax-1) {
-				if (setVisibleCells) {
-					this.visibleCells[x-absDx][y-absDy] = true;
-				}
-				return true;
-			}
-		}
-		for (var i=yMin+1; i<yMax; i++) {
-			if (Terrain.getCell(this.x,i).passability == Terrain.PASS_BLOCKED) {
-				break;
-			}
-			if (i == yMax-1) {
-				if (setVisibleCells) {
-					this.visibleCells[x-absDx][y-absDy] = true;
-				}
-				return true;
-			}
-		}
-		return false;
-	} else if (Math.abs(y-this.y) == 1) {
-		// Тот же случай, что и предыдущий, но для горизонтальных линий
-		var xMin = Math.min(x, this.x);
-		var xMax = Math.max(x, this.x);
-		for ( var i = xMin+1; i<xMax; i++ ) {
-			if (Terrain.getCell(i,y).passability == Terrain.PASS_BLOCKED) {
-				break;
-			}
-			if (i==xMax-1) {
-				if (setVisibleCells) {
-					this.visibleCells[x-absDx][y-absDy] = true;
-				}
-				return true;
-			}
-		}
-		for (var i=xMin+1; i<xMax; i++) {
-			if (Terrain.getCell(i,this.y).passability == Terrain.PASS_BLOCKED) {
-				break;
-			}
-			if (i == xMax-1) {
-				if (setVisibleCells) {
-					this.visibleCells[x-absDx][y-absDy] = true;
-				}
-				return true;
-			}
-		}
-		return false;
-	} else if (Math.abs(x-this.x) == Math.abs(y-this.y)) {
-		// Случай, когда линия образует с осями угол 45 градусов (abs(tg)==1)
-		var dMax = Math.abs(x-this.x);
-		var dx = (x>this.x) ? 1 : -1;
-		var dy = (y>this.y) ? 1 : -1;
-		var cx = this.x;
-		var cy = this.y;
-		for (var i=1; i<dMax; i++) {
-			cx += dx;
-			cy += dy;
-			if (Terrain.getCell(cx,cy).passability == Terrain.PASS_BLOCKED) {
-				return false;
-			}
-		}
-		if (setVisibleCells) {
-			this.visibleCells[x-absDx][y-absDy] = true;
-		}
-		return true;
-	} else {
-	// Общий случай
-		var start = [[], []];
-		var end = [];
-		// x и y концов соответствуют x и y центра клетки или её ближайшего угла
-		// (значения перебираются в цикле по k каждое с каждым)
-		end[0] = (x>this.x) ? x-0.5 : x+0.5;
-		end[1] = (y>this.y) ? y-0.5 : y+0.5;
-		end[2] = x;
-		end[3] = y;
-		start[0][0] = (x>this.x) ? this.x+0.5 : this.x-0.5;
-		start[0][1] = (y>this.y) ? this.y+0.5 : this.y-0.5;
-		start[1][0] = (x>this.x) ? this.x+0.5 : this.x-0.5;
-		// start[0][1]=this.y;
-		// start[1][0]=this.x;
-		start[1][1] = (y>this.y) ? this.y+0.5 : this.y-0.5;
-		var rays = this.rays(this.x, this.y, x, y);
-		jump: for (var k = 0; k<3; k++ ) {
-			var endNumX = (k==0||k==1) ? 0 : 2;
-			var endNumY = (k==0||k==2) ? 1 : 3;
-			for (j = 0; j<1; j++) {
-				// Новый алгоритм расчёта видимости строится на том, есть ли
-				// точки,
-				// которые находятся ближе, чем на 0.5 клетки от прямой -
-				// косвенный признак того, что прямая пересекает преграду.
-				// Преграды в этом случае считаются окружностями с R=0.5
-				// Это не мешает расчёту видимости на стыках клеток по
-				// горизонтали.
-				// В этом случае нужно сделать максимум шесть проверок (3 цикла
-				// по k - точки конца - и два по j - точки начала)
-				if (start[j][0]==this.x && start[j][1]==this.y) {
-					continue;
-				}
-				var xEnd = end[endNumX];
-				var yEnd = end[endNumY];
-				var xStart = start[j][0];
-				var yStart = start[j][1];
-				for (var i in rays) {
-					/* */// Здесь x|yPoint - глобальные переменные.
-							// Пофиксить.
-					xPoint = rays[i][0];
-					yPoint = rays[i][1];
-					if (Terrain.getCell(xPoint,yPoint).passability == Terrain.PASS_BLOCKED) {
-						// Проверяем каждую клетку
-						if (
-							xPoint==this.x && yPoint==this.y 
-							|| xPoint==x && yPoint==y
-						) {
-							continue;
-						}
-						if (
-							Math.abs(((yStart-yEnd)*xPoint+(xEnd-xStart)*yPoint+(xStart
-										*yEnd-yStart*xEnd))
-										/Math.sqrt(Math.abs((xEnd-xStart)
-												*(xEnd-xStart)+(yEnd-yStart)
-												*(yEnd-yStart))))<=0.5
-						) {
-							// Если расстояние до точки не больше 0.5, проверяем
-							// следующую из 6 линий
-							continue jump;
-						}
-					}
-				}
-				if (setVisibleCells) {
-					this.visibleCells[x-absDx][y-absDy] = true;
-				}
-				return true;
-			}
-		}
-		return false;
-	}
-};
-Character.prototype.altCanSee = function(x, y, setVisibleCells, forceCompute) {
-	/**
-	 * Checks if the cell is on line of sight
-	 * 
-	 * setVisibleCells - sets this.visibleCells[x][y] to true if can see, to
-	 * false otherwise. forceCompute - compute visibility even if it is a
-	 * peaceful location.
-	 */
-	// return true;
-	var absDx = this.x-this.VISION_RANGE;
-	var absDy = this.y-this.VISION_RANGE;
-	if (this.isNear(x, y) || this.x==x && this.y==y) {
-		// Если клетка рядом или персонаж на ней стоит - то её точно видно
-		if (setVisibleCells) {
-			this.visibleCells[x-absDx][y-absDy] = true;
-		}
-		return true;
-	}
-	if (Math.floor(this.distance(x, y))>this.VISION_RANGE) {
-		return false;
-	}
-	// Алгоритм рассматривает несколько случаев взаимного расположения начальной
-	// и целевой клетки,
-	// поскольку в значительной части случаев расчёт можно упростить. Алгоритм
-	// для общего случая рассматривается последним.
-	if (x==this.x || y==this.y) {
-		// Для случая, когда тангенс прямой (угловой коэффициент) равен
-		// бесконечности или 0
-		// (т.е. когда в цикле в else может быть деление на ноль т.к. абсцисы
-		// или ординаты конца и начала равны)
-		// В этом случае придётся сделать только одну проверку по линии (не
-		// таким методом, как в else для прямых с tg!=0 и tg!=1)
-		if (x == this.x) {
-			// Для вертикальных линий
-			var dy = Math.abs(y-this.y)/(y-this.y);
-			for (var i=this.y+dy; i!=y; i+=dy) {
-				if (Terrain.getCell(x,i).passability == Terrain.PASS_BLOCKED) {
-					return false;
-				}
-				if (setVisibleCells) {
-					this.visibleCells[x-absDx][i-absDy] = true;
-				}
-			}
-		} else {
-			// Для горизонтальных линий
-			var dx = Math.abs(x-this.x)/(x-this.x);
-			for (var i=this.x+dx; i!=x; i += dx) {
-				if (Terrain.getCell(i,y).passability==Terrain.PASS_BLOCKED) {
-					return false;
-				}
-				if (setVisibleCells) {
-					this.visibleCells[i-absDx][y-absDy] = true;
-				}
-			}
-		}
-		if (setVisibleCells) {
-			this.visibleCells[x-absDx][y-absDy] = true;
-		}
-		return true;
-	} else if (Math.abs(x-this.x)==1) {
-		// Для случая, когда координаты конца и начала находятся на двух
-		// соседних вертикальных линиях
-		var dy = y>this.y ? 1 : -1;
-		for (var i=this.y+1; i!=y; i+=dy) {
-			if (setVisibleCells) {
-				this.visibleCells[x-absDx][i-absDy] = true;
-			}
-			if (Terrain.getCell(x,i).passability == Terrain.PASS_BLOCKED) {
-				break;
-			}
-			if (i == y-dy) {
-				if (setVisibleCells) {
-					this.visibleCells[x-absDx][y-absDy] = true;
-				}
-				return true;
-			}
-		}
-		for (var i=this.y+1; i!=y; i+=dy) {
-			if (setVisibleCells) {
-				this.visibleCells[this.x-absDx][i-absDy] = true;
-			}
-			if (Terrain.getCell(this.x,i).passability == Terrain.PASS_BLOCKED) {
-				break;
-			}
-			if (i == y-dy) {
-				if (setVisibleCells) {
-					this.visibleCells[x-absDx][y-absDy] = true;
-				}
-				return true;
-			}
-		}
-		return false;
-	} else if (Math.abs(y-this.y) == 1) {
-		// Тот же случай, что и предыдущий, но для горизонтальных линий
-		var dx = x>this.x ? 1 : -1;
-		for (var i=this.x+1; i!=x; i+=dx) {
-			if (setVisibleCells) {
-				this.visibleCells[i-absDx][y-absDy] = true;
-			}
-			if (Terrain.getCell(i,y).passability == Terrain.PASS_BLOCKED) {
-				break;
-			}
-			if (i==x-dx) {
-				if (setVisibleCells) {
-					this.visibleCells[x-absDx][y-absDy] = true;
-				}
-				return true;
-			}
-		}
-		for (var i=this.x+1; i!=x; i+=dx) {
-			if (setVisibleCells) {
-				this.visibleCells[i-absDx][this.y-absDy] = true;
-			}
-			if (Terrain.getCell(i,this.y).passability == Terrain.PASS_BLOCKED) {
-				break;
-			}
-			if (i == x-dx) {
-				if (setVisibleCells) {
-					this.visibleCells[x-absDx][y-absDy] = true;
-				}
-				return true;
-			}
-		}
-		return false;
-	} else if (Math.abs(x-this.x) == Math.abs(y-this.y)) {
-		// Случай, когда линия образует с осями угол 45 градусов (abs(tg)==1)
-		var dMax = Math.abs(x-this.x);
-		var dx = (x>this.x) ? 1 : -1;
-		var dy = (y>this.y) ? 1 : -1;
-		var cx = this.x;
-		var cy = this.y;
-		for (var i=1; i<dMax; i++) {
-			cx += dx;
-			cy += dy;
-			if (Terrain.getCell(cx,cy).passability == Terrain.PASS_BLOCKED) {
-				return false;
-			}
-			if (setVisibleCells) {
-				this.visibleCells[cx-absDx][cy-absDy] = true;
-			}
-		}
-		if (setVisibleCells) {
-			this.visibleCells[x-absDx][y-absDy] = true;
-		}
-		return true;
-	} else {
-	// Общий случай
-		var dx = (this.x-x)/Math.abs((this.x-x));
-		var dy = (this.y-y)/Math.abs((this.y-y));
-		var currentX = this.x;
-		var currentY = this.y;
-		var availableCells = {0:[]};
-		var trail = [{x:this.x,y:this.y}];
-		var deletedCells = {};
-		for (var delx=Math.min(this.x,x), delmax=Math.max(this.x,x); delx<=delmax; delx++) {
-			deletedCells[delx] = {};
-		}
-		// Index of current cell in trail
-		var t = 1;
-		var u = 0;
-		while (true) {
-			// Cells that may be in trail
-			var trailCandidates = [];
-			var nextCells = [
-				{x:currentX-dx, y:currentY}, 
-				{x:currentX, y:currentY-dy}, 
-				{x:currentX-dx, y:currentY-dy}
-			];
-			for (var i=0; i<nextCells.length; i++) {
-			// Get visible cells from three sides
-				var cellX = nextCells[i].x, cellY = nextCells[i].y;
-				if (deletedCells[cellX] === undefined) {
-					deletedCells[cellX] = {};
-				}
-				if (
-					deletedCells[cellX][cellY] === undefined
-					&& Terrain.getCell(cellX,cellY).passability != Terrain.PASS_BLOCKED
-					&& distanceToLine(this.x, this.y, x, y, cellX, cellY)<=
-					// Without this condition characters won't be able to 
-					// properly look around a corner staying near a wall, 
-					// beacuse a wall will be too close to character
-						(Math.abs(this.x-x)==2 && Math.abs(this.y-y)>6 
-						|| Math.abs(this.y-y)==2 && Math.abs(this.x-x)>6 ? 1 : 0.71)
-				) {
-				// If cell is visible and close enough to line to be a part of 
-				// trail, add it to trail candidates
-					trailCandidates.push({x:cellX,y:cellY});
-					if (setVisibleCells) {
-						this.visibleCells[cellX-absDx][cellY-absDy] = true;
-					}
-				}
-				if (cellX === x && cellY === y) {
-					if (setVisibleCells) {
-						this.visibleCells[x-absDx][y-absDy] = true;
-					}
-					return true;
-				}
-			}
-			if (trailCandidates.length == 0) {
-			// If we can't go anywhere from current cell, step back until we 
-			// can find a step with available cells
-				while (availableCells[t-1].length == 0) {
-					t--;
-					if (t === 0) {
-					// If we return to the first cell, then there's no line of 
-					// sight to x:y
-						return false;
-					}
-					delete availableCells[t];
-					var deletedCell = trail.pop();
-					// Now there is definitely no line to destination cell
-					// through this cell, so we can mark it as deleted and 
-					// treat it like it blocks the line of sight, so we don't
-					// need to compute extra iterations later.
-					deletedCells[deletedCell.x][deletedCell.y] = true;
-				}
-				// 
-				var cellToStartAgain = availableCells[t-1].pop();
-				currentX = cellToStartAgain.x;
-				currentY = cellToStartAgain.y;
-			} else {
-				var bestCellIndex = 0;
-				var minDistanceToLine = distanceToLine(
-						this.x, this.y, x, y, 
-						trailCandidates[0].x, trailCandidates[0].y);
-				for (var i=1; i<trailCandidates.length; i++) {
-				// Find a cell that is the closest to default line from start coord 
-				// to end coord.
-					var curDistanceToLine = distanceToLine(
-							this.x, this.y, x, y, 
-							trailCandidates[0].x, trailCandidates[0].y);
-					if (curDistanceToLine < minDistanceToLine) {
-						bestCellIndex = i;
-						minDistanceToLine = curDistanceToLine;
-					}
-				}
-				availableCells[t] = [];
-				for (var i=0; i<trailCandidates.length; i++) {
-				// Add other trail candidates to available cells list
-					if (i != bestCellIndex) {
-						availableCells[t].push(trailCandidates[i]);
-					}
-				}
-				trail.push(trailCandidates[bestCellIndex]);
-				currentX = trail[t].x;
-				currentY = trail[t].y;
-				t++;
-			}
-			if (++u === 10000) {
-				throw new Error("Too much");
-			}
-		}
-	}
-};
-Character.prototype.canSee = Character.prototype.altCanSee;
-Character.prototype.ray = function(startX, startY, endX, endY) {
-	// Вспомогательная функция для this->canSee(). Возвращает клетки линии от
-	// xStart:yStart до xEnd:yEnd
-	if (startX==endX && startY==endY) {
-		return [startX, startY];
-	}
-	var x = [];
-	var y = [];
-	x[0] = startX;
-	y[0] = startY;
-	var L = Math.round(Math.max(Math.abs(endX-x[0]), Math.abs(endY-y[0])));
-	var dX = (endX-x[0])/L;
-	var dY = (endY-y[0])/L;
-	for (var i=1; i<L; i++ ) {
-		x[i] = x[i-1]+dX;
-		y[i] = y[i-1]+dY;
-	}
-	x.push(endX);
-	y.push(endY);
-	var result = [];
-	for (i = 0; i<=L; i++ ) {
-		result.push([Math.round(x[i]), Math.round(y[i])]);
-	}
-	return result;
-};
-Character.prototype.rays = function(startX, startY, endX, endY) {
-	// Вспомогательная функция для this->canSee
-	// Возвращает набор координат клеток, которые необходимо проверить для
-	// проверки видимости
-	return this.ray(startX, startY, endX, endY).concat(
-			this.ray(startX, startY+(endY>startY ? 1 : -1), endX
-					+(endX>startX ? -1 : 1), endY),
-			this.ray(startX+(endX>startX ? 1 : -1), startY, endX, endY
-					+(endY>startY ? -1 : 1)));
-};
-Character.prototype.getPathTable = function(ignorecharacters) {
-	/* Path table has relative indexes of cells: pathTable itself is a
-	 * this.PATH_TABLE_WIDTH * this.PATH_TABLE_WIDTH square, character's coord
-	 * in it is {this.PATH_TABLE_WIDTH/2,this.PATH_TABLE_WIDTH/2} rounded down.
-	 * But cell objects in newFront and oldFront contain absolute coordinates!
-	 */
-	this.pathTable = blank2dArray(this.PATH_TABLE_WIDTH,this.PATH_TABLE_WIDTH);
-	// Difference between cell's absolute coordinate and its coordinate in
-	// the pathTable.
-	var dX = this.x-(this.PATH_TABLE_WIDTH-1)/2;
-	var dY = this.y-(this.PATH_TABLE_WIDTH-1)/2;
-	var isPathFound = false;
-	var oldFront = [];
-	var newFront = [];
-	newFront[0] = {
-		x : this.x,
-		y : this.y
-	};
-	this.pathTable[this.x-dX][this.y-dY] = 0;
-	var t = 0;
-	do {
-		oldFront = newFront;
-		newFront = [];
-		if (isPathFound === null) {
-			isPathFound = true;
-		}
-		for (var i=0; i<oldFront.length; i++) {
-		// Moves front to 8 available sides from each cell
-			// These four have absolute coordinates
-			var x = oldFront[i].x;
-			var y = oldFront[i].y;
-			var adjactentX = [x+1, x, x, x-1, x+1, x+1, x-1, x-1];
-			var adjactentY = [y, y-1, y+1, y, y+1, y-1, y+1, y-1];
-			for (var j=0; j<8; j++) {
-			// Index of cell in pathTable (relative coordinates)
-				var thisNumX = adjactentX[j]-dX;
-				var thisNumY = adjactentY[j]-dY;
-				if (
-					thisNumX<0 || thisNumX>=this.PATH_TABLE_WIDTH || thisNumY<0
-					|| thisNumY>=this.PATH_TABLE_WIDTH
-					|| this.pathTable[thisNumX][thisNumY]!=undefined
-				) {
-				// If the new cell is not in pathTable or it is already in pathTable
-					continue;
-				}
-				if (thisNumX+dX==this.destX && thisNumY+dY==this.destY) {
-				// So in the next iteration the function will know that path is found
-					isPathFound = null;
-				}
-				if (
-					Terrain.getCell(thisNumX+dX,thisNumY+dY).passability!=Terrain.PASS_BLOCKED
-					&& Terrain.getCell(thisNumX+dX,thisNumY+dY).passability!=Terrain.PASS_SEE
-					|| Terrain.getCell(thisNumX+dX,thisNumY+dY).object
-					&& isDoor(Terrain.getCell(thisNumX+dX,thisNumY+dY).object.type)
-				) {
-				// If character can step to a cell, add it to the pathTable
-					this.pathTable[thisNumX][thisNumY] = t+1;
-					newFront[newFront.length] = {
-						x : adjactentX[j],
-						y : adjactentY[j]
-					};
-				}
-			}
-		}
-		t++ ;
-		if (t>900) {
-			throw new Error("Too long getPathTable cycle");
-		}
-	} while (newFront.length>0 && !isPathFound && t<900);
-	return t;
-};
-Character.prototype.getPath = function(destX, destY) {
-	// Получить путь до клетки в виде массива координат (0 - первый шаг и т. д.)
-	if (destX==undefined || destY==undefined) {
-		destX = this.destX;
-		destY = this.destY;
-	}
-	if (destX==this.x && destY==this.y) {
-		throw new Error("Gets path to its own x:y");
-	}
-	if (this.isNear(destX, destY)) {
-		return [{
-			x : destX,
-			y : destY
-		}];
-	}
-
-	var bufX = this.destX;
-	var bufY = this.destY;
-	var path = [];
-	var currentNumX = destX;
-	var currentNumY = destY;
-	var x = currentNumX;
-	var y = currentNumY;
-	var dX = this.x-(this.PATH_TABLE_WIDTH-1)/2;
-	var dY = this.y-(this.PATH_TABLE_WIDTH-1)/2;
-	var t = 0;
-	for (var j=this.pathTable[currentNumX-dX][currentNumY-dY]; j>0; j=this.pathTable[currentNumX-dX][currentNumY-dY]) {
-		// Счётчик: от кол-ва шагов до клетки dest до начальной клетки (шаг 1)
-		path.push( {
-			x : currentNumX,
-			y : currentNumY
-		});
-		var adjactentX = [x, x+1, x, x-1, x+1, x+1, x-1, x-1];
-		var adjactentY = [y-1, y, y+1, y, y+1, y-1, y+1, y-1];
-		for (var i = 0; i<8; i++) {
-			var thisNumX = adjactentX[i]-dX;
-			if (thisNumX<0 || thisNumX>=this.PATH_TABLE_WIDTH) {
-				continue;
-			}
-			var thisNumY = adjactentY[i]-dY;
-			if (thisNumY<0 || thisNumY>=this.PATH_TABLE_WIDTH) {
-				continue;
-			}
-			if (
-				this.pathTable[thisNumX][thisNumY]==j-1
-			) {
-			// Если клетка в этой стороне является предыдущим шагом, перейти
-			// на неё
-				currentNumX = adjactentX[i];
-				currentNumY = adjactentY[i];
-				x = currentNumX;
-				y = currentNumY;
-				break;
-			}
-		}
-		t++ ;
-		if (t==900) {
-			throw new Error("get path: exit with error");
-			break;
-		}
-	}
-	return path.reverse();
-};
-Character.prototype.distance = function(x, y) {
-	return Math.sqrt(Math.pow(this.x-x, 2)+Math.pow(this.y-y, 2));
-};
-Character.prototype.sees = function(x, y) {
-	return this.visibleCells[x-this.x+this.VISION_RANGE][y-this.y+this.VISION_RANGE];
-};
-Character.prototype.getVisibleCells = function() {
-	this.prevVisibleCells = this.visibleCells;
-	this.visibleCells = blank2dArray(this.VISION_RANGE*2+1,this.VISION_RANGE*2+1);
-	var dx = this.x-this.VISION_RANGE;
-	var dy = this.y-this.VISION_RANGE;
-	this.visibleCells[this.VISION_RANGE+1][this.VISION_RANGE+1] = true;
-
-	var minX = this.x-this.VISION_RANGE;
-	var minY = this.y-this.VISION_RANGE;
-	var maxX = this.x+this.VISION_RANGE;
-	var maxY = this.y+this.VISION_RANGE;
-	var t = new Date().getTime();
-	for (var i=minX; i<=maxX; i++) {
-		for (var j=minY; j<=this.x; j++) {
-			if (!this.visibleCells[i-dx][j-dy]) {
-				this.canSee(i, j, true);
-			}
-		}
-	}
-	for (var i=minX; i<=maxX; i++) {
-		for (var j=maxY; j>this.x; j--) {
-			if (!this.visibleCells[i-dx][j-dy]) {
-				this.canSee(i, j, true);
-			}
-		}
-	}
-	console.log(new Date().getTime()-t);
-};
-Character.prototype.showPathTable = function() {
-	for (var j=0; j<this.PATH_TABLE_WIDTH; j++) {
-		var str = "";
-		for (var i=0; i<this.PATH_TABLE_WIDTH; i++) {
-			str += this.pathTable[i][j] === undefined ? "." : this.pathTable[i][j]%10;
-		}
-		console["log"](str);
-	}
-};
-Character.prototype.showVisibility = function() {
-	for (var j=0; j<this.VISION_RANGE*2+1; j++) {
-		var str = "";
-		for (var i=0; i<this.VISION_RANGE*2+1; i++) {
-			str += this.visibleCells[i][j] === undefined ? "." : this.visibleCells[i][j]%10;
-		}
-		console["log"](str);
-	}
-};
-Character.prototype.comeTo = function(x, y) {
-	// Функция следования за character
-	// Устанавливает номер клетки, в которую этот character должен идти, чтобы
-	// прийти к aimcharacter
-	if (this.isNear(x, y)) {
-		// Стоять на месте, если цель на соседней клетке
-		this.destX = this.x;
-		this.destY = this.y;
-		return false;
-	}
-	var dists = [x-1, y, x+1, y, x, y-1, x, y+1, x+1, y+1, x-1, y+1, x+1, y-1,
-			x-1, y-1];
-	var dX = this.x-Math.floor(this.PATH_TABLE_WIDTH/2);
-	var dY = this.y-Math.floor(this.PATH_TABLE_WIDTH/2);
-	var dist = 9000;
-	var destX; // End direction
-	var destY; // End direction
-	var allPathsAreAvailable = false;
-	var destXBuf = this.destX;
-	var destYBuf = this.destY;
-	for ( var i = 0; i<8&& !allPathsAreAvailable; i++ ) {
-		this.destX = dists[i*2];
-		this.destY = dists[i*2+1];
-		if (Terrain.getCell(this.destX,this.destY).passability!=Terrain.PASS_FREE) {
-			continue;
-		}
-		var allPathsAreAvailable = true;
-		// this.getPathTable();
-		for (var j = 0; j<8; j++) {
-			if ( !this.pathTable[dists[i*2]-dX][dists[i*2+1]-dY]) {
-				allPathsAreAvailable = false;
-				break;
-			}
-		}
-	}
-	this.destX = destXBuf;
-	this.destY = destYBuf;
-	var atLeastOnePath = false; // Has at least one path been found
-	for (var i = 0; i<8; i++) {
-		var steps = this.pathTable[dists[i*2]-dX][dists[i*2+1]-dY];
-		if (
-			steps && steps<dist && steps>0
-			&& !(dists[i*2]==this.x&&dists[i*2+1]==this.y)
-		) {
-			atLeastOnePath = true;
-			dist = steps;
-			destX = dists[i*2];
-			destY = dists[i*2+1];
-		}
-	}
-	if (atLeastOnePath) {
-		this.destX = destX;
-		this.destY = destY;
-	} else {
-		this.destX = this.x;
-		this.destY = this.y;
-	}
-	return atLeastOnePath;
-};
-/**
- * Hides and shows cells according to player's vision
- * 
- * @param {number} dx Difference by x-axis between previous player's position
- * and current position.
- * @para, {number} dy Same for y-axis.
- */
-Character.prototype.updateVisibility = function(dx,dy) {
-	this.getVisibleCells();
-	var range = this.VISION_RANGE*2+1;
-	var sh=0,hi=0;
-	for (var i=0; i<range; i++) {
-		for (var j=0; j<range; j++) {
-			var x = this.x-this.VISION_RANGE+i;
-			var y = this.y-this.VISION_RANGE+j;
-			if (
-				this.visibleCells[i][j] 
-				&& (i+dx<0 || i+dx>=range
-				|| j+dy<0 || j+dy>=range
-				|| !this.prevVisibleCells[i+dx][j+dy])
-			) {
-//				if (cell.visible) {
-//					Terrain.cells[i][j].unshade();
-//				} else {
-					Terrain.getCell(x,y).show(Terrain.getChunkWithCell(x,y),x,y);
-					sh++;
-//				}
-			}
-			// The first and the second conditions are not mutually exclusive,
-			// because if visibilityDX/DY
-			if (
-				this.prevVisibleCells[i][j] 
-                && (i-dx<0 || i-dx>=range
-           		|| j-dy<0 || j-dy>=range
-				|| !this.visibleCells[i-dx][j-dy])
-			) {
-				var prevX = x-dx;
-				var prevY = y-dy;
-				Terrain.getCell(prevX,prevY)
-					.hide(Terrain.getChunkWithCell(prevX,prevY),prevX,prevY);
-				hi++;
-			}
-		}
-	}
-};
-Character.prototype.initVisibility = function() {
-	if (
-		this.visibleCells.length!=Terrain.height
-		|| this.visibleCells[0].length!=Terrain.width
-	) {
-		// Init arrays if needed
-		this.visibleCells = blank2dArray();
-		this.prevVisibleCells = blank2dArray();
-		this.pathTable = blank2dArray();
-	}
-	this.getVisibleCells();
-	for (var i=0; i<this.VISION_RANGE*2+1; i++) {
-		for (var j=0; j<this.VISION_RANGE*2+1; j++) {
-			if (this.visibleCells[i][j]) {
-				var x = this.x-this.VISION_RANGE+i;
-				var y = this.y-this.VISION_RANGE+j;
-				Terrain.getCell(x,y).show(Terrain.getChunkWithCell(x,y),x,y);
-			}
-		}
-	}
-};
-Character.prototype.findEnemy = function(r) {
-	// Находит ближайшего противника
-	var enemy = false;
-	// for (var i in characters) {
-	// if (this.isEnemy(characters[i]) && this.canSee(characters[i].x,
-	// characters[i].y) && (this.aimcharacter==-1 || this.distance(enemy.x,
-	// enemy.y)>this.distance(characters[i].x, characters[i].y))) {
-	// enemy=characters[i];
-	// }
-	// }
-	return enemy;
-};
-Character.prototype.findCharacterByCoords = function(x, y) {
-	for ( var i in characters) {
-		if (characters[i].x==x && characters[i].y==y) {
-			return characters[i];
-		}
-	}
-	return false;
-};
 /* Checks */
-Character.prototype.isBareHanded = function() {
-	return this.equipment.getItemInSlot(0)===null;
-};
-Character.prototype.hasItem = function(typeId, param) {
-	// Имеет пресонаж предмет или заданное кол-во предметов
-	if (isUnique(typeId)) {
-
-	} else {
-		if (param==undefined) {
-			var param = 1;
-		}
-		for ( var i = 0; i<this.itemPiles.length; i++ ) {
-			if (this.itemPiles[i][0]==item&&this.itemPiles[i][1]>=num) {
-				return true;
-			}
-		}
-		return false;
-	}
-};
-Character.prototype.hasEffect = function(effectId) {
-	// Проверка, имеет ли персонаж определённый эффект
-	for ( var i in this.effects) {
-		if (this.effects[i]==effectId) {
-			return true;
-		}
-	}
-	return false;
-};
-Character.prototype.isEnemy = function(aim) {
-	var isAlly = false;
-	if (aim.fraction!=this.fraction&&this.fraction!= -1&&aim.fraction!= -1
-			&& !isAlly) {
-		// Если найденный character не союзник этому character и если они оба —
-		// не нейтральные монстры, то они враги
-		return true;
-	}
-	return false;
-};
-Character.prototype.isNear = function(x, y) {
-	var ableX = Math.abs(this.x-x);
-	var ableY = Math.abs(this.y-y);
-	if ((ableX==1&&ableY==0)||(ableY==1&&ableX==0)||(ableY==1&&ableX==1)) {
-		return true;
-	}
-	return false;
-};
 /* Animations */
 // Methods that show actions of characters and/or change their internal states
-Character.prototype.animateSpell = function(spellId, aimId, spellX, spellY,
-		callback) {
-	spells[spellId].effect(this, (aimId== -1) ? -1 : characters[aimId], spellX,
-			spellY, callback);
-};
-Character.prototype.showDeath = function() {
-	this.cellWrap.parentNode.removeChild(this.cellWrap);
-	Terrain.getCell(this.x,this.y).passability = Terrain.PASS_FREE;
-	if (this===Player) {
-		UI.notify("death");
-		var nlEffects = document.getElementById("effectsList").children;
-		while (nlEffects.length>0) {
-			nlEffects[0].parentNode.removeChild(nlEffects[0]);
-		}
-	}
-	Terrain.getCell(this.x,this.y).character = undefined;
-	delete characters[this.characterId];
-	handleNextEvent();
-};
-Character.prototype.dodge = function(attacker) {
-	var tg = (this.x-attacker.x)/(this.y-attacker.y); // Тангенс
-	var character = this;
-	var top, left;
-	if (this.x>attacker.x) {
-		left = 10;
-	} else if (this.x<attacker.x) {
-		left = -10;
-	}
-	if (this.y>attacker.y) {
-		top = 10;
-	} else if (this.y<attacker.y) {
-		top = -10;
-	}
-	qanimate(this.cellWrap, [left, top], 70, function() {
-		qanimate(character.cellWrap, [ -left, -top], 120, function() {
-			tryRefreshingInterval();
-		});
-	});
-};
-Character.prototype.meleeAttack = function(x, y) {
-	var sideX = x-this.x;
-	var sideY = y-this.y;
-	var left = sideX*8;
-	var top = sideY*8;
-	var cellWrap = this.cellWrap;
-	var character = this;
-	// Анимация атаки
-	qanimate(cellWrap, [left, top], 100, function() {
-		qanimate(cellWrap, [ -left, -top], 100, function() {
-			tryRefreshingInterval();
-		});
-	});
-};
-Character.prototype.showMove = function(nextCellX, nextCellY) {
-	if (this.destX==this.x && this.destY==this.y) {
-		// If Player moves not by his will, then destX/Y may remain the same,
-		// so destX/Y should be changed
-		this.destX = nextCellX;
-		this.destY = nextCellY;
-	}
-	var top = 0;
-	var left = 0;
-	var prevX = this.x, prevY = this.y;
-	Terrain.getCell(this.x,this.y).character = null;
-	Terrain.getCell(this.x,this.y).passability = Terrain.PASS_FREE;
-
-	var viewIndent = Terrain.getViewIndentation(nextCellX, nextCellY, 1);
-
-	this.cellWrap.style.top = viewIndent.top*32+"px";
-	this.cellWrap.style.left = viewIndent.left*32+"px";
-	this.cellWrap.style.zIndex = (100000+viewIndent.top)*2+1;
-	this.x = nextCellX;
-	this.y = nextCellY;
-	Terrain.getCell(this.x,this.y).passability = Terrain.PASS_SEE;
-	Terrain.getCell(this.x,this.y).character = this;
-	if (this.visible && !Terrain.getCell(this.x,this.y).visible) {
-		this.hideModel();
-	} else if (!this.visible && Terrain.getCell(this.x,this.y).visible) {
-		this.showModel();
-	}
-	if (this.isClientPlayer) {
-		moveGameField(this.x, this.y);
-		this.updateVisibility(nextCellX-prevX,nextCellY-prevY);
-//		renderView();
-	}
-	for (var i in this.effects) {
-		var viewIndent = Terrain.getViewIndentation(this.x,this.y,1);
-		this.effects[i].move(viewIndent.left, viewIndent.top);
-	}
-	handleNextEvent();
-};
-Character.prototype.graphicEffect = function(name, callback) {
-	// Графический эффект
-	// if (!+localStorage.getItem(1)) {
-	// // Если графические эффекты отключены, ничего не делать
-	// return false;
-	// }
-	new effectTypes[name](this.x, this.y, this.x, this.y, 100, 100, 100, 100,
-			callback);
-	// graphicEffects[name].call(this, callback);
-};
-Character.prototype.showMissileFlight = function(fromX, fromY, toX, toY,
-		missile) {
-	var startViewIndent = Terrain.getViewIndentation(fromX, fromY, 1);
-	var endViewIndent = Terrain.getViewIndentation(toX, toY, 1);
-	fromX = startViewIndent.left;
-	fromY = startViewIndent.top;
-	toX = endViewIndent.left;
-	toY = endViewIndent.top;
-	var character = this;
-	var a = {
-		x : fromX,
-		y : fromY
-	};
-	var b = {
-		x : toX,
-		y : toY
-	};
-	var mult = (b.x-a.x!=0) ? (b.y-a.y)/(b.x-a.x) : "zero";
-	var top = 0;
-	var left = 0;
-	if (mult<= -4||mult>=4||mult=="zero") {
-		top = (b.y>a.y) ? 8 : -8;
-		var arrowDest = (b.y>a.y) ? 5 : 1;
-	} else if (mult<=4&&mult>=0.25) {
-		top = (b.y>a.y) ? 8 : -8;
-		left = (b.x>a.x) ? 8 : -8;
-		var arrowDest = (b.y>a.y) ? 4 : 8;
-	} else if (mult<=0.25&&mult>= -0.25) {
-		left = (b.x>a.x) ? 8 : -8;
-		var arrowDest = (b.x>a.x) ? 3 : 7;
-	} else if (mult>= -4&&mult<= -0.25) {
-		top = (b.y>a.y) ? 8 : -8;
-		left = (b.x>a.x) ? 8 : -8;
-		var arrowDest = (b.y>a.y) ? 6 : 2;
-	}
-	var num = this.characterId;
-
-	var thischaracter = this;
-	// qanimate(thischaracter.cellWrap,[left,top],100,function() {
-	// // Анимируем персонажа
-	// qanimate(thischaracter.cellWrap,[-left,-top],100,function() {
-	// tryRefreshingInterval();
-	// });
-	// });
-
-	var nWrap = document.createElement("div");
-	nWrap.setAttribute("characterId", this.characterId);
-	nWrap.className = "wrap";
-
-	var nImg = document.createElement("img");
-
-	nImg.setAttribute("src", "./images/ranged/arrow.png");
-	nImg.className = "arrow";
-	nImg.style.top = "0px";
-	nImg.style.left = "0px";
-	var tan = ((toY-fromY)/(toX-fromX)).toFixed(3);
-	var sideMod = (toX>=fromX) ? 0 : 1;
-	nImg.style.webkitTransform = "rotate("
-			+((Math.atan(tan)+Math.PI/2)+sideMod*Math.PI)+"rad)";
-
-	nWrap.appendChild(nImg);
-	nWrap.style.top = (fromY*32-16)+"px";
-	nWrap.style.left = (fromX*32)+"px";
-	nWrap.style.zIndex = (100000+this.y)*2+2;
-	gameField.appendChild(nWrap);
-	// Missile animation
-	qanimate(nImg, [(b.x-a.x)*32, (b.y-a.y)*32], distance(fromX, fromY, toX,
-			toY)*70, function() {
-		nImg.parentNode.removeChild(nImg);
-		handleNextEvent();
-	});
-};
 /* Internal state changing */
-Character.prototype.loseItem = function(typeId, param) {
-	if (isUnique(typeId)) {
-		this.items.removeUnique(param);
-	} else {
-		this.items.removePile(typeId, param);
-	}
-};
-Character.prototype.getItem = function(typeId, param) {
-	this.items.addNewItem(typeId, param);
-	UI.notify("inventoryChange");
-};
-Character.prototype.putOn = function(itemId) {
-	// Process putting on data sent from server and show it in inventory
-	// if (!this.items[itemId]) {
-	// throw new Error("Player is trying to put on item "+itemId+" that he
-	// doesn't have");
-	// }
-	// Determine the slot in equipment for the item
-	var item = this.items.getUnique(itemId);
-	var slot = getSlotFromClass(items[item.typeId][1]);
-	if (slot==9&&this.equipment.getItemInSlot(9)) {
-		slot = 10;
-	}
-	this.equipment.putOn(item);
-	this.redrawDoll();
-};
-Character.prototype.takeOff = function(itemId) {
-	var slot = 0;
-	// For list of slots search items.js
-	for (; slot<10; slot++ ) {
-		var item = this.equipment.getItemInSlot(slot);
-		if (item&&item.itemId==itemId) {
-			break;
-		}
-	}
-	if (slot==10) {
-		throw new Error("Not found item "+itemId+" in equipment");
-	}
-	if ( !this.equipment.hasItemInSlot(slot)) {
-		throw new Error("Character "+this.name
-				+" is trying to take off an item that he doesn't wear");
-		return false;
-	}
-	this.equipment.takeOffFromSlot(slot);
-	this.redrawDoll();
-};
-Character.prototype.changeAttribute = function _(attrId, value) {
-	this.attributes[attrId] = value;
-	UI.notify("attributeChange", [attrId, value]);
-};
 
-/**
- * @class
- * @extends Character
- * @param {mixed[]} data
- */
-function ClientPlayer() {
-	
-	/** @public @type ItemSet */
-	this.items = new ItemSet();
-	this.spells = [];
-	/** @public @type LetterAssigner */
-	this.itemsLetterAssigner = new LetterAssigner("Inventory");
-	/** @public @type LetterAssigner */
-	this.spellsLetterAssigner = new LetterAssigner("Spells");
-	/** @public @type LetterAssigner */
-	this.lootLetterAssigner = new LetterAssigner("Loot");
-	
-	// These three will be initiated by blank2dArray in
-	// Character.initVisiblilty() on location/global map enter.
-	/** @public @type Array[] */
-	this.visibleCells = [[]];
-	/** @public @type Array[] */
-	this.previousVisibleCells = [[]];
-	/** @public @type Array[] */
-	this.seenCells = [[]];
-
-	
-	/** @public @type string[] */
-	this.actionQueue = [];
-	/** @public @type Array[] */
-	this.actionQueueParams = [];
-	/** @public @type number[] */
-	this.skills = [];
-	/** @public @type string */
-	this.name = null;
-	/** @public @type number */
-	this.race = null;
-	/** @public @type string */
-	this.cls = null;
-	/** @public @type number */
-	this.maxHp = null;
-	/** @public @type number */
-	this.maxMp = null;
-	/** @public @type number */
-	this.maxEp = null;
-	/** @public @type number */
-	this.hp = null;
-	/** @public @type number */
-	this.mp = null;
-	/** @public @type number */
-	this.ep = null;
-	/** @public @type Object */
-	this.attributes = {};
-	/** @public @type number */
-	this.attributes.str = 0;
-	/** @public @type number */
-	this.attributes.dex = 0;
-	/** @public @type number */
-	this.attributes.wis = 0;
-	/** @public @type number */
-	this.attributes.itl = 0;
-	/** @public @type number */
-	this.attributes.armor = 0;
-	/** @public @type number */
-	this.attributes.evasion = 0;
-	/** @public @type number */
-	this.attributes.fireRes = 0;
-	/** @public @type number */
-	this.attributes.coldRes = 0;
-	/** @public @type number */
-	this.attributes.poisonRes = 0;
-	/** @public @type Doll */
-	this.doll = null;
-	/** @public @type number */
-	this.selectedMissile = null;
-}
-ClientPlayer.prototype = new Character(-1);
-/** @name Player @type ClientPlayer */
-
-ClientPlayer.prototype.init = function init(data) {
-	/*
-	 * data : [(0)x, (1)y, (2)characterId, (3)name,
-	 * (4)race, (5)class, (6)maxHp, (7)maxMp, (8)maxEp, (9)hp, (10)mp, (11)ep,
-	 * (12)str, (13)dex, (14)wis, (15)itl, (16)items[], (17)equipment[],
-	 * (18)spells[], (19)skills[], (20)ac, (21)ev, (22)resistances[]]
+(function() {
+	var instance
+	/**
+	 * @singleton
 	 */
-	Character.apply(this, [data[2], "player", data[0], data[1], 1]);
-	characters[data[2]] = this;
-	this.x = data[0];
-	this.y = data[1];
-	UI.notify("titleChange");
-	this.name = data[3];
-	this.race = data[4];
-	this.cls = data[5];
-	this.maxHp = data[6];
-	this.maxMp = data[7];
-	this.maxEp = data[8];
-	this.hp = data[9];
-	this.mp = data[10];
-	this.ep = data[11];
-	this.attributes.str = data[12];
-	this.attributes.dex = data[13];
-	this.attributes.wis = data[14];
-	this.attributes.itl = data[15];
-	this.attributes.armor = data[20];
-	this.attributes.evasion = data[21];
-	this.attributes.fireRes = data[22][0];
-	this.attributes.coldRes = data[22][1];
-	this.attributes.poisonRes = data[22][2];
-	this.isClientPlayer = true;
-
-	// Inventory
-	for (var i=0; i<data[16].length; i+=2) {
-		var typeId = data[16][i];
-		var param = data[16][i+1];
-		var item;
-		if (isUnique(typeId)) {
-			item = new UniqueItem(typeId, param);
-			this.items.add(item);
-		} else {
-			item = new ItemPile(typeId, param);
-			this.items.add(item);
+	var characters = Characters.getInstance();
+	var playerData;
+	var isSelectingCell
+	var visionRange = 20;
+	var pathTableWidth = 41;
+	var pathTable = blank2dArray();
+	var destX, destY;
+	var worldData = World.getInstance();
+	var pathTableGot = false; // Tells if pathTable was already built on current turn
+	Events.addListener("nextTurn", this, function() {
+		pathTableGot = false;
+		console.timeEnd("turn");
+		console.time("turn");
+	});
+	function ClientPlayer() {
+		if (typeof instance !== "undefined") {
+			return instance;
 		}
-	}
-
-	this.equipment.getFromData(data[17]);
-
-	// Spells
-	this.spells = data[18];
-	// Skills
-//	var len = data[19].length/2;
-//	this.skills = [];
-//	for (var i = 0; i<len; i++) {
-//		Player.skills.push(data[20][i*2]);
-//		Player.skills.push(data[20][i*2+1]);
-//	}	
-
-	this.autoSetMissileType();
-
-	this.doll = new Doll(this);
-	this.cellWrap.appendChild(this.doll.DOMNode);
-	this.initHpBar();
-	this.itemsLetterAssigner._setSources(this.items, this.equipment);
-	this.spellsLetterAssigner._setSources(this.spells);
-	UI.notify("attributesInit");
-};
-ClientPlayer.prototype.actions = ["push", "changePlaces", "makeSound", "shieldBash", "jump"];
-ClientPlayer.prototype.states = ["default", "run", "sneak", "sleep", "aim"];
-ClientPlayer.prototype.display = function _() {
-	gameField.appendChild(this.cellWrap);
-	this.doll.draw();
-};
-ClientPlayer.prototype.showDamage = function _(amount, type) {
-	Character.prototype.showDamage.apply(this, arguments);
-	UI.notify("healthChange");
-};
-ClientPlayer.prototype.putOn = function _(itemId) {
-	Character.prototype.putOn.apply(this, [itemId]);
-	this.items.removeUnique(itemId);
-};
-ClientPlayer.prototype.takeOff = function _(itemId) {
-	this.items.add(this.equipment.getItemById(itemId));
-	Character.prototype.takeOff.apply(this, [itemId]);
-	// This code is also in Character.prototype.takeOff;
-	// consider changing server output for takeOff event
-	// to slot information, not itemId information.
-};
-ClientPlayer.prototype.autoSetMissileType = function _() {
-	if (this.selectedMissile != null) {
-		return;
-	}
-	this.items.forEach(function(item) {
-		if (isMissile(item.typeId)) {
-			performAction("selectMissile", [item]);
-			return HashSet.BREAK;
+		instance = this;
+		/** @public @type ItemSet */
+		this.items = new ItemSet();
+		this.spells = [];
+		/** @public @type LetterAssigner */
+		this.itemsLetterAssigner = new LetterAssigner("Inventory");
+		/** @public @type LetterAssigner */
+		this.spellsLetterAssigner = new LetterAssigner("Spells");
+		/** @public @type LetterAssigner */
+		this.lootLetterAssigner = new LetterAssigner("Loot");
+		
+		var visibleCells = blank2dArray();
+		var prevVisibleCells = blank2dArray();
+		
+		/**
+		 * @private
+		 * Calculates the distance from a point to a line (i.e. the length of the normal
+		 * to line from that point).
+		 * 
+		 * @param {number} xStart Coordinates of a line
+		 * @param {number} yStart
+		 * @param {number} xEnd
+		 * @param {number} yEnd
+		 * @param {number} xPoint Coordinates of a point
+		 * @param {number} yPoint
+		 * @return
+		 */
+		function distanceToLine(xStart, yStart, xEnd, yEnd, xPoint, yPoint) {
+			return Math.abs(((yStart-yEnd)*xPoint+(xEnd-xStart)*yPoint+(xStart
+					*yEnd-yStart*xEnd))
+					/Math.sqrt(Math.abs((xEnd-xStart)
+							*(xEnd-xStart)+(yEnd-yStart)
+							*(yEnd-yStart))));
 		}
-	}, this);
-};
-/* Setters */
-ClientPlayer.prototype.getItem = function (typeId, param) {
-	Character.prototype.getItem.apply(this, arguments);
-	var item = this.items.getItem(typeId, param);
-};
-ClientPlayer.prototype.loseItem = function (typeId, param) {
-	var item = this.items.getItem(typeId, param);
-	Character.prototype.loseItem.apply(this, arguments);
-	UI.notify("inventoryChange");
-	if (this.selectedMissile == item && !this.items.hasItem(item)) {
-		performAction("selectMissile", [null]);
-		this.autoSetMissileType();
-	}
-};
-
-/* Interface methods */
-
-//ClientPlayer.prototype.selectMissile = function _() {
-//	// Enter missile mode
-//	if (this.equipment.getItemInSlot(0)
-//			&&this.equipment.getItemInSlot(0).isRanged()) {
-//		var aimcharacter;
-//		if (aimcharacter = this.findEnemy()) {
-//			CellCursor.move(aimcharacter.x, aimcharacter.y);
-//		} else {
-//			CellCursor.move(this.x, this.y);
-//		}
-//
-//		UI.notify("missileSelect");
-//
-//	} else {
-//		UI.notify("alert", "Игрок не держит в руках оружия дальнего боя!");
-//	}
-//};
-ClientPlayer.prototype.cellChooseAction = function _() {
-	// Совершить действие на координате под курсором
-	var x = CellCursor.x;
-	var y = CellCursor.y;
-	if ( !this.canSee(x, y)) {
-		UI.notify("alert", "Игрок не видит целевой клетки!");
-	} else {
-		if (this.spellId!= -1) {
-			// Spell
-			this.sendCastSpell(x, y);
-		} else {
-			// Ranged attack
-			var aim = Character.prototype.findCharacterByCoords(x, y);
-			if (aim) {
-				// On character
-				this.sendAttack(aim.characterId, !this.equipment.getItemInSlot(
-						0).isMelee());
-			} else {
-				// On cell
-				this.sendShootMissile(x, y, 2300);
+		Object.defineProperty(this, "x", {
+			get: function() {
+				return playerData.x;
 			}
-		}
-		CellCursor.character = Character.prototype.findCharacterByCoords(x, y);
-		UI.setKeyMapping("Default");
+		});
+		Object.defineProperty(this, "y", {
+			get: function() {
+				return playerData.y;
+			}
+		});
+		Object.defineProperty(this, "destX", {
+			get: function() {
+				return destX;
+			}
+		});
+		Object.defineProperty(this, "destY", {
+			get: function() {
+				return destY;
+			}
+		});
+		/**
+		 * Checks if the cell is on line of sight
+		 * 
+		 * @param {boolean} setVisibleCells - sets this.visibleCells[x][y] to true if can see, to
+		 * false otherwise.
+		 * @return {boolean} true if it is, false if it isn't
+		 */
+		this.canSee = function(x, y, setVisibleCells) {
+			// return true;
+			var absDx = playerData.x-visionRange;
+			var absDy = playerData.y-visionRange;
+			if (isNear(playerData.x, playerData.y, x, y) || playerData.x==x && playerData.y==y) {
+				// Если клетка рядом или персонаж на ней стоит - то её точно видно
+				if (setVisibleCells) {
+					visibleCells[x-absDx][y-absDy] = true;
+				}
+				return true;
+			}
+			if (Math.floor(this.distance(x, y))>visionRange) {
+				return false;
+			}
+			// Алгоритм рассматривает несколько случаев взаимного расположения начальной
+			// и целевой клетки,
+			// поскольку в значительной части случаев расчёт можно упростить. Алгоритм
+			// для общего случая рассматривается последним.
+			if (x==playerData.x || y==playerData.y) {
+				// Для случая, когда тангенс прямой (угловой коэффициент) равен
+				// бесконечности или 0
+				// (т.е. когда в цикле в else может быть деление на ноль т.к. абсцисы
+				// или ординаты конца и начала равны)
+				// В этом случае придётся сделать только одну проверку по линии (не
+				// таким методом, как в else для прямых с tg!=0 и tg!=1)
+				if (x == playerData.x) {
+					// Для вертикальных линий
+					var dy = Math.abs(y-playerData.y)/(y-playerData.y);
+					for (var i=playerData.y+dy; i!=y; i+=dy) {
+						if (World.passability(x, i) === StaticData.PASSABILITY_BLOCKED) {
+							return false;
+						}
+					}
+				} else {
+					// Для горизонтальных линий
+					var dx = Math.abs(x-playerData.x)/(x-playerData.x);
+					for (var i=playerData.x+dx; i!=x; i += dx) {
+						if (World.pasability(i,y) === StaticData.PASSABILITY_BLOCKED) {
+							return false;
+						}
+					}
+				}
+				if (setVisibleCells) {
+					visibleCells[x-absDx][y-absDy] = true;
+				}
+				return true;
+			} else if (Math.abs(x-playerData.x)==1) {
+				// Для случая, когда координаты конца и начала находятся на двух
+				// соседних вертикальных линиях
+				var yMin = Math.min(y, playerData.y);
+				var yMax = Math.max(y, playerData.y);
+				for (var i=yMin+1; i<yMax; i++) {
+					if (World.passability(x, i) === StaticData.PASSABILITY_BLOCKED) {
+						break;
+					}
+					if (i == yMax-1) {
+						if (setVisibleCells) {
+							visibleCells[x-absDx][y-absDy] = true;
+						}
+						return true;
+					}
+				}
+				for (var i=yMin+1; i<yMax; i++) {
+					if (World.passability(playerData.x, i) === StaticData.PASSABILITY_BLOCKED) {
+						break;
+					}
+					if (i == yMax-1) {
+						if (setVisibleCells) {
+							visibleCells[x-absDx][y-absDy] = true;
+						}
+						return true;
+					}
+				}
+				return false;
+			} else if (Math.abs(y-playerData.y) == 1) {
+				// Тот же случай, что и предыдущий, но для горизонтальных линий
+				var xMin = Math.min(x, playerData.x);
+				var xMax = Math.max(x, playerData.x);
+				for (var i=xMin+1; i<xMax; i++) {
+					if (World.passability(i, y) === StaticData.PASSABILITY_BLOCKED) {
+						break;
+					}
+					if (i==xMax-1) {
+						if (setVisibleCells) {
+							visibleCells[x-absDx][y-absDy] = true;
+						}
+						return true;
+					}
+				}
+				for (var i=xMin+1; i<xMax; i++) {
+					if (World.passability(i, playerData.y) === StaticData.PASSABILITY_BLOCKED) {
+						break;
+					}
+					if (i == xMax-1) {
+						if (setVisibleCells) {
+							visibleCells[x-absDx][y-absDy] = true;
+						}
+						return true;
+					}
+				}
+				return false;
+			} else if (Math.abs(x-playerData.x) == Math.abs(y-playerData.y)) {
+				// Случай, когда линия образует с осями угол 45 градусов (abs(tg)==1)
+				var dMax = Math.abs(x-playerData.x);
+				var dx = (x>playerData.x) ? 1 : -1;
+				var dy = (y>playerData.y) ? 1 : -1;
+				var cx = playerData.x;
+				var cy = playerData.y;
+				for (var i=1; i<dMax; i++) {
+					cx += dx;
+					cy += dy;
+					if (World.passability(cx, cy) === StaticData.PASSABILITY_BLOCKED) {
+						return false;
+					}
+				}
+				if (setVisibleCells) {
+					visibleCells[x-absDx][y-absDy] = true;
+				}
+				return true;
+			} else {
+			// Общий случай
+				var start = [[], []];
+				var end = [];
+				// x и y концов соответствуют x и y центра клетки или её ближайшего угла
+				// (значения перебираются в цикле по k каждое с каждым)
+				end[0] = (x>playerData.x) ? x-0.5 : x+0.5;
+				end[1] = (y>playerData.y) ? y-0.5 : y+0.5;
+				end[2] = x;
+				end[3] = y;
+				start[0][0] = (x>playerData.x) ? playerData.x+0.5 : this.x-0.5;
+				start[0][1] = (y>playerData.y) ? playerData.y+0.5 : this.y-0.5;
+				start[1][0] = (x>playerData.x) ? playerData.x+0.5 : this.x-0.5;
+				// start[0][1]=playerData.y;
+				// start[1][0]=playerData.x;
+				start[1][1] = (y>playerData.y) ? playerData.y+0.5 : this.y-0.5;
+				var rays = this.rays(playerData.x, playerData.y, x, y);
+				jump: for (var k = 0; k<3; k++ ) {
+					var endNumX = (k==0||k==1) ? 0 : 2;
+					var endNumY = (k==0||k==2) ? 1 : 3;
+					for (j = 0; j<1; j++) {
+						// Новый алгоритм расчёта видимости строится на том, есть ли
+						// точки,
+						// которые находятся ближе, чем на 0.5 клетки от прямой -
+						// косвенный признак того, что прямая пересекает преграду.
+						// Преграды в этом случае считаются окружностями с R=0.5
+						// Это не мешает расчёту видимости на стыках клеток по
+						// горизонтали.
+						// В этом случае нужно сделать максимум шесть проверок (3 цикла
+						// по k - точки конца - и два по j - точки начала)
+						if (start[j][0]==playerData.x && start[j][1]==playerData.y) {
+							continue;
+						}
+						var xEnd = end[endNumX];
+						var yEnd = end[endNumY];
+						var xStart = start[j][0];
+						var yStart = start[j][1];
+						for (var i in rays) {
+							/* */// Здесь x|yPoint - глобальные переменные.
+									// Пофиксить.
+							xPoint = rays[i][0];
+							yPoint = rays[i][1];
+							if (World.passability(xPoint, yPoint) === StaticData.PASSABILITY_BLOCKED) {
+								// Проверяем каждую клетку
+								if (
+									xPoint==playerData.x && yPoint==playerData.y 
+									|| xPoint==x && yPoint==y
+								) {
+									continue;
+								}
+								if (
+									Math.abs(((yStart-yEnd)*xPoint+(xEnd-xStart)*yPoint+(xStart
+												*yEnd-yStart*xEnd))
+												/Math.sqrt(Math.abs((xEnd-xStart)
+														*(xEnd-xStart)+(yEnd-yStart)
+														*(yEnd-yStart))))<=0.5
+								) {
+									// Если расстояние до точки не больше 0.5, проверяем
+									// следующую из 6 линий
+									continue jump;
+								}
+							}
+						}
+						if (setVisibleCells) {
+							visibleCells[x-absDx][y-absDy] = true;
+						}
+						return true;
+					}
+				}
+				return false;
+			}
+		};
+		/**
+		 * Cast a ray and remember visible cells on its way.
+		 * 
+		 * @param {number} x
+		 * @param {number} y
+		 */
+		this.castVisibilityRay = function(x, y) {
+			var absDx = playerData.x-visionRange;
+			var absDy = playerData.y-visionRange;
+			if (isNear(playerData.x, playerData.y, x, y) || playerData.x==x && playerData.y==y) {
+			// If the target cell is close to player (or he stays on it) — it is definitely visible
+				visibleCells[x-absDx][y-absDy] = true;
+				return true;
+			}
+			// Алгоритм рассматривает несколько случаев взаимного расположения начальной
+			// и целевой клетки,
+			// поскольку в значительной части случаев расчёт можно упростить. Алгоритм
+			// для общего случая рассматривается последним.
+			if (x === playerData.x || y === playerData.y) {
+				// Для случая, когда тангенс прямой (угловой коэффициент) равен
+				// бесконечности или 0
+				// (т.е. когда в цикле в else может быть деление на ноль т.к. абсцисы
+				// или ординаты конца и начала равны)
+				// В этом случае придётся сделать только одну проверку по линии (не
+				// таким методом, как в else для прямых с tg!=0 и tg!=1)
+				if (x === playerData.x) {
+					// Для вертикальных линий
+					var dy = Math.abs(y-playerData.y)/(y-playerData.y);
+					for (var i=playerData.y+dy; i!=y+dy; i+=dy) {
+						visibleCells[x-absDx][i-absDy] = true;
+						if (World.passability(x, i) === StaticData.PASSABILITY_BLOCKED) {
+							break;
+						}
+					}
+				} else {
+					// Для горизонтальных линий
+					var dx = Math.abs(x-playerData.x)/(x-playerData.x);
+					for (var i=playerData.x+dx; i!=x+dx; i += dx) {
+						visibleCells[i-absDx][y-absDy] = true;
+						if (World.passability(i, y) === StaticData.PASSABILITY_BLOCKED) {
+							break;
+						}
+					}
+				}
+			} else if (Math.abs(x-playerData.x) === 1) {
+			// Для случая, когда координаты конца и начала находятся на двух
+			// соседних вертикальных линиях
+				var dy = y>playerData.y ? 1 : -1;
+				for (var i=playerData.y+dy; i!=y+dy; i+=dy) {
+					visibleCells[x-absDx][i-absDy] = true;
+					if (
+						World.passability(x, i) === StaticData.PASSABILITY_BLOCKED
+						&& World.passability(playerData.x, i) === StaticData.PASSABILITY_BLOCKED
+					) {
+						return false;
+					}
+				}
+			} else if (Math.abs(y-playerData.y) === 1) {
+			// The same case as the previous one, but for horizontal lines
+				var dx = x>playerData.x ? 1 : -1;
+				for (var i=playerData.x+dx; i!=x+dx; i+=dx) {
+					visibleCells[i-absDx][y-absDy] = true;
+					if (
+						World.passability(i, y) === StaticData.PASSABILITY_BLOCKED
+						&& World.passability(i, playerData.y) === StaticData.PASSABILITY_BLOCKED
+					) {
+						return false;
+					}
+				}
+			} else if (Math.abs(x-playerData.x) === Math.abs(y-playerData.y)) {
+			// A case when line of sight makes 45 degrees angle with coordinate axises
+				var dMax = Math.abs(x-playerData.x);
+				var dx = (x>playerData.x) ? 1 : -1;
+				var dy = (y>playerData.y) ? 1 : -1;
+				var cx = playerData.x;
+				var cy = playerData.y;
+				for (var i=1; i<dMax; i++) {
+					cx += dx;
+					cy += dy;
+					if (World.passability(cx, cy) === StaticData.PASSABILITY_BLOCKED) {
+						return false;
+					}
+					visibleCells[cx-absDx][cy-absDy] = true;
+				}
+				visibleCells[x-absDx][y-absDy] = true;
+				return true;
+			} else {
+			// A "common" case. Note that this algorithm will not work with rays on 
+			// positions described in previous sections of current if-else block
+				// dx/dy denote the quarter of world plane in which the line of sight is built
+				// For example, dx = 1, dy = -1 denotes 1st quarter of game's 2-dimensional Euclidean space
+				var dx = (playerData.x-x)/Math.abs(playerData.x-x); 
+				var dy = (playerData.y-y)/Math.abs(playerData.y-y); 
+				var currentX = playerData.x; // Current cell (moves throughout the algorithm). This is not the same as player's coordinate.
+				var currentY = playerData.y;
+				var availableCells = {0:[]}; // Index — distance in steps from player to a cell, value — array of cell coordinates that may belong to the trail
+				var trail = [{x:playerData.x, y:playerData.y, d: 2}]; /* A path of the visibility ray. 
+				The array consists of objects of the following structure:
+					{
+						x: {number},
+						y: {number},
+						[d: {number} (
+							0 means that from previous cell this one has x = xPrev-dx, 
+							1 means x = yPrev-dy, 
+							2 means x = xPrev-dx, y=yPrev-dy (this is considered "common case", so player's cell has d = 3)
+						)
+					}
+				*/
+				var deletedCells = {}; // A hash map of hash maps. The first index is x coordinate, the second is y coordinate.
+				for (var delx=Math.min(playerData.x, x), delmax=Math.max(playerData.x, x); delx<=delmax; delx++) {
+					deletedCells[delx] = {};
+				}
+				var t = 1; // Index of current cell in trail
+				var u = 0;
+				while (true) {
+					/* 
+					   On each step of the algorithm three cells are taken:
+					   one vertically near current cell,
+					   one horizontally near a current cell,
+					   and one diagonally between them. So selected cells
+					   form one of these patterns (@ is current cell, stars are
+					   selected cells).
+					   .....................
+					   ..**...**...*@...@*..
+					   ..@*...*@...**...**..
+					   .....................
+					*/
+					var trailCandidates = []; // Cells that may be in trail. The array has the same structure as trail, only here can be <= 3 cells and the order in not important
+					var cache = trail[trail.length-1].d;
+					var l; // Length of nextCells array
+					if (cache === 0) {
+					// If previous cell was 
+						var nextCells = [
+							{x:currentX-dx, y:currentY, d: 0}, 
+							{x:currentX-dx, y:currentY-dy, d: 0}
+						];
+						l = 2;
+					} else if (cache === 1) {
+						var nextCells = [
+							{x:currentX, y:currentY-dy, d: 1}, 
+							{x:currentX-dx, y:currentY-dy, d: 1}
+						];
+						l = 2;
+					} else {
+						var nextCells =  [
+							{x:currentX-dx, y:currentY, d: 2}, 
+							{x:currentX, y:currentY-dy, d: 2}, 
+							{x:currentX-dx, y:currentY-dy, d: 2}
+						];
+						l = 3;
+					}
+					for (var i=0; i<l; i++) {
+					// In this loop we form trailCandidates array and also fill visibleCells
+						var cellX = nextCells[i].x, 
+						    cellY = nextCells[i].y;
+						if (typeof deletedCells[cellX] === "undefined") {
+							deletedCells[cellX] = {};
+						}
+						if (
+							typeof deletedCells[cellX][cellY] === "undefined"
+							&& distanceToLine(playerData.x, playerData.y, x, y, cellX, cellY)<=
+							// Without this condition characters won't be able to 
+							// properly look around a corner staying near a wall, 
+							// beacuse a wall will be too close to character
+								(Math.abs(playerData.x-x)===2 && Math.abs(playerData.y-y)>6 
+								|| Math.abs(playerData.y-y)===2 && Math.abs(playerData.x-x)>6 ? 1 : 0.71)
+						) {
+						// If cell is visible and close enough to line to be a part of 
+						// trail, add it to trail candidates
+							visibleCells[cellX-absDx][cellY-absDy] = true;
+							if (World.passability(cellX, cellY) !== StaticData.PASSABILITY_BLOCKED) {
+								var cdx = nextCells[i].x-trail[trail.length-1].x;
+								var cdy = nextCells[i].y-trail[trail.length-1].y;
+								if (
+									nextCells[i].d === 2 
+									&& cdx*cdy === 0 // If one of cd[xy] is 0 (both can't appear to be 0, so we don't check for that too)
+								) {
+								// If previous cell doesn't restrict the line of sight on using explictly
+								// -dx or -dy cells, but current should, set current cell's .d property
+									if (cdy === 0 /** meaning that (cdx === 1 || cdx === -1) */) {
+										nextCells[i].d = 0;
+									} else /* if (cdx === 0 , meaning that (cdy === 1 || cdy === -1)) */ {
+										nextCells[i].d = 1;
+									}
+								}
+								trailCandidates.push(nextCells[i]);
+							}
+						}
+						if (cellX === x && cellY === y) {
+							return true;
+						}
+					}
+					if (trailCandidates.length === 0) {
+					// If we can't go anywhere from current cell, step back until we 
+					// can find a step with available cells
+						while (availableCells[t-1].length === 0) {
+							t--;
+							if (t === 0) {
+							// If we return to the first cell, then there's no line of 
+							// sight to x:y
+								return false;
+							}
+							delete availableCells[t];
+							var deletedCell = trail.pop();
+							// Now there is definitely no line to destination cell
+							// through this cell, so we can mark it as deleted and 
+							// treat it like it blocks the line of sight, so we don't
+							// need to compute extra iterations later.
+							deletedCells[deletedCell.x][deletedCell.y] = true;
+						}
+						var cellToStartAgain = availableCells[t-1].pop();
+						currentX = cellToStartAgain.x;
+						currentY = cellToStartAgain.y;
+					} else {
+					// Else take one cell of the trail candidates that is closest to actual line
+					// from cell 1 to cell 2, and put other trail candidates in availableCells array
+						var bestCellIndex = 0;
+						var minDistanceToLine = distanceToLine(playerData.x, playerData.y, x, y, trailCandidates[0].x, trailCandidates[0].y);
+						for (var i=1; i<trailCandidates.length; i++) {
+						// Find a cell that is the closest to default line from start coord 
+						// to end coord.
+							var curDistanceToLine = distanceToLine(playerData.x, playerData.y, x, y, trailCandidates[i].x, trailCandidates[i].y);
+							if (curDistanceToLine < minDistanceToLine) {
+								bestCellIndex = i;
+								minDistanceToLine = curDistanceToLine;
+							}
+						}
+						availableCells[t] = [];
+						for (var i=0; i<trailCandidates.length; i++) {
+						// Add other trail candidates to available cells list
+							if (i !== bestCellIndex) {
+								availableCells[t].push(trailCandidates[i]);
+							}
+						}
+						trail.push(trailCandidates[bestCellIndex]);
+						// So trail candidates are saved in availableCells' last element, and best cell is saved in trail last element
+						currentX = trail[t].x;
+						currentY = trail[t].y;
+						t++;
+					}
+					// if (++u === 10000) {
+					// 	throw new Error("Too much");
+					// }
+				}
+			}
+		};
+		this.ray = function(startX, startY, endX, endY) {
+			// Вспомогательная функция для this->canSee(). Возвращает клетки линии от
+			// xStart:yStart до xEnd:yEnd
+			if (startX==endX && startY==endY) {
+				return [startX, startY];
+			}
+			var x = [];
+			var y = [];
+			x[0] = startX;
+			y[0] = startY;
+			var L = Math.round(Math.max(Math.abs(endX-x[0]), Math.abs(endY-y[0])));
+			var dX = (endX-x[0])/L;
+			var dY = (endY-y[0])/L;
+			for (var i=1; i<L; i++ ) {
+				x[i] = x[i-1]+dX;
+				y[i] = y[i-1]+dY;
+			}
+			x.push(endX);
+			y.push(endY);
+			var result = [];
+			for (i = 0; i<=L; i++ ) {
+				result.push([Math.round(x[i]), Math.round(y[i])]);
+			}
+			return result;
+		};
+		this.rays = function(startX, startY, endX, endY) {
+			// Вспомогательная функция для this->canSee
+			// Возвращает набор координат клеток, которые необходимо проверить для
+			// проверки видимости
+			return this.ray(startX, startY, endX, endY).concat(
+					this.ray(startX, startY+(endY>startY ? 1 : -1), endX
+							+(endX>startX ? -1 : 1), endY),
+					this.ray(startX+(endX>startX ? 1 : -1), startY, endX, endY
+							+(endY>startY ? -1 : 1)));
+		};
+		this.distance = function(x, y) {
+			return Math.sqrt(Math.pow(playerData.x-x, 2)+Math.pow(playerData.y-y, 2));
+		};
+		this.sees = function(x, y) {
+			return visibleCells[x-playerData.x+visionRange][y-playerData.y+visionRange];
+		};
+		this.getVisibleCells = function() {
+			prevVisibleCells = visibleCells;
+			visibleCells = blank2dArray(visionRange*2+1, visionRange*2+1);
+			var dx = playerData.x-visionRange;
+			var dy = playerData.y-visionRange;
+			var minX = playerData.x-visionRange;
+			var minY = playerData.y-visionRange;
+			var maxX = playerData.x+visionRange;
+			var maxY = playerData.y+visionRange;
+			getVis1:
+			for (var x=playerData.x, y=minY; x<=maxX; x++) {
+				do {
+					this.castVisibilityRay(x,y);
+					if (Math.floor(this.distance(x+1,y))>visionRange) {
+						y++;
+					} else {
+						continue getVis1;
+					}
+					if (y > playerData.y) {
+						break getVis1;
+					}
+				} while(true);
+			}
+			getVis2:
+			for (var x=playerData.x, y=maxY; x<=maxX; x++) {
+				do {
+					this.castVisibilityRay(x,y);
+					if (Math.floor(this.distance(x+1,y))>visionRange) {
+						y--;
+					} else {
+						continue getVis2;
+					}
+					if (y <= playerData.y) {
+						break getVis2;
+					}
+				} while(true);
+			}
+			getVis3:
+			for (var x=playerData.x, y=maxY; x>=minX; x--) {
+				do {
+					this.castVisibilityRay(x,y);
+					if (Math.floor(this.distance(x-1,y))>visionRange) {
+						y--;
+					} else {
+						continue getVis3;
+					}
+					if (y <= playerData.y) {
+						break getVis3;
+					}
+				} while(true);
+			}
+			getVis4:
+			for (var x=playerData.x, y=minY; x>=minX; x--) {
+				do {
+					this.castVisibilityRay(x,y);
+					if (Math.floor(this.distance(x-1,y))>visionRange) {
+						y++;
+					} else {
+						continue getVis4;
+					}
+					if (y > playerData.y) {
+						break getVis4;
+					}
+				} while(true);
+			}
+			visibleCells[visionRange][visionRange] = true;
+		};
+		this.isBareHanded = function() {
+			return this.equipment.getItemInSlot(0)===null;
+		};
+		this.findEnemy = function(r) {
+			// Находит ближайшего противника
+			var enemy = false;
+			// for (var i in characters) {
+			// if (this.isEnemy(characters[i]) && this.canSee(characters[i].x,
+			// characters[i].y) && (this.aimcharacter==-1 || this.distance(enemy.x,
+			// enemy.y)>this.distance(characters[i].x, characters[i].y))) {
+			// enemy=characters[i];
+			// }
+			// }
+			return enemy;
+		};
+		/**
+		 * Returns the cell that is chosen by player to come to.
+		 * 
+		 * @returns {Object} x - destX, y - destY
+		 */
+		this.getDestination = function() {
+			return {x: destX, y:destY};
+		};
+		/**
+		 * Sets a cell where player is aimed to go. This value can be used in
+		 * some Actions
+		 * 
+		 * @param {number} x
+		 * @param {number} y
+		 * @returns {Object} x - destX, y - destY
+		 */
+		this.setDestination = function(x, y) {
+			destX = x;
+			destY = y;
+			return {x: destX, y:destY};
+		};
+		/**
+		 * PathTable is a 2-dimensional array NxN that represents cells on the game 
+		 * field. The center cell of it is where player stays. Each cell of PathTable
+		 * contains the number of steps from player to the corresponding cell on
+		 * the game field. Building PathTable considers all the obstacles on the way.
+		 * So each cell of PathTable shows how many steps does player need to perform
+		 * to come to that cell.
+		 * 
+		 * @param {boolean} ignoreCharacters If true, then PathTable will be built
+		 * as if player can step on cells occupied by other players.
+		 */
+		this.getPathTable = function(ignorecharacters) {
+			/* Path table has relative indexes of cells: pathTable itself is a
+			 * pathTableWidth * this.PATH_TABLE_WIDTH square, character's coord
+			 * in it is {pathTableWidth/2,this.PATH_TABLE_WIDTH/2} rounded down.
+			 * But cell objects in newFront and oldFront contain absolute coordinates!
+			 */
+			pathTableGot = true;
+			pathTable = blank2dArray(pathTableWidth, pathTableWidth);
+			// Difference between cell's absolute coordinate and its coordinate in
+			// the pathTable.
+			var dX = playerData.x-(pathTableWidth-1)/2;
+			var dY = playerData.y-(pathTableWidth-1)/2;
+			var isPathFound = false;
+			var oldFront = [];
+			var newFront = [];
+			newFront[0] = {
+				x : playerData.x,
+				y : playerData.y
+			};
+			pathTable[playerData.x-dX][playerData.y-dY] = 0;
+			var t = 0;
+			do {
+				oldFront = newFront;
+				newFront = [];
+				if (isPathFound === null) {
+					isPathFound = true;
+				}
+				for (var i=0; i<oldFront.length; i++) {
+				// Moves front to 8 available sides from each cell
+					// These four have absolute coordinates
+					var x = oldFront[i].x;
+					var y = oldFront[i].y;
+					var adjactentX = [x+1, x, x, x-1, x+1, x+1, x-1, x-1];
+					var adjactentY = [y, y-1, y+1, y, y+1, y-1, y+1, y-1];
+					for (var j=0; j<8; j++) {
+					// Index of cell in pathTable (relative coordinates)
+						var thisNumX = adjactentX[j]-dX;
+						var thisNumY = adjactentY[j]-dY;
+						if (
+							thisNumX<0 
+							|| thisNumX >= pathTableWidth 
+							|| thisNumY < 0
+							|| thisNumY >= pathTableWidth
+							|| typeof pathTable[thisNumX][thisNumY] !== "undefined"
+						) {
+						// If the new cell is not in pathTable or it is already in pathTable
+							continue;
+						}
+						if (thisNumX+dX==destX && thisNumY+dY==destY) {
+						// So in the next iteration the function will know that path is found
+							isPathFound = null;
+						}
+						if (
+							World.passability(thisNumX+dX, thisNumY+dY) !== StaticData.PASSABILITY_BLOCKED
+							&& World.passability(thisNumX+dX, thisNumY+dY) !== StaticData.PASSABILITY_SEE
+							|| worldData.getCell(thisNumX+dX,thisNumY+dY).object
+							&& isDoor(worldData.getCell(thisNumX+dX,thisNumY+dY).object.type)
+						) {
+						// If character can step to a cell, add it to the pathTable
+							pathTable[thisNumX][thisNumY] = t+1;
+							newFront[newFront.length] = {
+								x : adjactentX[j],
+								y : adjactentY[j]
+							};
+						}
+					}
+				}
+				t++ ;
+				if (t>900) {
+					throw new Error("Too long getPathTable cycle");
+				}
+			} while (newFront.length>0 && !isPathFound && t<900);
+			return pathTable;
+		};
+		this.getPath = function(x, y) {
+			if (typeof x === "undefined" || typeof y === "undefined") {
+				throw new Error("Wrong arguments");
+			}
+			if (x === playerData.x && y === playerData.y) {
+				throw new Error("Gets path to its own x:y");
+			}
+			if (isNear(playerData.x, playerData.y, x, y)) {
+			// If destination is right near the character, then return an array 
+			// of just one cell — the destination cell.
+				return [{
+					x : x,
+					y : y
+				}];
+			}
+			var path = [];
+			var currentNumX = x;
+			var currentNumY = y;
+			var cx = currentNumX;
+			var cy = currentNumY;
+			// Half of the width of the filled part of the pathTable (its filled 
+			// part is a rectangle)
+			var dX = playerData.x-(pathTableWidth-1)/2;
+			// Half of the height of the same thing
+			var dY = playerData.y-(pathTableWidth-1)/2;
+			// Error counter
+			var t = 0;
+			for (var j=pathTable[currentNumX-dX][currentNumY-dY]; j>0; j=pathTable[currentNumX-dX][currentNumY-dY]) {
+			// var j is a number of steps from the player's coordinate to the "target cell";
+			// target cell is the destination cell (at the start of the loop), and it moves one step
+			// towards the player with each iteration.
+				path.push( {
+					x : currentNumX,
+					y : currentNumY
+				});
+				var adjactentX = [cx, cx+1, cx, cx-1, cx+1, cx+1, cx-1, cx-1];
+				var adjactentY = [cy-1, cy, cy+1, cy, cy+1, cy-1, cy+1, cy-1];
+				for (var i = 0; i<8; i++) {
+				// From the target cell, check all the 8 sides for a cell that is 1 step closer
+				// to player's coordinate than the current cell.
+					var thisNumX = adjactentX[i]-dX; // The x coordinate of the cell that is checked
+					if (thisNumX<0 || thisNumX>=pathTableWidth) {
+						continue;
+					}
+					var thisNumY = adjactentY[i]-dY; // The y coordinate of the same cell
+					if (thisNumY<0 || thisNumY>=pathTableWidth) {
+						continue;
+					}
+					if (
+						pathTable[thisNumX][thisNumY]==j-1
+					) {
+					// If the cell from this side is a previous step, go on it.
+						currentNumX = adjactentX[i];
+						currentNumY = adjactentY[i];
+						cx = currentNumX;
+						cy = currentNumY;
+						break;
+					}
+				}
+				t++;
+				if (t==900) {
+					throw new Error("get path: exit with error");
+					break;
+				}
+			}
+			return path.reverse();
+		};
+		/**
+		 * Returns the cell near an occupied cell in which player should come if he
+		 * wants to come _near_ that occupied cell. This isused, for example, to 
+		 * come to an object or a character.
+		 * 
+		 * @param {number} x X coordinate of the occupied cell
+		 * @param {number} y Y coordinate of the occupied cell
+		 * @returns {Object} {x: number, y: number} coordinates of the cell to come to
+		 * 		or false if there is no path or player stays right next to target cell
+		 */
+		this.getComeToDest = function(x, y) {
+			if (isNear(playerData.x, playerData.y, x, y)) {
+			// Стоять на месте, если цель на соседней клетке
+				return false;
+			}
+			if (!pathTableGot) {
+				this.getPathTable();
+			}
+			var dists = [x-1, y, x+1, y, x, y-1, x, y+1, x+1, y+1, x-1, y+1, x+1, y-1, x-1, y-1];
+			var dX = playerData.x-(pathTableWidth-1)/2;
+			var dY = playerData.y-(pathTableWidth-1)/2;
+			var furthestPathSteps = 99999999;  // Amount of steps on the closest found path (initially - just a very large number)
+			var answer = {}; // This object will be returned
+			var atLeastOnePath = false; // Has at least one path been found
+			for (var i=0; i<8; i++) {
+				var steps = pathTable[dists[i*2]-dX][dists[i*2+1]-dY];
+				if (typeof steps !== "undefined" && steps < furthestPathSteps && steps > 0) {
+					furthestPathSteps = steps;
+					answer.x = dists[i*2];
+					answer.y = dists[i*2+1];
+				}
+			}
+			if (furthestPathSteps === 99999999) {
+			// If no path is found
+				return false;
+			}
+			return answer;
+		};
+		this.init = function init(data) {
+			// Character.apply(this, [data[2], "player", data[0], data[1], 1]);
+			// characters[data[2]] = this;
+			// playerData.x = data[0];
+			// playerData.y = data[1];
+			// UI.notify("titleChange");
+			// this.name = data[3];
+			// this.race = data[4];
+			// this.cls = data[5];
+			// this.maxHp = data[6];
+			// this.maxMp = data[7];
+			// this.maxEp = data[8];
+			// this.hp = data[9];
+			// this.mp = data[10];
+			// this.ep = data[11];
+			// this.attributes.str = data[12];
+			// this.attributes.dex = data[13];
+			// this.attributes.wis = data[14];
+			// this.attributes.itl = data[15];
+			// this.attributes.armor = data[20];
+			// this.attributes.evasion = data[21];
+			// this.attributes.fireRes = data[22][0];
+			// this.attributes.coldRes = data[22][1];
+			// this.attributes.poisonRes = data[22][2];
+			// this.isClientPlayer = true;
+			playerData = characters.characters[data[2]];
+			playerData.equipment.getFromData(data[17]);
+			// Spells
+			this.spells = data[18];
+			// Skills
+		//	var len = data[19].length/2;
+		//	this.skills = [];
+		//	for (var i = 0; i<len; i++) {
+		//		Player.skills.push(data[20][i*2]);
+		//		Player.skills.push(data[20][i*2+1]);
+		//	}	
+
+			this.autoSetMissileType();
+
+			destX = playerData.x;
+			destY = playerData.y;
+			// this.initHpBar();
+			this.itemsLetterAssigner._setSources(playerData.items, playerData.equipment);
+			this.spellsLetterAssigner._setSources(this.spells);
+		};
+		this.actions = ["push", "changePlaces", "makeSound", "shieldBash", "jump"];
+		this.states = ["default", "run", "sneak", "sleep", "aim"];
+		this.putOn = function _(itemId) {
+			Character.prototype.putOn.apply(this, [itemId]);
+			this.items.removeUnique(itemId);
+		};
+		this.takeOff = function _(itemId) {
+			this.items.add(this.equipment.getItemById(itemId));
+			Character.prototype.takeOff.apply(this, [itemId]);
+			// This code is also in Character.prototype.takeOff;
+			// consider changing server output for takeOff event
+			// to slot information, not itemId information.
+		};
+		this.autoSetMissileType = function _() {
+			if (this.selectedMissile != null) {
+				return;
+			}
+			this.items.forEach(function(item) {
+				if (isMissile(item.typeId)) {
+					performAction("selectMissile", [item]);
+					return HashSet.BREAK;
+				}
+			}, this);
+		};
+		/* Setters */
+		this.loseItem = function (typeId, param) {
+			var item = this.items.getItem(typeId, param);
+			Character.prototype.loseItem.apply(this, arguments);
+			UI.notify("inventoryChange");
+			if (this.selectedMissile == item && !this.items.hasItem(item)) {
+				performAction("selectMissile", [null]);
+				this.autoSetMissileType();
+			}
+		};
+		/* Interface methods */
+		//ClientPlayer.prototype.selectMissile = function _() {
+		//	// Enter missile mode
+		//	if (this.equipment.getItemInSlot(0)
+		//			&&this.equipment.getItemInSlot(0).isRanged()) {
+		//		var aimcharacter;
+		//		if (aimcharacter = this.findEnemy()) {
+		//			CellCursor.move(aimcharacter.x, aimcharacter.y);
+		//		} else {
+		//			CellCursor.move(playerData.x, playerData.y);
+		//		}
+		//
+		//		UI.notify("missileSelect");
+		//
+		//	} else {
+		//		UI.notify("alert", "Игрок не держит в руках оружия дальнего боя!");
+		//	}
+		//};
+		this.addActionToQueue = function _(actionName, params) {
+			if (!(params instanceof Array)) {
+				if (typeof params === "undefined") {
+					params = [];
+				} else {
+					throw new Error("Incorrect params for queued action: "+params+" , queued action:", func);
+				}
+			}
+			if (typeof params === "undefined") {
+				params = [];
+			}
+			this.actionQueue.push(actionName);
+			this.actionQueueParams.push(params);
+		};
+		this.doActionFromQueue = function _() {
+			performAction(this.actionQueue[0], this.actionQueueParams[0]);
+			this.actionQueue.shift();
+			this.actionQueueParams.shift();
+		};
+		this.locationClickHandler = function _(x, y, e) {
+		//	moveGameField(x, y);
+		//	performAction("move", [x, y]);
+		//	return;
+		};
+		this.sawCell = function() {
+			return true;
+		};
+		/**
+		 * Redraws the game field after player's field of view is changed 
+		 * (player moved or his vision radius changed or something 
+		 * started blocking the view)
+		 * 
+		 * @param {number} dx How far on x-axis player moved since his last 
+		 * 		{@link ClientPlayer#updateVisibility} or 
+		 * 		{@link ClientPlayer#initVisiblilty}
+		 * @param {number} dy The same on y-axis
+		 */
+		this.updateVisibility = function(dx, dy) {
+			this.getVisibleCells();
+			var range = visionRange*2+1;
+			var seenThings = { // Lists of things that are seen (or unseen, se below) by player.
+			// This is being filled and sent to the game field drawing singletone
+				s: { // Seen cells
+					o: [], // Object
+					f: [], // Floors
+					c: [], // Characters
+					i: []  // Items
+				},
+				u: { // Unseen cells
+					o: [],
+					f: [],
+					c: [],
+					i: []
+				}
+			};
+			for (var i=0; i<range; i++) {
+				for (var j=0; j<range; j++) {
+					// Through the loop x and y variables look at square area around player
+					// where player's field of view is.
+					// Player's field of view on the previous turn is inside the square
+					// shifted by dx/dy (there are provided in arguments) 
+					var x = playerData.x-visionRange+i;
+					var y = playerData.y-visionRange+j;
+					// The next two if statements operate on different cells:
+					// the first looks at cells in _current_ vision range and shows
+					// contents of cells that are visible now;
+					// the second looks at cells in vision range from the previous
+					// place the player stood _before moving_, and _unshows_ contents
+					// of cells that are invisible now.
+					if (
+						visibleCells[i][j] 
+						&& (i+dx<0 || i+dx>=range
+						|| j+dy<0 || j+dy>=range
+						|| !prevVisibleCells[i+dx][j+dy])
+					) {
+					// This condition iterates through the newly seen cells
+						var c = worldData.getCell(x, y);
+						seenThings.s.f.push({x:x, y:y, f: c.f}); // Add cell to list of seen
+						if (typeof c.o !== "undefined") {
+							seenThings.s.o.push({x:x, y:y, o: c.o}); // Add object to list of seen
+						}
+						if (typeof c.character !== "undefined") {
+							seenThings.s.c.push({x:x, y:y, c: c.character}); // Add character to list of seen
+						}
+					}
+					if (
+						prevVisibleCells[i][j] 
+						&& (i-dx<0 || i-dx>=range
+						|| j-dy<0 || j-dy>=range
+						|| !visibleCells[i-dx][j-dy])
+					) {
+					// This condition iterates through the previously seen cells.
+						var prevX = x-dx;
+						var prevY = y-dy;
+						var c = worldData.getCell(prevX, prevY);
+						seenThings.u.f.push({x:prevX, y:prevY, f: c.f}); // Add floor to list of seen
+						if (typeof c.o !== "undefined") {
+							seenThings.u.o.push({x:prevX, y:prevY, o: c.o}); // Add object to list of seen
+						}
+						if (typeof c.character !== "undefined") {
+							seenThings.u.c.push({x:prevX, y:prevY, c: c.character}); // Add character to list of seen
+						}
+
+					}
+				}
+			}
+			Events.fire("environmentExplored", seenThings);
+		};
+		/**
+		 * Hides and shows cells according to player's vision
+		 * 
+		 * @param {number} dx Difference by x-axis between previous player's position
+		 * and current position.
+		 * @param {number} dy Same for y-axis.
+		 */
+		this.initVisibility = function() {
+			this.getVisibleCells();
+			var seenThings = { // Lists of things that are seen (or unseen, se below) by player.
+			// This is being filled and sent to the game field drawing singletone
+				s: { // Seen cells
+					o: [], // Object
+					f: [], // Floors
+					c: [], // Characters
+					i: []  // Items
+				}
+				/* 
+				, u: { // Unseen cells (is not used in this method, but used in 
+					   // ClientPlayer.updateVisibility); has the same structure 
+					   // as seenThings.s
+					o: [],
+					f: [],
+					c: [],
+					i: []
+				}
+				*/
+			};
+			for (var i=0; i<visionRange*2+1; i++) {
+				for (var j=0; j<visionRange*2+1; j++) {
+					if (visibleCells[i][j]) {
+						var x = playerData.x-visionRange+i;
+						var y = playerData.y-visionRange+j;
+						var c = worldData.getCell(x, y);
+						seenThings.s.f.push({x:x, y:y, f:c.f});
+						var objId;
+						if (typeof (objId = c.o) !== "undefined") {
+							seenThings.s.o.push({x:x, y:y, o:objId});
+						}
+					}
+				}
+			}
+			Events.fire("environmentExplored", seenThings);
+		};
 	}
-};
-ClientPlayer.prototype.addActionToQueue = function _(actionName, params) {
-	if (!(params instanceof Array)) {
-		if (params === undefined) {
-			params = [];
-		} else {
-			throw new Error("Incorrect params for queued action: "+params
-					+" , queued action:", func);
-		}
-	}
-	if (params === undefined) {
-		params = [];
-	}
-	this.actionQueue.push(actionName);
-	this.actionQueueParams.push(params);
-};
-ClientPlayer.prototype.doActionFromQueue = function _() {
-	performAction(this.actionQueue[0], this.actionQueueParams[0]);
-	this.actionQueue.shift();
-	this.actionQueueParams.shift();
-};
-ClientPlayer.prototype.locationClickHandler = function _(x, y, e) {
-//	UI.notify("alert",Terrain.getCell(x, y).passability);
-//	moveGameField(x, y);
-//	performAction("move", [x, y]);
-//	return;
-	if (this.x!=this.destX||this.y!=this.destY) {
-		return;
-	}
-	var aim;
-	// If we click behind a character who we can attack
-	var dx = x-this.x;
-	var shiftX = dx==0 ? this.x : this.x+dx/Math.abs(dx);
-	var dy = y-this.y;
-	var shiftY = dy==0 ? this.y : this.y+dy/Math.abs(dy);
-	if (x==this.x && y==this.y) {
-		performAction("idle");
-	} else if (
-		(aim = Terrain.getCell(shiftX,shiftY).character)
-		&& this.isEnemy(aim)
-	) {
-		// Attack
-		performAction("attack", [aim]);
-	} else if (
-		(aim = Terrain.getCell(x,y).character)
-		&& this != Terrain.getCell(x,y).character 
-		&& !this.isEnemy(aim)
-	) {
-		this.sendStartConversation(aim.characterId);
-	} else if (
-		Terrain.getCell(x,y).object
-		&& isDoor(Terrain.getCell(x,y).object.type)
-		&& (!isOpenDoor(Terrain.getCell(x,y).object.type) || e.shiftKey)
-		&& this.isNear(x, y)
-	) {
-		// Open door
-		performAction("useObject",[x,y]);
-	} else if (Terrain.getCell(x,y).object && this.isNear(x, y)
-			&& isContainer(Terrain.getCell(x,y).object.type)) {
-		// Open cotainer
-		Global.container.x = x;
-		Global.container.y = y;
-		this.sendOpenContainer();
-	} else if (
-		Terrain.getCell(x,y).passability == Terrain.PASS_BLOCKED
-		|| Terrain.getCell(x,y).passability == Terrain.PASS_SEE
-			
-	) {
-		// Go to object
-		this.aimcharacter = -1;
-		this.destX = x;
-		this.destY = y;
-		this.getPathTable();
-		if (this.comeTo(x, y)) {
-			performAction("move");
-		} else {
-			return;
-		}
-	} else {
-		// If Player goes to cell
-		this.destX = x;
-		this.destY = y;
-		performAction("move", [x,y]);
-	}
-};
-ClientPlayer.prototype.sawCell = function() {
-	return true;
-};
-var Player = new ClientPlayer();
+	/** @name Player @type ClientPlayer */
+	window.Player = new ClientPlayer();
+})();

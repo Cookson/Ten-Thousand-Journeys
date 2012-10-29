@@ -1,0 +1,8 @@
+<project name="Erpoge Server">
+	<target name="all">
+		<javac destdir="bin" srcdir="src" >
+			
+		</javac>
+		<echo>Erpoge Server build is done</echo>
+	</target>
+</project>

@@ -31,7 +31,7 @@ import erpoge.core.objects.SoundType;
 public class Chunk extends TerrainBasics {
 	private HashSet<Character> characters = new HashSet<Character>();
 	private HashSet<NonPlayerCharacter> nonPlayerCharacters = new HashSet<NonPlayerCharacter>();
-	public static final byte WIDTH = 20;
+	public static final byte WIDTH = 30;
 	public TimeStream timeStream;
 	public HorizontalPlane plane;
 	private ArrayList<SoundSource> soundSources = new ArrayList<SoundSource>();

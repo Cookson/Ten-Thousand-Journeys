@@ -23,6 +23,7 @@ import erpoge.core.itemtypes.ItemsTypology;
 import erpoge.core.net.clientmessages.*;
 import erpoge.core.net.serverevents.EventChunkContents;
 import erpoge.core.net.serverevents.EventPutOn;
+import erpoge.core.terrain.Chunk;
 import erpoge.core.terrain.HorizontalPlane;
 import erpoge.core.terrain.Location;
 import erpoge.core.terrain.Portal;
@@ -111,8 +112,7 @@ public class MainHandler extends WebSocketServer {
 	/* Handlers */
 	private void aServerInfo(String message, WebSocket conn) throws InterruptedException {
 		// ping
-		conn.send("[{\"e\":\"serverInfo\",\"serverName\":\"Erpoge Server\",\"online\":31337}]");
-//		Main.log("[{\"e\":\"serverInfo\",\"serverName\":\"Erpoge Server\",\"online\":31337}]");
+		conn.send("[{\"e\":\"serverInfo\",\"serverName\":\"Erpoge Server\",\"online\":31337,\"chunkWidth\":"+Chunk.WIDTH+"}]");
 	}
 	private void aLoadPassiveContents(String message, WebSocket conn) throws InterruptedException {
 	/**
@@ -199,7 +199,7 @@ public class MainHandler extends WebSocketServer {
 		}
 	}
 	public void onClientMessage(WebSocket conn, String message) {
-//		Main.log(message);
+		Main.log(message);
 		int action = gson.fromJson(message, ClientMessageAction.class).a;
 		try {
 			switch (action) {
@@ -243,6 +243,7 @@ public class MainHandler extends WebSocketServer {
 				conn.character.aDropUnique(message);
 				break;
 			case DEAUTH:
+				Main.outln(message);
 				conn.character.aDeauth(message);
 				break;
 			case CHAT_MESSAGE:

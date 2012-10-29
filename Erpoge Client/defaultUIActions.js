@@ -2,38 +2,38 @@ onLoadEvents["defaultUIActions"] = function() {
 	for (var name in UI.defaultUIActions) {
 		UI.registerAction(name, window, UI.defaultUIActions[name])
 	}
-	UI.registerAction("idle", Player, function () {
+	UI.registerAction("idle", null, function () {
 		Net.send({
 			a : Net.IDLE
 		});
 	});
-	UI.registerAction("answer", Player, function (answerId) {
+	UI.registerAction("answer", null, function (answerId) {
 		Net.send({
 			a : Net.ANSWER, 
 			answerId : answerId
 		});
 	});
-	UI.registerAction("startConversation", Player, function (character) {
+	UI.registerAction("startConversation", null, function (character) {
 		Net.send({
 			a : Net.START_CONVERSATION,
 			characterId : character.characterId
 		});
 	});
-	UI.registerAction("takeOff", Player, function (item) {
+	UI.registerAction("takeOff", null, function (item) {
 		Net.send({
 			a : Net.TAKE_OFF,
 			itemId : item.itemId
 		});
 		UI.notify("quitSelection");
 	});
-	UI.registerAction("useObject", Player, function (x, y) {
+	UI.registerAction("useObject", null, function (x, y) {
 		Net.send({
 			a : Net.USE_OBJECT,
 			x : x,
 			y : y
 		});
 	});
-	UI.registerAction("takeFromContainer", Player, function (item, amount) {
+	UI.registerAction("takeFromContainer", null, function (item, amount) {
 		Net.send({
 			a : Net.TAKE_FROM_CONTAINER,
 			typeId : typeId,
@@ -42,7 +42,7 @@ onLoadEvents["defaultUIActions"] = function() {
 					y : Global.container.y
 		});
 	});
-	UI.registerAction("shootMissile", Player, function (x, y) {
+	UI.registerAction("shootMissile", null, function (x, y) {
 		Net.send({
 			a : Net.SHOOT_MISSILE,
 			x : x,
@@ -51,14 +51,14 @@ onLoadEvents["defaultUIActions"] = function() {
 			missile : this.selectedMissile instanceof UniqueItem ? this.selectedMissile.itemId : this.selectedMissile.typeId
 		});
 	});
-	UI.registerAction("openContainer", Player, function (x, y) {
+	UI.registerAction("openContainer", null, function (x, y) {
 		Net.send({
 			a : Net.OPEN_CONTAINER,
 			x : Global.container.x,
 			y : Global.container.y
 		});
 	});
-	UI.registerAction("putToContainer", Player, function (item, amount) {
+	UI.registerAction("putToContainer", null, function (item, amount) {
 		Net.send({
 			a : Net.PUT_TO_CONTAINER,
 			typeId : typeId,
@@ -67,14 +67,14 @@ onLoadEvents["defaultUIActions"] = function() {
 			y : Global.container.y
 		});
 	});
-	UI.registerAction("attack", Player, function (character) {
+	UI.registerAction("attack", null, function (character) {
 		Net.send({
 			a : Net.ATTACK,
 			aimId : character.characterId,
 			ranged : false
 		});
 	});
-	UI.registerAction("castSpell", Player, function (x, y, spellId) {
+	UI.registerAction("castSpell", null, function (x, y, spellId) {
 		Net.send( {
 			a : Net.CAST_SPELL,
 			spellId : spellId || this.spellId,
@@ -83,7 +83,7 @@ onLoadEvents["defaultUIActions"] = function() {
 		});
 		performAction("unselectCellAction");
 	});
-	UI.registerAction("drop", Player, function (item, amount) {
+	UI.registerAction("drop", null, function (item, amount) {
 		if (this.items.contains(item)) {
 			if (item instanceof UniqueItem) {
 				Net.send( {
@@ -104,7 +104,7 @@ onLoadEvents["defaultUIActions"] = function() {
 					+item.typeId);
 		}
 	});
-	UI.registerAction("putOn", Player, function (item) {
+	UI.registerAction("putOn", null, function (item) {
 		if (this.equipment.hasItemInSlot(item.getSlot())) {
 			UI.notify("alert", "Сначала снимите "+window.items[this.equipment.getItemInSlot(item.getSlot()).typeId][0]);
 			return;
@@ -115,21 +115,21 @@ onLoadEvents["defaultUIActions"] = function() {
 		});
 		UI.notify("quitSelection");
 	});
-	UI.registerAction("choosePushAim", Player, function (x, y) {
+	UI.registerAction("choosePushAim", null, function (x, y) {
 		// Chooses the object at cell x,y as the aim to push
 		// This action calls action "choosePushDirection", which calls action
 		// "push", which sends the query to server.
 		CellCursor.enterSelectionMode("choosePushDirection", 1, function(x,y){
-			return [Terrain.getCell(x,y).character];
+			return [World.getCell(x,y).character];
 		});
 	});
-	UI.registerAction("choosePushDirection", Player, function (entity) {
+	UI.registerAction("choosePushDirection", null, function (entity) {
 		// Chooses the direction
 		CellCursor.enterSelectionMode("push", 1, function(x, y){
 			return [entity, Side.d2side(x-entity.x, y-entity.y)];
 		}, entity);
 	});
-	UI.registerAction("push", Player, function (entity, direction) {
+	UI.registerAction("push", null, function (entity, direction) {
 		// Direction is Side object
 		Net.send({
 			a : Net.PUSH,
@@ -138,14 +138,14 @@ onLoadEvents["defaultUIActions"] = function() {
 			direction : direction.getInt()
 		});
 	});
-	UI.registerAction("changePlaces", Player, function (entity) {
+	UI.registerAction("changePlaces", null, function (entity) {
 		Net.send( {
 			a : Net.CHANGE_PLACES,
 			x : entity.x,
 			y : entity.y
 		});
 	});
-	UI.registerAction("makeSound", Player, function (type) {
+	UI.registerAction("makeSound", null, function (type) {
 		/**
 		 * @param {Number} type
 		 */
@@ -154,7 +154,7 @@ onLoadEvents["defaultUIActions"] = function() {
 			type : type
 		});
 	});
-	UI.registerAction("pickUp", Player, function (item, amount) {
+	UI.registerAction("pickUp", null, function (item, amount) {
 		/**
 		 * @param {UniqueItem|ItemPile} item
 		 * @param {Number} amount If item is ItemPile, you may provide amount to 
@@ -174,7 +174,7 @@ onLoadEvents["defaultUIActions"] = function() {
 		}
 		UI.notify("quitSelection");
 	});
-	UI.registerAction("shieldBash", Player, function (entity) {
+	UI.registerAction("shieldBash", null, function (entity) {
 		/**
 		 * @param {Object} entity Object with properties entity.x and entity.y
 		 */
@@ -188,7 +188,7 @@ onLoadEvents["defaultUIActions"] = function() {
 			y : entity.y
 		});
 	});
-	UI.registerAction("jump", Player, function (x, y) {
+	UI.registerAction("jump", null, function (x, y) {
 		/**
 		 * @param {Number} x
 		 * @param {Number} y
@@ -199,16 +199,16 @@ onLoadEvents["defaultUIActions"] = function() {
 			y : y
 		});
 	});
-	UI.registerAction("login", Player, function (login, password) {
+	UI.registerAction("login", null, function (login, password) {
 		/**
-		 * @param {String} x
-		 * @param {Pasword} y
+		 * @param {string} login
+		 * @param {string} password
 		 */
 		Global.playerLogin = login;
 		Global.playerPassword = password;
 		Net.send({a:Net.LOGIN,l:login,p:password});
 	});
-	UI.registerAction("logInForCharacter", Player, function (name) {
+	UI.registerAction("logInForCharacter", null, function logInForCharacter(name) {
 		/**
 		 * @param {String} name Name of character to log in.
 		 */
@@ -223,56 +223,7 @@ onLoadEvents["defaultUIActions"] = function() {
 		}
 		throw new Error("No character "+name+" on account");
 	});
-	UI.registerAction("move", Player, function (x, y) {
-	/**
-	 * @param {String} name Name of character to log in.
-	 */
-		if (x !== undefined) {
-			this.destX = x;
-			this.destY = y;
-		}
-		this.placeSprite();
-		var num = this.characterId;
-		if (this.x==this.destX && this.y==this.destY) {
-			throw new Error("Going to the same cell he is staying at");
-		}
-		this.getPathTable();
-//		Player.showPathTable();
-		Terrain.getCell(this.x,this.y).passability = Terrain.PASS_FREE;
-		var path = this.getPath(this.destX, this.destY);
-//		if (this.bufpath === undefined) {
-//			this.bufpath = [];
-//		}
-//		for (var i=0; i<this.bufpath.length; i++) {
-//			Terrain.unshadeCell(this.bufpath[i].x,this.bufpath[i].y);
-//		}
-//		for (var i=0; i<path.length; i++) {
-//			this.bufpath.push(path[i]);
-//			Terrain.shadeCell(path[i].x,path[i].y);
-//		}
-//		return;
-		
-		if (path.length == 0) {
-			this.destX = this.x;
-			this.destY = this.y;
-			return;
-		}
-		var nextCellX = path[0].x;
-		var nextCellY = path[0].y;
-		if (
-			Terrain.getCell(nextCellX,nextCellY).passability==Terrain.PASS_BLOCKED
-			&& Terrain.getCell(nextCellX,nextCellY).object
-			&& isDoor(Terrain.getCell(nextCellX,nextCellY).object.type)
-		) {
-		// Open door
-			performAction("useObject", [nextCellX, nextCellY]);
-		}
-		Net.send({
-			a : Net.MOVE,
-			dir : Side.d2side(nextCellX-this.x, nextCellY-this.y).getInt()
-		});
-	});
-	UI.registerAction("worldTravel", Player, function (x, y) {
+	UI.registerAction("worldTravel", null, function (x, y) {
 		/**
 		 * @param {Number} x
 		 * @param {Number} y
@@ -286,42 +237,71 @@ onLoadEvents["defaultUIActions"] = function() {
 		 */
 		this.notify("quitSelection");
 	});
-	UI.registerAction("selectSpell", Player, function(spellId) {
+	UI.registerAction("selectSpell", null, function(spellId) {
 		Player.spellId = spellId;
 		CellCursor.enterSelectionMode("castSpell");
 		UI.notify("spellSelect");
 	});
-	UI.registerAction("selectMissile", Player, function(item) {
+	UI.registerAction("selectMissile", null, function(item) {
 		Player.selectedMissile = item;
 		UI.notify("missileSelect");
 		UI.notify("quitSelection");
 	});
-	UI.registerAction("enterState", Player, function(stateId) {
+	UI.registerAction("enterState", null, function(stateId) {
 		Net.send({
 			a: Net.ENTER_STATE,
 			stateId: stateId
 		});
 	});
+	UI.registerAction("move", Player, function (x, y) {
+		if (Characters.player("x") === x && Characters.player("y") === y) {
+			throw new Error("Going to the same cell he is staying at");
+		}
+		this.getPathTable();
+		var path = this.getPath(x, y);
+		var nextCellX = path[0].x;
+		var nextCellY = path[0].y;
+		var objectId;
+		if (
+			World.passability(nextCellX,nextCellY) === StaticData.PASSABILITY_BLOCKED
+			&& (objectId = World.object(nextCellX,nextCellY)) !== null
+			&& StaticData.object(objectId).type === StaticData.OBJECT_TYPE_DOOR
+		) {
+		// Open door, if trying to move into a door
+			performAction("useObject", [nextCellX, nextCellY]);
+			return false;
+		}
+		Net.send({
+			a: Net.MOVE,
+			dir: Side.d2side(nextCellX-Characters.player("x"), nextCellY-Characters.player("y")).getInt()
+		});
+	});
+	UI.registerAction("goTo", Player, function(x, y) {
+	/**
+	 * Repetitive action that uses action "move" until player reaches his
+	 * destination
+	 * @param {number} x
+	 * @param {number} y
+	 */
+		Player.setDestination(x, y);
+		var listener = Events.addListener("nextTurn", Player, function() {
+		// Until player reaches destination, move one cell each time it's player's turn
+			if (Characters.player("x") === x && Characters.player("y") === y) {
+				Events.removeListener(listener);
+			} else {
+				// console.log(endX,endY);
+				performAction("move", [x, y]);
+			}
+		});
+		performAction("move", [x, y]);
+	});
 };
 UI.defaultUIActions = {
 	leaveLocation: function _() {
-		if (Terrain.onGlobalMap) {
-			UI.notify("alert", "Вы уже на глобальной карте");
-			return;
-		}
-		leaveLocation();
+		throw new Error("Daguq");
 	},
 	enterLocation: function _() {
-		if (!Terrain.onGlobalMap) {
-			UI.notify("alert", "Вы уже в локации");
-			return;
-		}
-		if (!Player.isPartyLeader) {
-		// Если игрок - не лидер группы (и состоит в группе, то он не может входить в локацию сам
-			UI.notify("alert", "Вы не лидер партии!");
-		} else if (Terrain.onGlobalMap) {
-			enterArea();
-		}
+		throw new Error("DAFUQ");
 	},
 	quickRefresh: function _() {
 		Net.quickRefresh();
@@ -366,13 +346,13 @@ UI.defaultUIActions = {
 		Player.doActionFromQueue();
 	},
 	rotateCamera: function _() {
-		if (Terrain.cameraOrientation == Side.N) {
+		if (GameField.cameraOrientation == Side.N) {
 			rotateCamera(Side.E);
-		} else if (Terrain.cameraOrientation == Side.E) {
+		} else if (GameField.cameraOrientation == Side.E) {
 			rotateCamera(Side.S);
-		} else if (Terrain.cameraOrientation == Side.S) {
+		} else if (GameField.cameraOrientation == Side.S) {
 			rotateCamera(Side.W);
-		} else if (Terrain.cameraOrientation == Side.W) {
+		} else if (GameField.cameraOrientation == Side.W) {
 			rotateCamera(Side.N);
 		}
 	},

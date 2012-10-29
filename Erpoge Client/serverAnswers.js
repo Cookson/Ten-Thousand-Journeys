@@ -1,364 +1,316 @@
-function handleNextEvent() {
-	if (serverAnswerIterator >= serverAnswer.length) {
-		if (Player.name !== null) {
-		// If player is loaded, then check out after displaying all the events
-			Net.send({a:Net.CHECK_OUT});
-		}
-		return;
-	}
-	var value = serverAnswer[serverAnswerIterator++];
-	if (serverAnswerHandlers[value.e]) {
-//		console["log"]("recieve", value.e, value);
-		serverAnswerHandlers[value.e](value);
-	} else {
-		throw new Error("Unknown type of non-synchronized answer: "+value.e);
-	}
-	
-}
-var serverAnswerHandlers = {
-	wt: function serverEventWorldTravel(value) {
-	// serverAnswerHandlers.worldTravel ?!??! 
-		// Character travels in the world
-		var worldPlayer = worldPlayers[value.characterId];
-		worldPlayer.move(value.x, value.y);
-		if (characters[value.characterId].isClientPlayer) {
-			centerWorldCamera(value.x, value.y);
-		}
-		handleNextEvent();
-	},
-	we: function serverEventWorldEnter(value) {
-		// Character enters world (on global map)
-		if (!Player.characterId) {
-		// If the world is not loaded for this client (Character stub instead player Character, see variables2.js)
+/*
+ * File serverEvents.js represents the active part of MVC model. It uses raw 
+ * data recieved from server to manipulate the model on both high and low 
+ * levels; it also fires events corresponding to recieved data.
+ */
+(function() {
+	function outGameHandleNextEvent() {
+		if (serverAnswerIterator >= serverAnswer.length) {
 			return;
 		}
-		characters[value.characterId] = new Character(
-			value.characterId, "player", value.x, value.y, 1, value.race, false
-		);
-		new WorldPlayer(value.worldX, value.worldY, characters[value.characterId]);
-		handleNextEvent();
-	},
-	login: function serverEventLogin(data) {
-			/* 	in: {
-				l: String login,
-				p: String password,
-			}
-			out: {players:[{characterId, name, race, class, level, equipment}xN]}
-		*/
-		if (data.error !== undefined) {
-		// If there is an error
-			UI.notify("loginError", data.error);
+		var value = serverAnswer[serverAnswerIterator++];
+		if (serverAnswerHandlers[value.e]) {
+			// console["log"]("recieve", value.e, value);
+			serverAnswerHandlers[value.e](value);
 		} else {
-			UI.notify("accountPlayersRecieve", data.players);
-			Net.setServerAdressesStorage(serverAddress, Global.playerLogin, Global.playerPassword);
+			throw new Error("Unknown type of non-synchronized answer: "+value.e);
 		}
-		handleNextEvent();
-	},
-	authentificationSuccessful: function _(value) {
-	// Preparing map after login
-		UI.setClickHandler(Player.locationClickHandler, Player);
-		if (characters[1]) {
-			characters[1].cellWrap.parentNode.removeChild(characters[1].cellWrap);
-			delete characters[1];
+	}
+	function inGameHandleNextEvent() {
+		if (serverAnswerIterator >= serverAnswer.length) {
+			Net.send({a:Net.CHECK_OUT});
+			return;
 		}
-		characters = {};
-		showLoadingScreen();
-		onlinePlayers = [];
-		prepareArea();
-		handleNextEvent();
-	},
-	playerData: function playerData(data) {
-		if (Player.cls == undefined) {
-			Player.init(data.data);
+		var value = serverAnswer[serverAnswerIterator++];
+		if (serverAnswerHandlers[value.e]) {
+			// console["log"]("recieve", value.e, value);
+			serverAnswerHandlers[value.e](value);
+		} else {
+			throw new Error("Unknown type of non-synchronized answer: "+value.e);
 		}
-		Player.display();
-		Player.showModel();
-		UI.notify("locationLoad");
-		UI.setKeyMapping("Default");
-		recountWindowSize();
-		hideLoadingScreen();
-		moveGameField(Player.x, Player.y, false);
-		// Display terrain (we can do it only now because only now we have
-		// player's vision range, coordinates and other info
-		Player.initVisibility();
-		handleNextEvent();
-	},
-	loadContents: function serverEventLoadContents(data) {
-	// Find out whether Player is on global map or in an area and
-	// load contents of character's environment after authentification.
-	// Server can send two different types of answers: when the Player is in location
-	// and when he is on the world map. The type is determined by data.onGlobalMap value
-	/* on world map: {
-	 *  	w : {c:[[[ground,forest,road,river,race,[objects]]xN]xM]},
-	 *  	p : [
-	 *  		characterId, name, race, class, level, 
-	 *  		maxHp, maxMp, 
-	 *  		str, dex, wis, itl, 
-	 *  		items, equipment, spells, skills, 
-	 *  		worldX, worldY
-	 *  	],
-	 *  	islead : boolean,
-	 *  	online : [[characterId,name,class,race,party,worldX,worldY]xM],
-	 *  	chat : [name,message, name,message ...] || 0,
-	 *  	invite : [inviterId,inviterName] || 0
-	 *  },
-	 *  in location: {
-	 *  	onGlobalMap: false,
-	 *  	l : {w,h,locationId,c:[[ground,forest,road,river,race,[objects]]xN]},
-	 *   	p : [
-	 *  		characterId, name, race, class, level,
-	 *  		maxHp, maxMp, 
-	 *  		str, dex, wis, itl, 
-	 *  		items, equipment, spells, skills,
-	 *  		x, y
-	 *  	],
-	 *  	islead : boolean,
-	 *		online : [[characterId,x,y,name,maxHp,hp,maxMp,mp,effects,equipment(,cls,race)|(,type)]xM],
-	 *  }
+	}
+	/*
+	 * There are 2 event handling functions: in-game and out-game
 	 */
-		if (data.error === 0) {
-			throw new Error("Login is empty");
-		} else if (data.error == 1) {
-			throw new Error("Login is empty");
-		} else if (data.error == 2) {
-			throw new Error("No such account");
-		} else if (data.error == 4) {
-			throw new Error("No such character on account");
-		}
-		showLoadingScreen();
-		if (data.onGlobalMap) {
-		// World loading
-			UI.setClickHandler(handlers.globalMapClickHandler, window);
-			Terrain.isPeaceful = false;
-			Terrain.onGlobalMap = true;
-			prepareArea();
-			readWorld(data.w);
+	Net.handleNextEvent = outGameHandleNextEvent;
+	var characters = Characters.getInstance();
+	var worldData = World.getInstance();
+	var serverAnswerHandlers = {
+		login: function serverEventLogin(data) {
+				/* 	in: {
+					l: String login,
+					p: String password,
+				}
+				out: {players:[{characterId, name, race, class, level, equipment}xN]}
+			*/
+			if (data.error !== undefined) {
+			// If there is an error
+				UI.notify("loginError", data.error);
+			} else {
+				Net.accountPlayers = data.players;
+				UI.notify("accountPlayersRecieve", data.players);
+				Net.setServerAdressesStorage(serverAddress, Global.playerLogin, Global.playerPassword);
+			}
+			Net.handleNextEvent();
+		},
+		authentificationSuccessful: function _(value) {
+		// Preparing map after login
+			if (characters[1]) {
+				characters[1].cellWrap.parentNode.removeChild(characters[1].cellWrap);
+				delete characters[1];
+			}
+	//		UI.showLoadingScreen();
+			onlinePlayers = [];
+			Net.handleNextEvent = inGameHandleNextEvent;
+			Net.handleNextEvent();
+		},
+		playerData: function playerData(event) {
+			characters.createPlayer(event.data);
 			if (Player.cls == undefined) {
-				Player.init(data.p);
+				Player.init(event.data);
 			}
-			readOnlinePlayers(data.online);
-			centerWorldCamera(Player.worldX, Player.worldY,true);
-			readChatMessages(data.chat);
-			data.inv && readInvite(data.inv);
-			readEntering(data.en);
-			if (Net.callback) {
-				Net.callback();
-			}
-			UI.enterGlobalMapMode();
 			
-		} else {
-		// Area loading
+			Events.fire("playerDataLoaded", event);
+			Events.fire("locationLoad");
+			GameField.showCharacter(
+				Characters.player("characterId"), 
+				Characters.player("x"), 
+				Characters.player("y")
+			);
+			/* z */ // UI.setKeyMapping("Default");
+	//		UI.hideLoadingScreen();
+			Player.initVisibility();
+	//		Player.updateVisibility(0,0);
+			GameFrame.setViewPort(characters.player.x, characters.player.y, 13, 9);
+			// Display terrain (we can do it only now because only now we have
+			// player's vision range, coordinates and other info)
+			Net.handleNextEvent();
+		},
+		loadContents: function serverEventLoadContents(data) {
+		/*
+		 *  in location: {
+		 *  	onGlobalMap: false,
+		 *  	l : {w,h,locationId,c:[[ground,forest,road,river,race,[objects]]xN]},
+		 *   	p : [
+		 *  		characterId, name, race, class, level,
+		 *  		maxHp, maxMp, 
+		 *  		str, dex, wis, itl, 
+		 *  		items, equipment, spells, skills,
+		 *  		x, y
+		 *  	],
+		 *  	islead : boolean,
+		 *		online : [[characterId,x,y,name,maxHp,hp,maxMp,mp,effects,equipment(,cls,race)|(,type)]xM],
+		 *  }
+		 */
+			if (data.error === 0) {
+				throw new Error("Login is empty");
+			} else if (data.error == 1) {
+				throw new Error("Login is empty");
+			} else if (data.error == 2) {
+				throw new Error("No such account");
+			} else if (data.error == 4) {
+				throw new Error("No such character on account");
+			}
+			UI.showLoadingScreen();
+			// Area loading
 			if (Player.cls == null) {
 				Player.init(data.p);
 			}
 			characters[Player.characterId] = Player;
 			Player.display();
-			moveGameField(Player.x, Player.y, true);
+
+			GameFrame.clearGameZone();
+			GameFrame.moveGameField(Player.x, Player.y, true);
 			Player.initVisibility();
-			readCharacters(data.online);
+			for (var i=0;i<data.length;i++) {
+				Characters.createCharacter(data[i]);
+			}
 			UI.enterLocationMode();
 			UI.notify("locationLoad");
 			UI.setKeyMapping("Default");
-		}
-		recountWindowSize();
-		hideLoadingScreen();
-	},
-	chunkContents : function serverEventChunkContents(data) {
-		var chunk = Terrain.createChunk(data.x, data.y, data);
-		chunk.loadData(data);
-		recountWindowSize();
-		hideLoadingScreen();
-		handleNextEvent();
-	},
-	excludeChunk: function _(value) {
-		Terrain.removeChunk(value.x, value.y);
-		handleNextEvent();
-	},
-	serverInfo: function serverEventServerInfo(data) {
-		Net.serverName = data.serverName;
-		Net.online = data.online;
-		UI.notify("serverInfoRecieve");
-//		Net.send({a:Net.LOAD_PASSIVE_CONTENTS});  
-		hideLoadingScreen();
-	},
-	deauth: function serverEventDeauthorization(value) {
-		// Deauthorization
-		delete characters[value.characterId];
-		worldPlayers[value.characterId].remove();
-		handleNextEvent();
-	},
-	chm: function serverEventChatMessage(value) {
-		// Chat message
-		if (Terrain.onGlobalMap) {
-//				addMessageToChat(worldPlayers[value.characterId].name, value.text);
-			chat.push([characters[value.characterId].name, value.text]);
-		} else {
+			UI.hideLoadingScreen();
+		},
+		chunkContents : function serverEventChunkContents(data) {
+			var chunk = new worldData.Chunk(data.x, data.y);
+			worldData.chunks.set(data.x, data.y, chunk);
+			chunk.loadData(data);
+			Events.fire("chunkLoad", data);
+			Net.handleNextEvent();
+		},
+		excludeChunk: function _(value) {
+			// Chunks are specified by their left-top coordinate {x;y}
+			if (!worldData.chunks.remove(value.x, value.y)) {
+				throw new Error("Chunk "+value.x+";"+value.y+" has not been loaded yet, and can not be removed");
+			}
+			Events.fire("chunkUnload", {x:value.x, y:value.y});
+			Net.handleNextEvent();
+		},
+		serverInfo: function serverEventServerInfo(data) {
+			Net.serverName = data.serverName;
+			Net.online = data.online;
+			worldData.setChunkWidth(data.chunkWidth);
+			UI.notify("serverInfoRecieve");
+	//		Net.send({a:Net.LOAD_PASSIVE_CONTENTS});  
+			UI.hideLoadingScreen();
+		},
+		deauth: function serverEventDeauthorization(value) {
+			// Deauthorization
+			delete characters[value.characterId];
+			worldPlayers[value.characterId].remove();
+			Net.handleNextEvent();
+		},
+		chm: function serverEventChatMessage(value) {
+			// Chat message
 			characters[value.characterId].showSpeech(value.text);
 			chat.push([characters[value.characterId].name, value.text]);
 //				addMessageToChat(characters[value.characterId].name, value.text);
-		}
-		UI.notify("chatMessage");
-		handleNextEvent();
-	},
-	move: function serverEventMove(value) {
-		if (characters[value.characterId] == Player && (Player.destX != value.x || Player.destY != value.y)) {
-		// If player moves
-			if (!(Player.x == Player.destX && Player.y == Player.destY)) {
-			// If player moves by UIAction "move"
-				Player.addActionToQueue("move");
+			UI.notify("chatMessage");
+			Net.handleNextEvent();
+		},
+		move: function serverEventMove(value) {
+			var character = characters.characters[value.characterId];
+			var prevX = character.x, prevY = character.y;
+			var c = worldData.getCell(prevX, prevY);
+			delete c.character;
+			c.p = StaticData.PASSABILITY_FREE;
+			character.x = value.x;
+			character.y = value.y;
+			worldData.getCell(character.x, character.y).p = StaticData.PASSABILITY_SEE;
+			worldData.getCell(character.x, character.y).character = character;
+			if (Player.sees(prevX, prevY) && !Player.sees(character.x, character.y)) {
+				GameField.unshowCharacter(character.characterId);
+			} else if (Player.sees(character.x, character.y) && !Player.sees(character.x, character.y)) {
+				GameField.showCharacter(character.characterId, character.x, character.y);
 			}
-		} else {
-			CellCursor.show();
-		}
-		characters[value.characterId].showMove(value.x, value.y);	
-		UI.notify("environmentChange");
-		if (value.characterId == Player.characterId) {
-			UI.notify("lootChange");
-		}
-	},
-	putOn: function serverEventPutOn(value) {
-		// Put on item
-		if (Terrain.onGlobalMap) {
-			if (value.characterId == Player.characterId) {
-				Player.putOn(value.itemId);
-				UI.notify("inventoryChange");
-				UI.notify("equipmentChange");
-			} else {
-			// Someone else on world map put on an item
+			if (value.characterId === Characters.player("characterId")) {
+				Player.updateVisibility(character.x-prevX, character.y-prevY);
+				UI.notify("lootChange");
 			}
-		} else {
-			characters[value.characterId].putOn(value.itemId);
-			if (value.characterId == Player.characterId) {
-				UI.notify("inventoryChange");
-				UI.notify("equipmentChange");
+			GameField.moveCharacter(character.characterId, value.x, value.y);
+			GameFrame.setViewPort(value.x, value.y);
+			UI.notify("environmentChange");
+			Net.handleNextEvent();
+		},
+		putOn: function serverEventPutOn(value) {
+			// Put on item
+			var character = characters[value.characterId];
+			var item = character.items.getUnique(itemId);
+			var slot = getSlotFromClass(items[item.typeId][1]);
+			if (slot==9 && character.equipment.getItemInSlot(9)) {
+				slot = 10;
 			}
-			handleNextEvent();
-		}
-	},
-	takeOff: function serverEventTakeOff(value) {
-		if (Terrain.onGlobalMap) {
-			if (value.characterId == Player.characterId) {
-				Player.takeOff(value.itemId);
-				UI.notify("inventoryChange");
-				UI.notify("equipmentChange");
-			} else {
-			// Someone else on world map puts an item on
+			character.equipment.putOn(item);
+			Events.fire("loseItem", value);
+			Events.fire("equipmentChange", value);
+			Net.handleNextEvent();
+		},
+		takeOff: function serverEventTakeOff(value) {
+			var character = characters[value.characterId];
+			var slot = 0;
+			// For list of slots search items.js
+			for (; slot<10; slot++ ) {
+				var item = character.equipment.getItemInSlot(slot);
+				if (item && item.itemId==itemId) {
+					break;
+				}
 			}
-		} else {
-			characters[value.characterId].takeOff(value.itemId);
-			if (value.characterId == Player.characterId) {
-				UI.notify("inventoryChange");
-				UI.notify("equipmentChange");
+			if (slot==10) {
+				throw new Error("Not found item "+itemId+" in equipment");
 			}
-			handleNextEvent();
-		}
-	},
-	drop: function serverEventDrop(value) {
-//		if (Terrain.onGlobalMap) {
-//			throw new Error("Character "+value.characterId+" drops an item "+items[value.typeId][0]+" on global map!");
-//		} else {
-//			UI.notify("lootChange");
-//			UI.notify("inventoryChange");
-			handleNextEvent();
-//		}
-	},
-	pickUp: function serverEventPickUp(value) {
-//		if (Terrain.onGlobalMap) {
-//			throw new Error("Character "+value.characterId+" picks up an item "+items[value.typeId][0]+" on global map!");
-//		} else {
-//			UI.notify("inventoryChange");
-//			UI.notify("lootChange");
-			handleNextEvent();
-//		}
-	},
-	openContainer: function serverEventOpenContainer(value) {
-		
-		Global.container.items.empty();
-		for (var i in value.items) {
-			Global.container.items.addNewItem(value.items[i][0], value.items[i][1]);
-		}
-		UI.notify("containerOpen");
-		handleNextEvent();
-	},
-	takeFromContainer: function serverEventTakeFromContainer(value) {
-		if (Terrain.onGlobalMap) {
-			throw new Error("Character "+value.characterId+" takes an item "+items[value.typeId][0]+" from container on global map!");
-		} else {
+			if ( !character.equipment.hasItemInSlot(slot)) {
+				throw new Error("Character "+character.name
+						+" is trying to take off an item that he doesn't wear");
+				return false;
+			}
+			character.equipment.takeOffFromSlot(slot);
+			Events.fire("getItem", value.characterId);
+			Events.fire("equipmentChange", value.characterId);
+			Net.handleNextEvent();
+		},
+		drop: function serverEventDrop(value) {
+			throw new Error("Not implemented");
+			Net.handleNextEvent();
+		},
+		pickUp: function serverEventPickUp(value) {
+			throw new Error("Not impl");
+			Net.handleNextEvent();
+		},
+		openContainer: function serverEventOpenContainer(value) {
+			
+			Global.container.items.empty();
+			for (var i in value.items) {
+				Global.container.items.addNewItem(value.items[i][0], value.items[i][1]);
+			}
+			UI.notify("containerOpen");
+			Net.handleNextEvent();
+		},
+		takeFromContainer: function serverEventTakeFromContainer(value) {
+			throw new Error("Not imple");
 			if (value.characterId == Player.characterId) {
 				Global.container.items.remove(value.typeId, value.param);
 				UI.notify("containerChange");
 			}
-			handleNextEvent();
-		}
-	},
-	putToContainer: function serverEventPutToContainer(value) {
-		if (Terrain.onGlobalMap) {
-			throw new Error("Character "+value.characterId+" puts an item "+items[value.typeId][0]+" to container on global map!");
-		} else {
+			Net.handleNextEvent();
+		},
+		putToContainer: function serverEventPutToContainer(value) {
+			throw new Error("Not impl");
 			if (value.characterId == Player.characterId) {
 				Global.container.items.addNewItem(value.typeId, value.param);
 				UI.notify("containerChange");
 			}
-			handleNextEvent();
-		}
-	},
-	meleeAttack: function serverEventMeleeAttack(value) {
-		if (Terrain.onGlobalMap) {
-			throw new Error("Character "+value.attackerId+" attacks on global map!");
-		} else {
-			characters[value.attackerId].showAttack(value.aimId, false);
-		}
-	},
-	damage: function serverEventDamage(value) {
-		if (Terrain.onGlobalMap) {
-			throw new Error("Character "+value.characterId+" was damaged on global map!");
-		} else {
-		// handleNextEvent() is inside showDamage
-			characters[value.characterId].showDamage(value.amount, value.type);
-		}
-	},
-	changeMana: function serverEventChangeMana(value) {
-		characters[value.characterId].mp = value.value;
-		if (value.characterId == Player.characterId) {
-			UI.notify("manaChange");
-		}
-		handleNextEvent();
-	},
-	changeEnergy: function serverEventChangeEnergy(value) {
-		characters[value.characterId].ep = value.value;
-		if (value.characterId == Player.characterId) {
-			UI.notify("energyChange");
-		}
-		handleNextEvent();
-	},
-	death: function serverEventDeath(value) {
-		if (Terrain.onGlobalMap) {
-			throw new Error("Character "+value.characterId+" had an attempt to die on global map!");
-		} else {
-			characters[value.characterId].showDeath();
-		}
-	},
-	itemAppear: function serverEventItemAppear(value) {
-		if (Terrain.onGlobalMap) {
-			throw new Error("Item appear on global map!");
-		} else {
+			Net.handleNextEvent();
+		},
+		meleeAttack: function serverEventMeleeAttack(value) {
+			Events.fire("meleeAttack", value);
+			// Net.handleNextEvent();
+			throw new Error("You have to handle it somehow!");
+		},
+		damage: function serverEventDamage(value) {
+			characters[value.characterId].hp -= value.amount
+			Event.fire("damageGot", value);
+			// Net.handleNextEvent()
+			throw new Error("You have to handle it somehow!");
+		},
+		changeMana: function serverEventChangeMana(value) {
+			characters[value.characterId].mp = value.value;
+			if (value.characterId == Player.characterId) {
+				UI.notify("manaChange");
+			}
+			Net.handleNextEvent();
+		},
+		changeEnergy: function serverEventChangeEnergy(value) {
+			characters[value.characterId].ep = value.value;
+			if (value.characterId == Player.characterId) {
+				UI.notify("energyChange");
+			}
+			Net.handleNextEvent();
+		},
+		death: function serverEventDeath(value) {
+			throw new Error("Not impl");
+			Characters.characterRemove(value.characterId);
+			world.getCell(this.x, this.y).p = StaticData.PASSABILITY_FREE;
+			Events.fire("characterDisappear");
+		},
+		itemAppear: function serverEventItemAppear(value) {
+			throw new Error("Not implemented");
 			var item;
 			if (isUnique(value.typeId)) {
 				item = new UniqueItem(value.typeId, value.param);
 			} else {
 				item = new ItemPile(value.typeId, value.param);
 			}
-			Terrain.createItem(value.x, value.y, item);
-			if (Player.x == value.x && Player.y == value.y) {
-				UI.notify("lootChange");
+			var cell = worldData.getCell(value.x, value.y);
+			if (!("items" in cell)) {
+				cell.items = new ItemSet();
 			}
-		}
-		handleNextEvent();
-	},
-	itemDisappear: function serverEventItemDisappear(value) {
-		if (Terrain.onGlobalMap) {
-			throw new Error("Item appear on global map!");
-		} else {
+			cell.items.addItem(x,y,item);
+			if (Player.x == value.x && Player.y == value.y) {
+				Events.fire("lootChange");
+			}
+			Net.handleNextEvent();
+		},
+		itemDisappear: function serverEventItemDisappear(value) {
+			throw new Error("Not implemented");
 			// Create a copy if item and delete the original item using copy as a key.
 			var item;
 			if (isUnique(value.typeId)) {
@@ -366,17 +318,22 @@ var serverAnswerHandlers = {
 			} else {
 				item = new ItemPile(value.typeId, value.param);
 			}
-			Terrain.getCell(value.x,value.y).removeItem(value.typeId, value.param);
+			worldData.getCell(value.x,value.y)
+				.removeItem(value.typeId, value.param);
+			
+			var cell = worldData.getCell(x, y);
+			if (!("items" in cell)) {
+				throw new Error("Cannot remove item "+item+": cell "+x+":"+y+" has no items");
+			}
+			cell.items.remove(item);
+
 			if (value.x == Player.x && value.y == Player.y) {
 				UI.notify("lootChange");
 			}
-		}
-		handleNextEvent();
-	},
-	castSpell: function serverEventCastSpell(value) {
-		if (Terrain.onGlobalMap) {
-			throw new Error("Cast spell on global map!");
-		} else {
+			Net.handleNextEvent();
+		},
+		castSpell: function serverEventCastSpell(value) {
+			throw new Error("Not implemanted");
 			UI.notify("spellCast");
 			
 			if (value.characterId == Player.characterId) {
@@ -385,123 +342,131 @@ var serverAnswerHandlers = {
 				Player.spellY=-1;
 			}
 //				new effectTypes.confuse(this.x, this.y, this.x, this.y,  1000, 1000, 1000, 1000, function() {
-//					handleNextEvent();
+//					Net.handleNextEvent();
 //				});
-			handleNextEvent();
+			Net.handleNextEvent();
 //				weatherEffect = new effectTypes.rain(
 //					this.x, this.y, this.x, this.y, 
 //					UI.width/2+100, UI.height/2+100, 
 //					UI.width/2+100, UI.height/2+100);			
-		}
-	},
-	missileFlight: function serverEventMissileFlight(value) {
-		if (Terrain.onGlobalMap) {
-			throw new Error("Missile flight on global map!");
-		} else {
-			Character.prototype.showMissileFlight(value.fromX, value.fromY, value.toX, value.toY, value.missile);
-		}
-	},
-	loseItem: function serverEventLoseItem(value) {
-		if (Terrain.onGlobalMap) {
-			throw new Error("Missile flight on global map!");
-		} else if (value.characterId == Player.characterId) {
-			Player.loseItem(value.typeId, value.param);
-		}
-		handleNextEvent();
-	},
-	getItem: function serverEventGetItem(value) {
-		if (Terrain.onGlobalMap) {
-			throw new Error("Missile flight on global map!");
-		} else if (value.characterId == Player.characterId) {
-			Player.getItem(value.typeId, value.param);
-		}
-		handleNextEvent();
-	},
-	objectAppear: function serverEventObjectAppear(value) {
-		Terrain.createObject(value.x, value.y, value.object);
-		Terrain.displayObject(value.x, value.y);
-		Terrain.showObject(value.x,value.y);
-		Player.updateVisibility(0,0);
-		handleNextEvent();
-	},
-	objectDisappear: function serverEventObjectDisappear(value) {
-		Terrain.getCell(value.x,value.y).object.remove(value.x,value.y);
-		Player.updateVisibility(0,0);
-		handleNextEvent();
-	},	
-	characterAppear: function serverEventCharacterAppear(value) {
-		characters[value.characterId] = new Character(value.characterId, value.type, value.x, value.y, value.fraction, value.hp, value.maxHp);
-		characters[value.characterId].display();
-		handleNextEvent();
-	},	
-	nextTurn: function serverEventNextTurn(value) {
-		if (value.characterId == Player.characterId) {
-			if (Player.actionQueue.length > 0) {
-				Player.doActionFromQueue();
+		},
+		missileFlight: function serverEventMissileFlight(value) {
+			Events.fire("missileFlight", value);
+		},
+		loseItem: function serverEventLoseItem(value) {
+			if (isUnique(typeId)) {
+				characters[value.characterId].items.removeUnique(param);
+			} else {
+				characters[value.characterId].items.removePile(typeId, param);
 			}
+			Events.fire("loseItem", value);
+			Net.handleNextEvent();
+		},
+		getItem: function serverEventGetItem(value) {
+			characters[value.characterId].items.addNewItem(typeId, param);
+			Events.fire("getItem", value);
+			Net.handleNextEvent();
+		},
+		objectAppear: function serverEventObjectAppear(value) {
+			console.log("create",value.object);
+			var c = worldData.getCell(value.x, value.y);
+			c.o = value.object;
+			c.p = StaticData.object(value.object).passability;
+			GameField.showObject(value.x, value.y, value.object);
+			Player.updateVisibility(0, 0);
+			Net.handleNextEvent();
+		},
+		objectDisappear: function serverEventObjectDisappear(value) {
+			var object = worldData.getCell(value.x, value.y).o;
+			console.log("remove", object);
+			worldData.getCell(value.x, value.y).p = StaticData.PASSABILITY_FREE;
+			GameField.removeObject(value.x, value.y);
+			Events.fire("objectDisappear", {x:value.x, y:value.y, o:object});
+			Player.updateVisibility(0, 0);
+			Net.handleNextEvent();
+		},	
+		characterAppear: function serverEventCharacterAppear(value) {
+			throw new Error("Not implemented");
+			// characters[value.characterId] = new Character(value.characterId, value.type, value.x, value.y, value.fraction, value.hp, value.maxHp);
+			// characters[value.characterId].display();
+			var character = Characters.createCharacter(value);
+			GameField.displayCharacter(value.x, value.y, character);
+			Events.fire("characterAppear");
+			Net.handleNextEvent();
+		},	
+		nextTurn: function serverEventNextTurn(value) {
+			if (value.characterId == Player.characterId) {
+				if (Player.actionQueue.length > 0) {
+					Player.doActionFromQueue();
+				}
+			}
+			Events.fire("nextTurn");
+			// Here must be no Net.handleNextEvent()
+		},	
+		worldTravel: function serverEventWorldTravel(value) {
+			worldPlayers[value.characterId].move(value.x, value.y);
+			Net.handleNextEvent();
+		},
+		useObject: function serverEventUseObject(value) {
+			Net.handleNextEvent();
+		},
+		sound: function serverEventSound(value) {
+			showSound(value.x, value.y, value.type);
+		},
+		soundSourceAppear: function serverEventSoundSourceAppear(value) {
+			new SoundSource(value.x, value.y, value.type);
+			Net.handleNextEvent();
+		},
+		soundSourceDisappear: function serverEventSoundSourceDisappear(value) {
+			throw new Error("Not implemented");
+			World.cells[value.x][value.y].soundSource.remove();
+			Net.handleNextEvent();
+		},
+		dialoguePoint: function serverEventDialoguePoint(value) {
+			if (value.playerId == Player.characterId) {
+				UI.notify("dialoguePointRecieve", {phrase:value.phrase, answers:value.answers});
+			}
+			Net.handleNextEvent();
+		},
+		dialogueEnd: function serverEventDialogueEnd(value) {
+			if (value.characterId == Player.characterId) {
+				UI.notify("dialogueEnd");
+			}
+			Net.handleNextEvent();
+		},
+		effectStart: function serverEventEffectStart(value) {
+			GameField.showEffectStart(value.characterId, value.effectId);
+			Net.handleNextEvent();
+		},
+		effectEnd: function serverEventEffectEnd(value) {
+			GameField.showEffectEnd(value.characterId, value.effectId);
+			Net.handleNextEvent();
+		},
+		attrChange: function serverEventAttrChange(value) {
+			throw new Error("Not implemented!");
+			UI.notify("attributeChange", [attrId, value]);
+			Net.handleNextEvent();
+		},
+		changePlaces: function serverEventChangePlaces(value) {
+			throw new Error("Not implemented!");
+			var character1 = characters[value.character1Id];
+			var character2 = characters[value.character2Id];
+			World.cells[character1.x][character1.y].character = character1;
+			World.cells[character2.x][character2.y].character = character2;
+			Net.handleNextEvent();
+		},
+		jump: function serverEventJump(value) {
+			var character = characters[value.characterId];
+			character.destX = character.x;
+			character.destY = character.y;
+			Net.handleNextEvent();
+		},
+		enterState: function serverEventEnterState(value) {
+			characters[value.characterId].stateId = value.stateId;
+			if (Player.characterId === value.characterId) {
+				UI.notify("stateEntered");
+			}
+			Net.handleNextEvent();
 		}
-		// Here must be no handleNextEvent()
-	},	
-	worldTravel: function serverEventWorldTravel(value) {
-		worldPlayers[value.characterId].move(value.x, value.y);
-		handleNextEvent();
-	},
-	useObject: function serverEventUseObject(value) {
-		handleNextEvent();
-	},
-	sound: function serverEventSound(value) {
-		showSound(value.x, value.y, value.type);
-	},
-	soundSourceAppear: function serverEventSoundSourceAppear(value) {
-		new SoundSource(value.x, value.y, value.type);
-		handleNextEvent();
-	},
-	soundSourceDisappear: function serverEventSoundSourceDisappear(value) {
-		Terrain.cells[value.x][value.y].soundSource.remove();
-		handleNextEvent();
-	},
-	dialoguePoint: function serverEventDialoguePoint(value) {
-		if (value.playerId == Player.characterId) {
-			UI.notify("dialoguePointRecieve", {phrase:value.phrase, answers:value.answers});
-		}
-		handleNextEvent();
-	},
-	dialogueEnd: function serverEventDialogueEnd(value) {
-		if (value.characterId == Player.characterId) {
-			UI.notify("dialogueEnd");
-		}
-		handleNextEvent();
-	},
-	effectStart: function serverEventEffectStart(value) {
-		characters[value.characterId].showEffectStart(value.effectId);
-		handleNextEvent();
-	},
-	effectEnd: function serverEventEffectEnd(value) {
-		characters[value.characterId].showEffectEnd(value.effectId);
-		handleNextEvent();
-	},
-	attrChange: function serverEventAttrChange(value) {
-		characters[value.characterId].changeAttribute(value.attrId, value.value);
-		handleNextEvent();
-	},
-	changePlaces: function serverEventChangePlaces(value) {
-		var character1 = characters[value.character1Id];
-		var character2 = characters[value.character2Id];
-		Terrain.cells[character1.x][character1.y].character = character1;
-		Terrain.cells[character2.x][character2.y].character = character2;
-		handleNextEvent();
-	},
-	jump: function serverEventJump(value) {
-		var character = characters[value.characterId];
-		character.destX = character.x;
-		character.destY = character.y;
-		handleNextEvent();
-	},
-	enterState: function serverEventEnterState(value) {
-		characters[value.characterId].stateId = value.stateId;
-		if (Player.characterId === value.characterId) {
-			UI.notify("stateEntered");
-		}
-		handleNextEvent();
-	}
-};
+	};
+})();

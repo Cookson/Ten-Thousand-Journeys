@@ -1,4 +1,3 @@
-/* �������� */
 * {
 	-moz-user-select: -moz-none;
 	-webkit-user-select: none;
@@ -111,7 +110,17 @@ div.damage {
 	height: 100%;
 	display: inline-block;
 }
-
+#gameFieldElementsContainer {
+	z-index: 2;
+	display: none;
+	border: 0px solid black;
+	position: relative;
+	background-color: #000;
+	text-align: left;
+	width: 100%;
+	height: 100%;
+	display: inline-block;
+}
 #gameField > div.wrap {
 	z-index: 0;
 }
@@ -316,6 +325,7 @@ div.stMenuAction:hover {
 	font-size: 28px;
 	background-color:#000;
 	font-variant: small-caps;
+	color: #fff;
 }
 
 .stTable {

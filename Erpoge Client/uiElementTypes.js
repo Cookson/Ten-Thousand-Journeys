@@ -181,7 +181,6 @@ UIElementTypes.windowAccountCharacters = {
 		accountPlayersRecieve: function _(data) {
 			// Clear players list
 			// data: [[characterId, name, class, race, equipment]xN]
-			Net.accountPlayers = data;
 			var nPlayersList = this.getData("playersListNode");
 			while (nPlayersList.children.length>0) {
 				nPlayersList.children[0].parentNode.removeChild(nPlayersList.children[0]);
@@ -218,7 +217,7 @@ UIElementTypes.windowAccountCharacters = {
 			Net.logInForCharacter(this.getData("characterId"), Global.playerLogin, Global.playerPassword);
 			UI.showAlwaysShownElements();
 			this.getData("uiElement").hide();
-			showLoadingScreen();
+			UI.showLoadingScreen();
 		},
 		backClick: function _() {
 			this.hide();
@@ -345,12 +344,12 @@ UIElementTypes.windowLogin = {
 			this.getData("serverAddressTextNode").nodeValue = "http://"+window.location.host;
 			this.getData("serverOnlineTextNode").nodeValue = Net.online;
 			this.show();
-			setTimeout(function() {
-				performAction("login",["1","1"]);
-				setTimeout(function() {
-					performAction("logInForCharacter", ["Alvoi"]);
-				}, 30);
-			},30);
+			// setTimeout(function() {
+			// 	performAction("login",["1","1"]);
+			// 	setTimeout(function() {
+			// 		performAction("logInForCharacter", ["Alvoi"]);
+			// 	}, 30);
+			// },30);
 		},
 		accountPlayersRecieve: function _() {
 			this.hide();
@@ -589,7 +588,7 @@ UIElementTypes.iconsInventory = {
 		click: function _(e) {
 			var typeId = this.getData("typeId");
 			var param = this.getData("param");
-			if (Terrain.onGlobalMap && isEquipment(typeId)) {
+			if (isEquipment(typeId)) {
 			// На глобальной карте
 				var slot = getSlotFromClass(items[typeId][1]);
 				if (!Player.equipment.hasItemInSlot(slot)) {
@@ -600,7 +599,7 @@ UIElementTypes.iconsInventory = {
 			} else if (UI.mode == UI.MODE_CONTAINER) {
 			// Положить в контейнер
 				Player.sendPutToContainer(typeId, (e.shiftKey ? 1 : param));
-			} else if (!Terrain.onGlobalMap && e.shiftKey) {
+			} else if (e.shiftKey) {
 			// Выкинуть предмет (шифт-клик)
 				if (isUnique(typeId)) {
 					performAction("drop", [Player.items.getUnique(param)]);
@@ -681,7 +680,7 @@ UIElementTypes.minimap = {
 	 		this.getData("minimap").init();		
 	 	},
 	 	locationLoad: function _() {
-	 		this.getData("minimap").changeDimensions(Terrain.width, Terrain.height);
+			throw new Error("Not implemented");
 	 	}
 	},
 	keysActions: {},
@@ -689,7 +688,7 @@ UIElementTypes.minimap = {
 		click: function _(e) {
 			var minimap = this.getData("minimap");
 			var rect = getOffsetRect(minimap.elem);
-			var normal = Terrain.getNormalView(
+			var normal = GameField.getNormalView(
 				Math.floor((e.clientX-rect.left)/minimap.scale), 
 				Math.floor((e.clientY-rect.top)/minimap.scale)
 			);
@@ -1034,7 +1033,8 @@ UIElementTypes.iconsLoot = {
 	listeners: {
 		lootChange: function _() {
 	 		var count = 0;
-	 		var items = Terrain.getItemsOnCell(Player.x,Player.y);
+			throw new Error("Should implement Data.getItemsOnCell()");
+	 		var items = World.getItemsOnCell(Player.x, Player.y);
 	 		var displayedItemViews = this.getData("displayedItemViews");
 	 		displayedItemViews.empty();
 	 		while (this.rootElement.children.length > 0) {
@@ -1070,7 +1070,7 @@ UIElementTypes.iconsLoot = {
 	keysActions: {
 		iconsLootShowKeysToPickUp: function _() {
 			Player.lootLetterAssigner
-				.synchronizeWithSource(Terrain.getCell(Player.x, Player.y).items);
+				.synchronizeWithSource(Wolderrdlld.getCell(Player.x, Player.y).items);
 			var itemViews = this.getData("displayedItemViews");
 			var uiElement = this;
 			var itemsLetters = this.getData("itemLetters");
@@ -1093,9 +1093,11 @@ UIElementTypes.iconsLoot = {
 			var item;
 			if (isUnique(typeId)) {
 				var param = this.getData("param");
-				item = Terrain.getCell(Player.x,Player.y).items.getUnique(param);
+				throw new Error("Getting items not implemented");
+				item = Woldrerd.getCell(Player.x, Player.y).items.getUnique(param);
 			} else {
-				item =  Terrain.getCell(Player.x,Player.y).items.getPile(typeId);
+				throw new Error("Getting items not implemented");
+				item = Wolderdr.getCell(Player.x, Player.y).items.getPile(typeId);
 			}
 			performAction("pickUp", [item]);
 		},
@@ -1585,7 +1587,7 @@ UIElementTypes.windowDeath = {
 		var nDiv = document.createElement("div");
 		var nClose = document.createElement("div");
 		this.onClose=function() {
-			showLoadingScreen();
+			UI.showLoadingScreen();
 			setTimeout(leaveLocation,100);
 		};
 		
@@ -2572,7 +2574,8 @@ UIElementTypes.actionsPanel = {
 		},
 		changePlaces: function _() {
 			CellCursor.enterSelectionMode("changePlaces", 1, function(x,y){
-				return [Terrain.getCell(x,y)];
+				throw new Error("Not implamanted");
+				return [Worldldl.getCell(x,y)];
 			});
 		},
 		makeSound: function () {
@@ -2580,7 +2583,8 @@ UIElementTypes.actionsPanel = {
 		},
 		shieldBash: function() {
 			CellCursor.enterSelectionMode("shieldBash", 1, function(x,y){
-				return [Terrain.getCell(x,y)];
+				throw new Error("Not implamanted");
+				return [Woldlsd.getCell(x,y)];
 			});
 		},
 		jump: function _() {
@@ -2638,3 +2642,5 @@ UIElementTypes.actionsPanel = {
 		";
 	}
 };
+/* ********************************************** */
+UIGameFieldElementTypes = {};

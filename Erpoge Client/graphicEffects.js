@@ -8,8 +8,8 @@ function Effect(startX, startY, endX, endY, padding1, padding2, padding3, paddin
 		this.padding3 = (padding3) ? padding3 : 0;
 		this.padding4 = (padding4) ? padding4 : 0;
 		this.callback = (callback) ? callback : undefined;
-		var startViewIndent = Terrain.getViewIndentation(startX, startY, 1);
-		var endViewIndent = Terrain.getViewIndentation(endX, endY, 1);
+		var startViewIndent = GameField.getViewIndentation(startX, startY, 1);
+		var endViewIndent = GameField.getViewIndentation(endX, endY, 1);
 		this.startX = startViewIndent.left;
 		this.startY = startViewIndent.top;
 		this.endX = endViewIndent.left;

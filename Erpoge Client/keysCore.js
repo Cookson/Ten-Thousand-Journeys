@@ -329,7 +329,7 @@ UIKeymapping.prototype.addHandler = function addHandler() {
  * @param {Boolean} shift
  * @param {Number} keyCode
  * @param {String} actionName Name of UIAction.
- * @param {Array} [args=[]] Arguments for UIAction. By default it is an empty 
+ * @param {Array} [args] Arguments for UIAction. By default it is an empty 
  * array.
  */
 UIKeymapping.prototype.strictAddHandler = function strictAddHandler(ctrl, alt, shift, keyCode, actionName, args) {
@@ -480,7 +480,6 @@ LetterAssigner.prototype._setSources = function() {
  * @see UIAction#name
  * @public
  * @param {Object} object
- * @param {String} actionName Name of registered UIAction
  */
 LetterAssigner.prototype._addObject = function addObject(object) {
 	Interface.check(object, "Hashable");

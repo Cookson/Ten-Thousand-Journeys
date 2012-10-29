@@ -1,4 +1,7 @@
-﻿HTMLElement.prototype.applyStyle = function _(style) {
+﻿if (!document.head) {
+	document.head = document.getElementsByTagName("head")[0];
+}
+HTMLElement.prototype.applyStyle = function _(style) {
 	for (var i in style) {
 		this.style[i] = style[i];
 	}
@@ -72,7 +75,8 @@ String.prototype.equals = function(object) {
  * but for element with equal .hashCode() ("java-equal", lolz). Array must
  * contain only hashable objects of the same type as the sought-for object.
  * 
- * @param {Object} Hashable object.
+ * @param {Array} array
+ * @param {Object} object A hashable object.
  * @return {Number} Index of object in array if has one, -1 otherwise.
  */
 function indexOfByHash(array, object) {
@@ -113,54 +117,25 @@ System.hasEqualObject = function (array, object, comparator) {
 	}
 	return false;
 };
-window.onresize = recountWindowSize;
-window.onunload = function () {
-// Разлогинивание персонажа при перезагрузке, если перезагрузка - не quickRefresh
-	if (localStorage.getItem(101)=="0") {
-		Net.send({a:Net.DEAUTH});
-	}
-};
 function recountWindowSize() {
 	var nGameZone = document.getElementById("intfGameZone");
 	var nWindowWrap = document.getElementById("intfWindowWrap");
-	document.getElementById("stLoad").style.lineHeight = document.body.clientHeight+"px";
+	// document.getElementById("stLoad").style.lineHeight = document.body.clientHeight+"px";
 	
 	// Центрировать игровое окно по вертикали
-	nWindowWrap.style.marginTop=(document.body.clientHeight-nWindowWrap.clientHeight)/2+"px";
-	nWindowWrap.style.marginLeft=(document.body.clientWidth-nWindowWrap.clientWidth)/2+"px";
-	// nGameZone.style.height=(nWindowWrap.clientHeight)+"px";
-	// nGameZone.style.width=(nWindowWrap.clientWidth-nIntfInfo.clientWidth)-(nWindowWrap.clientWidth-nIntfInfo.clientWidth%32)+"px";
-	// document.getElementById("intfBorder").style.width=(nWindowWrap.clientWidth-nGameZone.clientWidth-nIntfInfo.clientWidth-4)+"px";
-	var l=0;
+	nWindowWrap.style.marginTop = (document.body.clientHeight-nWindowWrap.clientHeight)/2+"px";
+	nWindowWrap.style.marginLeft = (document.body.clientWidth-nWindowWrap.clientWidth)/2+"px";
 	UI.width = nWindowWrap.clientWidth;
 	UI.width = UI.width-UI.width%32;
 	UI.height = nWindowWrap.clientHeight;
-//	nGameZone.style.width=UI.width+"px";
-//	nGameZone.style.height=UI.height+"px";
-	
-	var w=Math.floor((UI.visibleWidth)/32);
-	var h=Math.floor((UI.visibleHeight)/32);
-	rendW=((w%2==1)?w:w+1)+2;
-	rendH=((h%2==1)?h:h+1)+2;
-	prevRendCX=-1;
-	prevRendCY=-1;
-	
-	if (!inMenu) {
-	// Если в игру уже зашли
-	// Player - для случаев, когда окно ресайзится до самого первого хода в локации (когда rendCX|Y==-1)
-		moveGameField(rendCX==-1 ? Player.x : rendCX, rendCY==-1 ? Player.y : rendCY, true);
-	}
-	resizeTimeout=null;		
-	
-	// Center centered windows
-	for (var i=0; i<gameWindows.length; i++) {
-		if (gameWindows[i].centered) {
-			gameWindows[i].center();
-		}
-	}
+
+	var w = Math.floor((UI.visibleWidth)/32);
+	var h = Math.floor((UI.visibleHeight)/32);
+	var rendW = ((w%2==1)?w:w+1)+2;
+	var rendH = ((h%2==1)?h:h+1)+2;
 }
 function blank2dArray(i) {
-	var w = (i==undefined) ? Terrain.CHUNK_WIDTH : i;
+	var w = i;
 	var arr = [];
 	for (var i=0; i<w; i++) {
 		arr[i] = [];
@@ -170,34 +145,14 @@ function blank2dArray(i) {
 function distance(startX, startY, endX, endY) {
 	return Math.sqrt(Math.pow(startX-endX, 2)+Math.pow(startY-endY, 2));
 }
-/**
- * Calculates the distance from a point to a line (i.e. the length of the normal
- * to line from that point).
- * 
- * @param {number} xStart Coordinates of a line
- * @param {number} yStart
- * @param {number} xEnd
- * @param {number} yEnd
- * @param {number} xPoint Coordinates of a point
- * @param {number} yPoint
- * @return
- */
-function distanceToLine(xStart, yStart, xEnd, yEnd, xPoint, yPoint) {
-	return Math.abs(((yStart-yEnd)*xPoint+(xEnd-xStart)*yPoint+(xStart
-			*yEnd-yStart*xEnd))
-			/Math.sqrt(Math.abs((xEnd-xStart)
-					*(xEnd-xStart)+(yEnd-yStart)
-					*(yEnd-yStart))));
-}
-function getNum(x, y) {
-	return parseInt(y)*Terrain.width+parseInt(x);
-}
-function getX(num) {
-	return num%Terrain.width;
-}
-function getY(num) {
-	return (num-num%Terrain.width)/Terrain.width;
-}
+function isNear(startX, startY, endX, endY) {
+	var ableX = Math.abs(startX-endX);
+	var ableY = Math.abs(startY-endY);
+	if ((ableX==1 && ableY==0) || (ableY==1 && ableX==0) || (ableY==1 && ableX==1)) {
+		return true;
+	}
+	return false;
+};
 function startTimer() {
 	clearConsole();
 	timerStart=new Date();
@@ -292,54 +247,6 @@ function getNumFromSeed(a,b,max) {
 	// Получить число от нуля до max из двух заданых чисел и константы SEED
 	return Math.round(Math.abs(Math.sin(Math.pow(Math.abs(a%20+0.2),Math.abs(b%20+0.2))+Math.cos(a))*max))%max;
 }
-function isInRendRange(x,y) {
-	if (
-		x>=rendCX-(rendW-1)/2 && x<=rendCX+(rendW-1)/2 
-		&& x>=0 && x<Terrain.width
-		&& y>=rendCY-(rendH-1)/2 && y<=rendCY+(rendH-1)/2 
-		&& y>=0 && y<Terrain.height
-	) {
-		return true;
-	}
-	return false;
-}
-function isInPrevRendRange(x,y) {
-	if (prevRendCX==-1) {
-		return false;
-	}
-	if (
-		x>=prevRendCX-(rendW-1)/2 && x<=prevRendCX+(rendW-1)/2 
-		&& x>=0 && x<Terrain.width
-		&& y>=prevRendCY-(rendH-1)/2 && y<=prevRendCY+(rendH-1)/2 
-		&& y>=0 && y<Terrain.height
-	) {
-		return true;
-	}
-	return false;
-	
-}
-function isInPlayerVis(x,y) {
-	if (Terrain.getCell(x,y) && Terrain.getCell(x,y).visible) {
-		return true;
-	}
-	return false;
-}
-function isInPlayerPrevVis(x,y) {
-	if (prevRendCX==-1) {
-		return false;
-	}
-	if (Player.prevVisibleCells[x][y]!=undefined) {
-		return true;
-	}
-	return false;
-}
-function getFloorNum(name) {
-	for (var i in floorNames) {
-		if (floorNames[i] == name) {
-			return i;
-		}
-	}
-}
 function preventSelection(element){
   var preventSelection = false;
 
@@ -402,15 +309,15 @@ function preventSelection(element){
   addHandler(element, 'keyup', killCtrlA);
 }
 function getOffsetRect(elem) {
-    var box=elem.getBoundingClientRect();
-    var body=document.body;
-    var docElem=document.documentElement;
-    var scrollTop=window.pageYOffset || docElem.scrollTop || body.scrollTop;
-    var scrollLeft=window.pageXOffset || docElem.scrollLeft || body.scrollLeft;
-    var clientTop=docElem.clientTop || body.clientTop || 0;
-    var clientLeft=docElem.clientLeft || body.clientLeft || 0;
-    var top=box.top+scrollTop-clientTop;
-    var left=box.left+scrollLeft-clientLeft;
+    var box = elem.getBoundingClientRect();
+    var body = document.body;
+    var docElem = document.documentElement;
+    var scrollTop = window.pageYOffset || docElem.scrollTop || body.scrollTop;
+    var scrollLeft = window.pageXOffset || docElem.scrollLeft || body.scrollLeft;
+    var clientTop = docElem.clientTop || body.clientTop || 0;
+    var clientLeft = docElem.clientLeft || body.clientLeft || 0;
+    var top = box.top+scrollTop-clientTop;
+    var left = box.left+scrollLeft-clientLeft;
     return { top: Math.round(top), left: Math.round(left) };
 }
 /**
@@ -453,4 +360,100 @@ function getSetsDifferences(set1, set2) {
 		}
 	}
 	return [inFirst, inSecond, inBoth];
+}
+var FunctionQueue;
+(function() {
+	/**
+	 * FunctionQueue is a manager that allows serial (i.e. not parallel) 
+	 * performing of asynchronous actions whose start and end points are in
+	 * different coroutines ("threads"). To put it simply, it lets you call
+	 * several functions consequentially even if one of them finishes its work
+	 * after it actually ends (for example, in setTimeout inside that function).
+	 * 
+	 * @example
+	 * // This way we can call three animation functions on an object, 
+	 * // and they would execute parallelly, at the same time
+	 * animate1.call(entity);
+	 * animate2.call(entity);
+	 * animate3.call(entity);
+	 * 
+	 * // Animations, as asynchronous functions that use setTimeout, will be
+	 * // performed at the same time in that example.
+	 * // But with FunctionQueue we can start the next function right after the
+	 * // previous one was executed
+	 * 
+	 * var q = new FunctionQueue();
+	 * // Queue three asynchronous animation functions that use setTimeouts
+	 * q.add(animate1, entity); // Animates entity for 100ms
+	 * q.add(animate2, entity); // ...and for another 50ms
+	 * q.add(animate3, entity); // ...and for 70ms more
+	 * 
+	 * @constructor
+	 */
+	FunctionQueue = function() {
+		this._functions = [];
+		this._contexts = [];
+		this._args = [];
+	};
+	/**
+	 * Adds a function to a queue. If the queue has no queued functions, queue
+	 * runs that function immediately. Else, if there is a function being 
+	 * evaluated in this queue right now, the new function will be called after
+	 * all the previously added functions have done their work.
+	 * 
+	 * @param {function} func A function to be executed when its time comes.
+	 * @param {object} [context] An object in the context of which the function 
+	 * will be executed (optional);
+	 * @return
+	 */
+	FunctionQueue.prototype.add = function(func, context, args) {
+		if (typeof func !== "function" && !(func instanceof Function)) {
+			throw new Error("The first argument must be a function or Function object, now it is "
+					+(typeof func === "object" ? func.constructor.name : typeof func));
+		}
+		if (typeof context !== "object") {
+			throw new Error("The second argument must be an object, now it is "+(typeof context));
+		}
+		if (!(args instanceof Array)) {
+			throw new Error("The third argument must be an array, now it is "+(typeof args === object ? args.constructor.name : typeof args));
+		}
+		this._functions.unshift(func);
+		this._contexts.unshift(context);
+		this._args.unshift(args);
+		if (this._functions.length === 1) {
+		// If this is the first and only function in queue — run it immediately
+			
+		}
+	};
+	/**
+	 * 
+	 * @param {function} func
+	 * @return
+	 * 
+	 * @example
+	 * var q = new FunctionQueue();
+	 * function animate1() {
+	 * 	
+	 * }
+	 * function animate2() {
+	 * 	if (
+	 * }
+	 */
+	FunctionQueue.prototype.done = function(func) {
+		if (this._functions[this._functions.length-1] != func) {
+		// If the function is not the function that is being executed in this FunctionQueue
+			throw new Error("Function", Object.create(func), "said to queue that it's done, but this function is not on the top of the queue");
+		}
+		var lastIndex = this._queue.length-1;
+		this._queue[lastIndex].apply(this._contexts[lastIndex], this._args[lastIndex]);
+		this._functions.pop();
+	};
+})();
+function extend(object, mixin) {
+	for (var i in mixin) {
+		if (object[i]) {
+			throw new Error("Object already has property "+i+"!");
+		}
+		object[i] = mixin[i];
+	}
 }

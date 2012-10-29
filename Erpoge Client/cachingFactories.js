@@ -57,7 +57,7 @@ CachingFactory.prototype.createNewValue = function createNewValue(object) {
 /**
  * Abstract method that must tell if the object is free for reusing or not.
  * 
- * @param {Object} object Value object.
+ * @param {Object} value Value object.
  * @return {Boolean}
  */
 CachingFactory.prototype.isValueFree = function isValueFree(value) {
@@ -80,7 +80,7 @@ CachingMonoFactory.prototype = new CachingFactory();
  * Returns cached value object if has any, or creates a new value object and 
  * returns it. Provided arguments must describe how to modify the value.
  * 
- * @return
+ * @return {object}
  */
 CachingMonoFactory.prototype.get = function get() {
 	for (var i=0; i<this.cache.length; i++) {
@@ -183,10 +183,12 @@ NullCachingItemViewFactory.isValueFree = function(value) {
 	return value.rootElement.parentNode === null;
 };
 /**
- * @param {String}
- *            bg Standard item background class name. See style.css, they start
- *            with div.itemBg*. E.g. for class itemBgEquipment this argument
- *            should be "Equipment".
+ * 
+ * 
+ * @param {String} background Standard item background class name. See 
+ * style.css for div.itemBg*. E.g. for class itemBgEquipment this argument
+ * should be "Equipment".
+ * @return {ItemView} A new ItemView 
  */
 NullCachingItemViewFactory.createNewValue = function createNewValue(background) {
 	return new ItemView(null);
@@ -501,5 +503,188 @@ HashMap.prototype.isEmpty = function () {
 	for (var i in this._contents) {
 		return false;
 	}
+	return true;
+};
+
+/**
+ * Matrix is a 2-dimensional map, each element of which has two indexes ("x" 
+ * and "y"). The advantage over a simple Array of Arrays is that Matrix has 
+ * smarter automatic memory management and is generally easier to use.
+ * 
+ * @constructor
+ */
+function Matrix() {
+	this._c = {};
+}
+/**
+ * Put an element to Matrix under two indexes.
+ * @param {number} x
+ * @param {number} y
+ * @param {Object} object
+ * @return {Object} The object we've just put to the Matrix.
+ */
+Matrix.prototype.put = function(x,y,object) {
+	if (this._c[x] === undefined) {
+		this._c[x] = {};
+	}
+	this._c[x][y] = object;
+};
+/**
+ * @param {number} x
+ * @param {number} y
+ * @return {Object} An object at these indexes.
+ */
+Matrix.prototype.get = function(x,y) {
+	if (this._c[x] === undefined) {
+		return null;
+	}
+	if (this._c[x][y] === undefined) {
+		return null;
+	}
+	return this._c[x][y];
+};
+Matrix.prototype.getValues = function() {
+	var answer = [];
+	for (var i in this._c) {
+		for (var j in this._c[i]) {
+			answer.push(this._c[i][j]);
+		}
+	}
+	return answer;
+};
+
+function Tree(object) {
+	this._contents = object || {};
+}
+/**
+ * 
+ * The last argumant is value, all the arguments before are indexes. For 
+ * example, 
+ * @example
+ * var t = new Tree({
+ * 	1:"a",
+ *  2: {
+ *    1: "b",
+ *    2: "c"
+ *  }
+ * });
+ * t.set(2, 3, "d");
+ * console.log(t.show());
+ * // This outputs the following to console: 
+ * {
+ * 	1:"a",
+ *  2: {
+ *    1: "b",
+ *    2: "c",
+ *    3: "d"
+ *  }
+ * }
+ * 
+ * @returns {Boolean}
+ */
+Tree.prototype.set = function() {
+	var lvl = this._contents;
+	var i=0;
+	var undef = false;
+	// In the loop we iterate through elements of tree from [0] to [length-2]
+	for (var l=arguments.length; i<l-2; i++) {
+		if (lvl[arguments[i]] === undefined) {
+			undef = true; 
+			lvl[arguments[i]] = {};
+		} else {
+			lvl = lvl[arguments[i]];
+		}
+	}
+	lvl[arguments[i]] = arguments[i+1];
+};
+Tree.prototype.get = function() {
+	var lvl = this._contents;
+	for (var i=0, l=arguments.length; i<l; i++) {
+		lvl = lvl[arguments[i]];
+	}
+	return lvl;
+};
+Tree.prototype.show = function() {
+	return this._contents;
+};
+/**
+ * @constructor
+ * Map2D is used to store any data by associating it with two indexes: "x
+ * coordinate" and "y coordinate". Unlike simple 2-dimensional arrays,
+ * this data structure allows not only integer indexes greater or equal to zero,
+ * but also negative integers. This data structure is handy for storing data
+ * associated with cells on game field.
+ * 
+ * @example
+ * var m = new Map2D();
+ * m.set(-1, 2, "hello");
+ * m.get(-1, 2); // Returns "hello"
+ * m.set(3.14, "12", "hey!"); // Throws an error (indexes must be integers)
+ */
+function Map2D() {
+	this._contents = {};
+}
+/**
+ * Associates a value with a couple of indexes.
+ * 
+ * @param {number} x First index
+ * @param {number} y Second index
+ * @param {mixed} value
+ *
+ */
+Map2D.prototype.set = function(x, y, value) {
+	if (typeof x !== "number" || Math.floor(x) !== x) {
+		throw new TypeEror("First argument must be an integer, but it is "+x)
+	}
+	if (typeof y !== "number" || Math.floor(y) !== y) {
+		throw new TypeEror("Second argument must be an integer, but it is "+y)
+	}
+	if (this._contents[x] === undefined) {
+		this._contents[x] = {};
+	}
+	if (value === null) {
+		delete this._contents[x][y];
+	} else {
+		this._contents[x][y] = value;
+	}
+};
+/**
+ * Returns a value stored under two indexes. If there is no value stored
+ * under these indexes, returns null
+ * @param {number} x First index
+ * @param {number} y Second index
+ * @returns {mixed|null}
+ */
+Map2D.prototype.get = function(x, y) {
+	if (typeof x !== "number" || Math.floor(x) !== x) {
+		throw new Error("First argument must be an integer, but it is "+x)
+	}
+	if (typeof y !== "number" || Math.floor(y) !== y) {
+		throw new TypeEror("Second argument must be an integer, but it is "+y)
+	}
+	if (this._contents[x] === undefined || this._contents[x][y] === undefined) {
+		return null;
+	}
+	return this._contents[x][y];
+};
+/**
+ * Removes an object under certain index. If there is no object under such 
+ * index, returns false (this is considered correct and throws no
+ * exception)
+ * 
+ * @param {number} x Index 1
+ * @param {number} y Index 2
+ * 
+ * @returns {boolean} false if there is no object under such indexes,
+ * 		true is object is successfully removed
+ */
+Map2D.prototype.remove = function(x, y) {
+	if (!(x in this._contents)) {
+		return false;
+	}
+	if (!(y in this._contents[x])) {
+		return false;
+	}
+	delete this._contents[x][y];
 	return true;
 };

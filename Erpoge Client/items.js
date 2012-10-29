@@ -170,7 +170,8 @@ ItemSet.prototype.removeUnique = function(itemId) {
  * have as many items as you want to take away, then method throws an Error.
  * 
  * @see ItemPile
- * @param {Number} itemId
+ * @param {number} typeId
+ * @param {number} amount
  * @throws {Error} If ItemSet has no {@link UniqueItem} with such itemId, or
  * if argument amount is bigger than ItemPile.amount.
  */
@@ -219,7 +220,8 @@ ItemSet.prototype.getPile = function(typeId) {
  * 
  * @see ItemSet#getUnique
  * @see ItemSet#getPile
- * @param typeId
+ * @param {number} typeId
+ * @param {number} param
  * @return {mixed} Returns UnqiueItem/ItemPile, or returns null if there's no 
  * UniqueItem with such itemId or ItemPile with such typeId.
  */
@@ -316,6 +318,7 @@ Equipment.prototype.putOnToSlot = function(slot, item) {
 };
 /**
  * Returns an {@link UniqueItem} object of item in particular slot.
+ * @param {number} slot Id of a slot
  * @return {UniqueItem}
  */
 Equipment.prototype.getItemInSlot = function(slot) {
@@ -339,7 +342,7 @@ Equipment.prototype.getItemById = function(itemId) {
 /**
  * Removes particular item from the slot it is. If Equipment doesn't have this
  * item, throws an Error.
- * 
+ * @param {UniqueItem|ItemPile} item
  * @throw {Error}
  */
 Equipment.prototype.takeOffItem = function(item) {
@@ -354,6 +357,7 @@ Equipment.prototype.takeOffItem = function(item) {
 /**
  * Checks if Equipment has any item in particular slot.
  * 
+ * @param {number} slot Id of slot
  * @return {Boolean} True if Equipment has an item, false otherwise.
  */
 Equipment.prototype.hasItemInSlot = function (slot) {
@@ -392,6 +396,8 @@ Equipment.prototype.NUMBER_OF_SLOTS = 10;
  * may have different properties (e.g. blessings), unlike {@link ItemPile}s.
  * 
  * @see ItemPile
+ * @param {number} typeId
+ * @param {number} itemId
  * @constructor
  */
 function UniqueItem(typeId, itemId) {
@@ -419,6 +425,7 @@ UniqueItem.prototype.isMelee = function () {
 /**
  * Checks if this UniqueItem is a ranged weapon or not.
  * 
+ * @param {number} typeId
  * @return {Boolean}
  */
 UniqueItem.prototype.isRanged = function(typeId) {

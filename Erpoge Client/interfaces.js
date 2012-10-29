@@ -15,7 +15,7 @@ var Interface = {
 };
 Interface.objectImplements = function(object, interfaceName) {
 	if (typeof object !== "object") {
-		throw new Error(object+" is not an object");
+		throw new Error("Checking interface "+interfaceName+": "+object+" is not an object");
 	}
 	if (Interface[interfaceName] === undefined) {
 		throw new Error(interfaceName+" is not a correct interface");

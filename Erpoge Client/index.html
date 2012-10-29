@@ -13,20 +13,21 @@
 <script type="text/javascript" src="./items.js"></script>
 <script type="text/javascript" src="./variables.js"></script>
 <script type="text/javascript" src="./environmentProperties.js"></script>
-<script type="text/javascript" src="./serverAnswers.js"></script>
+<script type="text/javascript" src="./canvas.js"></script>
+<script type="text/javascript" src="./model.js"></script>
 <script type="text/javascript" src="./keysCore.js"></script>
 <script type="text/javascript" src="./handlers.js"></script>
 <script type="text/javascript" src="./net.js"></script>
+<script type="text/javascript" src="./serverAnswers.js"></script>
 <script type="text/javascript" src="./system.js"></script>
-<script type="text/javascript" src="./gui.js"></script>
 <script type="text/javascript" src="./game.js"></script>
+<script type="text/javascript" src="./gui.js"></script>
 <script type="text/javascript" src="./objects.js"></script>
 <script type="text/javascript" src="./spells.js"></script>
 <script type="text/javascript" src="./characters.js"></script>
 <script type="text/javascript" src="./graphicEffects.js"></script>
 <script type="text/javascript" src="./effects.js"></script>
 <script type="text/javascript" src="./character.js"></script>
-<script type="text/javascript" src="./canvas.js"></script>
 <script type="text/javascript" src="./storage.js"></script>
 <script type="text/javascript" src="./uiElementTypes.js"></script>
 <script type="text/javascript" src="./ui.js"></script>
@@ -35,66 +36,19 @@
 <script type="text/javascript" src="./actionMessages.js"></script>
 <script type="text/javascript" src="./benchmarking.js"></script>
 <script type="text/javascript" src="./markupMaker.js"></script>
+<script type="text/javascript" src="./modules.js"></script>
+<script type="text/javascript" src="./modules/modules.js"></script>
 </head>
 <body>
-<div id="stLoad"><!-- Меню загрузки уровня --> Загрузка</div>
-
-<!--  <div id="stScrMenu" class="stWindow">
-<table id="stScrMenuTable" class='stTable'>
-	<tr>
-		<td>
-		<div id="stLogo">Ten Thousand Journeys</div>
-		<div>Выбрать сервер</div>
-		<form name="stChooseServerForm" id="stChooseServerForm" class="stForm"
-			onSubmit='return false;' autocomplete='off'><input type="text"
-			id="stChooseServer" /><br />
-		<input type="submit" value="Выбрать" id="stServerSubmit"
-			class="stSubmit" /></form>
-		</td>
-	</tr>
-	<tr>
-		<td class="stFooter">
-		<div class='stGoToSettingsScreen'>Настройки</div>
-		<div class='stGoToConnectionScreen'>Подключение</div>
-		</td>
-	</tr>
-</table>
-</div> 
--->
-
 <div id="intfWindowWrap"><!-- Основное окно -->
 	<div id="intfLeftSide"><!-- #intfTable -->
 		<div id="intfGameZone">
 			<div id="gameField">
-				
+			</div>
+				<div id="gameFieldElementsContainer">
 			</div>
 		</div>
-		
 	</div>
 </div>
-<div id="clone"><!-- Элементы для клонирования -->
-<div class="wrap"></div>
-<div class="cellWrap"></div>
-<div class="cellHp"></div>
-<div class="cellMp"></div>
-<div class="invNumContainer"></div>
-<div class="effect"></div>
-<div class="containerItem"></div>
-<div class="stPlayersPlayer"></div>
-<div class="stNewPlayerLearnedSkill"></div>
-<div class="stNewPlayerClass"></div>
-<img class="invImg" /> <img class="object" src="" /> <img
-	class="spell" /> <img class="item" /> <img class="loot" />
-<div class="onlinePlayer"></div>
-<!-- Для таблицы -->
-<table>
-	<tr>
-		<td></td>
-	</tr>
-</table>
-<!-- Меню клетки (GUI) --></div>
-<div id="itemInfo"></div>
-<div id="cellInfo"></div>
-<!-- -->
 </body>
 </html>

@@ -71,10 +71,10 @@ public class TimeStream {
 		if (iterations>-1) {
 			for (;i<iterations;i++) {
 				ServerEvent event = events.get(i);
-				data += MainHandler.gsonIncludesStatic.toJson(event,event.getClass())+",\n";
+				data += MainHandler.gsonIncludesStatic.toJson(event, event.getClass())+",\n";
 			}
 			ServerEvent event = events.get(i);
-			data += MainHandler.gsonIncludesStatic.toJson(event,event.getClass());
+			data += MainHandler.gsonIncludesStatic.toJson(event, event.getClass());
 		}
 		data += "]";
 		// Send data to all players

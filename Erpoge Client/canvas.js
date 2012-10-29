@@ -1,10 +1,11 @@
 ﻿var imageNames = [[]];
-for (var i in NUM_OF_TILES) {
-	var floorNum = getFloorNum(i);
-	tiles[floorNum] = [];
-	for ( var j = 0; j<NUM_OF_TILES[i]; j++) {
-		tiles[floorNum][j] = new Image();
-		tiles[floorNum][j].src = "./images/terrain/"+i+"_"+j+".png";
+var floors = StaticData.getRawClass("floors");
+for (var i in floors) {
+	tiles[i] = [];
+	var numOfTiles = floors[i].num
+	for (var j = 0; j<numOfTiles; j++) {
+		tiles[i][j] = new Image();
+		tiles[i][j].src = "./images/terrain/"+floors[i].name+"_"+j+".png";
 	}
 }
 var imageNums = [2, 34, 58, 59, 60, 61, 600, 601,
@@ -36,7 +37,6 @@ function saveParticlesImageData() {
 				preloadParticles(num+1);
 			}
 		};
-		
 		image.src = "./images/effects/" + particleTypes[num] + ".png";
 	})();
 }
@@ -49,7 +49,7 @@ function cacheImages() {
 function preloadImage(num, folder) {
 	images[num] = new Image();
 	images[num].imgNum = num;
-	images[num].src = folder + "" + num + ".png";
+	images[num].src = "./"+folder + "" + num + ".png";
 }
 function setPixel(imageData, x, y, color) {
 	// Установить цвет пикселя в ImageData
@@ -102,6 +102,7 @@ CanvasRenderingContext2D.prototype.getTransition = function(tileType,
 		y = 0;
 	}
 	var imageData = this.getImageData(x, y, 32, 32);
+
 	
 	// Получаем данные об изображении, к которому переходим
 	var tileImageCtx = document.createElement("canvas").getContext("2d");
@@ -196,76 +197,10 @@ function getTileSetOnCanvas() {
 		}
 	}
 }
-function Doll(character) {
-	// Кукла персонажа
-	// Использует глобальные переменные: charDollImages,
-	// Аргумент character - объект персонажа, которому принадлежит эта кукла
-	this.character = character;
-	this.DOMNode = document.createElement("canvas");
-	this.DOMNode.width = 32;
-	this.DOMNode.height = 32;
-	this.ctx = this.DOMNode.getContext("2d");
-	this.hands = [[6, 14]];
-	this.drawn = false; // Кукла уже была отрисована как минимум один раз
-	this.items = {
-		weapon : 50
-	};	
-}
-/**
- * @private
- * Draw body of character's race.
- */
-Doll.prototype.drawBody = function() {
-	this.ctx.drawImage(images[(this.character) ? 58 + this.character.race : 58], 0, 0);
-};
-/**
- * @private
- * Draw piece of equimpent on character.
- * @param {Number} typeId Item typeId
- */
-Doll.prototype.drawEquipment = function(typeId) {
-	this.ctx.drawImage(images[typeId], 0, 0);
-};
-/**
- * Redraws the doll: its body and equipment worn.
- */
-Doll.prototype.draw = function() {
-	this.ctx.clearRect(0, 0, 32, 32);
-	this.drawBody();
-	if (
-		this.character && this.character.equipment &&
-		this.character.equipment.getItemInSlot(6)
-	) {
-		this.drawEquipment(this.character.equipment.getItemInSlot(6).typeId);
-	}
-	if (!Terrain.onGlobalMap || this.character.characterId == Player.characterId) {
-		for (var i=0; i < Equipment.prototype.NUMBER_OF_SLOTS; i++) {
-			if (!this.character.equipment.hasItemInSlot(i)) {
-				continue;
-			}
-			if (!images[this.character.equipment.getItemInSlot(i).typeId]) {
-				continue;
-			}
-			if (i == 6) {
-				continue;
-			}
-			if (
-				this.character && this.character.equipment &&
-				this.character.equipment.getItemInSlot(i)
-			) {
-				this.drawEquipment(this.character.equipment.getItemInSlot(i).typeId);
-			}
-		}
-	} else if (Terrain.onGlobalMap && !this.character.characterId == Player.characterId) {
-		this.drawEquipment(342);
-		this.drawEquipment(344);
-	}
-	
-	this.drawn = true;
-};
 function Minimap(elem) {
-	this.w = Terrain.width;
-	this.h = Terrain.height;
+	throw new Error("Not reimplemented");
+	this.w = FUCK;
+	this.h = FUCK;
 	this.scale = 2; // Размер клетки на карте в пикселях
 	this.ctx;
 	this.elem = elem;
@@ -274,8 +209,8 @@ function Minimap(elem) {
 }
 Minimap.prototype.init = function() {
 	this.elem = this.elem ? this.elem : document.createElement("canvas");
-	this.elem.width = Terrain.getHorizontalDimension() * this.scale;
-	this.elem.height = Terrain.getVerticalDimension() * this.scale;
+	this.elem.width = GameField.getHorizontalDimension() * this.scale;
+	this.elem.height = GameField.getVerticalDimension() * this.scale;
 	this.ctx = this.elem.getContext("2d");
 	// this.elem.style.position="absolute";
 	// this.elem.style.top="200px";
@@ -284,8 +219,8 @@ Minimap.prototype.init = function() {
 	// document.body.appendChild(this.elem);
 
 	this.cells = blank2dArray();
-	for ( var x = 0; x < this.w; x++) {
-		for ( var y = 0; y < this.h; y++) {
+	for (var x = 0; x < this.w; x++) {
+		for (var y = 0; y < this.h; y++) {
 			this.cells[x][y] = 0;
 		}
 	}
@@ -355,7 +290,7 @@ Minimap.prototype.drawCell = function(x, y, fillStyle) {
 		return;
 	}
 	this.ctx.fillStyle = this.fillStyles[fillStyle];
-	var viewIndent = Terrain.getViewIndentation(x, y, this.scale);
+	var viewIndent = GameField.getViewIndentation(x, y, this.scale);
 	this.ctx.fillRect(viewIndent.left, viewIndent.top, this.scale, this.scale);
 };
 Minimap.prototype.fillStyles = {

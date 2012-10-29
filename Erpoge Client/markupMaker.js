@@ -35,7 +35,7 @@ MarkupMaker.prototype.text = function(text) {
 /**
  * Change style of the last element.
  * 
- * @params {Object} params - object, where keys are property names in JavaScript style 
+ * @param {Object} params - object, where keys are property names in JavaScript style 
  * (borderColor instead of border-color etc) and values are values of 
  * style properties, for example:
  * {color: "#fde", textAlign: "center"}

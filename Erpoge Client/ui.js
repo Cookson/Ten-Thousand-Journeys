@@ -201,9 +201,23 @@ var UI = {
 	 */
 	leftPanel : null,
 	registeredActions : {},
+	
+	/** @private @type HTMLDivElement */
+	_gameFieldElementsContainer: document.createElement("div"),
 	/** @private @type Function */
 	_gameFieldClickHandler: null,
-	_gameFieldClickContext: null
+	_gameFieldClickContext: null,
+	
+	/**
+	 * @public
+	 * @type {number}
+	 */
+	visibleWidth: 0,
+	/**
+	 * @public
+	 * @type {number}
+	 */
+	visibleHeight: 0
 };
 /**
  * Fires an event and notifies all the elements which listen to that event,
@@ -263,9 +277,9 @@ UI.enterGlobalMapMode = function() {
  * @see UIElement#permanentlyHidden
  */
 UI.showAlwaysShownElements = function() {
-	for ( var i in this.uiElements) {
+	for (var i in this.uiElements) {
 		var uiElement = this.uiElements[i];
-		if (uiElement.displayMode==UI.ALWAYS&& !uiElement.permanentlyHidden) {
+		if (uiElement.displayMode == UI.ALWAYS && !uiElement.permanentlyHidden) {
 			this.uiElements[i].show();
 		}
 	}
@@ -321,16 +335,16 @@ UI.disable = function() {
 UI.enable = function() {
 	// Show all UI elements that are not permanently hidden.
 	// Use this to restore UI after using UI.disable()
-	if ( !this.disabled) {
+	if (!this.disabled) {
 		throw new Error("UI is already enabled!");
 	}
 	this.disabled = false;
-	for ( var i = 0; i<this.uiElements.length; i++ ) {
-		if (this.uiElements[i].permanentlyHidden
-				||this.uiElements[i].displayMode==UI.ON_GLOBAL_MAP
-				&& !Terrain.onGlobalMap
-				||this.uiElements[i].displayMode==UI.IN_LOCATION
-				&&Terrain.onGlobalMap) {
+	for (var i=0; i<this.uiElements.length; i++) {
+		if (
+			this.uiElements[i].permanentlyHidden
+			|| this.uiElements[i].displayMode==UI.ON_GLOBAL_MAP
+			|| this.uiElements[i].displayMode==UI.IN_LOCATION
+		) {
 			continue;
 		}
 		this.uiElements[i].show();
@@ -411,7 +425,6 @@ UI.gameFieldClick = function(x,y,e) {
  *            not be omitted.
  */
 UI.addElement = function _(properties) {
-	
 	var uiElement = new UIElement(properties.type);
 	if (properties.panel) {
 		// Nothing else is needed for UIElements on panel
@@ -717,12 +730,20 @@ UI.registerAction = function _(name, context, handler) {
 		throw new Error("Another action under name "+name
 				+" is already registred");
 	}
-	if (context===undefined) {
+	if (context === undefined) {
 		context = window;
 	}
 	UI.registeredActions[name] = new UIAction(handler, context);
 };
-
+UI.addGameFieldElement = function(type, x, y, params) {
+	new UIGameFieldElement(type, x, y, params);
+};
+UI.showLoadingScreen = function() {
+	
+};
+UI.hideLoadingScreen = function() {
+	
+};
 /**
  * Creates a structure of dome nodes that represents an item image with
  * particular background. This class is used by ItemViewFactory
@@ -835,6 +856,17 @@ ItemView.prototype.equals = function(object) {
 	return this.item.hashCode() == object.hashCode();
 };
 
+function UIGameFieldElement(type, x, y, params) {
+	this.rootElement = document.createElement("div");
+	UIGameFieldElementTypes[type].apply(this, params);
+	UI._gameFieldElementsContainer.appendChild(this.rootElement);
+	this.rootElement.style.position = "absolute";
+	this.rootElement.style.top = y*32+"px";
+	this.rootElement.style.left = x*32+"px";
+};
+UIGameFieldElement.prototype.remove = function() {
+	UI._gameFieldElementsContainer.removeChild(this.rootElement);
+};
 /**
  * Class that represents a single element of user interface.
  * 
@@ -1180,11 +1212,13 @@ onLoadEvents['uiWindowPrototype'] = function _() {
 			border : "2px solid #888"
 		});
 	};
-	UIPanel.prototype = new UIElement( -1);
+	UIPanel.prototype = new UIElement(-1);
 	UIPanel.prototype.addUIElement = function(uiElement) {
 		this.rootElement.appendChild(uiElement.rootElement);
 	};
 
+	UIGameFieldElement.prototype = new UIElement(-1);
+	
 	ItemView.prototype._itemViewImgProto.addClass("itemImg");
 	ItemView.prototype._itemViewWrapProto.addClass("iconWrap");
 	ItemView.prototype._itemViewNumProto.addClass("itemAmount");

@@ -1,10 +1,4 @@
-﻿onLoadEvents['ajax'] = function _() {
-	// Обработчики событий ajax
-	serverAddress = localStorage.getItem("serverAddress");
-	Net.readStorageToServers();
-	Net.init();
-};
-Net = {
+﻿Net = {
 	SERVER_INFO				: 0,
 	ATTACK					: 1,
 	MOVE					: 2,
@@ -55,11 +49,9 @@ Net = {
 //		console["log"]("send", data);
 	},
 	init : function _() {
-		
 		this.websocket = window.MozWebSocket ? new MozWebSocket(this.serverAddress) : new WebSocket(this.serverAddress);
 		this.websocket.onopen = function() {
 //			document.getElementById("stChooseServerForm").onsubmit = handlers.stChooseServerForm.submit;
-			
 			Net.send({a:Net.SERVER_INFO});
 			if (!localStorage.getItem(101)) {
 				// Автовыбор сервера из URL
@@ -84,13 +76,16 @@ Net = {
 			} else {
 				showStChooseServer();
 			}
+			Events.fire("connectionEstablished");
 		};
 		this.websocket.onclose = function() {
 			console["log"]("Socket closed");
+			Events.fire("connectionAborted");
 		};
 		this.websocket.onmessage = function(data) {
 			try {
 				var parsedData = JSON.parse(data.data);
+				// console.log(parsedData);
 			} catch(e) {
 				console["log"]("Incorrect json output from server: ",data.data);
 				return;
@@ -99,10 +94,10 @@ Net = {
 			// Non-synchronized data recieving
 				serverAnswer = parsedData;
 				serverAnswerIterator = 0;
-				handleNextEvent();
+				Net.handleNextEvent();
 			} else if (Net.onmessage) {
 			// Synchronized data recieving
-				Net.onmessage(parsedData);
+				this.onmessage(parsedData);
 			}
 		};
 	},
