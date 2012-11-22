@@ -4,92 +4,82 @@ import java.util.HashMap;
 
 import erpoge.core.Character;
 import erpoge.core.itemtypes.Attribute;
+import erpoge.core.Material;
+import erpoge.core.JsonSerializable;
+import java.util.HashSet;
+import erpoge.core.Aspect;
+import erpoge.core.AspectName;
+import java.util.List;
+import java.util.ArrayList;
 
-public abstract class ItemType extends ItemSystemMetaInfo {
-	protected String name;
-	protected final int cls;
-	protected final int price;
-	protected final int weight;
-	protected final int material;
-	protected int id;
-	protected boolean unique;
-	protected HashMap<Attribute, Integer> specialAttributes = new HashMap<Attribute, Integer>();
-
-	public ItemType(String name, int cls, int weight, int price, int material) {
+public class ItemType extends ItemSystemMetaInfo implements JsonSerializable {
+	private static int lastId = 0; // Used to assign `id`s to `ItemType`s
+	private final int id;
+	private final String name;
+	private final double weight;
+	private final double volume;
+	private final Material material;
+	private final boolean stackable;
+	private HashSet<Aspect> aspects;
+	public ItemType(String name, HashSet<Aspect> aspects, double weight, double volume, Material material, boolean stackable) {
+		this.id = ++lastId;
 		this.name = name;
-		this.cls = cls;
 		this.weight = weight;
-		this.price = price;
+		this.volume = volume;
 		this.material = material;
+		this.aspects = aspects;
+		this.stackable = stackable;
 	}
-	public int getSlot() {
-		if (cls <= CLASS_LAST_WEAPON_CLASS_NUMBER && cls >= CLASS_SWORD) {
-			return SLOT_RIGHT_HAND;
-		} else if (cls == CLASS_SHIELD) {
-			return SLOT_LEFT_HAND;
-		} else if (cls == CLASS_BODY) {
-			return SLOT_BODY;
-		} else if (cls == CLASS_GLOVES) {
-			return SLOT_GLOVES;
-		} else if (cls == CLASS_BOOTS) {
-			return SLOT_BOOTS;
-		} else if (cls == CLASS_CLOAK) {
-			return SLOT_CLOAK;
-		} else if (cls == CLASS_RING) {
-			return SLOT_RING;
-		} else if (cls == CLASS_AMULET) {
-			return SLOT_AMULET;
-		}  else if (cls == CLASS_HEADGEAR) {
-			return SLOT_HEADGEAR;
-		} else {
-			throw new Error("Unknown slot");
+	public boolean hasAspect(AspectName aspect) {
+		for (Aspect a : aspects) {
+			if (a.getName() == aspect) {
+				return true;
+			}
 		}
+		return false;
 	}
-	public boolean isArmor() {
-		return cls >= 11 && cls <= 21;
+	public Aspect getAspect(AspectName aspect) {
+		for (Aspect a : aspects) {
+			if (a.getName() == aspect) {
+				return a;
+			}
+		}
+		return null;
 	}
-
 	public boolean isWeapon() {
-		return cls >= 0 && cls <= 10;
+		return true;
 	}
-
-	public static boolean isArmor(int c) {
-		return c >= 11 && c <= 21;
-	}
-	public void addSpecialAttribute(Attribute attribute, int value) {
-	/**
-	 * Add additional custom attribute bonus
-	 */
-		specialAttributes.put(attribute, value);
-	}
-	public static boolean isWeapon(int c) {
-		return c >= 0 && c <= 10;
-	}
-	public boolean isRanged() {
-		return cls == CLASS_BOW;
-	}
-	public void setId(int iid) {
-		id = iid;
-	}
-	public abstract String jsonPartTypology();
-
-	public int getTypeId() {
-		// TODO Auto-generated method stub
+	public int getId() {
 		return id;
 	}
-
-	public int getCls() {
-		// TODO Auto-generated method stub
-		return cls;
-	}
-
 	public String getName() {
 		// TODO Auto-generated method stub
 		return name;
 	}
-	public boolean isUnique() {
-		return unique;
+	public boolean isStackable() {
+		return stackable;
 	}
-	public abstract void addBonuses(Character character);
-	public abstract void removeBonuses(Character character);
+	public String toString() {
+		String nString = "Item "+name+" with id "+id+"\n"
+			+"weight: "+weight+", volume: "+volume+", material: "+material+", "
+			+(stackable ? "stackable" : "non-stackabe")+(aspects.size() > 0 ? "\n" : "");
+		for (Aspect aspect : aspects) {
+			nString += aspect;
+		}
+		return nString+"\n";
+	}
+	public List getDataForJson() {
+		List forJson = new ArrayList();
+		forJson.add(name);
+		List aspectsForJson = new ArrayList();
+		for (Aspect aspect : aspects) {
+			aspectsForJson.add(aspect.getDataForJson());
+		}
+		forJson.add(aspectsForJson);
+		forJson.add(weight);
+		forJson.add(volume);
+		forJson.add(material.getId());
+		forJson.add(stackable);
+		return forJson;
+	}
 }

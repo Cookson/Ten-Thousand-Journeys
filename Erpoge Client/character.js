@@ -1,29 +1,4 @@
-﻿function Character(id, type, x, y, fraction, hp, maxHp) {
-	this.visible;
-
-	this.cellWrap = document.createElement("div");
-
-	var viewIndent = GameField.getViewIndentation(playerData.x, playerData.y, 32);
-	this.cellWrap.style.top = viewIndent.top+"px";
-	this.cellWrap.style.left = viewIndent.left+"px";
-	this.cellWrap.style.opacity = "0";
-	this.cellWrap.style.zIndex = (100000+playerData.y)*2+1;
-
-
-	// Spell
-	this.spellId = -1;
-	this.spellAimId = -1;
-	this.spellX = -1;
-	this.spellY = -1;
-}
-/* View */
-/* Calculations */
-/* Checks */
-/* Animations */
-// Methods that show actions of characters and/or change their internal states
-/* Internal state changing */
-
-(function() {
+﻿(function() {
 	var instance
 	/**
 	 * @singleton
@@ -39,8 +14,6 @@
 	var pathTableGot = false; // Tells if pathTable was already built on current turn
 	Events.addListener("nextTurn", this, function() {
 		pathTableGot = false;
-		console.timeEnd("turn");
-		console.time("turn");
 	});
 	function ClientPlayer() {
 		if (typeof instance !== "undefined") {
@@ -925,10 +898,6 @@
 		};
 		this.actions = ["push", "changePlaces", "makeSound", "shieldBash", "jump"];
 		this.states = ["default", "run", "sneak", "sleep", "aim"];
-		this.putOn = function _(itemId) {
-			Character.prototype.putOn.apply(this, [itemId]);
-			this.items.removeUnique(itemId);
-		};
 		this.takeOff = function _(itemId) {
 			this.items.add(this.equipment.getItemById(itemId));
 			Character.prototype.takeOff.apply(this, [itemId]);
@@ -947,34 +916,6 @@
 				}
 			}, this);
 		};
-		/* Setters */
-		this.loseItem = function (typeId, param) {
-			var item = this.items.getItem(typeId, param);
-			Character.prototype.loseItem.apply(this, arguments);
-			UI.notify("inventoryChange");
-			if (this.selectedMissile == item && !this.items.hasItem(item)) {
-				performAction("selectMissile", [null]);
-				this.autoSetMissileType();
-			}
-		};
-		/* Interface methods */
-		//ClientPlayer.prototype.selectMissile = function _() {
-		//	// Enter missile mode
-		//	if (this.equipment.getItemInSlot(0)
-		//			&&this.equipment.getItemInSlot(0).isRanged()) {
-		//		var aimcharacter;
-		//		if (aimcharacter = this.findEnemy()) {
-		//			CellCursor.move(aimcharacter.x, aimcharacter.y);
-		//		} else {
-		//			CellCursor.move(playerData.x, playerData.y);
-		//		}
-		//
-		//		UI.notify("missileSelect");
-		//
-		//	} else {
-		//		UI.notify("alert", "Игрок не держит в руках оружия дальнего боя!");
-		//	}
-		//};
 		this.addActionToQueue = function _(actionName, params) {
 			if (!(params instanceof Array)) {
 				if (typeof params === "undefined") {
@@ -1057,7 +998,7 @@
 							seenThings.s.o.push({x:x, y:y, o: c.o}); // Add object to list of seen
 						}
 						if (typeof c.character !== "undefined") {
-							seenThings.s.c.push({x:x, y:y, c: c.character}); // Add character to list of seen
+							seenThings.s.c.push({x:x, y:y, c:c.character}); // Add character to list of seen
 						}
 					}
 					if (

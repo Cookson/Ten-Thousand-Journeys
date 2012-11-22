@@ -34,7 +34,6 @@ window.onload = function _() {
 	document.getElementById("intfWindowWrap").style.height = localStorage.getItem(4)+"px";
 	(function() {
 		var /** @type {GameFrame} */ instance;
-		var gameField;
 		/**
 		 * Represents the viewport (the rectangle-shaped "window", or "camera")
 		 * through which player looks at the world. Not to be mixed up with
@@ -54,26 +53,7 @@ window.onload = function _() {
 				return instance;
 			}
 			instance = this;
-			/** 
-			 * @type HTMLDivElement
-			 */
 			
-			this.showSound = function(x, y, type) {
-				var wrap = document.createElement("div");
-				var text = document.createElement("div");
-				wrap.className = "wrap";
-				text.className = "speechBubbleText";
-				text.innerText = soundTypes[type].name;
-				wrap.style.zIndex = 9000;
-				wrap.appendChild(text);
-				gameField.appendChild(wrap);
-				wrap.style.top = (32*y-text.clientHeight-12) + "px";
-				wrap.style.left = (32*x-text.clientWidth/2+16) + "px"; 
-				qanimate(wrap, [0,-32], 1000, function(obj) {
-					gameField.removeChild(obj);
-					handleNextEvent();
-				});
-			};
 			/**
 			 * Returns GameFrame's main element width in pixels (the visible width 
 			 * of game frame).
@@ -92,57 +72,6 @@ window.onload = function _() {
 			this.getHeight = function() {
 				return h;
 			};
-			this.clearGameZone = function() {
-				while (gameField.children.length>0) {
-				// Remove all the children of #gameField, except of gameFieldFloor, 
-				// cellCursor and UI._gameFieldElementsContainer
-					gameField.removeChild(GameField.nGameField.children[0]);
-				}
-			};
-			this.setViewPort = function(cx, cy) {
-				if (typeof cx !== "number" || typeof cy !== "number") {
-					throw new Error("Wrong arguments for setViewPort: ", arguments); 
-				}
-	//			if (typeof w === "number") {
-	//				if (w % 2 !== 1) {
-	//					throw new Error("Viewport width and height must be odd numbers (now w = "+w+")");
-	//				}
-	//				rendW = w;
-	//			}
-	//			if (typeof h === "number") {
-	//				if (h % 2 !== 1) {
-	//					throw new Error("Viewport width and height must be odd numbers (now h = "+h+")");
-	//				}
-	//				rendH = h;
-	//			}
-				var x=cx, y=cy;
-				var normal = GameField.getViewIndentation(x,y,32);
-				x = normal.left;
-				y = normal.top;
-	//			var xCells=x;
-	//			var yCells=y;
-				x-= w/2;
-	//			x-=(x%32==0)?0:16;
-	//			x=(x<0)?((GameField.getHorizontalDimension()-xCells-1)*32<UI.visibleWidth/2)?UI.visibleWidth-GameField.getHorizontalDimension()*32:x:0;
-	//			if (GameField.getHorizontalDimension()*32<UI.visibleWidth) {
-	//				x=0;
-	//			}
-				y-= h/2;
-	//			y-=(y%32==0)?0:16;
-	//			y=(y<0)?((GameField.getVerticalDimension()-yCells-1)*32<UI.visibleHeight/2)?UI.visibleHeight-GameField.getVerticalDimension()*32:y:0;
-	//			if (GameField.getVerticalDimension()*32<UI.visibleHeight) {
-	//				y=0;
-	//			}
-				// Here x and y contain indentations in pixels.
-				gameField.style.left = -x+"px";
-				gameField.style.top = -y+"px";		
-	//			if (weatherEffect) {
-	//				var wx = Player.x;
-	//				var wy = Player.y;
-	// throw new Error("Not implemented weather!");
-	//				weatherEffect.move(Math.min(Math.max(wx, rendCX), GameField.width-rendCX), Math.min(Math.max(wy, rendCY), GameField.height-rendCY));
-	//			}
-			};
 			/**
 			 * This method should be called to start working with the GameFrame
 			 * 
@@ -156,7 +85,6 @@ window.onload = function _() {
 				w = width;
 				h = height;
 				inited = true;
-				gameField = GameField.getGameFieldElement();
 				document.getElementById("intfGameZone").style.width = w+"px";
 				document.getElementById("intfGameZone").style.height = h+"px";
 			};
@@ -484,8 +412,7 @@ window.onload = function _() {
 	window.Events = new Events();
 })();
 onLoadEvents['game'] = function _() {
-	cacheImages();
-	// saveParticlesImageData();
+	Graphics.buildImageCache();
 	Keys.formReverseKeyCodesTable();
 };
 function performAction(actionName, args) {

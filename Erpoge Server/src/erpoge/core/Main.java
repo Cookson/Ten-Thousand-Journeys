@@ -55,30 +55,30 @@ public class Main {
 		GameObjects.init();
 		ItemsTypology.init();
 		CharacterTypes.init();
-//		Main.log(GameObjects.jsonGetObjectProperties());
-//		CharacterTypes.jsonTypes();
-//		ItemsTypology.showTypology();
-//		ItemsTypology.jsonTypology();
-		
-//		World world = new World(20,20,"TestWorld", "Erpoge World");
-//		world.showWorld();
-		
-//		Location loc = world.createLocation(0, 0, 60, 40, TEST_LOCATION_TYPE, "New Location");
-//		loc.showLocation();	
+		//		Main.log(GameObjects.jsonGetObjectProperties());
+		//		CharacterTypes.jsonTypes();
+		//		ItemsTypology.showTypology();
+		//		ItemsTypology.jsonTypology();
+				
+		//		World world = new World(20,20,"TestWorld", "Erpoge World");
+		//		world.showWorld();
+				
+		//		Location loc = world.createLocation(0, 0, 60, 40, TEST_LOCATION_TYPE, "New Location");
+		//		loc.showLocation();	
 		
 		HorizontalPlane plane = new HorizontalPlane();
 		plane.generateTerrain(-200,-200,400,400);
-//		plane.generateLocation(-60, -60, 40, 40, "Forest");
-//		plane.generateLocation(-60, -20, 40, 40, "Forest");
-//		plane.generateLocation(-60,  20, 40, 40, "Forest");
-//		plane.generateLocation(-20, -60, 40, 40, "Forest");
-//		plane.generateLocation(-20, -20, 40, 40, "BuildingTest");
-//		plane.generateLocation(-20,  20, 40, 40, "Forest");
-//		plane.generateLocation( 20, -60, 40, 40, "Forest");
-//		plane.generateLocation( 20, -20, 40, 40, "Forest");
-//		plane.generateLocation( 20,  20, 40, 40, "Forest");
-		
-//		plane.showTerrain(-20, -20, 100, 100);
+		//		plane.generateLocation(-60, -60, 40, 40, "Forest");
+		//		plane.generateLocation(-60, -20, 40, 40, "Forest");
+		//		plane.generateLocation(-60,  20, 40, 40, "Forest");
+		//		plane.generateLocation(-20, -60, 40, 40, "Forest");
+		//		plane.generateLocation(-20, -20, 40, 40, "BuildingTest");
+		//		plane.generateLocation(-20,  20, 40, 40, "Forest");
+		//		plane.generateLocation( 20, -60, 40, 40, "Forest");
+		//		plane.generateLocation( 20, -20, 40, 40, "Forest");
+		//		plane.generateLocation( 20,  20, 40, 40, "Forest");
+				
+		//		plane.showTerrain(-20, -20, 100, 100);
 		PlayerHandler burok = CharacterManager.createPlayer(plane, 6, 9, "Alvoi", Race.ELF, "Warrior");
 		burok.eventlessGetItem(new UniqueItem(ItemType.CLASS_SWORD * ItemsTypology.CLASS_LENGTH));
 		burok.eventlessGetItem(new ItemPile(ItemType.CLASS_AMMO * ItemsTypology.CLASS_LENGTH,200));

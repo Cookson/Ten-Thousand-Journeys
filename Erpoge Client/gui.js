@@ -342,12 +342,13 @@ var GameField;
 		}
 		var characters = Characters.getInstance().characters;
 		var player; // Copy of link to the raw player's character object
-		var chunks = new Map2D(); // A container for graphical representations of cells' contents
+		var chunks; // A container for graphical representations of cells' contents
 		var worldData = World.getInstance();
 		var cameraOrientation = Side.N;
 		var cssSideX = "left";
 		var cssSideY = "top";
 		var removed = 0, created = 0;
+		var storedImages = Graphics.getInstance();
 		/**
 		 * Data structure that contains visual representation of the contents
 		 * of every cell on the game field
@@ -368,7 +369,6 @@ var GameField;
 			this.canvas.style.left = viewIndent.left+"px";
 			this.canvas.style.zIndex = 0;
 			this.ctx = this.canvas.getContext("2d");
-
 		}
 		window.stat = function() {
 			return [created, removed];
@@ -390,40 +390,74 @@ var GameField;
 			chunks.remove(e.x, e.y);
 		});
 		Events.addListener("environmentExplored", GameField, function(e) {
-			if ("u" in e) {
-				try {
-					for (var i=0, l=e.u.f.length; i<l; i++) {
-						var floor = e.u.f[i]; // Like event.unseen.floors[i]
-						instance.unshowFloor(floor.x, floor.y, floor.f);
-					}
-				} catch (error) {
-					console.log(e.u.f);
-					throw new Error("KAKAKA");
-				}
-				for (var i=0, l=e.u.o.length; i<l; i++) {
-					var object = e.u.o[i]; // Like event.unseen.objects[i]
-					instance.unshowObject(object.x, object.y, object.o);
-				}
-				for (var i=0, l=e.u.c.length; i<l; i++) {
-					var character = e.u.c[i]; // Like event.unseen.characters[i]
-					instance.showCharacter(character.x, character.y, character.c);
-				}
-				/* Items displaying not implemented! */
-			}
-			if ("s" in e) {
+		/* Each time player's field of view is changed, this code does the following:
+		 * 1) Checks if it is needed to preload any images that will be used in rendering
+		 * 2) Loads then if necessary
+		 * 3) Renders the new field of view
+		 */
+		 // See ClientPlayer#initVisibility and ClientPlayer#updateVisibilitiy
+		 // to see how event argument is formed.
+			if (typeof e.s !== "undefined") {
+			// If anything new is seen
+				var imageList = {floors: [], chardoll: []};
+				// Finding unstored floors
 				for (var i=0, l=e.s.f.length; i<l; i++) {
-					var floor = e.s.f[i]; // Like event.seen.floors[i]
-					instance.showFloor(floor.x, floor.y, floor.f);
+					var floorId = e.s.f[i].f;
+					if (
+						imageList.floors.indexOf(floorId) === -1 
+						&& typeof storedImages.floors[floorId] === "undefined"
+					) {
+						imageList.floors.push(floorId);
+					}
 				}
-				for (var i=0, l=e.s.o.length; i<l; i++) {
-					var object = e.s.o[i]; // Like event.seen.objects[i]
-					instance.showObject(object.x, object.y, object.o);
-				}
+				// Finding unstored character doll images
 				for (var i=0, l=e.s.c.length; i<l; i++) {
-					var character = e.s.c[i]; // Like event.seen.characters[i]
-					instance.showCharacter(character.x, character.y, character.c);
+					var character = e.s.c[i].c;
+					if (
+						imageList.chardoll.indexOf(58) === -1
+						&& typeof storedImages.chardoll[58]
+					) {
+						imageList.chardoll.push(58);
+					}
 				}
-				/* Items displaying not implemented! */
+				Graphics.storeImages(imageList, function() {
+				// This is called asynchronously after all the images are stored
+					if (typeof e.u !== "undefined") {
+						try {
+							for (var i=0, l=e.u.f.length; i<l; i++) {
+								var floor = e.u.f[i]; // Like event.unseen.floor[i]
+								instance.unshowFloor(floor.x, floor.y, floor.f);
+							}
+						} catch (error) {
+							console.log(e.u.f);
+							throw new Error("KAKAKA");
+						}
+						for (var i=0, l=e.u.o.length; i<l; i++) {
+							var object = e.u.o[i]; // Like event.unseen.objects[i]
+							instance.unshowObject(object.x, object.y, object.o);
+						}
+						for (var i=0, l=e.u.c.length; i<l; i++) {
+							var character = e.u.c[i]; // Like event.unseen.characters[i]
+							instance.showCharacter(character.x, character.y, character.c);
+						}
+						/* Items displaying not implemented! */
+					}
+					if (typeof e.u !== "undefined") {
+						for (var i=0, l=e.s.f.length; i<l; i++) {
+							var floor = e.s.f[i]; // Like event.seen.floors[i]
+							instance.showFloor(floor.x, floor.y, floor.f);
+						}
+						for (var i=0, l=e.s.o.length; i<l; i++) {
+							var object = e.s.o[i]; // Like event.seen.objects[i]
+							instance.showObject(object.x, object.y, object.o);
+						}
+						for (var i=0, l=e.s.c.length; i<l; i++) {
+							var character = e.s.c[i]; // Like event.seen.characters[i]
+							instance.showCharacter(character.x, character.y, character.c);
+						}
+						/* Items displaying not implemented! */
+					}
+				});
 			}
 		});
 		var charactersViews = {}; // Objects that contain graphical data associated with certain characters
@@ -434,6 +468,87 @@ var GameField;
 			gameField = document.getElementById("gameField");
 			gameField.style.top = "0px";
 			gameField.style.left = "0px";
+			this.clearGameField();
+		};
+		/**
+		 * Focuses camera on certain cell}
+		 * 
+		 * @param {number} cx
+		 * @param {number} cy
+		 */
+		this.setViewPort = function(cx, cy) {
+			if (typeof cx !== "number" || typeof cy !== "number") {
+				throw new Error("Wrong arguments for setViewPort: ", arguments); 
+			}
+			var w = GameFrame.getWidth(),
+			    h = GameFrame.getHeight();
+//			if (typeof w === "number") {
+//				if (w % 2 !== 1) {
+//					throw new Error("Viewport width and height must be odd numbers (now w = "+w+")");
+//				}
+//				rendW = w;
+//			}
+//			if (typeof h === "number") {
+//				if (h % 2 !== 1) {
+//					throw new Error("Viewport width and height must be odd numbers (now h = "+h+")");
+//				}
+//				rendH = h;
+//			}
+			var x=cx, y=cy;
+			var normal = instance.getViewIndentation(x,y,32);
+			x = normal.left;
+			y = normal.top;
+//			var xCells=x;
+//			var yCells=y;
+			x-= w/2;
+//			x-=(x%32==0)?0:16;
+//			x=(x<0)?((GameField.getHorizontalDimension()-xCells-1)*32<UI.visibleWidth/2)?UI.visibleWidth-GameField.getHorizontalDimension()*32:x:0;
+//			if (GameField.getHorizontalDimension()*32<UI.visibleWidth) {
+//				x=0;
+//			}
+			y-= h/2;
+//			y-=(y%32==0)?0:16;
+//			y=(y<0)?((GameField.getVerticalDimension()-yCells-1)*32<UI.visibleHeight/2)?UI.visibleHeight-GameField.getVerticalDimension()*32:y:0;
+//			if (GameField.getVerticalDimension()*32<UI.visibleHeight) {
+//				y=0;
+//			}
+			// Here x and y contain indentations in pixels.
+			gameField.style.left = -x+"px";
+			gameField.style.top = -y+"px";		
+//			if (weatherEffect) {
+//				var wx = Player.x;
+//				var wy = Player.y;
+// throw new Error("Not implemented weather!");
+//				weatherEffect.move(Math.min(Math.max(wx, rendCX), GameField.width-rendCX), Math.min(Math.max(wy, rendCY), GameField.height-rendCY));
+//			}
+		};
+		this.showSound = function(x, y, type) {
+			throw new Error("Not implamanted");
+			var wrap = document.createElement("div");
+			var text = document.createElement("div");
+			wrap.className = "wrap";
+			text.className = "speechBubbleText";
+			text.innerText = soundTypes[type].name;
+			wrap.style.zIndex = 9000;
+			wrap.appendChild(text);
+			gameField.appendChild(wrap);
+			wrap.style.top = (32*y-text.clientHeight-12) + "px";
+			wrap.style.left = (32*x-text.clientWidth/2+16) + "px"; 
+			qanimate(wrap, [0,-32], 1000, function(obj) {
+				gameField.removeChild(obj);
+				handleNextEvent();
+			});
+		};
+		/**
+		 * Removes everything from the game field
+		 */
+		this.clearGameField = function() {
+			while (gameField.children.length>0) {
+			// Remove all the children of #gameField, except of gameFieldFloor, 
+			// cellCursor and UI._gameFieldElementsContainer
+				gameField.removeChild(GameField.nGameField.children[0]);
+			}
+			chunks = new Map2D();
 		};
 		this.getViewIndentation = function (x, y, scale) {
 			if (cameraOrientation == Side.N) {
@@ -565,14 +680,14 @@ var GameField;
 				var right = World.floor(x+1,y);
 				var down = World.floor(x,y+1);
 				var left = World.floor(x-1,y);
-				if (GameField.cameraOrientation == Side.E) {
+				if (instance.cameraOrientation === Side.E) {
 				// It camera is oriented not to the north
 					var leftBuf = left;
 					left = down;
 					down = right;
 					right = up;
 					up = leftBuf;
-				} else if (GameField.cameraOrientation == Side.S) {
+				} else if (instance.cameraOrientation === Side.S) {
 				// It camera is oriented not to the north
 					var upBuf = up;
 					var leftBuf = left;
@@ -580,7 +695,7 @@ var GameField;
 					left = right;
 					right = leftBuf;
 					down = upBuf;
-				} else if (GameField.cameraOrientation == Side.W) {
+				} else if (instance.cameraOrientation === Side.W) {
 				// It camera is oriented not to the north
 					var upBuf = up;
 					up = right;
@@ -590,85 +705,16 @@ var GameField;
 				}
 				var tileType= "t"+floorId+","+up+","+right+","+down+","+left;
 				
-				if (floorImages[tileType] !== undefined) {
-				// If an image of such tile was already used (and thus was generated and 
-				// chaced), draw the cached image
-					if (+localStorage.getItem(2)) {
-					// If the setting "Show net between cell" is turned on
-						var imageData = floorImages[tileType];
-						for (var i = 0; i<32; i++) {
-							var pix = getPixel(imageData, i, 0);
-							pix[3] = 200;
-							setPixel(imageData, i, 0, pix);
-						}
-						for (var j = 0; j<32; j++) {
-							var pix = getPixel(imageData, 0, j);
-							pix[3] = 200;
-							setPixel(imageData, 0, j, pix);
-						}
-						chunk.ctx.putImageData(imageData, viewIndent.left, viewIndent.top);
-					} else {
-						chunk.ctx.putImageData(floorImages[tileType], viewIndent.left, viewIndent.top);
-					}
-					if (+localStorage.getItem(2)) {
-					// If the setting "Show net between cell" is turned on
-						for (var i=0; i<32; i++) {
-							var pix = getPixel(floorImages[tileType], i, 0);
-							pix[3] = 127;
-							setPixel(floorImages[tileType], i, 0, pix);
-						}
-						for (var j=0; j<32; j++) {
-							var pix = getPixel(floorImages[tileType], 0, j);
-							pix[3] = 127;
-							setPixel(floorImages[tileType], 0, j, pix);
-						}
-					}
-				} else {
-				// If an image of such tile was not generated and cached yet,
-				// generate and cache it
-					chunk.ctx.drawImage(tiles[floorId][0], viewIndent.left, viewIndent.top);
-
-					// Drawing transitions
-					var neighbors = [up, right, down, left];
-					for (var i=0; i<4; i++) {				
-						if (neighbors[i]!=floorId) {
-							chunk.ctx.getTransition(neighbors[i], i, true, viewIndent.left, viewIndent.top);
-						}
-					}
-					floorImages[tileType] = chunk.ctx.getImageData(viewIndent.left, viewIndent.top, 32, 32);
-					if (+localStorage.getItem(2)) {
-					// If the setting "Show net between cell" is turned on
-						for ( var i = 0; i<32; i++ ) {
-							var pix = getPixel(floorImages[tileType], i, 0);
-							pix[3] = 127;
-							setPixel(floorImages[tileType], i, 0, pix);
-						}
-						for ( var j = 0; j<32; j++ ) {
-							var pix = getPixel(floorImages[tileType], 0, j);
-							pix[3] = 127;
-							setPixel(floorImages[tileType], 0, j, pix);
-						}
-					}
-				}
+				chunk.ctx.putImageData(
+					Graphics.getTransition(
+						chunk.ctx.getImageData(0, 0, 32, 32)
+					), 
+					viewIndent.left, 
+					viewIndent.top
+				);
 			} else {
 			// If tile does not bound with a tile of another type
 				chunk.ctx.drawImage(tiles[floorId][getNumFromSeed(x, y, StaticData.floor(floorId).num)], viewIndent.left, viewIndent.top);
-				if (+localStorage.getItem(2)) {
-				// If the setting "Show net between cell" is turned on
-					var imageData = chunk.ctx.getImageData(viewIndent.left, viewIndent.top, 32, 32);
-					for (var i = 0; i<32; i++) {
-						var pix = getPixel(imageData, i, 0);
-						pix[3] = 200;
-						setPixel(imageData, i, 0, pix);
-					}
-					for (var j = 0; j<32; j++) {
-						var pix = getPixel(imageData, 0, j);
-						pix[3] = 200;
-						setPixel(imageData, 0, j, pix);
-					}
-					
-					chunk.ctx.putImageData(imageData, viewIndent.left, viewIndent.top);
-				}
 			}
 			if ((visToNum(x-1, y)+visToNum(x+1, y))
 					*(visToNum(x, y-1)+visToNum(x, y+1))==1
@@ -1119,6 +1165,7 @@ var GameField;
 	window.GameField = new GameField();
 })();
 
+
 function Doll(character) {
 	// Кукла персонажа
 	// Использует глобальные переменные: charDollImages,
@@ -1142,9 +1189,8 @@ function Doll(character) {
  * Draw body of character's race.
  */
 Doll.prototype.drawBody = function() {
-	var image = images[(this.character) ? 58 + this.character.race : 58];
+	var image = Graphics.getImage("chardoll", 58);
 	this.ctx.drawImage(image, 0, 0);
-	this.ctx.drawImage(images[58], 0, 0);
 };
 /**
  * @private

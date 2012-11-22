@@ -62,7 +62,7 @@ public class Graph<ContentClass> implements Iterable<ContentClass> {
 	public void getMinimumSpanningTree(EdgeWeigher weigher) {
 		int n = edges.size();
 		int[][] g = getAdjacencyMatrix(weigher);
-//		showAdjacensyMatrix(g);
+	    // showAdjacensyMatrix(g);
 		int e[] = new int[n];
 		e[0] = 0;
 		for (int i=0;i<n-1;i++) {

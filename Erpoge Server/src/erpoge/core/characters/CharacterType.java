@@ -1,30 +1,26 @@
 package erpoge.core.characters;
 
 import java.util.ArrayList;
+import erpoge.core.BodyTree;
+import java.util.HashSet;
 
 public class CharacterType {
-	public int creatureType;
-	public int size;
-	public int hp;
-	public int mp;
-	public int speed;
-	public int armor;
-	public int evasion;
-	public ArrayList<Integer> spells;
-	public ArrayList<Integer> protections;
-	public boolean isCaster;
-
-	public CharacterType(int creatureType, int size, int hp, int mp, int speed, int armor, int evasion,
-			ArrayList<Integer> spells, ArrayList<Integer> protections) {
-		this.creatureType = creatureType;
-		this.size = size;
-		this.hp = hp;
-		this.mp = mp;
-		this.speed = speed;
-		this.armor = armor;
-		this.evasion = evasion;
-		this.protections = protections;
-		this.spells = spells;
-		this.isCaster = spells.size() > 0;
+	private static int lastId = 0;
+	private int id;
+	private HashSet<String> aspects;
+	private String name;
+	private double weight;
+	private double height;
+	private BodyTree bodyTree;
+	public CharacterType(String name, HashSet<String> aspects, double weight, double height, BodyTree bodyTree) {
+		this.id = ++lastId;
+		this.name = name;
+		this.aspects = aspects;
+		this.bodyTree = bodyTree;
+		this.weight = weight;
+		this.height = height;
+	}
+	public int getId() {
+		return id;
 	}
 }

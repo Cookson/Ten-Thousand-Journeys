@@ -403,7 +403,7 @@ function CeilingCell(x, y, parent) {
 	var viewIndent = GameField.getViewIndentation(x,y,1);
 	this.image.style.left = viewIndent.left*32+"px";
 	this.image.style.top = (viewIndent.top*32-20)+"px";
-	this.image.setAttribute("src","./images/terrain/dryGrass_7.png");
+	this.image.setAttribute("src","./images/floors/dryGrass_7.png");
 	gameField.appendChild(this.image);
 }
 CeilingCell.prototype.show = function _() {

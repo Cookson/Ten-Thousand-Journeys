@@ -54,53 +54,9 @@
 		/**
 		 * floorTypeId: floorTilesNamePrefix
 		 */
-		floors: {
-			0 : "void",
-			1 : {
-				name: "grass",
-				num: 2
-			},
-			2 : {
-				name: "stone",
-				num: 23
-			},
-			3 : "snow",
-			4 : "soil",
-			5 : {
-				name: "ground",
-				num: 1
-			},
-			6 : "dryGrass",
-			7 : "water",
-			8 : "wood"
-		},
-		numOfTiles: {
-			"void" 		: 1,
-			"grass" 	: 2,
-			"stone"		: 23,
-			"snow"		: 5,
-		//	"soil"		: 1,
-			"ground"	: 1,
-			"dryGrass"	: 11,
-			"water"		: 2,
-			"wood"		: 1
-		},
 		/**
 		 * wallTypeId: wallImageNamePrefix
 		 */
-		wallNames: {
-			1 : "redStoneWall",
-			2 : "water",
-			3 : "bush",
-			4 : "greyStoneWall",
-			5 : "wood",
-			6 : "lattice",
-			7 : "caveWall",
-			21 : "worldRiver",
-			31 : "road",
-			900 : "forest",
-			903 : "worldRock"
-		},
 		objects: {
 			1	: [32,52,1],
 			3	: [32,52,1],
@@ -198,6 +154,14 @@
 			7 : {name : "speech"},
 			8 : {name : "workingMechanisms"},
 			9 : {name : "bell"}
+		},
+		images: {
+			chardoll: [2, 34, 58, 59, 60, 61, 600, 601, 700, 1201, 1202, 1300, 1302, 100, 1304, 1402, 1505, 1501, 1504, 104, 1401, 403, 402, 1301],
+			particles: ["shiver1", "shiver2", "blood1", "spark1", "spark2", "yellow_spark1", "yellow_spark2"],
+			// Index — id of wall, value — 
+			walls: 7,
+			objects: [],
+			floors: [1, 2, 23, 5, 7, 1, 11, 2, 2]
 		}
 	};
 	/**

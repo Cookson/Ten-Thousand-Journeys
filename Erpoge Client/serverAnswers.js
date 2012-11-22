@@ -81,7 +81,7 @@
 	//		UI.hideLoadingScreen();
 			Player.initVisibility();
 	//		Player.updateVisibility(0,0);
-			GameFrame.setViewPort(characters.player.x, characters.player.y, 13, 9);
+			GameField.setViewPort(characters.player.x, characters.player.y, 13, 9);
 			// Display terrain (we can do it only now because only now we have
 			// player's vision range, coordinates and other info)
 			Net.handleNextEvent();
@@ -119,7 +119,7 @@
 			characters[Player.characterId] = Player;
 			Player.display();
 
-			GameFrame.clearGameZone();
+			GameField.clearGameZone();
 			GameFrame.moveGameField(Player.x, Player.y, true);
 			Player.initVisibility();
 			for (var i=0;i<data.length;i++) {
@@ -187,7 +187,7 @@
 				UI.notify("lootChange");
 			}
 			GameField.moveCharacter(character.characterId, value.x, value.y);
-			GameFrame.setViewPort(value.x, value.y);
+			GameField.setViewPort(value.x, value.y);
 			UI.notify("environmentChange");
 			Net.handleNextEvent();
 		},
@@ -354,6 +354,7 @@
 			Events.fire("missileFlight", value);
 		},
 		loseItem: function serverEventLoseItem(value) {
+			throw new Error("Not implemanted");
 			if (isUnique(typeId)) {
 				characters[value.characterId].items.removeUnique(param);
 			} else {

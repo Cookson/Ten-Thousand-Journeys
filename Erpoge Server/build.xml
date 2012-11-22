@@ -1,8 +1,21 @@
 <project name="Erpoge Server">
+	<property environment="env" />
 	<target name="all">
-		<javac destdir="bin" srcdir="src" >
-			
-		</javac>
+		<javac
+			destdir="bin"
+			srcdir="src"
+			includeantruntime="false"
+			debug="on"
+			debuglevel="lines,vars,source"
+			classpath="lib/gson-1.7.1.jar"
+		/>
 		<echo>Erpoge Server build is done</echo>
 	</target>
+	<target name="buildStaticData">
+		<java 
+			classname="erpoge.core.BuildStaticData"
+			classpath="bin:${java.class.path}:lib/gson-1.7.1.jar"
+		/>
+	</target>
 </project>
+
