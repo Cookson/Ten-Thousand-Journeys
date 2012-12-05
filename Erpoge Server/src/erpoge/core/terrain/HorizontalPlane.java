@@ -167,9 +167,9 @@ public class HorizontalPlane {
 			chunk.setObject(x-chunk.x,y-chunk.y,doorId+1);
 		}
 	}	
-	public NonPlayerCharacter createCharacter(int absX, int absY, String type, String name, int fraction) {
+	public NonPlayerCharacter createCharacter(int absX, int absY, int characterTypeId, String name, int fraction) {
 		Chunk chunk = getChunkWithCell(absX, absY);
-		return chunk.createCharacter(absX-chunk.x, absY-chunk.y, type, name, fraction);
+		return chunk.createCharacter(absX-chunk.x, absY-chunk.y, characterTypeId, name, fraction);
 	}
 	public void addItem(ItemPile pile, int x, int y) {
 		Chunk chunk = getChunkWithCell(x, y);

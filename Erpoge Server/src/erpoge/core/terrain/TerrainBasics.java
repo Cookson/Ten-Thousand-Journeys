@@ -3,16 +3,10 @@ package erpoge.core.terrain;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Hashtable;
 
 import erpoge.core.Character;
-import erpoge.core.Main;
-import erpoge.core.graphs.CustomRectangleSystem;
-import erpoge.core.graphs.RectangleSystem;
 import erpoge.core.inventory.ItemPile;
 import erpoge.core.inventory.UniqueItem;
-import erpoge.core.meta.Chance;
 import erpoge.core.meta.Coordinate;
 import erpoge.core.objects.GameObjects;
 
@@ -112,7 +106,7 @@ public abstract class TerrainBasics {
 		}
 	}
 	public void setElement(Character ch) {
-		characters.put(ch.characterId, ch);
+		characters.put(ch.getId(), ch);
 	}
 	public int getElement(int x, int y, int type) {
 		switch (type) {

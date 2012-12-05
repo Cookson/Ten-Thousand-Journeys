@@ -1,25 +1,9 @@
 package erpoge.locationtypes;
 
-import java.awt.Rectangle;
-
-import erpoge.buildings.Inn;
-import erpoge.core.Main;
-import erpoge.core.characters.*;
-import erpoge.core.graphs.CustomRectangleSystem;
-import erpoge.core.graphs.RectangleSystem;
-import erpoge.core.inventory.ItemPile;
-import erpoge.core.inventory.UniqueItem;
-import erpoge.core.meta.Chance;
-import erpoge.core.meta.Coordinate;
 import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.Cell;
-import erpoge.core.terrain.CellCollection;
-import erpoge.core.terrain.Container;
 import erpoge.core.terrain.HorizontalPlane;
 import erpoge.core.terrain.Location;
 import erpoge.core.terrain.TerrainBasics;
-
-import java.util.ArrayList;
 
 public class Empty extends Location {
 	public Empty(HorizontalPlane plane, int x, int y, int width, int height) {

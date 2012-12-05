@@ -2,28 +2,26 @@ package erpoge.buildings;
 
 import java.awt.Rectangle;
 
-import erpoge.core.Main;
 import erpoge.core.graphs.CustomRectangleSystem;
 import erpoge.core.meta.Coordinate;
-import erpoge.core.meta.Direction;
 import erpoge.core.meta.Side;
 import erpoge.core.net.RectangleArea;
 import erpoge.core.objects.GameObjects;
 import erpoge.core.terrain.TerrainBasics;
 import erpoge.core.terrain.settlements.Building;
 import erpoge.core.terrain.settlements.BuildingPlace;
-import erpoge.core.terrain.settlements.Settlement;
 
 public class Temple extends Building {
+	public static final long serialVersionUID = 801812251L;
 	public void draw() {
-		Direction dir;
+		// Direction dir;
 		Side side = Side.N;
-		int lobbyWidth = 6;
-		if (side == Side.N || side == Side.S) {
-			dir = Direction.H;
-		} else {
-			dir = Direction.V;
-		}
+		// int lobbyWidth = 6;
+		// if (side == Side.N || side == Side.S) {
+		// 	dir = Direction.H;
+		// } else {
+			// dir = Direction.V;
+		// }
 		
 		// For two of four sides we should revert width of cut rectangle
 		CustomRectangleSystem crs = new CustomRectangleSystem(x, y, width, height, 1);
@@ -109,7 +107,6 @@ public class Temple extends Building {
 	}
 	@Override
 	public boolean fitsToPlace(BuildingPlace place) {
-		// TODO Auto-generated method stub
 		return place.width > 14 || place.height > 14;
 	}
 }

@@ -3,25 +3,22 @@ package erpoge.buildings;
 import java.awt.Rectangle;
 
 import erpoge.core.Character;
+import erpoge.core.PlayerCharacter;
 import erpoge.core.characters.CharacterCondition;
 import erpoge.core.characters.CustomCharacterAction;
 import erpoge.core.characters.Dialogue;
 import erpoge.core.characters.DialoguePoint;
-import erpoge.core.characters.NonPlayerCharacter;
-import erpoge.core.characters.PlayerCharacter;
 import erpoge.core.characters.Race;
 import erpoge.core.inventory.ItemPile;
 import erpoge.core.meta.Chance;
 import erpoge.core.meta.Side;
 import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.CellCollection;
 import erpoge.core.terrain.TerrainBasics;
 import erpoge.core.terrain.settlements.Building;
 import erpoge.core.terrain.settlements.BuildingPlace;
-import erpoge.core.terrain.settlements.Settlement;
-import erpoge.core.terrain.settlements.Building.BasisBuildingSetup;
 
 public class Tavern extends Building {
+	public static final long serialVersionUID = 2372987976L;
 	public void draw() {
 		buildBasis(GameObjects.OBJ_WALL_GREY_STONE);
 		placeFrontDoor(Side.ANY_SIDE);
@@ -32,8 +29,8 @@ public class Tavern extends Building {
 			}
 		}
 		
-		NonPlayerCharacter innkeeper = settlement.createCharacter("innkeeper", "Christian", lobbyRec.x, lobbyRec.y+1);
-		innkeeper.setFraction(1);
+		// NonPlayerCharacter innkeeper = settlement.createCharacter("innkeeper", "Christian", lobbyRec.x, lobbyRec.y+1);
+		// innkeeper.setFraction(1);
 		// Dialogue
 		Dialogue dialogue = new Dialogue();
 		CustomCharacterAction aGiveMoney = new CustomCharacterAction() {
@@ -67,7 +64,7 @@ public class Tavern extends Building {
 		youAreHuman.addAnswer("Спасибо, пока!", hello, true);
 		youAreElf.addAnswer("Спасибо, пока!", hello, true);
 		youAreAnother.addAnswer("Спасибо, пока!", hello, true);
-		innkeeper.setDialogue(dialogue);
+		// innkeeper.setDialogue(dialogue);
 		Rectangle tablesArea = new Rectangle(
 				lobbyRec.x+1, lobbyRec.y+1, 
 				lobbyRec.width-2, lobbyRec.height-2);
@@ -82,7 +79,6 @@ public class Tavern extends Building {
 	}
 	@Override
 	public boolean fitsToPlace(BuildingPlace place) {
-		// TODO Auto-generated method stub
 		return place.width > 6 || place.height > 6;
 	}
 }

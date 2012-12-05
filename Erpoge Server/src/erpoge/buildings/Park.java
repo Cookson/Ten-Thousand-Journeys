@@ -2,17 +2,16 @@ package erpoge.buildings;
 
 import java.awt.Rectangle;
 
-import erpoge.core.Main;
 import erpoge.core.graphs.CustomRectangleSystem;
 import erpoge.core.meta.Chance;
 import erpoge.core.meta.Coordinate;
-import erpoge.core.meta.Side;
 import erpoge.core.net.RectangleArea;
 import erpoge.core.objects.GameObjects;
 import erpoge.core.terrain.TerrainBasics;
 import erpoge.core.terrain.settlements.Building;
 
 public class Park extends Building {
+	public static final long serialVersionUID = 734683L;
 	public void draw() {
 		CustomRectangleSystem crs = new CustomRectangleSystem(x, y, width, height, 1);
 		int rightBottom = crs.cutRectangleFromSide(0, frontSide, crs.content.get(0).getDimensionBySide(frontSide)/2);

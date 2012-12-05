@@ -1,11 +1,5 @@
 package erpoge.core.itemtypes;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-
-import erpoge.core.Main;
-import erpoge.core.inventory.UniqueItem;
 
 public final class ItemsTypology extends ItemSystemMetaInfo {
 	

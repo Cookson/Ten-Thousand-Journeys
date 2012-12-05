@@ -1,27 +1,23 @@
 package erpoge.core.terrain;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 
 import erpoge.core.Character;
+import erpoge.core.PlayerCharacter;
 import erpoge.core.TimeStream;
 import erpoge.core.characters.NonPlayerCharacter;
-import erpoge.core.characters.PlayerCharacter;
 import erpoge.core.inventory.Item;
 import erpoge.core.inventory.ItemMap;
 import erpoge.core.inventory.ItemPile;
 import erpoge.core.inventory.UniqueItem;
-import erpoge.core.itemtypes.Attribute;
 import erpoge.core.meta.Coordinate;
 import erpoge.core.meta.Side;
-import erpoge.core.net.serverevents.EventCharacterAppear;
 import erpoge.core.net.serverevents.EventFloorChange;
 import erpoge.core.net.serverevents.EventItemAppear;
 import erpoge.core.net.serverevents.EventItemDisappear;
 import erpoge.core.net.serverevents.EventObjectAppear;
 import erpoge.core.net.serverevents.EventObjectDisappear;
-import erpoge.core.net.serverevents.EventSound;
 import erpoge.core.net.serverevents.EventSoundSourceAppear;
 import erpoge.core.net.serverevents.EventSoundSourceDisappear;
 import erpoge.core.objects.Sound;
@@ -118,19 +114,19 @@ public class Chunk extends TerrainBasics {
 	public String jsonGetContainerContents(int x, int y) {
 		return getContainer(x,y).jsonGetContents();
 	}
-	protected NonPlayerCharacter createCharacter(int relX, int relY, String type, String name, int fraction) {
-		NonPlayerCharacter character = new NonPlayerCharacter(plane, x+relX, y+relY, type, name);
+	protected NonPlayerCharacter createCharacter(int relX, int relY, int characterTypeId, String name, int fraction) {
+		NonPlayerCharacter character = new NonPlayerCharacter(plane, x+relX, y+relY, characterTypeId, name);
 		character.setTimeStream(timeStream);
 		timeStream.addNonPlayerCharacter(character);
 		character.setFraction(fraction);
 		characters.add(character);
 		nonPlayerCharacters.add(character);
 		cells[relX][relY].character(character);
+		/*
 		timeStream.addEvent(new EventCharacterAppear(
-				character.characterId, character.x, character.y, character.type, character.name,
-				character.getAttribute(Attribute.MAX_HP), character.getAttribute(Attribute.HP),
-				character.getAttribute(Attribute.MAX_MP), character.getAttribute(Attribute.MP),
+				character.getId(), character.x, character.y, character.getType().getId(), character.name,
 				character.getEffects(), character.getEquipment(), character.getFraction()));
+		*/
 		character.notifyNeighborsVisiblilty();
 		character.getVisibleEntities();
 		return character;
@@ -198,14 +194,14 @@ public class Chunk extends TerrainBasics {
 	
 	public void removeItem(ItemPile pile, int x, int y) {
 		super.removeItem(pile, x, y);
-		timeStream.addEvent(new EventItemDisappear(pile.getType().getTypeId(), pile.getAmount(), this.x+x ,this.y+y));
+		timeStream.addEvent(new EventItemDisappear(pile.getType().getId(), pile.getAmount(), this.x+x ,this.y+y));
 	}
 	public void removeItem(UniqueItem item, int x, int y) {
 		super.removeItem(item, x, y);
-		timeStream.addEvent(new EventItemDisappear(item.getType().getTypeId(), item.getItemId(), this.x+x ,this.y+y));
+		timeStream.addEvent(new EventItemDisappear(item.getType().getId(), item.getItemId(), this.x+x ,this.y+y));
 	}
-	public void setCharacter(int x, int y, String t, int fraction) {
-		createCharacter(x, y, t, "", 0);
+	public void setCharacter(int x, int y, int characterTypeId, int fraction) {
+		createCharacter(x, y, characterTypeId, "", 0);
 	}
 	public void createSoundSource(int x, int y, SoundType type) {
 		soundSources.add(new SoundSource(x, y, type, 1000));
@@ -229,11 +225,11 @@ public class Chunk extends TerrainBasics {
 	 */
 	public void addItem(UniqueItem item, int x, int y) {
 		super.addItem(item, x, y);
-		timeStream.addEvent(new EventItemAppear(item.getType().getTypeId(), item.getItemId(), this.x+x ,this.y+y));
+		timeStream.addEvent(new EventItemAppear(item.getType().getId(), item.getItemId(), this.x+x ,this.y+y));
 	}
 	public void addItem(ItemPile pile, int x, int y) {
 		super.addItem(pile, x, y);
-		timeStream.addEvent(new EventItemAppear(pile.getType().getTypeId(), pile.getAmount(), this.x+x, this.y+y));
+		timeStream.addEvent(new EventItemAppear(pile.getType().getId(), pile.getAmount(), this.x+x, this.y+y));
 	}
 
 	public void setTimeStream(TimeStream timeStream) {
@@ -269,7 +265,7 @@ public class Chunk extends TerrainBasics {
 					for (Item item : map.values()) {
 						contents.add(this.x+x);
 						contents.add(this.y+y);
-						contents.add(item.getTypeId());
+						contents.add(item.getType().getId());
 						contents.add(item.getParam());
 					}
 				}
@@ -278,24 +274,19 @@ public class Chunk extends TerrainBasics {
 		return contents.toArray(new Integer[] {});
 	}
 	public ArrayList[] getCharacters() {
-		ArrayList[] answer = new ArrayList[characters.size()];
-		int u = 0;
-		for (Character character : characters) {
-			ArrayList chdata = new ArrayList();
-			/* 0 */chdata.add(character.characterId);
-			/* 1 */chdata.add(character.x);
-			/* 2 */chdata.add(character.y);
-			/* 3 */chdata.add(character.type);
-			/* 4 */chdata.add(character.name);
-			/* 5 */chdata.add(character.maxHp);
-			/* 6 */chdata.add(character.hp);
-			/* 7 */chdata.add(character.maxMp);
-			/* 8 */chdata.add(character.mp);
-			/* 9 */chdata.add(character.getEffects());
-			/*10 */chdata.add(character.getEquipment());
-			/*11 */chdata.add(character.fraction);
-			answer[u++] = chdata;
-		}
-		return answer;
-	}
+	 	ArrayList[] answer = new ArrayList[characters.size()];
+	 	int u = 0;
+	 	for (Character character : characters) {
+	 		ArrayList chdata = new ArrayList();
+	 		/* 0 */chdata.add(character.getId());
+	 		/* 1 */chdata.add(character.x);
+	 		/* 2 */chdata.add(character.y);
+	 		/* 4 */chdata.add(character.name);
+	 		/* 9 */chdata.add(character.getEffects());
+	 		/*10 */chdata.add(character.getEquipment());
+	 		/*11 */chdata.add(character.fraction);
+	 		answer[u++] = chdata;
+	 	}
+	 	return answer;
+	 }
 }

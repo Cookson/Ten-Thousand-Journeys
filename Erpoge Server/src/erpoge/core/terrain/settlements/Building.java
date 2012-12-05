@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import erpoge.buildings.Inn;
 import erpoge.core.Main;
 import erpoge.core.graphs.CustomRectangleSystem;
 import erpoge.core.graphs.RectangleSystem;
@@ -16,7 +15,6 @@ import erpoge.core.meta.Coordinate;
 import erpoge.core.meta.Side;
 import erpoge.core.net.RectangleArea;
 import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.CellCollection;
 import erpoge.core.terrain.Location;
 import erpoge.core.terrain.TerrainBasics;
 import erpoge.core.terrain.settlements.Settlement.RoadSystem.Road;

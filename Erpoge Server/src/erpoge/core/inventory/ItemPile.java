@@ -21,10 +21,10 @@ public class ItemPile extends Item {
 		return amount;
 	}
 	public int hashCode() {
-		return type.getTypeId()*100000+amount;
+		return type.getId()*100000+amount;
 	}
 	public ItemPile separatePile(int amount) {
-		return new ItemPile(type.getTypeId(), amount);
+		return new ItemPile(type.getId(), amount);
 	}
 	@Override
 	public String toString() {
@@ -32,7 +32,7 @@ public class ItemPile extends Item {
 	}
 	@Override
 	public String toJson() {
-			return "["+type.getTypeId()+","+amount+"]";
+			return "["+type.getId()+","+amount+"]";
 	}
 	public static ItemPile createPileFromClass(int classId, int indexInClass, int amount) {
 		return new ItemPile(classId*CLASS_LENGTH+indexInClass, amount);

@@ -17,7 +17,7 @@ public class UniqueItem extends Item {
 	}
 	@Override
 	public String toJson() {
-		return "["+type.getTypeId()+","+itemId+"]";
+		return "["+type.getId()+","+itemId+"]";
 	}
 	public static UniqueItem createItemByClass(int classId, int indexInType) {
 		return new UniqueItem(classId*ItemsTypology.CLASS_LENGTH + indexInType);

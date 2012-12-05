@@ -1,10 +1,6 @@
 package erpoge.core.characters;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Set;
-
-import erpoge.core.graphs.Graph;
 
 public class Dialogue {
 	public static final DialoguePoint DIALOGUE_END = new DialoguePoint("");

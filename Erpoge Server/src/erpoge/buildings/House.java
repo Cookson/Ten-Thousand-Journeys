@@ -1,14 +1,12 @@
 package erpoge.buildings;
 
-import erpoge.core.Main;
 import erpoge.core.graphs.CustomRectangleSystem;
 import erpoge.core.meta.Coordinate;
-import erpoge.core.meta.Side;
 import erpoge.core.objects.GameObjects;
 import erpoge.core.terrain.settlements.Building;
-import erpoge.core.terrain.settlements.Building.BasisBuildingSetup;
 
 public class House extends Building {
+	public static final long serialVersionUID = 23L;
 	public void draw() {
 		CustomRectangleSystem crs = new CustomRectangleSystem(x,y,width,height,1);
 		
@@ -16,7 +14,7 @@ public class House extends Building {
 		int exFront = crs.cutRectangleFromSide(0, frontSide, 3);
 		int lobby = crs.cutRectangleFromSide(1, leftSide, 6);
 		int workshop = crs.cutRectangleFromSide(1, rightSide, 6);
-		int farRoom = crs.cutRectangleFromSide(0, rightSide, 7);
+		// int farRoom = crs.cutRectangleFromSide(0, rightSide, 7);
 		
 		crs.excludeRectangle(exFront);
 		

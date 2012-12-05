@@ -42,7 +42,7 @@ public class Cell {
 		items.add(item);
 	}
 	protected void addItem(ItemPile item) {
-		items.add(item.getType().getTypeId(), item.getAmount());
+		items.add(item.getType().getId(), item.getAmount());
 	}
 	public int getElement(int type) {
 		if (type == TerrainBasics.ELEMENT_FLOOR) {

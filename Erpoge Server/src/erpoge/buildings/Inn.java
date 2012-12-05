@@ -1,22 +1,14 @@
 package erpoge.buildings;
 
-import java.awt.Rectangle;
-import java.io.ObjectOutputStream.PutField;
-import java.util.ArrayList;
-
-import erpoge.core.Main;
-import erpoge.core.characters.NonPlayerCharacter;
 import erpoge.core.graphs.CustomRectangleSystem;
-import erpoge.core.meta.Chance;
-import erpoge.core.meta.Coordinate;
 import erpoge.core.meta.Direction;
 import erpoge.core.meta.Side;
 import erpoge.core.objects.GameObjects;
 import erpoge.core.terrain.settlements.Building;
 import erpoge.core.terrain.settlements.BuildingPlace;
-import erpoge.core.terrain.settlements.Building.BasisBuildingSetup;
 
 public class Inn extends Building {
+	public static final long serialVersionUID = 11672547L;
 	public void draw() {
 		CustomRectangleSystem crs = new CustomRectangleSystem(x,y,width,height,1);
 		/* BASIS */
@@ -43,7 +35,7 @@ public class Inn extends Building {
 		int rightHallId = crs.cutRectangleFromSide(0, side.clockwise(), 2);
 		// 1 - left rooms, 4 - left hall, 3 - above middle, 2 - middle, 5 - right hall, 0 - right rooms
 //		crs.cutRectangleFromSide(rightRoomsId, side, 1);
-		int firstSideRoom = 6;
+		// int firstSideRoom = 6;
 		// Place left rooms and link them with left hall
 		while(dir.isH() && crs.content.get(1).height > 5 || 
 				dir.isV() && crs.content.get(1).width > 5) {
@@ -72,7 +64,7 @@ public class Inn extends Building {
 		placeFrontDoor(lobbyId, side);
 		
 		/* CONTENTS */
-		Rectangle lobbyRec = rectangleSystem.content.get(lobbyId);
+		// Rectangle lobbyRec = rectangleSystem.content.get(lobbyId);
 //		for (int i=firstSideRoom, size = crs.rectangles.size();i<size;i++) {
 //			ArrayList<Coordinate> cells = getCellsNearWalls(crs.rectangles.get(i));
 //		}

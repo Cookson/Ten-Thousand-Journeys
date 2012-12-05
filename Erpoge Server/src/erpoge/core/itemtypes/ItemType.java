@@ -1,18 +1,12 @@
 package erpoge.core.itemtypes;
 
-import java.util.HashMap;
-
-import erpoge.core.Character;
-import erpoge.core.itemtypes.Attribute;
-import erpoge.core.Material;
-import erpoge.core.JsonSerializable;
 import java.util.HashSet;
+
 import erpoge.core.Aspect;
 import erpoge.core.AspectName;
-import java.util.List;
-import java.util.ArrayList;
+import erpoge.core.Material;
 
-public class ItemType extends ItemSystemMetaInfo implements JsonSerializable {
+public class ItemType extends ItemSystemMetaInfo {
 	private static int lastId = 0; // Used to assign `id`s to `ItemType`s
 	private final int id;
 	private final String name;
@@ -53,7 +47,6 @@ public class ItemType extends ItemSystemMetaInfo implements JsonSerializable {
 		return id;
 	}
 	public String getName() {
-		// TODO Auto-generated method stub
 		return name;
 	}
 	public boolean isStackable() {
@@ -67,19 +60,5 @@ public class ItemType extends ItemSystemMetaInfo implements JsonSerializable {
 			nString += aspect;
 		}
 		return nString+"\n";
-	}
-	public List getDataForJson() {
-		List forJson = new ArrayList();
-		forJson.add(name);
-		List aspectsForJson = new ArrayList();
-		for (Aspect aspect : aspects) {
-			aspectsForJson.add(aspect.getDataForJson());
-		}
-		forJson.add(aspectsForJson);
-		forJson.add(weight);
-		forJson.add(volume);
-		forJson.add(material.getId());
-		forJson.add(stackable);
-		return forJson;
 	}
 }

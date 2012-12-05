@@ -3,13 +3,12 @@ package erpoge.buildings;
 import erpoge.core.graphs.CustomRectangleSystem;
 import erpoge.core.meta.Side;
 import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.TerrainBasics;
 import erpoge.core.terrain.settlements.Building;
 import erpoge.core.terrain.settlements.BuildingPlace;
-import erpoge.core.terrain.settlements.Building.BasisBuildingSetup;
 
 
 public class Smithy extends Building {
+	public static final long serialVersionUID = 568456832L;
 	public void draw() {
 		CustomRectangleSystem crs = new CustomRectangleSystem(x,y,width,height,1);
 		Side side = Side.S;

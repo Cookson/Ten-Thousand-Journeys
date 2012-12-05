@@ -8,9 +8,7 @@ import java.util.Set;
 import net.tootallnate.websocket.WebSocket;
 
 import erpoge.core.characters.NonPlayerCharacter;
-import erpoge.core.characters.PlayerCharacter;
 import erpoge.core.net.MainHandler;
-import erpoge.core.net.PlayerHandler;
 import erpoge.core.net.serverevents.EventChunkContents;
 import erpoge.core.net.serverevents.EventExcludeChunk;
 import erpoge.core.net.serverevents.EventNextTurn;
@@ -138,7 +136,7 @@ public class TimeStream {
 				((NonPlayerCharacter)nextCharacter).action();
 				nextCharacter = next();
 			}
-			addEvent(new EventNextTurn(nextCharacter.characterId));
+			addEvent(new EventNextTurn(nextCharacter.id));
 			flushEvents();
 		}
 	}
@@ -147,7 +145,7 @@ public class TimeStream {
 	}
 	public Character getCharacterById(int characterId) {
 		for (Character character : characters) {
-			if (character.characterId == characterId) {
+			if (character.getId() == characterId) {
 				return character;
 			}
 		}

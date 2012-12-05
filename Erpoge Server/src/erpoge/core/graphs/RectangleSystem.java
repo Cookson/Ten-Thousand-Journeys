@@ -2,26 +2,20 @@ package erpoge.core.graphs;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import erpoge.core.Main;
 import erpoge.core.meta.Chance;
 import erpoge.core.meta.Coordinate;
 import erpoge.core.meta.Direction;
 import erpoge.core.meta.Side;
 import erpoge.core.meta.Utils;
 import erpoge.core.net.RectangleArea;
-import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.Cell;
 import erpoge.core.terrain.Location;
-import erpoge.core.terrain.TerrainBasics;
 
 public class RectangleSystem extends Graph<RectangleArea> {
 	public int width;

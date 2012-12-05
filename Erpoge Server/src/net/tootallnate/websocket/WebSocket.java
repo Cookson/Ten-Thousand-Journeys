@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import erpoge.core.net.PlayerHandler;
+import erpoge.core.PlayerHandler;
 
 import net.tootallnate.websocket.Draft.HandshakeState;
 import net.tootallnate.websocket.Framedata.Opcode;

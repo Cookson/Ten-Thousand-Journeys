@@ -3,14 +3,8 @@ package erpoge.core.magic;
 import java.util.HashMap;
 
 import erpoge.core.Character;
-import erpoge.core.Main;
-import erpoge.core.characters.CharacterEffect;
+import erpoge.core.StaticData;
 import erpoge.core.characters.EffectsTypology;
-import erpoge.core.inventory.Item;
-import erpoge.core.inventory.UniqueItem;
-import erpoge.core.objects.GameObjects;
-import erpoge.core.objects.Sound;
-import erpoge.core.terrain.Chunk;
 
 public final class Spells {
 	private static final Spells instance = new Spells();
@@ -33,7 +27,7 @@ public final class Spells {
 		});
 		spells.put(SPELL_SUMMON_ITEM, new Spell() {
 			public void cast(Character caster, int x, int y) {
-				caster.plane.createCharacter(x, y, "bear", "Чужой миша", 0);
+				caster.plane.createCharacter(x, y, StaticData.getCharacterType("bear").getId(), "Чужой миша", 0);
 //				if (caster.location.cells[x][y].object() != GameObjects.OBJ_VOID) {
 //					caster.location.removeObject(x, y);
 //				} else {
@@ -43,7 +37,7 @@ public final class Spells {
 		});
 		spells.put(SPELL_SUMMON_ENEMY, new Spell() {
 			public void cast(Character caster, int x, int y) {
-				caster.plane.createCharacter(x, y, "bear", "Мой миша", 1);
+				caster.plane.createCharacter(x, y, StaticData.getCharacterType("bear").getId(), "Мой миша", 1);
 			}
 		});
 	}

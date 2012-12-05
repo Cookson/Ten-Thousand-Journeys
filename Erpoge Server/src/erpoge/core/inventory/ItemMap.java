@@ -1,14 +1,10 @@
 package erpoge.core.inventory;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import erpoge.core.Main;
 import erpoge.core.itemtypes.ItemSystemMetaInfo;
-import erpoge.core.itemtypes.ItemType;
-import erpoge.core.terrain.Container;
 
 public class ItemMap extends ItemSystemMetaInfo {
 	// itemId => UniqueItem
@@ -29,7 +25,7 @@ public class ItemMap extends ItemSystemMetaInfo {
 		}
 	}
 	public void add(ItemPile pile) {
-		int typeId = pile.getType().getTypeId();
+		int typeId = pile.getType().getId();
 		if (itemPiles.containsKey(typeId)) {
 			itemPiles.get(typeId).changeAmount(pile.getAmount());
 		} else {
@@ -37,14 +33,14 @@ public class ItemMap extends ItemSystemMetaInfo {
 		}
 	}
 	public void removePile(ItemPile pile) {
-		ItemPile pileInMap = itemPiles.get(pile.getType().getTypeId());
+		ItemPile pileInMap = itemPiles.get(pile.getType().getId());
 		if (pile == pileInMap || pileInMap.getAmount() == pile.getAmount()) {
-			itemPiles.remove(pile.getType().getTypeId());
+			itemPiles.remove(pile.getType().getId());
 		} else if (pile.getAmount() < pileInMap.getAmount()) {
 			pileInMap.setAmount(pileInMap.getAmount() - pile.getAmount());
 		} else {
 			throw new Error("Incorrect pile removing: type "
-					+ pile.getType().getTypeId() + ", removing "
+					+ pile.getType().getId() + ", removing "
 					+ pile.getAmount() + ", has " + pileInMap.getAmount());
 		}
 	}
@@ -102,11 +98,11 @@ public class ItemMap extends ItemSystemMetaInfo {
 		int[] answer = new int[size()*2];
 		int pos = 0;
 		for (UniqueItem item : uniqueItems.values()) {
-			answer[pos++] = item.type.getTypeId();
+			answer[pos++] = item.type.getId();
 			answer[pos++] = item.itemId;
 		}
 		for (ItemPile item : itemPiles.values()) {
-			answer[pos++] = item.type.getTypeId();
+			answer[pos++] = item.type.getId();
 			answer[pos++] = item.getAmount();
 		}
 		return answer;

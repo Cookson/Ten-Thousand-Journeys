@@ -1,23 +1,13 @@
 package erpoge.core;
-import java.awt.Rectangle;
-
 import erpoge.core.characters.CharacterManager;
-import erpoge.core.characters.CharacterTypes;
-import erpoge.core.characters.PlayerCharacter;
 import erpoge.core.characters.Race;
 import erpoge.core.gui.Window;
-import erpoge.core.inventory.ItemPile;
-import erpoge.core.inventory.UniqueItem;
-import erpoge.core.itemtypes.ItemType;
 import erpoge.core.itemtypes.ItemsTypology;
 import erpoge.core.net.Account;
 import erpoge.core.net.Accounts;
 import erpoge.core.net.MainHandler;
-import erpoge.core.net.PlayerHandler;
 import erpoge.core.objects.GameObjects;
 import erpoge.core.terrain.HorizontalPlane;
-import erpoge.core.terrain.Location;
-import erpoge.core.terrain.settlements.Building;
 
 public class Main {
 	public static Window window;
@@ -51,10 +41,8 @@ public class Main {
 	}
 	public static void main(String args[]) {
 		Main.window = new Window();
-		
 		GameObjects.init();
 		ItemsTypology.init();
-		CharacterTypes.init();
 		//		Main.log(GameObjects.jsonGetObjectProperties());
 		//		CharacterTypes.jsonTypes();
 		//		ItemsTypology.showTypology();
@@ -80,13 +68,13 @@ public class Main {
 				
 		//		plane.showTerrain(-20, -20, 100, 100);
 		PlayerHandler burok = CharacterManager.createPlayer(plane, 6, 9, "Alvoi", Race.ELF, "Warrior");
-		burok.eventlessGetItem(new UniqueItem(ItemType.CLASS_SWORD * ItemsTypology.CLASS_LENGTH));
-		burok.eventlessGetItem(new ItemPile(ItemType.CLASS_AMMO * ItemsTypology.CLASS_LENGTH,200));
-		burok.eventlessGetItem(new UniqueItem(ItemType.CLASS_BLUNT * ItemsTypology.CLASS_LENGTH));
-		burok.eventlessGetItem(new UniqueItem(ItemType.CLASS_BOW * ItemsTypology.CLASS_LENGTH));
-		burok.eventlessGetItem(new UniqueItem(ItemType.CLASS_SHIELD * ItemsTypology.CLASS_LENGTH));
-		burok.eventlessGetItem(new UniqueItem(1204));
-		burok.eventlessGetItem(new UniqueItem(1102));
+		// burok.eventlessGetItem(new UniqueItem(ItemType.CLASS_SWORD * ItemsTypology.CLASS_LENGTH));
+		// burok.eventlessGetItem(new ItemPile(ItemType.CLASS_AMMO * ItemsTypology.CLASS_LENGTH,200));
+		// burok.eventlessGetItem(new UniqueItem(ItemType.CLASS_BLUNT * ItemsTypology.CLASS_LENGTH));
+		// burok.eventlessGetItem(new UniqueItem(ItemType.CLASS_BOW * ItemsTypology.CLASS_LENGTH));
+		// burok.eventlessGetItem(new UniqueItem(ItemType.CLASS_SHIELD * ItemsTypology.CLASS_LENGTH));
+		// burok.eventlessGetItem(new UniqueItem(1204));
+		// burok.eventlessGetItem(new UniqueItem(1102));
 		burok.learnSpell(9);
 		burok.learnSpell(10);
 		Accounts.addAccount(new Account("1","1"));

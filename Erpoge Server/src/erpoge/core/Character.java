@@ -8,22 +8,15 @@ import erpoge.core.characters.CharacterEffect;
 import erpoge.core.characters.CharacterState;
 import erpoge.core.characters.DamageType;
 import erpoge.core.characters.NonPlayerCharacter;
-import erpoge.core.inventory.EquipmentMap;
-import erpoge.core.inventory.Item;
 import erpoge.core.inventory.ItemMap;
 import erpoge.core.inventory.ItemPile;
 import erpoge.core.inventory.UniqueItem;
-import erpoge.core.itemtypes.Attribute;
-import erpoge.core.itemtypes.ItemType;
 import erpoge.core.magic.Spells;
-import erpoge.core.meta.Chance;
 import erpoge.core.meta.Coordinate;
 import erpoge.core.meta.Side;
 import erpoge.core.meta.Utils;
-import erpoge.core.net.serverevents.EventAttributeChange;
 import erpoge.core.net.serverevents.EventCastSpell;
 import erpoge.core.net.serverevents.EventChangeEnergy;
-import erpoge.core.net.serverevents.EventChangeMana;
 import erpoge.core.net.serverevents.EventChangePlaces;
 import erpoge.core.net.serverevents.EventDamage;
 import erpoge.core.net.serverevents.EventDeath;
@@ -49,65 +42,49 @@ import erpoge.core.terrain.Cell;
 import erpoge.core.terrain.Chunk;
 import erpoge.core.terrain.Container;
 import erpoge.core.terrain.HorizontalPlane;
-import erpoge.core.terrain.Location;
 import erpoge.core.terrain.TerrainBasics;
 
 public abstract class Character extends Coordinate {
+	public static final long serialVersionUID = 1832389411;
+	private static int lastId = 0;
 	public final static int
 		FRACTION_NEUTRAL = -1,
 		FRACTION_PLAYER = 1,
 		FRACTION_AGRESSIVE = 0;
-	
+	protected Body body;
 	public static final String DEFAULT_NAME = "Default Name";
 	public static final double VISION_RANGE = 8;
-	
-	public int hp;
-	public int mp;
+	int actionPoints;
 	protected int ep;
 	protected int energy;
-	public int maxHp;
-	public int maxMp;
 	protected int maxEp;
-	protected int armor;
-	protected int evasion;
-	protected int fireRes = 0;
-	protected int coldRes = 0;
-	protected int poisonRes = 0;
-	protected int acidRes = 0;
-	protected int actionPoints = 0;
 	public int fraction;
 	public HorizontalPlane plane;
 	public Chunk chunk;
 	public final String name;
-	public final String type;
 	public final HashMap<Integer, Character.Effect> effects = new HashMap<Integer, Character.Effect>();
 	
 	protected ArrayList<Integer> spells = new ArrayList<Integer>();
 	
-	/**
-	 * characterId generates randomly and works as a hash and the only way to
-	 * identify the unique character
-	 */
-	public final int characterId = Chance.rand(0, Integer.MAX_VALUE);
+	protected final int id;
 	public final ItemMap inventory = new ItemMap();
-	public final EquipmentMap equipment = new EquipmentMap();
 	public HashSet<NonPlayerCharacter> observers = new HashSet<NonPlayerCharacter>();
 	
 	protected CharacterState state = CharacterState.DEFAULT;
 
 	protected TimeStream timeStream;
-	public Character(HorizontalPlane plane, int x, int y, String type, String name) {
+	public Character(HorizontalPlane plane, int x, int y, String name) {
 	// Common character creation: with all attributes, in location.
 		super(x, y);
+		this.id = ++lastId;
 		this.name = name;
-		this.type = type;
 		this.plane = plane;
 		this.chunk = plane.getChunkWithCell(x, y);
 		fraction = 0;
 	}
 	/* Actions */
 	protected void attack(Character aim) {
-		timeStream.addEvent(new EventMeleeAttack(characterId, aim.characterId));
+		timeStream.addEvent(new EventMeleeAttack(id, aim.id));
 		aim.getDamage(7 , DamageType.PLAIN);
 		moveTime(500);
 	}
@@ -124,7 +101,7 @@ public abstract class Character extends Coordinate {
 	protected void shootMissile(int toX, int toY, UniqueItem item) {
 		loseItem(item);
 		Coordinate end = getRayEnd(toX, toY);
-		timeStream.addEvent(new EventMissileFlight(x, y, end.x, end.y, item.getTypeId()));
+		timeStream.addEvent(new EventMissileFlight(x, y, end.x, end.y, item.getType().getId()));
 		plane.addItem(item, end.x, end.y);
 		Cell aimCell = plane.getCell(toX, toY);
 		if (aimCell.character() != null) {
@@ -132,9 +109,8 @@ public abstract class Character extends Coordinate {
 		}
 	}
 	protected void castSpell(int spellId, int x, int y) {
-		timeStream.addEvent(new EventCastSpell(characterId, spellId, x, y));
+		timeStream.addEvent(new EventCastSpell(id, spellId, x, y));
 		Spells.cast(this, spellId, x, y);
-		changeMana(-25);
 		moveTime(500);
 	}
 	public void learnSpell(int spellId) {
@@ -145,47 +121,30 @@ public abstract class Character extends Coordinate {
 			character.discoverDeath(this);
 		}
 		plane.getChunkWithCell(x,y).removeCharacter(this);
-		timeStream.addEvent(new EventDeath(characterId));
+		timeStream.addEvent(new EventDeath(id));
 	}
 	protected void putOn(UniqueItem item, boolean omitEvent) {
 	// Main put on function
-		int cls = item.getType().getCls();
 		
-		int slot = item.getType().getSlot();
-		if (cls == ItemType.CLASS_RING) {
-			// ����������� ������, ����� �������� ������ (�� ����� ����
-			// ������������ ���)
-			int numOfRings = 0;
-			if (numOfRings == 2) {
-				throw new Error("Character " + name
-						+ " is trying to put on more than 2 rings");
-			}
-		} else if (equipment.hasPiece(slot)) {
-			// ���� ����� ������� ���� �� ����
-			throw new Error("Character " + name
-					+ " is trying to put on a piece he is already wearing");
-		}
-		equipment.add(item);
+		body.putOn(item);
 		inventory.removeUnique(item);
 		if (!omitEvent) {
 		// Sending for mobs. Sending for players is in PlayerCharacter.putOn()
-			getTimeStream().addEvent(new EventPutOn(characterId, item.getItemId()));
+			getTimeStream().addEvent(new EventPutOn(id, item.getItemId()));
 		}
-		addItemBonuses(item);
 		moveTime(500);
 	}
 	protected void takeOff(UniqueItem item) {
-		equipment.removeSlot(item.getType().getSlot());
+		body.takeOff(item);
 		inventory.add(item);
-		getTimeStream().addEvent(new EventTakeOff(characterId, item.getItemId()));
-		removeItemBonuses(item);
+		getTimeStream().addEvent(new EventTakeOff(id, item.getItemId()));
 		moveTime(500);
 	}
 	protected void pickUp(ItemPile pile) {
 	/**
 	 * Pick up an item lying on the same cell where the character stands.
 	 */
-		getTimeStream().addEvent(new EventPickUp(characterId, pile.getType().getTypeId(), pile.getAmount()));
+		getTimeStream().addEvent(new EventPickUp(id, pile.getType().getId(), pile.getAmount()));
 		getItem(pile);
 		plane.removeItem(pile, x, y);
 		moveTime(500);
@@ -194,7 +153,7 @@ public abstract class Character extends Coordinate {
 	/**
 	 * Pick up an item lying on the same cell where the character stands.
 	 */
-		timeStream.addEvent(new EventPickUp(characterId, item.getTypeId(), item.getItemId()));
+		timeStream.addEvent(new EventPickUp(id, item.getType().getId(), item.getItemId()));
 		getItem(item);
 		Chunk chunk = plane.getChunkWithCell(x,y);
 		chunk.removeItem(item, x-chunk.getX(), y-chunk.getY());
@@ -204,38 +163,38 @@ public abstract class Character extends Coordinate {
 		loseItem(item);
 		Chunk chunk = plane.getChunkWithCell(x,y);
 		chunk.addItem(item, x-chunk.getX(), y-chunk.getY());
-		timeStream.addEvent(new EventDropItem(characterId, item.getTypeId(), item.getItemId()));
+		timeStream.addEvent(new EventDropItem(id, item.getType().getId(), item.getItemId()));
 		moveTime(500);
 	}
 	protected void drop(ItemPile pile) {
 		loseItem(pile);
 		Chunk chunk = plane.getChunkWithCell(x,y);
 		chunk.addItem(pile, x-chunk.getX(), y-chunk.getY());
-		timeStream.addEvent(new EventDropItem(characterId, pile.getType().getTypeId(), pile.getAmount()));
+		timeStream.addEvent(new EventDropItem(id, pile.getType().getId(), pile.getAmount()));
 		moveTime(500);
 	}
 	protected void takeFromContainer(ItemPile pile, Container container) {
 		getItem(pile);
 		container.removePile(pile);
-		timeStream.addEvent(new EventTakeFromContainer(characterId, pile.getTypeId(), pile.getAmount(), x, y));
+		timeStream.addEvent(new EventTakeFromContainer(id, pile.getType().getId(), pile.getAmount(), x, y));
 		moveTime(500);
 	}
 	protected void takeFromContainer(UniqueItem item, Container container) {
 		getItem(item);
 		container.removeUnique(item);
-		timeStream.addEvent(new EventTakeFromContainer(characterId, item.getTypeId(), item.getItemId(), x, y));
+		timeStream.addEvent(new EventTakeFromContainer(id, item.getType().getId(), item.getItemId(), x, y));
 		moveTime(500);
 	}
 	protected void putToContainer(ItemPile pile, Container container) {
 		loseItem(pile);
 		container.add(pile);
-		timeStream.addEvent(new EventPutToContainer(characterId, pile.getTypeId(), pile.getAmount(), x, y));
+		timeStream.addEvent(new EventPutToContainer(id, pile.getType().getId(), pile.getAmount(), x, y));
 		moveTime(500);
 	}
 	protected void putToContainer(UniqueItem item, Container container) {
 		loseItem(item);
 		container.add(item);
-		timeStream.addEvent(new EventPutToContainer(characterId, item.getTypeId(), item.getItemId(), x, y));
+		timeStream.addEvent(new EventPutToContainer(id, item.getType().getId(), item.getItemId(), x, y));
 		moveTime(500);
 	}
 	protected void useObject(int x, int y) {
@@ -244,7 +203,7 @@ public abstract class Character extends Coordinate {
 		} else {
 			throw new Error("Trying to use an object that is not a door");
 		}
-		getTimeStream().addEvent(new EventUseObject(characterId, x, y));
+		getTimeStream().addEvent(new EventUseObject(id, x, y));
 		moveTime(500);
 	}
 	protected void idle() {
@@ -265,7 +224,7 @@ public abstract class Character extends Coordinate {
 	}
 	protected void enterState(CharacterState state) {
 		this.state = state;
-		timeStream.addEvent(new EventEnterState(characterId, state));
+		timeStream.addEvent(new EventEnterState(id, state));
 	}
 	/* Special actions */
 	protected void push(Character character, Side side) {
@@ -293,7 +252,7 @@ public abstract class Character extends Coordinate {
 		changeEnergy(-30);
 		// This event is needed for client to correctly 
 		// handle characters' new positions in Terrain.cells
-		getTimeStream().addEvent(new EventChangePlaces(characterId, character.characterId));
+		getTimeStream().addEvent(new EventChangePlaces(id, character.id));
 		moveTime(500);		
 	}
 	protected void scream() {
@@ -301,23 +260,17 @@ public abstract class Character extends Coordinate {
 	}
 	protected void jump(int x, int y) {
 		move(x,y);
-		getTimeStream().addEvent(new EventJump(characterId));
+		getTimeStream().addEvent(new EventJump(id));
 		changeEnergy(-40);
 		moveTime(500);
 	}
 	protected void shieldBash(Character character) {
-		if (!equipment.hasPiece(ItemType.SLOT_LEFT_HAND)) {
-			throw new Error(name+" doesn't have a shield");
-		}
 		character.getDamage(5, DamageType.PLAIN);
 		changeEnergy(7);
 		timeStream.makeSound(character.x, character.y, SoundType.CRASH);
 		moveTime(500);
 	}
 	protected void shieldBash(int x, int y) {
-		if (!equipment.hasPiece(ItemType.SLOT_LEFT_HAND)) {
-			throw new Error(name+" doesn't have a shield");
-		}
 		changeEnergy(7);
 		getTimeStream().makeSound(x, y, SoundType.CRASH);
 		moveTime(500);
@@ -662,26 +615,25 @@ public abstract class Character extends Coordinate {
 		}
 	}
 	/* Getters */
-	public int getAttribute(Attribute attribute) {
-		switch (attribute) {
-		case ARMOR:       return armor;
-		case EVASION:     return evasion;
-		case MAX_HP:      return maxHp;
-		case MAX_MP:      return maxMp;
-		case HP:          return hp;
-		case MP:          return mp;
-		default:
-			throw new Error("Unknown attribute");
-		}
-	}
 	public int hashCode() {
-		return characterId;
+		return id;
 	}
+
+	/**
+	 * @return the actionPoints
+	 */
+	public int getActionPoints() {
+		return actionPoints;
+	}
+	public int increaseActionPoints(int value) {
+		return actionPoints += value;
+	}
+
 	public int getFraction() {
 		return fraction;
 	}
-	public int getActionPoints() {
-		return actionPoints;
+	public int getId() {
+		return id;
 	}
 	/* Setters */
 	public void move(int x, int y) {
@@ -698,35 +650,21 @@ public abstract class Character extends Coordinate {
 		this.y = y;
 		plane.getCell(x,y).character(this);
 		plane.getCell(x,y).setPassability(TerrainBasics.PASSABILITY_SEE);
-		timeStream.addEvent(new EventMove(characterId, x, y));
+		timeStream.addEvent(new EventMove(id, x, y));
 		notifyNeighborsVisiblilty();
 	}
 	public void getDamage(int amount, DamageType type) {
-		hp -= amount;
-		getTimeStream().addEvent(new EventDamage(characterId, amount, type.type2int()));
-		if (hp <= 0) {
-			die();
-		}
-	}
-	protected void increaseHp(int amount) {
-		hp = (hp + amount > maxHp) ? maxHp : hp + amount;
+		getTimeStream().addEvent(new EventDamage(id, amount, type.type2int()));
 	}
 	protected void changeEnergy(int amount) {
 		amount = Math.min(amount, maxEp-ep);
 		if (amount != 0) {
 			ep += amount;
-			timeStream.addEvent(new EventChangeEnergy(characterId, ep));
+			timeStream.addEvent(new EventChangeEnergy(id, ep));
 		} else {
 			if (state == CharacterState.RUNNING) {
 				enterState(CharacterState.DEFAULT);
 			}
-		}
-	}
-	protected void changeMana(int amount) {
-		amount = Math.min(amount, maxMp-mp);
-		if (amount != 0) {
-			mp += amount;
-			getTimeStream().addEvent(new EventChangeMana(characterId, mp));
 		}
 	}
 	protected void removeEffect(CharacterEffect effect) {
@@ -734,7 +672,7 @@ public abstract class Character extends Coordinate {
 	}
 	public void getItem(UniqueItem item) {
 		inventory.add(item);
-		timeStream.addEvent(new EventGetUniqueItem(characterId, item.getTypeId(), item.getItemId()));
+		timeStream.addEvent(new EventGetUniqueItem(id, item.getType().getId(), item.getItemId()));
 	}
 	public void eventlessGetItem(UniqueItem item) {
 		inventory.add(item);
@@ -744,12 +682,12 @@ public abstract class Character extends Coordinate {
 	}
 	public void getItem(ItemPile pile) {
 		inventory.add(pile);
-		getTimeStream().addEvent(new EventGetItemPile(characterId, pile.getTypeId(), pile.getAmount()));
+		getTimeStream().addEvent(new EventGetItemPile(id, pile.getType().getId(), pile.getAmount()));
 	}
 	public void loseItem(UniqueItem item) {
 		if (inventory.hasUnique(item.getItemId())) {
 			inventory.removeUnique(item);
-			getTimeStream().addEvent(new EventLoseItem(characterId, item.getType().getTypeId(), item.getItemId()));
+			getTimeStream().addEvent(new EventLoseItem(id, item.getType().getId(), item.getItemId()));
 		} else {
 			throw new Error("An attempt to lose an item width id " + item.getItemId()
 					+ " that is neither in inventory nor in equipment");
@@ -757,7 +695,7 @@ public abstract class Character extends Coordinate {
 	}
 	public void loseItem(ItemPile pile) {
 		inventory.removePile(pile);
-		getTimeStream().addEvent(new EventLoseItem(characterId, pile.getType().getTypeId(), pile.getAmount()));
+		getTimeStream().addEvent(new EventLoseItem(id, pile.getType().getId(), pile.getAmount()));
 	}
 	public void setFraction(int fraction) {
 		this.fraction = fraction;
@@ -767,56 +705,20 @@ public abstract class Character extends Coordinate {
 			removeEffect(effectId);
 		}
 		effects.put(effectId, new Character.Effect(effectId, duration, modifier));
-		getTimeStream().addEvent(new EventEffectStart(characterId, effectId));
+		getTimeStream().addEvent(new EventEffectStart(id, effectId));
 	}
 	public void removeEffect(int effectId) {
 		effects.remove(effectId);
-		getTimeStream().addEvent(new EventEffectEnd(characterId, effectId));
+		getTimeStream().addEvent(new EventEffectEnd(id, effectId));
 	}
 	protected void moveTime(int amount) {
-		actionPoints -= amount;
 		for (Character.Effect e : effects.values()) {
 			e.duration -= amount;
 			if (e.duration < 0) {
 				removeEffect(e.effectId);
 			}
 		}
-		switch (state) {
-		}
 		changeEnergy(10);
-	}
-	private void addItemBonuses(Item item) {
-	/**
-	 * Add bonuses of item after putting in on
-	 */
-		item.getType().addBonuses(this);
-	}
-	private void removeItemBonuses(Item item) {
-	/**
-	 * Add bonuses of item after putting in on
-	 */
-		item.getType().removeBonuses(this);
-	}
-	public void changeAttribute(Attribute attribute, int value) {
-		int resultValue = -9000;
-		switch (attribute) {
-		case ARMOR:       resultValue = (armor += value); break;
-		case EVASION:     resultValue = (evasion += value); break;
-		case MAX_HP:      resultValue = (maxHp += value); 
-		                                 hp += value; 
-                          getTimeStream().addEvent(new EventAttributeChange(characterId, Attribute.HP.attr2int(), hp));
-		                  break;
-		case MAX_MP:      resultValue = (maxMp += value); 
-                                         hp += value; 
-                          getTimeStream().addEvent(new EventAttributeChange(characterId, Attribute.MP.attr2int(), mp));
-                          break;
-		default:
-			throw new Error("Unknown attribute");
-		}
-		getTimeStream().addEvent(new EventAttributeChange(characterId, attribute.attr2int(), resultValue));
-	}
-	protected void increaseActionPoints(int value) {
-		actionPoints += value;
 	}
 	/* Checks */
 	public boolean at(int atX, int atY) {
@@ -836,7 +738,7 @@ public abstract class Character extends Coordinate {
 		return "[]";
 	}
 	public String jsonGetEquipment() {
-		return equipment.jsonGetEquipment();
+		return body.toJson();
 	}
 	public int[] getEffects() {
 		return new int[0];
@@ -862,6 +764,4 @@ public abstract class Character extends Coordinate {
 			this.modifier = modifier;
 		}
 	}
-
-	
 }

@@ -23,7 +23,7 @@ public class EffectsTypology {
 	public EffectsTypology() {
 		addEffect(EFF_POISON, TYPE_ONTURN, new CharacterEffect() {
 			public void effect(Character ch, int modifier) {
-				ch.changeAttribute(Attribute.HP, -modifier);
+
 			}
 		});
 		addEffect(EFF_BERSERK, TYPE_ONTURN, new CharacterEffect() {

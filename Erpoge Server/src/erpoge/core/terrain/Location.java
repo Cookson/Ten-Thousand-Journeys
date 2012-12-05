@@ -1,37 +1,20 @@
 package erpoge.core.terrain;
 
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
-import java.awt.Rectangle;
-import java.io.IOException;
 
-
-import net.tootallnate.websocket.WebSocket;
-
-import erpoge.core.Character;
 import erpoge.core.Main;
 import erpoge.core.characters.NonPlayerCharacter;
-import erpoge.core.characters.PlayerCharacter;
 import erpoge.core.graphs.CustomRectangleSystem;
-import erpoge.core.graphs.RectangleSystem;
 import erpoge.core.graphs.TerrainRectangleSystem;
-import erpoge.core.inventory.Item;
-import erpoge.core.inventory.ItemPile;
-import erpoge.core.inventory.UniqueItem;
-import erpoge.core.itemtypes.Attribute;
 import erpoge.core.meta.Chance;
 import erpoge.core.meta.Coordinate;
 import erpoge.core.meta.Side;
 import erpoge.core.net.Chat;
-import erpoge.core.net.MainHandler;
-import erpoge.core.net.serverevents.*;
-import erpoge.core.objects.Sound;
-import erpoge.core.objects.SoundType;
 import erpoge.core.terrain.settlements.Building;
 import erpoge.core.terrain.settlements.BuildingPlace;
 
@@ -41,10 +24,8 @@ public class Location extends TerrainBasics {
 	protected final int width;
 	protected final int height;
 	
-	private ArrayList<PlayerCharacter> players = new ArrayList<PlayerCharacter>();
 	protected ArrayList<Ceiling> ceilings = new ArrayList<Ceiling>();
 	
-	private ArrayList<Sound> soundSources = new ArrayList<Sound>();
 	/**
 	 * serverEvents - a core of the mechanism of asynchronous server-side data sending.
 	 * A character does his actions, all the events like attacks, spells, item manipulations,
@@ -213,14 +194,14 @@ public class Location extends TerrainBasics {
 		return new CellCollection(cls, this);
 	}
 	// From LocationGenerator
-	public NonPlayerCharacter createCharacter(String type, String name, int x, int y) {
-		NonPlayerCharacter ch = new NonPlayerCharacter(plane, x, y, type, name);
-		characters.put(ch.characterId, ch);
+	public NonPlayerCharacter createCharacter(String type, int characterTypeId, int x, int y) {
+		NonPlayerCharacter ch = new NonPlayerCharacter(plane, x, y, characterTypeId, name);
+		characters.put(ch.getId(), ch);
 		cells[x][y].character(ch);
 		return ch;
 	}
 	public void selectPlane(HorizontalPlane plane) {
-		plane = plane;
+		this.plane = plane;
 	}
 	public Building placeBuilding(Class<? extends Building> building, int x, int y, int width, int height, Side side) {
 	/**

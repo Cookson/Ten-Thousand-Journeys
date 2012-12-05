@@ -2,11 +2,7 @@ package erpoge.buildings;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 
-import erpoge.core.Main;
-import erpoge.core.graphs.RectangleSystem;
 import erpoge.core.meta.Chance;
 import erpoge.core.meta.Coordinate;
 import erpoge.core.net.RectangleArea;
@@ -15,10 +11,9 @@ import erpoge.core.terrain.CellCollection;
 import erpoge.core.terrain.TerrainBasics;
 import erpoge.core.terrain.settlements.Building;
 import erpoge.core.terrain.settlements.BuildingPlace;
-import erpoge.core.terrain.settlements.Settlement;
-import erpoge.core.terrain.settlements.Building.BasisBuildingSetup;
 
 public class Crypt extends Building {
+	public static final long serialVersionUID = 836362727L;
 	public Coordinate stairsCoord;
 	public void draw() {
 		

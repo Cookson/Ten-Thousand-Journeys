@@ -5,12 +5,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import erpoge.core.Character;
+import erpoge.core.CharacterType;
 import erpoge.core.Main;
-import erpoge.core.inventory.Item;
-import erpoge.core.itemtypes.ItemType;
-import erpoge.core.itemtypes.ItemsTypology;
-import erpoge.core.meta.Chance;
-import erpoge.core.meta.Condition;
+import erpoge.core.PlayerCharacter;
+import erpoge.core.StaticData;
 import erpoge.core.meta.Coordinate;
 import erpoge.core.meta.Side;
 import erpoge.core.net.serverevents.EventDialogueEnd;
@@ -18,41 +16,37 @@ import erpoge.core.net.serverevents.EventDialoguePoint;
 import erpoge.core.terrain.Cell;
 import erpoge.core.terrain.Chunk;
 import erpoge.core.terrain.HorizontalPlane;
-import erpoge.core.terrain.Location;
 import erpoge.core.terrain.TerrainBasics;
 
 public class NonPlayerCharacter extends Character {
+	public static final long serialVersionUID = 34638L;
 	private static final int PATH_TABLE_WIDTH = 41;
 	private int destX;
 	private int destY;
 	private Character activeEnemy; // Enemy in plain sight
 	private Character enemyToChase;
 	private HashSet<Character> unseenEnemies = new HashSet<Character>();
-	private ArrayList<Item> seenItems = new ArrayList<Item>();
+	// private ArrayList<Item> seenItems = new ArrayList<Item>();
 	protected HashSet<Character> seenCharacters = new HashSet<Character>();
 	private final HashMap<Character, Coordinate> lastSeenEnemyCoord = new HashMap<Character, Coordinate>();
 	
 	private int[][] pathTable;
-	public final CharacterType characterType;
+	protected final CharacterType characterType;
 	public ArrayList<CustomCharacterAction> customActions = new ArrayList<CustomCharacterAction>();
 	public HashMap<Character, DialoguePoint> dialogues = new HashMap<Character, DialoguePoint>();
 	private Dialogue dialogue;
 	
-	public NonPlayerCharacter(HorizontalPlane plane, int x, int y, String type, String name) {
-		super(plane, x, y, type, name);
+	public NonPlayerCharacter(HorizontalPlane plane, int x, int y, int characterTypeId, String name) {
+		super(plane, x, y, name);
 		Chunk chunk = plane.getChunkWithCell(x, y);
 		chunk.getCell(x, y).setPassability(TerrainBasics.PASSABILITY_SEE);
 		this.chunk = chunk;
-		hp = CharacterTypes.getType(type).hp;
-		mp = CharacterTypes.getType(type).mp;
 		ep = 100;
-		maxHp = CharacterTypes.getType(type).hp;
-		maxMp = CharacterTypes.getType(type).mp;
 		maxEp = 100;
 		pathTable = new int[PATH_TABLE_WIDTH][PATH_TABLE_WIDTH];
 		destX = x;
 		destY = y;
-		characterType = CharacterTypes.getType(type);
+		characterType = StaticData.getCharacterType(characterTypeId);
 	}
 	/* Observations */
 	public void updateObservation(Character character, int x, int y) {
@@ -236,12 +230,7 @@ public class NonPlayerCharacter extends Character {
 	 * Checks if this character is able to shoot an arrow
 	 * or other missile.
 	 */
-		return equipment.hasPiece(Item.SLOT_RIGHT_HAND)
-			&& equipment.getItemInSlot(Item.SLOT_RIGHT_HAND).getType().isRanged()
-			&& hasItem(ItemsTypology.getMissileType(equipment.getItemInSlot(0)),1);
-	}
-	private boolean canCast() {
-		return characterType.isCaster;
+		throw new Error("Unimplemented");
 	}
 	private boolean canComeTo(Coordinate c) {
 		int dX = this.x-(PATH_TABLE_WIDTH-1)/2;
@@ -258,7 +247,7 @@ public class NonPlayerCharacter extends Character {
 	}
 	public void action() {
 		getPathTableToAllSeenCharacters();
-		if (hp < maxHp/2) {
+		if (body.getInjuryLevel() < 0.5) {
 		// If hp is too low, then retreat
 			Coordinate retreatCoord = getRetreatCoord();
 			step(retreatCoord.x, retreatCoord.y);
@@ -266,8 +255,6 @@ public class NonPlayerCharacter extends Character {
 			if (canShoot()) {
 				// shootMissile();
 				idle();
-			} else if (canCast()) {
-				castSpell(characterType.spells.get(0), activeEnemy.x, activeEnemy.y);
 			} else if (isNear(activeEnemy.x, activeEnemy.y)) {
 //				changePlaces(activeEnemy);
 //				push(activeEnemy, Side.d2side(activeEnemy.x-x, activeEnemy.y-y));				
@@ -367,11 +354,8 @@ public class NonPlayerCharacter extends Character {
 		// move(destX, destY);
 	}
 	/* Getters */
-	public int getProtection(int type) {
-		return characterType.protections.get(type);
-	}
 	public String toString() {
-		return type+" "+name;
+		return characterType.getName()+" "+name;
 	}
 	/* Overriden methods */
 	public void move(int x, int y) {
@@ -522,7 +506,6 @@ public class NonPlayerCharacter extends Character {
 	 */
 		int dX = this.x-(PATH_TABLE_WIDTH-1)/2;
 		int dY = this.y-(PATH_TABLE_WIDTH-1)/2;
-		boolean isPathFound = false;
 		ArrayList<Coordinate> oldFront = new ArrayList<Coordinate>();
 		ArrayList<Coordinate> newFront = new ArrayList<Coordinate>();
 		newFront.add(new Coordinate(x, y));
@@ -647,8 +630,8 @@ public class NonPlayerCharacter extends Character {
 		int currentNumY = destinationY;
 		int x = currentNumX;
 		int y = currentNumY;
-		int dX = this.x-(this.PATH_TABLE_WIDTH-1)/2;
-		int dY = this.y-(this.PATH_TABLE_WIDTH-1)/2;
+		int dX = this.x-(PATH_TABLE_WIDTH-1)/2;
+		int dY = this.y-(PATH_TABLE_WIDTH-1)/2;
 		for (int j=customPathTable[currentNumX-dX][currentNumY-dY]; j>0; j=customPathTable[currentNumX-dX][currentNumY-dY]) {
 			path.add(0, new Coordinate(currentNumX, currentNumY));
 			int[] adjactentX = {x, x+1, x, x-1, x+1, x+1, x-1, x-1};
@@ -741,11 +724,11 @@ public class NonPlayerCharacter extends Character {
 		}
 		if (prevDP.isAnswerEnding(answerIndex)) {
 		// End dialogue
-			getTimeStream().addEvent(new EventDialogueEnd(player.characterId));
+			getTimeStream().addEvent(new EventDialogueEnd(player.getId()));
 		} else {
 		// Continue dialogue
-			getTimeStream().addEvent(new EventDialoguePoint(characterId,
-					player.characterId, curDP.message, curDP.getAnswers()
+			getTimeStream().addEvent(new EventDialoguePoint(id,
+					player.getId(), curDP.message, curDP.getAnswers()
 							.toArray(new String[0])));
 		}
 	}
@@ -758,8 +741,11 @@ public class NonPlayerCharacter extends Character {
 		}
 
 		dialogues.put(player, startDP);
-		getTimeStream().addEvent(new EventDialoguePoint(characterId,
-				player.characterId, startDP.message, startDP.getAnswers()
+		getTimeStream().addEvent(new EventDialoguePoint(id,
+				player.getId(), startDP.message, startDP.getAnswers()
 						.toArray(new String[0])));
+	}
+	public CharacterType getType() {
+		return characterType;
 	}
 }

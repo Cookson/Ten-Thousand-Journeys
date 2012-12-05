@@ -5,36 +5,24 @@ import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.Iterator;
+
+import net.tootallnate.websocket.Handshakedata;
+import net.tootallnate.websocket.WebSocket;
+import net.tootallnate.websocket.WebSocketServer;
+import net.tootallnate.websocket.drafts.Draft_17;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import erpoge.core.Character;
 import erpoge.core.Main;
+import erpoge.core.PlayerHandler;
 import erpoge.core.characters.CharacterManager;
-import erpoge.core.characters.PlayerCharacter;
-import erpoge.core.inventory.Item;
-import erpoge.core.inventory.ItemPile;
-import erpoge.core.inventory.UniqueItem;
-import erpoge.core.itemtypes.ItemType;
-import erpoge.core.itemtypes.ItemsTypology;
-import erpoge.core.net.clientmessages.*;
+import erpoge.core.net.clientmessages.ClientMessageAction;
+import erpoge.core.net.clientmessages.ClientMessageAuth;
+import erpoge.core.net.clientmessages.ClientMessageLogin;
 import erpoge.core.net.serverevents.EventChunkContents;
-import erpoge.core.net.serverevents.EventPutOn;
 import erpoge.core.terrain.Chunk;
 import erpoge.core.terrain.HorizontalPlane;
-import erpoge.core.terrain.Location;
-import erpoge.core.terrain.Portal;
-import net.tootallnate.websocket.Draft;
-import net.tootallnate.websocket.Handshakedata;
-import net.tootallnate.websocket.WebSocket;
-import net.tootallnate.websocket.WebSocketServer;
-import net.tootallnate.websocket.drafts.Draft_10;
-import net.tootallnate.websocket.drafts.Draft_17;
-import net.tootallnate.websocket.drafts.Draft_75;
-import net.tootallnate.websocket.drafts.Draft_76;
 
 
 public class MainHandler extends WebSocketServer {

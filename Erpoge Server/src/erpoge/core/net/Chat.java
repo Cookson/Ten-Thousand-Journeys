@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import erpoge.core.Character;
-import erpoge.core.characters.PlayerCharacter;
+import erpoge.core.PlayerCharacter;
 import erpoge.core.net.serverevents.EventChatMessage;
 import erpoge.core.terrain.Location;
 

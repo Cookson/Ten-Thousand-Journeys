@@ -2,17 +2,15 @@ package erpoge.buildings;
 
 import java.awt.Rectangle;
 
-import erpoge.core.Main;
 import erpoge.core.graphs.CustomRectangleSystem;
 import erpoge.core.meta.Coordinate;
 import erpoge.core.meta.Side;
 import erpoge.core.net.RectangleArea;
 import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.TerrainBasics;
 import erpoge.core.terrain.settlements.Building;
-import erpoge.core.terrain.settlements.Building.BasisBuildingSetup;
 
 public class House2Rooms extends Building {
+	public static final long serialVersionUID = 82134511L;
 	@Override
 	public void draw() {
 		CustomRectangleSystem crs = new CustomRectangleSystem(x,y,width,height,1);
@@ -22,7 +20,7 @@ public class House2Rooms extends Building {
 		int hall = crs.cutRectangleFromSide(0, side, 2);
 		int middleRoom = crs.cutRectangleFromSide(0, side.counterClockwise(), 5);
 		int exPartOfStoreroom = crs.cutRectangleFromSide(hall, side.clockwise(), 2);
-		int kitchen = crs.cutRectangleFromSide(0, side.opposite(), 5);
+		// int kitchen = crs.cutRectangleFromSide(0, side.opposite(), 5);
 		int storeroom = crs.cutRectangleFromSide(0, side.clockwise(), 2);
 		int hallToKitchen = 0;
 		

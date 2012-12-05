@@ -1,20 +1,8 @@
 package erpoge.locationtypes;
 
-import java.awt.Rectangle;
-import java.util.ArrayList;
-import java.util.Set;
-
-import erpoge.buildings.BuildingType;
 import erpoge.buildings.Inn;
-import erpoge.core.Character;
-import erpoge.core.Main;
-import erpoge.core.graphs.RectangleSystem;
-import erpoge.core.meta.Chance;
-import erpoge.core.meta.Utils;
 import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.Cell;
 import erpoge.core.terrain.HorizontalPlane;
-import erpoge.core.terrain.Location;
 import erpoge.core.terrain.settlements.BuildingPlace;
 import erpoge.core.terrain.settlements.Settlement;
 

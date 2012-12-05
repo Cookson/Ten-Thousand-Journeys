@@ -1,11 +1,7 @@
 package erpoge.core.meta;
-
 import java.awt.Point;
-
-import erpoge.core.terrain.TerrainBasics;
-
-
-public class Coordinate extends Point{
+public class Coordinate extends Point {
+	public static final long serialVersionUID = 1452389451;
 	public Coordinate(int x, int y) {
 		super(x,y);
 	}
