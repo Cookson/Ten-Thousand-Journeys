@@ -5,7 +5,7 @@ import java.util.Iterator;
 
 import erpoge.core.Character;
 import erpoge.core.Main;
-import erpoge.core.characters.PlayerCharacter;
+import erpoge.core.PlayerCharacter;
 import erpoge.core.net.clientmessages.ServerMessageCharacterAuthInfo;
 public class Account {
 	public final String login;
@@ -36,7 +36,7 @@ public class Account {
 		Iterator<PlayerCharacter> it = characters.iterator();
 		while (it.hasNext()) {
 			PlayerCharacter next = it.next();
-			if (next.characterId == id) {
+			if (next.getId() == id) {
 				return next;
 			}
 		}
@@ -47,7 +47,7 @@ public class Account {
 		Iterator<PlayerCharacter> it = characters.iterator();
 		while (it.hasNext()) {
 			PlayerCharacter next = it.next();
-			if (next.characterId == characterId) {
+			if (next.getId() == characterId) {
 				return true;
 			}
 		}
@@ -74,22 +74,10 @@ public class Account {
 		PlayerCharacter[] values = characters.toArray(new PlayerCharacter[0]);
 		int iterations = values.length - 1;
 		for (;i <= iterations;i++) {
-			answer += 	"["+values[i].characterId+
+			answer += 	"["+values[i].getId()+
 						",\""+values[i].name+
 						"\",\""+values[i].getCls()+
 						"\","+values[i].race.race2int()+",[";
-			int[] equipment = values[i].equipment.getIntArray();
-			int j=equipment.length-1;
-			for (;j>=0;j--) {
-				if (equipment[j] != 0) {
-					break;
-				}
-			}
-			int k=0;
-			for (;k<j;k++) {
-				answer += equipment[k]+",";
-			}
-			answer += equipment[k]+"]";
 			answer += (i == iterations) ? "]" : "],";
 		}
 		answer += "]";
