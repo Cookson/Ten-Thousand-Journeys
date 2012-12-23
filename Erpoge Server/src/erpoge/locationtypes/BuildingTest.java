@@ -1,9 +1,9 @@
 package erpoge.locationtypes;
 
 import erpoge.buildings.House;
+import erpoge.core.HorizontalPlane;
+import erpoge.core.StaticData;
 import erpoge.core.meta.Coordinate;
-import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.HorizontalPlane;
 import erpoge.core.terrain.settlements.BuildingPlace;
 import erpoge.core.terrain.settlements.Settlement;
 
@@ -14,8 +14,8 @@ public class BuildingTest extends Settlement {
 		int buildingSizeX = 18;
 		int buildingSizeY = 19;
 		
-		fillWithCells(GameObjects.FLOOR_GRASS, GameObjects.OBJ_VOID);
-		// -2 and +5 are beacuse of road.width
+		fillWithCells(StaticData.getFloorType("grass").getId(), StaticData.VOID);
+		// -2 and +5 are because of road.width
 		Coordinate nw = new Coordinate((width-buildingSizeX)/2-2,(height-buildingSizeY)/2-2);
 		Coordinate ne = new Coordinate(nw.x+buildingSizeX+5,nw.y);
 		Coordinate se = new Coordinate(nw.x+buildingSizeX+5,nw.y+buildingSizeY+5);

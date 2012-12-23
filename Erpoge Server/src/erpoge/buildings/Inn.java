@@ -1,15 +1,17 @@
 package erpoge.buildings;
 
+import erpoge.core.Building;
+import erpoge.core.StaticData;
 import erpoge.core.graphs.CustomRectangleSystem;
 import erpoge.core.meta.Direction;
 import erpoge.core.meta.Side;
-import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.settlements.Building;
 import erpoge.core.terrain.settlements.BuildingPlace;
 
 public class Inn extends Building {
 	public static final long serialVersionUID = 11672547L;
 	public void draw() {
+		int wallGreyStone = StaticData.getObjectType("wall_grey_stone").getId();
+		
 		CustomRectangleSystem crs = new CustomRectangleSystem(x,y,width,height,1);
 		/* BASIS */
 		// Lobby
@@ -59,7 +61,7 @@ public class Inn extends Building {
 		rectangleSystem = settlement.getGraph(crs);
 		rectangleSystem.initialFindOuterSides();
 		rectangleSystem.content.get(lobbyId).stretch(side, -1);
-		buildBasis(GameObjects.OBJ_WALL_GREY_STONE);
+		buildBasis(wallGreyStone);
 		
 		placeFrontDoor(lobbyId, side);
 		

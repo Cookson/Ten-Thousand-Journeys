@@ -1,14 +1,16 @@
 package erpoge.buildings;
 
-import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.settlements.Building;
+import erpoge.core.Building;
+import erpoge.core.StaticData;
 import erpoge.core.terrain.settlements.BuildingPlace;
 
 public class OneRoomHouse extends Building {
 	public static final long serialVersionUID = 35681734L;
 	public void draw() {
+		int wallWoorden = StaticData.getObjectType("wall_wooden").getId();
+		
 		getRectangleSystem(900);	
-		buildBasis(GameObjects.OBJ_WALL_WOODEN);
+		buildBasis(wallWoorden);
 		
 		placeFrontDoor(getDoorSide());
 	}

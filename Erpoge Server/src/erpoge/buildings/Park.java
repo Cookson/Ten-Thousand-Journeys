@@ -2,17 +2,26 @@ package erpoge.buildings;
 
 import java.awt.Rectangle;
 
+import erpoge.core.Building;
+import erpoge.core.StaticData;
+import erpoge.core.TerrainBasics;
 import erpoge.core.graphs.CustomRectangleSystem;
 import erpoge.core.meta.Chance;
 import erpoge.core.meta.Coordinate;
 import erpoge.core.net.RectangleArea;
-import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.TerrainBasics;
-import erpoge.core.terrain.settlements.Building;
 
 public class Park extends Building {
 	public static final long serialVersionUID = 734683L;
 	public void draw() {
+		int objStatueDefender1 = StaticData.getObjectType("statue_defender_1").getId();
+		int objBench = StaticData.getObjectType("bench").getId();
+		int floorWater = StaticData.getFloorType("water").getId();
+		int floorGrass = StaticData.getFloorType("grass").getId();
+		int floorStone = StaticData.getFloorType("stone").getId();
+		int floorDryGrass = StaticData.getFloorType("dry_grass").getId();
+		int objTree1 = StaticData.getFloorType("tree1").getId();
+		int objTree2 = StaticData.getFloorType("tree2").getId();
+		
 		CustomRectangleSystem crs = new CustomRectangleSystem(x, y, width, height, 1);
 		int rightBottom = crs.cutRectangleFromSide(0, frontSide, crs.content.get(0).getDimensionBySide(frontSide)/2);
 		int leftTop = crs.cutRectangleFromSide(0, leftSide, crs.content.get(0).getDimensionBySide(leftSide)/2);
@@ -36,34 +45,34 @@ public class Park extends Building {
 			Coordinate c2 = recRightTop.getCellFromSide(leftSide, frontSide, 0).moveToSide(leftSide, 2);
 			RectangleArea recCenter = RectangleArea.getRectangleFromTwoCorners(c1,c2);
 			if (recCenter.width == 1) {
-				settlement.setObject(recCenter.x, recCenter.y, GameObjects.OBJ_STATUE_DEFENDER_1);
+				settlement.setObject(recCenter.x, recCenter.y, objStatueDefender1);
 			} else if (recCenter.width == 3) {
 				int chance = Chance.rand(1,100);
 				if (chance < 20) {
 				// Just a statue in middle
-					settlement.setObject(recCenter.x+1, recCenter.y+1, GameObjects.OBJ_STATUE_DEFENDER_1);
+					settlement.setObject(recCenter.x+1, recCenter.y+1, objStatueDefender1);
 				} else if (chance < 40) {
 				// A statue surrounded by water
-					settlement.setObject(recCenter.x+1, recCenter.y+1, GameObjects.OBJ_STATUE_DEFENDER_1);
-					settlement.square(recCenter, TerrainBasics.ELEMENT_FLOOR, GameObjects.FLOOR_WATER, false);
+					settlement.setObject(recCenter.x+1, recCenter.y+1, objStatueDefender1);
+					settlement.square(recCenter, TerrainBasics.ELEMENT_FLOOR, floorWater, false);
 				} else if (chance < 60) {
 				// A statue and 4 benches
-					settlement.setObject(recCenter.x+1, recCenter.y+1, GameObjects.OBJ_STATUE_DEFENDER_1);
-					settlement.setObject(recCenter.x, recCenter.y+1, GameObjects.OBJ_BENCH);
-					settlement.setObject(recCenter.x+1, recCenter.y, GameObjects.OBJ_BENCH);
-					settlement.setObject(recCenter.x+2, recCenter.y+1, GameObjects.OBJ_BENCH);
-					settlement.setObject(recCenter.x+1, recCenter.y+2, GameObjects.OBJ_BENCH);
+					settlement.setObject(recCenter.x+1, recCenter.y+1, objStatueDefender1);
+					settlement.setObject(recCenter.x, recCenter.y+1, objBench);
+					settlement.setObject(recCenter.x+1, recCenter.y, objBench);
+					settlement.setObject(recCenter.x+2, recCenter.y+1, objBench);
+					settlement.setObject(recCenter.x+1, recCenter.y+2, objBench);
 				}
 			} else {
 			// A statue on the middle of pond
-				settlement.square(recCenter, TerrainBasics.ELEMENT_FLOOR, GameObjects.FLOOR_WATER, true);
-				settlement.setObject(recCenter.x+recCenter.width/2, recCenter.y+recCenter.height/2, GameObjects.OBJ_STATUE_DEFENDER_1);
-				settlement.setFloor(recCenter.x+recCenter.width/2, recCenter.y+recCenter.height/2, GameObjects.FLOOR_GRASS);
+				settlement.square(recCenter, TerrainBasics.ELEMENT_FLOOR, floorWater, true);
+				settlement.setObject(recCenter.x+recCenter.width/2, recCenter.y+recCenter.height/2, objStatueDefender1);
+				settlement.setFloor(recCenter.x+recCenter.width/2, recCenter.y+recCenter.height/2, floorGrass);
 			}
 			for (Rectangle r : crs.content.values()) {
-				settlement.fillRectangle(r, TerrainBasics.ELEMENT_OBJECT, GameObjects.OBJ_TREE_1, 10);
-				settlement.fillRectangle(r, TerrainBasics.ELEMENT_OBJECT, GameObjects.OBJ_TREE_2, 10);
-				settlement.fillRectangle(r, TerrainBasics.ELEMENT_FLOOR, GameObjects.FLOOR_DRY_GRASS, 5);
+				settlement.fillRectangle(r, TerrainBasics.ELEMENT_OBJECT, objTree1, 10);
+				settlement.fillRectangle(r, TerrainBasics.ELEMENT_OBJECT, objTree2, 10);
+				settlement.fillRectangle(r, TerrainBasics.ELEMENT_FLOOR, floorDryGrass, 5);
 			}
 			// Get coordinates for roads and draw roads
 			c1 = recLeftTop
@@ -98,10 +107,10 @@ public class Park extends Building {
 				.getCellFromSide(rightSide, frontSide, 0)
 				.moveToSide(rightSide, 1)
 				.moveToSide(frontSide, 1);
-			settlement.line(c1.x, c1.y, c2.x, c2.y, TerrainBasics.ELEMENT_FLOOR, GameObjects.FLOOR_STONE);
-			settlement.line(c3.x, c3.y, c4.x, c4.y, TerrainBasics.ELEMENT_FLOOR, GameObjects.FLOOR_STONE);
-			settlement.line(c5.x, c5.y, c6.x, c6.y, TerrainBasics.ELEMENT_FLOOR, GameObjects.FLOOR_STONE);
-			settlement.line(c7.x, c7.y, c8.x, c8.y, TerrainBasics.ELEMENT_FLOOR, GameObjects.FLOOR_STONE);
+			settlement.line(c1.x, c1.y, c2.x, c2.y, TerrainBasics.ELEMENT_FLOOR, floorStone);
+			settlement.line(c3.x, c3.y, c4.x, c4.y, TerrainBasics.ELEMENT_FLOOR, floorStone);
+			settlement.line(c5.x, c5.y, c6.x, c6.y, TerrainBasics.ELEMENT_FLOOR, floorStone);
+			settlement.line(c7.x, c7.y, c8.x, c8.y, TerrainBasics.ELEMENT_FLOOR, floorStone);
 			crs.addVertex(recCenter);
 		}
 		

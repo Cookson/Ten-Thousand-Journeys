@@ -1,5 +1,6 @@
 package erpoge.core.terrain;
 
+import erpoge.core.Location;
 import erpoge.core.meta.Coordinate;
 
 public class Portal extends Coordinate {

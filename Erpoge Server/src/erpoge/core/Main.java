@@ -1,13 +1,6 @@
 package erpoge.core;
 import erpoge.core.characters.CharacterManager;
-import erpoge.core.characters.Race;
 import erpoge.core.gui.Window;
-import erpoge.core.itemtypes.ItemsTypology;
-import erpoge.core.net.Account;
-import erpoge.core.net.Accounts;
-import erpoge.core.net.MainHandler;
-import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.HorizontalPlane;
 
 public class Main {
 	public static Window window;
@@ -40,19 +33,13 @@ public class Main {
 		outln(message);
 	}
 	public static void main(String args[]) {
-		Main.window = new Window();
-		GameObjects.init();
-		ItemsTypology.init();
-		//		Main.log(GameObjects.jsonGetObjectProperties());
-		//		CharacterTypes.jsonTypes();
-		//		ItemsTypology.showTypology();
-		//		ItemsTypology.jsonTypology();
+//		Main.window = new Window();
+		ModuleLoader.loadModules();
+		LoadStaticDataFromXML.loadGameDataFromXml();
+		StaticData.showData();
 				
 		//		World world = new World(20,20,"TestWorld", "Erpoge World");
 		//		world.showWorld();
-				
-		//		Location loc = world.createLocation(0, 0, 60, 40, TEST_LOCATION_TYPE, "New Location");
-		//		loc.showLocation();	
 		
 		HorizontalPlane plane = new HorizontalPlane();
 		plane.generateTerrain(-200,-200,400,400);
@@ -67,7 +54,7 @@ public class Main {
 		//		plane.generateLocation( 20,  20, 40, 40, "Forest");
 				
 		//		plane.showTerrain(-20, -20, 100, 100);
-		PlayerHandler burok = CharacterManager.createPlayer(plane, 6, 9, "Alvoi", Race.ELF, "Warrior");
+		PlayerHandler burok = CharacterManager.createPlayer(plane, 6, 9, "Alvoi", StaticData.getCharacterType("elf"), "Warrior");
 		// burok.eventlessGetItem(new UniqueItem(ItemType.CLASS_SWORD * ItemsTypology.CLASS_LENGTH));
 		// burok.eventlessGetItem(new ItemPile(ItemType.CLASS_AMMO * ItemsTypology.CLASS_LENGTH,200));
 		// burok.eventlessGetItem(new UniqueItem(ItemType.CLASS_BLUNT * ItemsTypology.CLASS_LENGTH));
@@ -81,7 +68,7 @@ public class Main {
 		Accounts.addAccount(new Account("Billy","1"));
 		Accounts.account("1").addCharacter(burok);
 		
-		MainHandler.startServer();
-		MainHandler.setDefaultPlane(plane);
+		ConnectionServer.setDefaultPlane(plane);
+//		MainHandler.startServer();
 	}
 }

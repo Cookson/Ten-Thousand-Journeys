@@ -2,17 +2,20 @@ package erpoge.buildings;
 
 import java.awt.Rectangle;
 
+import erpoge.core.Building;
+import erpoge.core.StaticData;
 import erpoge.core.graphs.CustomRectangleSystem;
 import erpoge.core.meta.Coordinate;
 import erpoge.core.meta.Side;
 import erpoge.core.net.RectangleArea;
-import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.settlements.Building;
 
 public class House2Rooms extends Building {
 	public static final long serialVersionUID = 82134511L;
 	@Override
 	public void draw() {
+		int wallGreyStone = StaticData.getObjectType("wall_grey_stone").getId();
+		int objDoorBlue = StaticData.getObjectType("door_blue").getId();
+		
 		CustomRectangleSystem crs = new CustomRectangleSystem(x,y,width,height,1);
 		Side side = Side.S;
 		
@@ -31,7 +34,7 @@ public class House2Rooms extends Building {
 		crs.excludeRectangle(exPartOfStoreroom);
 		
 		rectangleSystem = settlement.getGraph(crs);
-		buildBasis(GameObjects.OBJ_WALL_GREY_STONE);
+		buildBasis(wallGreyStone);
 		
 		// Remove walls of hall to kitchen
 		Rectangle recHallToKitchen = crs.content.get(hallToKitchen);
@@ -44,19 +47,19 @@ public class House2Rooms extends Building {
 		Coordinate c = recStoreroom
 			.getCellFromSide(side.counterClockwise(), side, 1)
 			.moveToSide(side.counterClockwise(), 1);
-		settlement.setObject(c.x, c.y, GameObjects.OBJ_DOOR_BLUE);
+		settlement.setObject(c.x, c.y, objDoorBlue);
 		// Middle room
 		RectangleArea recMiddleRoom = crs.content.get(middleRoom);
 		c = recMiddleRoom
 			.getMiddleOfSide(side)
 			.moveToSide(side, 1);
-		settlement.setObject(c.x, c.y, GameObjects.OBJ_DOOR_BLUE);
+		settlement.setObject(c.x, c.y, objDoorBlue);
 		// Right room
 		RectangleArea recRightRoom = crs.content.get(rightRoom);
 		c = recRightRoom
 			.getCellFromSide(side.clockwise(), side, 0)
 			.moveToSide(side.clockwise(), 1);
-		settlement.setObject(c.x, c.y, GameObjects.OBJ_DOOR_BLUE);
+		settlement.setObject(c.x, c.y, objDoorBlue);
 		// Front Door
 		placeFrontDoor(hall, side);
 	}

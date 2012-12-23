@@ -2,6 +2,7 @@ package erpoge.core.terrain;
 
 import java.util.ArrayList;
 
+import erpoge.core.TerrainBasics;
 import erpoge.core.meta.Condition;
 import erpoge.core.meta.Coordinate;
 

@@ -9,13 +9,13 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import erpoge.core.Location;
 import erpoge.core.meta.Chance;
 import erpoge.core.meta.Coordinate;
 import erpoge.core.meta.Direction;
 import erpoge.core.meta.Side;
 import erpoge.core.meta.Utils;
 import erpoge.core.net.RectangleArea;
-import erpoge.core.terrain.Location;
 
 public class RectangleSystem extends Graph<RectangleArea> {
 	public int width;

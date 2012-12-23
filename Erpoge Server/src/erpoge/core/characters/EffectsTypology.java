@@ -3,7 +3,6 @@ package erpoge.core.characters;
 import java.util.HashMap;
 
 import erpoge.core.Character;
-import erpoge.core.itemtypes.Attribute;
 public class EffectsTypology {
 	public HashMap<Integer, CharacterEffect> effects = new HashMap<Integer, CharacterEffect>();
 	public static final EffectsTypology instance = new EffectsTypology();

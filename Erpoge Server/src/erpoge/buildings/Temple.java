@@ -2,18 +2,28 @@ package erpoge.buildings;
 
 import java.awt.Rectangle;
 
+import erpoge.core.Building;
+import erpoge.core.StaticData;
+import erpoge.core.TerrainBasics;
 import erpoge.core.graphs.CustomRectangleSystem;
 import erpoge.core.meta.Coordinate;
 import erpoge.core.meta.Side;
 import erpoge.core.net.RectangleArea;
-import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.TerrainBasics;
-import erpoge.core.terrain.settlements.Building;
 import erpoge.core.terrain.settlements.BuildingPlace;
 
 public class Temple extends Building {
 	public static final long serialVersionUID = 801812251L;
 	public void draw() {
+		int wallGreyStone = StaticData.getObjectType("wall_grey_stone").getId();
+		int objHumanAltar = StaticData.getObjectType("human_altar").getId();
+		int objHumanTribune = StaticData.getObjectType("human_tribune").getId();
+		int objStatueDefender1 = StaticData.getObjectType("statue_defender_1").getId();
+		int objStatueFemaleElf3 = StaticData.getObjectType("statue_female_elf_3").getId();
+		int objBench = StaticData.getObjectType("bench").getId();
+		int objTree1 = StaticData.getFloorType("tree1").getId();
+		int objChest1 = StaticData.getFloorType("chest1").getId();
+		int objDoorBlue = StaticData.getObjectType("door_blue").getId();
+		
 		// Direction dir;
 		Side side = Side.N;
 		// int lobbyWidth = 6;
@@ -33,7 +43,7 @@ public class Temple extends Building {
 		crs.excludeRectangle(treesRec);
 		
 		rectangleSystem = settlement.getGraph(crs);
-		buildBasis(GameObjects.OBJ_WALL_GREY_STONE);
+		buildBasis(wallGreyStone);
 		setLobby(1);
 		
 		/* CONTENT */
@@ -43,15 +53,15 @@ public class Temple extends Building {
 		Coordinate c = mainRec.getMiddleOfSide(side.opposite());
 		Coordinate c2 = new Coordinate(c);
 		c2.moveToSide(side,1);
-		settlement.setObject(c.x, c.y, GameObjects.OBJ_HUMAN_ALTAR);
-		settlement.setObject(c2.x, c2.y, GameObjects.OBJ_HUMAN_TRIBUNE);
+		settlement.setObject(c.x, c.y, objHumanAltar);
+		settlement.setObject(c2.x, c2.y, objHumanTribune);
 		
 		// Benches
 		c = mainRec.getCellFromSide(side, side.clockwise(), 0);
 		c2 = mainRec.getCellFromSide(side, side.counterClockwise(), 0);
 		int limit = (side.isVertical() ? mainRec.height : mainRec.width)-5;
 		for (int i=0; i<limit; i++) {
-			settlement.line(c.x, c.y, c2.x, c2.y, TerrainBasics.ELEMENT_OBJECT, GameObjects.OBJ_BENCH);
+			settlement.line(c.x, c.y, c2.x, c2.y, TerrainBasics.ELEMENT_OBJECT, objBench);
 			c.moveToSide(side.opposite(), 2);
 			c2.moveToSide(side.opposite(), 2);
 		}
@@ -60,43 +70,43 @@ public class Temple extends Building {
 		c2 = mainRec.getMiddleOfSide(side.opposite());
 		c2.moveToSide(side, 2);
 		c = mainRec.getMiddleOfSide(side);
-		settlement.line(c.x, c.y, c2.x, c2.y, TerrainBasics.ELEMENT_OBJECT, GameObjects.OBJ_VOID);
+		settlement.line(c.x, c.y, c2.x, c2.y, TerrainBasics.ELEMENT_OBJECT, StaticData.VOID);
 		
 		// Door to back room
 		c = mainRec
 			.getCellFromSide(side.opposite(), side.counterClockwise(), 1);
 		c.moveToSide(side.opposite(), 1);
-		settlement.setObject(c.x, c.y, GameObjects.OBJ_DOOR_BLUE);
+		settlement.setObject(c.x, c.y, objDoorBlue);
 		
 		// Front door
 		c = mainRec.getMiddleOfSide(side);
 		c.moveToSide(side, 1);
-		settlement.setObject(c.x, c.y, GameObjects.OBJ_DOOR_BLUE);
+		settlement.setObject(c.x, c.y, objDoorBlue);
 		
 		// Statues
 		c.moveToSide(side, 1);
 		c.moveToSide(side.clockwise(), 1);
-		settlement.setObject(c.x, c.y, GameObjects.OBJ_STATUE_DEFENDER_1);
+		settlement.setObject(c.x, c.y, objStatueDefender1);
 		c.moveToSide(side.counterClockwise(), 2);
-		settlement.setObject(c.x, c.y, GameObjects.OBJ_STATUE_FEMALE_ELF_3);
+		settlement.setObject(c.x, c.y, objStatueFemaleElf3);
 		
 		// Trees behind temple
 		Rectangle r = crs.excluded.get(treesRec);
 		for (int rx = r.x; rx<r.x+r.width; rx += 2) {
 			for (int ry = r.y; ry<r.y+r.height; ry += 2) {
-				settlement.setObject(rx, ry, GameObjects.OBJ_TREE_1);
+				settlement.setObject(rx, ry, objTree1);
 			}
 		}
 		
 		// Back door
 		c = backRec.getCellFromSide(side.clockwise(), side.opposite(), 1);
 		c.moveToSide(side.clockwise(), 1);
-		settlement.setObject(c.x, c.y, GameObjects.OBJ_DOOR_BLUE);
+		settlement.setObject(c.x, c.y, objDoorBlue);
 		
 		// Chests
 		c = backRec.getCellFromSide(side.counterClockwise(), side.opposite(), 0);
 		while (backRec.contains(c)) {
-			settlement.setObject(c.x, c.y, GameObjects.OBJ_CHEST_1);
+			settlement.setObject(c.x, c.y, objChest1);
 			c.moveToSide(side, 1);
 		}
 		

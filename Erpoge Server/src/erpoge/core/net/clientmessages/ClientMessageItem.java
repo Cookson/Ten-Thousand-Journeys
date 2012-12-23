@@ -11,6 +11,5 @@ public class ClientMessageItem {
 	public int a;
 
 	public ClientMessageItem() {
-		// TODO Auto-generated constructor stub
 	}
 }

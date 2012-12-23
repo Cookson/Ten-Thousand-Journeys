@@ -2,30 +2,33 @@ package erpoge.buildings;
 
 import java.awt.Rectangle;
 
+import erpoge.core.Building;
 import erpoge.core.Character;
+import erpoge.core.ItemPile;
 import erpoge.core.PlayerCharacter;
+import erpoge.core.StaticData;
+import erpoge.core.TerrainBasics;
 import erpoge.core.characters.CharacterCondition;
 import erpoge.core.characters.CustomCharacterAction;
 import erpoge.core.characters.Dialogue;
 import erpoge.core.characters.DialoguePoint;
-import erpoge.core.characters.Race;
-import erpoge.core.inventory.ItemPile;
 import erpoge.core.meta.Chance;
 import erpoge.core.meta.Side;
-import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.TerrainBasics;
-import erpoge.core.terrain.settlements.Building;
 import erpoge.core.terrain.settlements.BuildingPlace;
 
 public class Tavern extends Building {
 	public static final long serialVersionUID = 2372987976L;
 	public void draw() {
-		buildBasis(GameObjects.OBJ_WALL_GREY_STONE);
+		int objVineshelf = StaticData.getFloorType("vineshelf").getId();
+		int objChair1 = StaticData.getFloorType("chair1").getId();
+		int wallGreyStone = StaticData.getObjectType("wall_grey_stone").getId();
+		
+		buildBasis(wallGreyStone);
 		placeFrontDoor(Side.ANY_SIDE);
 		Rectangle lobbyRec = rectangleSystem.content.get(lobby);
 		for (int sx=lobbyRec.x; sx<lobbyRec.x+lobbyRec.width; sx++) {
 			if (!settlement.isDoor(sx, lobbyRec.y-1)) {
-				settlement.setObject(sx, lobbyRec.y, GameObjects.OBJ_VINESHELF);
+				settlement.setObject(sx, lobbyRec.y, objVineshelf);
 			}
 		}
 		
@@ -48,9 +51,9 @@ public class Tavern extends Building {
 				.addPoint(new CharacterCondition<DialoguePoint>(youAreHuman,
 						youAreElf, youAreAnother) {
 					public DialoguePoint check(Character opponent) {
-						if (((PlayerCharacter) opponent).race == Race.HUMAN) {
+						if (((PlayerCharacter) opponent).getType() == StaticData.getCharacterType("human")) {
 							return results[0];
-						} else if (((PlayerCharacter) opponent).race == Race.ELF) {
+						} else if (((PlayerCharacter) opponent).getType() == StaticData.getCharacterType("elf")) {
 							return results[1];
 						} else {
 							return results[2];
@@ -70,7 +73,7 @@ public class Tavern extends Building {
 				lobbyRec.width-2, lobbyRec.height-2);
 		for (int i=tablesArea.x+Chance.rand(0,1); i<tablesArea.x+tablesArea.width-1;i+=Chance.rand(1,2)) {
 			for (int j=tablesArea.y+Chance.rand(0,1); j<tablesArea.y+tablesArea.height-1;j+=Chance.rand(1,2)) {
-				settlement.setElement(i, j, TerrainBasics.ELEMENT_OBJECT, GameObjects.OBJ_TABLE_CHAIR_1);
+				settlement.setElement(i, j, TerrainBasics.ELEMENT_OBJECT, objChair1);
 			}
 		}
 //		CellCollection tablesArea = settlement.newCellCollection(CellCollection.rectangleToCellsList());

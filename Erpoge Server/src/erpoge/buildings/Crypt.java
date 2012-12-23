@@ -3,23 +3,26 @@ package erpoge.buildings;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 
+import erpoge.core.Building;
+import erpoge.core.StaticData;
+import erpoge.core.TerrainBasics;
 import erpoge.core.meta.Chance;
 import erpoge.core.meta.Coordinate;
 import erpoge.core.net.RectangleArea;
-import erpoge.core.objects.GameObjects;
 import erpoge.core.terrain.CellCollection;
-import erpoge.core.terrain.TerrainBasics;
-import erpoge.core.terrain.settlements.Building;
 import erpoge.core.terrain.settlements.BuildingPlace;
 
 public class Crypt extends Building {
 	public static final long serialVersionUID = 836362727L;
 	public Coordinate stairsCoord;
 	public void draw() {
-		
-		buildBasis(GameObjects.OBJ_WALL_GREY_STONE);
+		int wallGreyStone = StaticData.getObjectType("wall_grey_stone").getId();
+		int floorStone = StaticData.getFloorType("stone").getId();
+		int objStatueGargoyle = StaticData.getObjectType("statue_gargoyle").getId();
+		int objStairsDown = StaticData.getObjectType("stairs_down").getId();
+		buildBasis(wallGreyStone);
 		settlement.square(x, y, width, height, TerrainBasics.ELEMENT_FLOOR,
-				GameObjects.FLOOR_STONE, true);
+				floorStone, true);
 		ArrayList<Rectangle> roomsValues = new ArrayList<Rectangle>(
 				rooms.values());
 		for (Rectangle r : rooms.values()) {
@@ -29,19 +32,19 @@ public class Crypt extends Building {
 				if (Chance.roll(50)) {
 					int dy = Chance.rand(0, r.height - 1);
 					settlement.setObject(r.x, r.y + dy,
-							GameObjects.OBJ_STATUE_GARGOYLE);
+							objStatueGargoyle);
 					settlement.setObject(r.x + r.width - 1, r.y + dy,
-							GameObjects.OBJ_STATUE_GARGOYLE);
+							objStatueGargoyle);
 				} else {
 					int dx = Chance.rand(0, r.width - 1);
 					settlement.setObject(r.x + dx, r.y,
-							GameObjects.OBJ_STATUE_GARGOYLE);
+							objStatueGargoyle);
 					settlement.setObject(r.x + dx, r.y + r.height - 1,
-							GameObjects.OBJ_STATUE_GARGOYLE);
+							objStatueGargoyle);
 				}
 			}
 			for (Coordinate c : doorCells) {
-				settlement.setObject(c.x, c.y, GameObjects.OBJ_VOID);
+				settlement.setObject(c.x, c.y, StaticData.VOID);
 			}
 		}
 		RectangleArea stairsRec = new RectangleArea(roomsValues.get(Chance.rand(0,
@@ -49,11 +52,10 @@ public class Crypt extends Building {
 		CellCollection stairsRoomCS = settlement.newCellCollection(stairsRec.getCells());
 		stairsCoord = stairsRoomCS.setElementAndReport(
 				TerrainBasics.ELEMENT_OBJECT,
-				GameObjects.OBJ_STAIRS_SONE_GREY_DOWN);
+				objStairsDown);
 	}
 	@Override
 	public boolean fitsToPlace(BuildingPlace place) {
-		// TODO Auto-generated method stub
 		return true;
 	}
 }

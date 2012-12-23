@@ -5,14 +5,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import erpoge.buildings.BuildingType;
-import erpoge.buildings.Inn;
-import erpoge.buildings.OneRoomHouse;
-import erpoge.buildings.Temple;
-import erpoge.buildings.TestBuilding;
+import erpoge.core.Building;
 import erpoge.core.Character;
+import erpoge.core.HorizontalPlane;
+import erpoge.core.Location;
 import erpoge.core.Main;
-import erpoge.core.characters.*;
+import erpoge.core.StaticData;
 import erpoge.core.graphs.CustomRectangleSystem;
 import erpoge.core.graphs.RectangleSystem;
 import erpoge.core.meta.Chance;
@@ -21,8 +19,6 @@ import erpoge.core.meta.Direction;
 import erpoge.core.meta.Side;
 import erpoge.core.meta.Utils;
 import erpoge.core.net.RectangleArea;
-import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.*;
 import erpoge.core.terrain.settlements.Settlement.RoadSystem.Road;
 public class Settlement extends Location {
 	public CustomRectangleSystem rectangleSystem;
@@ -179,9 +175,10 @@ public class Settlement extends Location {
 			return road1.direction == road2.direction;
 		}
 		public void drawRoads() {
+			int floorGround = StaticData.getFloorType("ground").getId();
 			for (Road road : roads) {
 				boldLine(road.start.x, road.start.y, road.end.x, road.end.y, 
-						ELEMENT_FLOOR, GameObjects.FLOOR_GROUND, 5);
+						ELEMENT_FLOOR, floorGround, 5);
 			}
 		}
 		public void printStatistics() {

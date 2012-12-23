@@ -7,9 +7,7 @@ import erpoge.core.meta.Coordinate;
 import erpoge.core.meta.Direction;
 import erpoge.core.meta.Side;
 /**
- * 
  * Same as java.awt.Rectangle, but has some more advanced functionality.
- *
  */
 public class RectangleArea extends Rectangle {
 	public RectangleArea(Rectangle r) {

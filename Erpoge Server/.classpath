@@ -2,11 +2,16 @@
 <classpath>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry exported="true" kind="lib" path="lib/gson-1.7.1.jar"/>
-	<classpathentry kind="lib" path="lib/jgrapht-jdk1.6.jar">
+	<classpathentry exported="true" kind="lib" path="lib/jgrapht-jdk1.6.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="http://jgrapht.org/javadoc/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry exported="true" kind="lib" path="/home/suseika/workspace/Erpoge Server/lib/gson-2.2.2.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://google-gson.googlecode.com/svn/trunk/gson/docs/javadocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry exported="true" kind="lib" path="/home/suseika/workspace/Erpoge Server/lib/java_websocket.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

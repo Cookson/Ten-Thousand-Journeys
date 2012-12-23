@@ -1,0 +1,414 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:annotation>
+		<xs:documentation xml:lang="en">
+			Static data schema for Ten Thousand Journeys engine.
+		</xs:documentation>
+	</xs:annotation>
+	<xs:element name="root">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="items">
+					<xs:annotation>
+						<xs:documentation xml:lang="en">
+							All items in module are described inside this element
+						</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="item" minOccurs="1" maxOccurs="unbounded">
+								<xs:annotation>
+									<xs:documentation xml:lang="en">
+										Describes a single item type.
+									</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:all>
+										<xs:element name="name" type="nameType"/>
+										<xs:element name="aspects" minOccurs="0" maxOccurs="1">
+											<xs:complexType>
+												<xs:all>
+													<xs:element name="rangedWeapon" minOccurs="0">
+														<xs:annotation>
+															<xs:documentation xml:lang="en">
+																States that this item can be used as a ranged weapon;
+																this type of usade implies shooting some kind of missiles 
+																out of this item. If item doesn't shoot missiles, but 
+																"shoots itself" (e.g. a magical staff) then you should
+																not use item's &lt;invokable&gt; element rather than this 
+																the "rangedWeapon" type flag.
+															</xs:documentation>
+														</xs:annotation>
+														<xs:complexType>
+															<xs:sequence>
+																<xs:element name="ammo" type="nameType">
+																	<xs:annotation>
+																		<xs:documentation xml:lang="en">
+																			Specifies a class (not an item type, but a set of item types) of ammo used by this weapon.
+																		</xs:documentation>
+																	</xs:annotation>
+																</xs:element>
+																<xs:element name="reloadTime" type="xs:positiveInteger"/>
+																<xs:element name="aimTime" type="xs:positiveInteger"/>
+																<xs:element name="magazine" type="xs:nonNegativeInteger">
+																	<xs:annotation>
+																		<xs:documentation xml:lang="en">
+																			Describes how many ammo prepared for shooting a weapon can hold
+																			inside itself.
+																		</xs:documentation>
+																	</xs:annotation>
+																</xs:element>
+															</xs:sequence>
+														</xs:complexType>
+													</xs:element>
+													<xs:element name="ammo" minOccurs="0">
+														<xs:complexType>
+															<xs:all minOccurs="0">
+																<xs:element name="class" type="nameType">
+																	<xs:annotation>
+																		<xs:documentation xml:lang="en">
+																			Determines which ranged weapons can use this ammo.
+																			For example, both item types "woodenArrow" and "plasticArrow"
+																			could be used by a weapon whose ammo type is "arrow".
+																			Also a caliber of a firearm is exactly what a ammoType is.
+																		</xs:documentation>
+																	</xs:annotation>
+																</xs:element>
+															</xs:all>
+														</xs:complexType>
+													</xs:element>
+													<xs:element name="apparel" minOccurs="0">
+														<xs:annotation>
+															<xs:documentation xml:lang="en">
+																Enumerates places on one's body where an apparel or weapon piece can
+																be put on.
+																Not to be mistaken with body part or slotToCover.
+															</xs:documentation>
+														</xs:annotation>
+														<xs:complexType>
+															<xs:all>
+																<xs:element name="form" type="bodyPartType" minOccurs="1">
+																	<xs:annotation>
+																		<xs:documentation xml:lang="en">
+																			Describes a body structure a creature has to have to put this on.
+																		</xs:documentation>
+																	</xs:annotation>
+																</xs:element>
+																<xs:element name="covers" minOccurs="1">
+																	<xs:annotation>
+																		<xs:documentation xml:lang="en">
+																			Enumerates parts of creature's body that are protected by this apparel piece.
+																		</xs:documentation>
+																	</xs:annotation>
+																	<xs:complexType>
+																		<xs:sequence>
+																			<xs:group ref="bodyPartGroup" minOccurs="0" maxOccurs="unbounded"/>
+																		</xs:sequence>
+																	</xs:complexType>
+																</xs:element>
+																<xs:element name="blocks" minOccurs="0">
+																	<xs:annotation>
+																		<xs:documentation xml:lang="en">
+																			Enumerates parts of creature's body that can't bear any more apparel on them
+																			if this piece of apparel is put on.
+																		</xs:documentation>
+																	</xs:annotation>
+																	<xs:complexType>
+																		<xs:sequence>
+																			<xs:group ref="bodyPartGroup" minOccurs="1" maxOccurs="unbounded"/>
+																		</xs:sequence>
+																	</xs:complexType>
+																</xs:element>
+															</xs:all>
+														</xs:complexType>
+													</xs:element>
+													<xs:element name="container" minOccurs="0">
+														<xs:complexType>
+															<xs:sequence>
+																<xs:element name="volume">
+																	<xs:simpleType>
+																		<xs:restriction base="xs:decimal"/>
+																	</xs:simpleType>
+																</xs:element>
+																<xs:group ref="containerLiquidAllowing"/>
+															</xs:sequence>
+														</xs:complexType>
+													</xs:element>
+													<xs:element name="craftable" minOccurs="0">
+														<xs:complexType>
+															<xs:sequence>
+																<xs:group ref="craftableMatreialGroup" minOccurs="1" maxOccurs="unbounded"/>
+															</xs:sequence>
+														</xs:complexType>
+													</xs:element>
+												</xs:all>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="form">
+											<xs:simpleType>
+												<xs:restriction base="xs:string">
+													<xs:enumeration value="hollow"/>
+													<xs:enumeration value="long"/>
+													<xs:enumeration value="formless"/>
+													<xs:enumeration value="flat"/>
+													<xs:enumeration value="brick"/>
+													<xs:enumeration value="sphere"/>
+													<xs:enumeration value="toolWithHandle"/>
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+										<xs:element name="weight" type="xs:decimal"/>
+										<xs:element name="aerodynamics" type="xs:positiveInteger"/>
+										<xs:element name="length" type="xs:decimal"/>
+										<xs:element name="volume" type="xs:decimal"/>
+										<xs:element name="material" type="nameType"/>
+										<xs:element name="damage">
+											<xs:simpleType>
+												<xs:restriction base="xs:string">
+													<xs:enumeration value="slice"/>
+													<xs:enumeration value="pierce"/>
+													<xs:enumeration value="blunt"/>
+													<xs:enumeration value="explode"/>
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+										<xs:element ref="stackableEnum"/>
+									</xs:all>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="characters">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="character" minOccurs="1" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:all>
+										<xs:element name="name" type="nameType" minOccurs="1"/>
+										<xs:element name="body" type="bodyPartType" minOccurs="1"/>
+										<xs:element name="weight" type="xs:decimal" minOccurs="1"/>
+										<xs:element name="height" type="xs:decimal" minOccurs="1"/>
+										<xs:element name="aspects">
+											<xs:complexType>
+												<xs:all>
+													<xs:element name="humanoid" minOccurs="0"/>
+													<xs:element name="animal" minOccurs="0"/>
+													<xs:element name="robot" minOccurs="0"/>
+													<xs:element name="insect" minOccurs="0"/>
+													<xs:element name="reptile" minOccurs="0"/>
+													<xs:element name="undead" minOccurs="0"/>
+													<xs:element name="elemental" minOccurs="0"/>
+													<xs:element name="demon" minOccurs="0"/>
+												</xs:all>
+											</xs:complexType>
+										</xs:element>
+									</xs:all>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="objects">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="object" minOccurs="1" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="name" type="nameType"/>
+										<xs:element name="type" type="nameType"/>
+										<xs:element name="passability">
+											<xs:complexType>
+												<xs:choice>
+													<xs:element name="all" />
+													<xs:element name="none" />
+													<xs:sequence>
+														<xs:element name="visual" maxOccurs="1" />
+														<xs:element name="walkable" maxOccurs="1" />
+														<xs:element name="penetrable" maxOccurs="1" />
+													</xs:sequence>
+												</xs:choice>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="material" type="nameType" minOccurs="0"/>
+										<xs:choice>
+											<xs:element name="usable"/>
+											<xs:element name="nonUsable"/>
+										</xs:choice>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="materials">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="material" minOccurs="0" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="name" type="nameType"/>
+										<xs:element name="durability" type="xs:positiveInteger"/>
+										<xs:element name="density" type="xs:positiveInteger"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="sounds">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="sound" minOccurs="1" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="name" type="nameType"/>
+										<xs:element name="bass" type="xs:nonNegativeInteger"/>
+										<xs:element name="mid" type="xs:nonNegativeInteger"/>
+										<xs:element name="treble" type="xs:nonNegativeInteger"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="floors">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="floor" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="name" type="nameType" />
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="sounds">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="sound" type="soundType" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:simpleType name="nameType">
+		<xs:annotation>
+			<xs:documentation xml:lang="en">
+				Defines the format for game entity names. Names can consist of
+				latin letters, digits and underscore symbols. A digit can't be
+				the first character, and an underscore can't be neither first
+				nor last character.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[a-zA-Z1-9][a-zA-Z1-9_]*[a-zA-Z1-9]"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:group name="containerLiquidAllowing">
+		<xs:choice>
+			<xs:element name="liquidAllowing"/>
+			<xs:element name="nonLiquidAllowing"/>
+		</xs:choice>
+	</xs:group>
+	<xs:group name="craftableMatreialGroup">
+		<xs:choice>
+			<xs:element name="material">
+				<xs:complexType>
+					<xs:attribute name="name" type="nameType"/>
+					<xs:attribute name="amount" type="xs:positiveInteger"/>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="item">
+				<xs:complexType>
+					<xs:attribute name="name" type="nameType"/>
+					<xs:attribute name="amount" type="xs:positiveInteger"/>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="tool">
+				<xs:complexType>
+					<xs:attribute name="name" type="nameType"/>
+				</xs:complexType>
+			</xs:element>
+		</xs:choice>
+	</xs:group>
+	<xs:complexType name="bodyPartType">
+		<xs:annotation>
+			<xs:documentation xml:lang="en">
+				Describes character's body represented by a
+				tree of body parts with one "root" body part (usually a torso)
+				and any number of "child" body parts that are
+				attached to the "root" part, each of which 
+				can also host any number of body parts itself.
+				Each body part also can have a property "ability"
+				which describes an internal ability provided to a 
+				character by having that body part. It means that if
+				the body part will appear missing, a character
+				will lose the ability (unless he has other body parts
+				providing the same ability).
+			</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:group ref="bodyPartGroup" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="ability" use="optional">
+			<xs:annotation>
+				<xs:documentation xml:lang="en">
+					In `ability` attribute each body part can have one or more words
+					divided by single spaces that represent abilties granted by owning
+					that body part.
+				</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:pattern value="[a-zA-Z_]*( [a-zA-Z])*"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:group name="bodyPartGroup">
+		<xs:choice>
+			<xs:element name="head" type="bodyPartType"/>
+			<xs:element name="neck" type="bodyPartType"/>
+			<xs:element name="torso" type="bodyPartType"/>
+			<xs:element name="leg" type="bodyPartType"/>
+			<xs:element name="arm" type="bodyPartType"/>
+			<xs:element name="hand" type="bodyPartType"/>
+			<xs:element name="wing" type="bodyPartType"/>
+			<xs:element name="tail" type="bodyPartType"/>
+			<!-- Sense organs -->
+			<xs:element name="eye" type="bodyPartType"/>
+			<xs:element name="ear" type="bodyPartType"/>
+			<xs:element name="nose" type="bodyPartType"/>
+			<xs:element name="mouth" type="bodyPartType"/>
+			<xs:element name="antenna" type="bodyPartType"/>
+			<!-- Feet types -->
+			<xs:element name="hoof" type="bodyPartType"/>
+			<xs:element name="foot" type="bodyPartType"/>
+			<xs:element name="paw" type="bodyPartType"/>
+			<xs:element name="pseudopodia" type="bodyPartType"/>
+			<!-- Attacking bodily features -->
+			<xs:element name="claws" type="bodyPartType"/>
+			<xs:element name="fangs" type="bodyPartType"/>
+			<xs:element name="talons" type="bodyPartType"/>
+			<xs:element name="sting" type="bodyPartType"/>
+			<xs:element name="teeth" type="bodyPartType"/>
+			<xs:element name="tongue" type="bodyPartType"/>
+			<!-- Gripping bodily features -->
+			<xs:element name="tentacle" type="bodyPartType"/>
+		</xs:choice>
+	</xs:group>
+	<xs:element name="stackableEnum" abstract="true"/>
+	<xs:element name="stackable" substitutionGroup="stackableEnum"/>
+	<xs:element name="nonStackable" substitutionGroup="stackableEnum"/>
+	<xs:complexType name="soundType">
+		<xs:sequence>
+			<xs:element name="name" type="nameType"/>
+			<xs:element name="bass" type="xs:nonNegativeInteger"/>
+			<xs:element name="mid" type="xs:nonNegativeInteger"/>
+			<xs:element name="treble" type="xs:nonNegativeInteger"/>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

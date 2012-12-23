@@ -3,12 +3,10 @@ package erpoge.core.terrain;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 
-import erpoge.core.Character;
-import erpoge.core.Main;
-import erpoge.core.characters.GeneratorCharacterGroup;
+import erpoge.core.StaticData;
+import erpoge.core.TerrainBasics;
 import erpoge.core.meta.Chance;
 import erpoge.core.meta.Coordinate;
-import erpoge.core.objects.GameObjects;
 
 public class CellCollection {
 	// �����, ���������� � ��������� �������� - ��������, ��������� �� ���������
@@ -90,7 +88,7 @@ public class CellCollection {
 			if (ch10.roll()) {
 				continue;
 			}
-			location.setObject(coo.x, coo.y, GameObjects.OBJ_VOID);
+			location.setObject(coo.x, coo.y, StaticData.VOID);
 		}
 	}
 	public void forest(int density) {
@@ -113,7 +111,7 @@ public class CellCollection {
 			int cellIndex = Chance.rand(0, cells.size()-1);
 			Coordinate cell = cells.get(cellIndex);
 			// ��������� ���������
-			location.setObject(cell.x, cell.y, Chance.rand(GameObjects.OBJ_TREE_1, GameObjects.OBJ_TREE_3));
+			// location.setObject(cell.x, cell.y, Chance.rand(StaticData.get, GameObjects.OBJ_TREE_3));
 			unsetCell(cellIndex);
 		}
 	}

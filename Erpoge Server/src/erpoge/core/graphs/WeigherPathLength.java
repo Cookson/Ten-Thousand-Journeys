@@ -3,8 +3,8 @@ package erpoge.core.graphs;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import erpoge.core.TerrainBasics;
 import erpoge.core.meta.Coordinate;
-import erpoge.core.terrain.TerrainBasics;
 
 public class WeigherPathLength extends EdgeWeigher {
 	public TerrainBasics terrain;

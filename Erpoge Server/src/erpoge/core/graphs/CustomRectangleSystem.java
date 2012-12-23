@@ -6,10 +6,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 
+import erpoge.core.Location;
 import erpoge.core.meta.Direction;
 import erpoge.core.meta.Side;
 import erpoge.core.net.RectangleArea;
-import erpoge.core.terrain.Location;
 
 public class CustomRectangleSystem extends Graph<RectangleArea> {
 	int startX, startY, width, height, borderWidth;

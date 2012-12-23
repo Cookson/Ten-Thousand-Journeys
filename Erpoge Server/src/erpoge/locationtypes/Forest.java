@@ -1,19 +1,14 @@
 package erpoge.locationtypes;
 
-import java.awt.Rectangle;
+import java.util.ArrayList;
 
-import erpoge.core.Main;
+import erpoge.core.HorizontalPlane;
+import erpoge.core.Location;
+import erpoge.core.StaticData;
 import erpoge.core.characters.GeneratorCharacterGroup;
-import erpoge.core.graphs.RectangleSystem;
 import erpoge.core.meta.Chance;
 import erpoge.core.meta.Coordinate;
-import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.Cell;
 import erpoge.core.terrain.CellCollection;
-import erpoge.core.terrain.HorizontalPlane;
-import erpoge.core.terrain.Location;
-
-import java.util.ArrayList;
 
 public class Forest extends Location {
 	public Forest(HorizontalPlane plane, int x, int y, int width, int height) {
@@ -47,19 +42,17 @@ public class Forest extends Location {
 		// }
 		
 		ArrayList<GeneratorCharacterGroup> listcs = new ArrayList<GeneratorCharacterGroup>();
-		listcs.add(new GeneratorCharacterGroup("bear", "�����", width * height / 150, 0));
+		listcs.add(new GeneratorCharacterGroup("bear", "Мишка", width * height / 150, 0));
 //		mobsSpace.placeCharacters(listcs);
 		
 		mobsSpace.forest(Chance.rand(5, 12));
 		ArrayList<Integer> objtypes = new ArrayList<Integer>();
-		objtypes.add(GameObjects.OBJ_DOOR_BLUE);
+		objtypes.add(StaticData.getObjectType("blue_door_closed").getId());
 //		objtypes.add(GameObjects.OBJ_CHEST_1);
 //		objtypes.add(GameObjects.OBJ_CHEST_2);
 //		objtypes.add(GameObjects.OBJ_CHEST_3);
 		mobsSpace.setObjects(objtypes, 40);
 		objtypes.clear();
-		objtypes.add(GameObjects.OBJ_ROCK_1);
-		mobsSpace.setObjects(objtypes, 13);
 		// Draw a road, if needed
 //		 if (false) {
 //			 if (ch50.roll()) {

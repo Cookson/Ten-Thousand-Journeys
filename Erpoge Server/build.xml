@@ -13,7 +13,7 @@
 	</target>
 	<target name="buildStaticData">
 		<java 
-			classname="erpoge.core.BuildStaticData"
+			classname="erpoge.core.LoadStaticDataFromXML"
 			classpath="bin:${java.class.path}:lib/gson-1.7.1.jar"
 		/>
 	</target>

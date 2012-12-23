@@ -1,15 +1,17 @@
 package erpoge.buildings;
 
+import erpoge.core.Building;
+import erpoge.core.StaticData;
 import erpoge.core.meta.Side;
-import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.settlements.Building;
 import erpoge.core.terrain.settlements.BuildingPlace;
 
 public class TestBuilding extends Building {
 	public static final long serialVersionUID = 346347;
 	public void draw() {
+		int wallGreyStone = StaticData.getObjectType("wall_grey_stone").getId();
+		
 		getRectangleSystem(4);
-		buildBasis(GameObjects.OBJ_WALL_GREY_STONE);
+		buildBasis(wallGreyStone);
 		for (Side side : doorSides) {
 			placeFrontDoor(side);
 		}

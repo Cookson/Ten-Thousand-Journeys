@@ -1,13 +1,17 @@
 package erpoge.buildings;
 
+import erpoge.core.Building;
+import erpoge.core.StaticData;
 import erpoge.core.graphs.CustomRectangleSystem;
 import erpoge.core.meta.Coordinate;
-import erpoge.core.objects.GameObjects;
-import erpoge.core.terrain.settlements.Building;
 
 public class House extends Building {
 	public static final long serialVersionUID = 23L;
 	public void draw() {
+		int wallGreyStone = StaticData.getObjectType("wall_grey_stone").getId();
+		int objDoorBlue = StaticData.getObjectType("door_blue").getId();
+		int objLadderUp = StaticData.getObjectType("ladder_up").getId();
+		
 		CustomRectangleSystem crs = new CustomRectangleSystem(x,y,width,height,1);
 		
 		int mainRoom = 0;
@@ -19,15 +23,15 @@ public class House extends Building {
 		crs.excludeRectangle(exFront);
 		
 		rectangleSystem = settlement.getGraph(crs);
-		buildBasis(GameObjects.OBJ_WALL_GREY_STONE);
+		buildBasis(wallGreyStone);
 		
-		placeDoor(crs.content.get(lobby), rightSide, GameObjects.OBJ_DOOR_BLUE);
-		placeDoor(crs.content.get(lobby), backSide, GameObjects.OBJ_DOOR_BLUE);
-		placeDoor(crs.content.get(mainRoom), rightSide, GameObjects.OBJ_DOOR_BLUE);
-		placeDoor(crs.content.get(workshop), backSide, GameObjects.OBJ_DOOR_BLUE);
+		placeDoor(crs.content.get(lobby),    rightSide, objDoorBlue);
+		placeDoor(crs.content.get(lobby),    backSide,  objDoorBlue);
+		placeDoor(crs.content.get(mainRoom), rightSide, objDoorBlue);
+		placeDoor(crs.content.get(workshop), backSide,  objDoorBlue);
 		
 		Coordinate c = crs.content.get(mainRoom).getCellFromSide(frontSide, leftSide, 0);
-		settlement.setObject(c.x, c.y, GameObjects.OBJ_LADDER_UP);
+		settlement.setObject(c.x, c.y, objLadderUp);
 		
 		/* SECOND FLOOR */
 //		settlement.touchLevel(1, settlement.getWidth(), settlement.getHeight());
