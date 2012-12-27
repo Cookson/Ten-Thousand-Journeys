@@ -8,7 +8,7 @@ import erpoge.core.meta.Coordinate;
 public class House extends Building {
 	public static final long serialVersionUID = 23L;
 	public void draw() {
-		int wallGreyStone = StaticData.getObjectType("wall_grey_stone").getId();
+		int wallGreyStone = StaticData.getObjectType("wall_gray_stone").getId();
 		int objDoorBlue = StaticData.getObjectType("door_blue").getId();
 		int objLadderUp = StaticData.getObjectType("ladder_up").getId();
 		
@@ -40,6 +40,6 @@ public class House extends Building {
 //		crs = new CustomRectangleSystem(settlement,x,y,width,height,1);
 //		settlement.setObject(c.x, c.y, GameObjects.OBJ_LADDER_DOWN);
 //		rectangleSystem = settlement.getGraph(crs);
-//		buildBasis(GameObjects.OBJ_WALL_GREY_STONE);
+//		buildBasis(GameObjects.OBJ_wall_gray_stone);
 	}
 }

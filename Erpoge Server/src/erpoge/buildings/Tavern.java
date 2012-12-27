@@ -21,7 +21,7 @@ public class Tavern extends Building {
 	public void draw() {
 		int objVineshelf = StaticData.getFloorType("vineshelf").getId();
 		int objChair1 = StaticData.getFloorType("chair1").getId();
-		int wallGreyStone = StaticData.getObjectType("wall_grey_stone").getId();
+		int wallGreyStone = StaticData.getObjectType("wall_gray_stone").getId();
 		
 		buildBasis(wallGreyStone);
 		placeFrontDoor(Side.ANY_SIDE);

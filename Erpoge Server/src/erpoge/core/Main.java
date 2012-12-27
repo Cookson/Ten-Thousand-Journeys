@@ -34,8 +34,8 @@ public class Main {
 	}
 	public static void main(String args[]) {
 //		Main.window = new Window();
+		
 		ModuleLoader.loadModules();
-		LoadStaticDataFromXML.loadGameDataFromXml();
 		StaticData.showData();
 				
 		//		World world = new World(20,20,"TestWorld", "Erpoge World");

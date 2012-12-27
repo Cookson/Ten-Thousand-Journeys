@@ -31,7 +31,7 @@ package erpoge.locationtypes;
 //		// crs.splitRectangle(2, false, 3);
 //		// crs.splitRectangle(0, false, 8);
 //		// RectangleSystem mainRS = getGraph(crs);
-//		// mainRS.drawBorders(ELEMENT_OBJECT, GameObjects.OBJ_WALL_GREY_STONE,
+//		// mainRS.drawBorders(ELEMENT_OBJECT, GameObjects.OBJ_wall_gray_stone,
 //		// false);
 //		// mainRS.rectangles.get(2)));
 //
@@ -46,9 +46,9 @@ package erpoge.locationtypes;
 ////			}
 ////		}
 ////		mainRS.connectCornersWithLines(ELEMENT_OBJECT,
-////				GameObjects.OBJ_WALL_GREY_STONE, 0, true);
+////				GameObjects.OBJ_wall_gray_stone, 0, true);
 ////		mainRS.connectCornersWithLines(ELEMENT_OBJECT,
-////				GameObjects.OBJ_WALL_GREY_STONE, 3, true);
+////				GameObjects.OBJ_wall_gray_stone, 3, true);
 ////
 ////		int palaceRecNum = mainRS.getRandomRectangleNum();
 ////		Set<Rectangle> palaceRecs = new HashSet<Rectangle>();
@@ -67,14 +67,14 @@ package erpoge.locationtypes;
 ////						mainRS.borderWidth);
 ////		palaceRS.expandRectanglesToBorder(2);
 //		
-//		// palaceRS.drawBorders(ELEMENT_OBJECT, GameObjects.OBJ_WALL_GREY_STONE,
+//		// palaceRS.drawBorders(ELEMENT_OBJECT, GameObjects.OBJ_wall_gray_stone,
 //		// false);
 ////		palaceRS.fillContents(ELEMENT_FLOOR, GameObjects.FLOOR_WATER);
 //		// palaceRS.connectCornersWithLines(ELEMENT_OBJECT,
-//		// GameObjects.OBJ_WALL_GREY_STONE, 0, false);
+//		// GameObjects.OBJ_wall_gray_stone, 0, false);
 //		new CellCollection(polygon(RectangleSystem.getOuterPoints(mainRS
 //				.getRectanglesCorners(), mainRS.getCenter().x, mainRS
-//				.getCenter().y), true), this).fillWithElements(ELEMENT_OBJECT, GameObjects.OBJ_WALL_GREY_STONE);
+//				.getCenter().y), true), this).fillWithElements(ELEMENT_OBJECT, GameObjects.OBJ_wall_gray_stone);
 //		// Set<Integer> entries = new HashSet<Integer>
 //		// (mainRS.rectangles.keySet());
 //		// for (int i : entries) {

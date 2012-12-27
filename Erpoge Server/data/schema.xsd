@@ -215,16 +215,16 @@
 								<xs:complexType>
 									<xs:sequence>
 										<xs:element name="name" type="nameType"/>
-										<xs:element name="type" type="nameType"/>
+										<xs:element name="class" type="nameType"/>
 										<xs:element name="passability">
 											<xs:complexType>
 												<xs:choice>
 													<xs:element name="all" />
 													<xs:element name="none" />
 													<xs:sequence>
-														<xs:element name="visual" maxOccurs="1" />
-														<xs:element name="walkable" maxOccurs="1" />
-														<xs:element name="penetrable" maxOccurs="1" />
+														<xs:element name="visual" minOccurs="0" maxOccurs="1" />
+														<xs:element name="walkable" minOccurs="0" maxOccurs="1" />
+														<xs:element name="penetrable" minOccurs="0" maxOccurs="1" />
 													</xs:sequence>
 												</xs:choice>
 											</xs:complexType>

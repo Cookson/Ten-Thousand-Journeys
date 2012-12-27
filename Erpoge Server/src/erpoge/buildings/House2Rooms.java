@@ -13,7 +13,7 @@ public class House2Rooms extends Building {
 	public static final long serialVersionUID = 82134511L;
 	@Override
 	public void draw() {
-		int wallGreyStone = StaticData.getObjectType("wall_grey_stone").getId();
+		int wallGreyStone = StaticData.getObjectType("wall_gray_stone").getId();
 		int objDoorBlue = StaticData.getObjectType("door_blue").getId();
 		
 		CustomRectangleSystem crs = new CustomRectangleSystem(x,y,width,height,1);

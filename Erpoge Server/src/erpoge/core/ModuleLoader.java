@@ -18,7 +18,7 @@ class ModuleLoader {
 	 * method also checks if the modules' dependencies are satisfied.
 	 */
 	static void loadModules() {
-		MainModule mm = new MainModule();
+		Module mm = new MainModule();
 		moduleNames = new HashSet<String>();
 		moduleNames.add("MainModule");
 		// Load modules

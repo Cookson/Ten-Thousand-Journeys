@@ -1,5 +1,6 @@
 package erpoge.core;
 
+import java.util.Collection;
 import java.util.HashMap;
 
 import com.google.gson.JsonArray;
@@ -27,6 +28,8 @@ public class StaticData implements GsonForStaticDataSerializable {
 	final HashMap<Integer, ObjectType> objectTypes = new HashMap<Integer, ObjectType>();
 	private final HashMap<String, Material> materialsByName = new HashMap<String, Material>();
 	final HashMap<String, FloorType> floorTypesByName = new HashMap<String, FloorType>();
+	final HashMap<String, CharacterType> characterTypesByName = new HashMap<String, CharacterType>();
+	final HashMap<String, ItemType> itemTypesByName = new HashMap<String, ItemType>();
 	final HashMap<String, ObjectType> objectTypesByName = new HashMap<String, ObjectType>();
 	final HashMap<Integer, SoundType> soundTypesByName = new HashMap<Integer, SoundType>();
 	public static final StaticData instance = new StaticData();
@@ -69,12 +72,11 @@ public class StaticData implements GsonForStaticDataSerializable {
 	}
 
 	public static ItemType getItemType(String name) {
-		for (ItemType type : instance.itemTypes.values()) {
-			if (type.getName().equals(name)) {
-				return type;
-			}
+		ItemType type = instance.itemTypesByName.get(name);
+		if (type == null) {
+			throw new NullPointerException("ItemType "+name+" has not been registered. Did you misspell it?");
 		}
-		return null;
+		return type;
 	}
 
 	public static CharacterType getCharacterType(String name) {
@@ -100,6 +102,7 @@ public class StaticData implements GsonForStaticDataSerializable {
 	 */
 	public static void add(CharacterType characterType) {
 		instance.characterTypes.put(characterType.getId(), characterType);
+		instance.characterTypesByName.put(characterType.getName(), characterType);
 	}
 	/**
 	 * Registers a Material to be used in user code.
@@ -113,6 +116,7 @@ public class StaticData implements GsonForStaticDataSerializable {
 
 	public static void add(ItemType itemType) {
 		instance.itemTypes.put(itemType.getId(), itemType);
+		instance.itemTypesByName.put(itemType.getName(), itemType);
 	}
 	
 	public static void add(FloorType floorType) {
@@ -158,7 +162,11 @@ public class StaticData implements GsonForStaticDataSerializable {
 	 * @return
 	 */
 	public static ObjectType getObjectType(int id) {
-		return instance.objectTypes.get(id);
+		ObjectType type = instance.objectTypes.get(id);
+		if (type == null) {
+			throw new NullPointerException("Object type widthg id "+id+" has not been registered. Did you misspell it?");
+		}
+		return type;
 	}
 	/**
 	 * Get ObjectType by its string name.
@@ -175,11 +183,18 @@ public class StaticData implements GsonForStaticDataSerializable {
 	}
 
 	public static SoundType getSoundType(String name) {
-		return instance.soundTypesByName .get(name);
+		return instance.soundTypesByName.get(name);
 	}
 
 	public static SoundType getSoundType(int id) {
 		return instance.soundTypes.get(id);
+	}
+	
+	public static boolean itemTypeExists(String name) {
+		return instance.itemTypesByName.containsKey(name);
+	}
+	public static boolean characterTypeExists(String name) {
+		return instance.characterTypesByName.containsKey(name);
 	}
 	/**
 	 * Serializes all the known static data to build a client static data file.
@@ -221,5 +236,20 @@ public class StaticData implements GsonForStaticDataSerializable {
 //		jArray.add(jObjectsArray);
 //		jArray.add(jFloorsArray);
 		return jArray;
+	}
+
+	public static Collection<ItemType> getAllItems() {
+		return instance.itemTypes.values();
+	}
+
+	public static boolean objectTypeExists(String wallName) {
+		return instance.objectTypesByName.containsKey(wallName);
+	}
+
+	public static Collection<ObjectType> getAllObjectTypes() {
+		return instance.objectTypesByName.values();
+	}
+	public static Collection<CharacterType> getAllCharacterTypes() {
+		return instance.characterTypesByName.values();
 	}
 }

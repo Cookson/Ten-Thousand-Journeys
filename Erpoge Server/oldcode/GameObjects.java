@@ -21,7 +21,7 @@ public class GameObjects {
 		OBJ_VOID = 0,
 		OBJ_WALL_RED_STONE = 1,
 		OBJ_WALL_BUSH = 3,
-		OBJ_WALL_GREY_STONE = 4,
+		OBJ_wall_gray_stone = 4,
 		OBJ_WALL_WOODEN = 5,
 		OBJ_WALL_LATTICE = 6,
 		OBJ_WALL_CAVE = 7,
@@ -111,7 +111,7 @@ public class GameObjects {
 		setObjectProperties(OBJ_WARDROBE,                  0,          32,   58,    0);
 		setObjectProperties(OBJ_WALL_RED_STONE,            1,          32,   52,    0);
 		setObjectProperties(OBJ_WALL_BUSH,                 1,          32,   52,    0);
-		setObjectProperties(OBJ_WALL_GREY_STONE,           1,          32,   52,    0);
+		setObjectProperties(OBJ_wall_gray_stone,           1,          32,   52,    0);
 		setObjectProperties(OBJ_WALL_WOODEN,               1,          32,   52,    0);
 		setObjectProperties(OBJ_WALL_LATTICE,              3,          32,   52,    0);
 		setObjectProperties(OBJ_WALL_CAVE,                 1,          32,   52,    0);

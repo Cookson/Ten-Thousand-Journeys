@@ -14,7 +14,7 @@ import erpoge.core.terrain.settlements.BuildingPlace;
 public class Temple extends Building {
 	public static final long serialVersionUID = 801812251L;
 	public void draw() {
-		int wallGreyStone = StaticData.getObjectType("wall_grey_stone").getId();
+		int wallGreyStone = StaticData.getObjectType("wall_gray_stone").getId();
 		int objHumanAltar = StaticData.getObjectType("human_altar").getId();
 		int objHumanTribune = StaticData.getObjectType("human_tribune").getId();
 		int objStatueDefender1 = StaticData.getObjectType("statue_defender_1").getId();

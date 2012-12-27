@@ -64,12 +64,12 @@ package erpoge.locationtypes;
 //			Rectangle r = additionalRS.getRandomRectangle();
 //			ArrayList<Coordinate> closeCells = closeCells(r.x, r.y, 6, PASSABILITY_NO, true);
 //			ArrayList<Coordinate> borderCells = getElementsAreaBorder(r.x, r.y, ELEMENT_OBJECT, 
-//					GameObjects.OBJ_WALL_GREY_STONE, 8, false);
+//					GameObjects.OBJ_wall_gray_stone, 8, false);
 //			
 //			newCellCollection(closeCells)
 //					.fillWithElements(ELEMENT_OBJECT, GameObjects.OBJ_VOID);
 //			CellCollection collectionBorder = newCellCollection(borderCells);
-//			collectionBorder.fillWithElements(ELEMENT_OBJECT, GameObjects.OBJ_WALL_GREY_STONE);
+//			collectionBorder.fillWithElements(ELEMENT_OBJECT, GameObjects.OBJ_wall_gray_stone);
 //			// Exit (entrance)
 //			Coordinate entranceCell = collectionBorder.getRandomCell();
 //			newCellCollection(

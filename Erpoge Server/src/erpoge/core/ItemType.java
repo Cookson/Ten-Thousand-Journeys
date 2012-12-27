@@ -53,13 +53,7 @@ public class ItemType extends UniqueObject implements GsonForStaticDataSerializa
 		return stackable;
 	}
 	public String toString() {
-		String nString = "Item "+name+" with id "+id+"\n"
-			+"weight: "+weight+", volume: "+volume+", material: "+material+", "
-			+(stackable ? "stackable" : "non-stackabe")+(aspects.size() > 0 ? "\n" : "");
-		for (Aspect aspect : aspects) {
-			nString += aspect;
-		}
-		return nString+"\n";
+		return name;
 	}
 	@Override
 	public JsonElement serialize(JsonSerializationContext context) {

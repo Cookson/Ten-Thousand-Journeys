@@ -16,7 +16,7 @@ public class Crypt extends Building {
 	public static final long serialVersionUID = 836362727L;
 	public Coordinate stairsCoord;
 	public void draw() {
-		int wallGreyStone = StaticData.getObjectType("wall_grey_stone").getId();
+		int wallGreyStone = StaticData.getObjectType("wall_gray_stone").getId();
 		int floorStone = StaticData.getFloorType("stone").getId();
 		int objStatueGargoyle = StaticData.getObjectType("statue_gargoyle").getId();
 		int objStairsDown = StaticData.getObjectType("stairs_down").getId();

@@ -36,10 +36,13 @@ public class LoadStaticDataFromXML {
 	 * Reads .xml file with game objects' text descriptions and loads
 	 * the descriptions into memory as data structures to be used in
 	 * in-game calculations and client-side static data building.
+	 * 
+	 * @param filename
+	 * 			Path to .xml data file.
 	 */
-	public static void loadGameDataFromXml() {
+	public static void loadGameDataFromXml(String filename) {
 		try {
-			File file = new File("data/mainmodule.xml");
+			File file = new File(filename);
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 			Document doc = dBuilder.parse(file);
@@ -186,7 +189,20 @@ public class LoadStaticDataFromXML {
 			} else {
 				isUsable = false;
 			}
-			ObjectType objectType = new ObjectType(name, passability, isUsable);
+			int objectClass = ObjectType.CLASS_DEFAULT;
+			if (eObject.getElementsByTagName("type").getLength() == 1) {
+				String objectClassAsString = eObject.getElementsByTagName("type").item(0).getFirstChild().getNodeValue();
+				if (objectClassAsString.equals("wall")) {
+					objectClass = ObjectType.CLASS_WALL;
+				} else if (objectClassAsString.equals("door")) {
+					objectClass = ObjectType.CLASS_DOOR;
+				} else if (objectClassAsString.equals("interlevel")) {
+					objectClass = ObjectType.CLASS_INTERLEVEL;
+				} else {
+					throw new RuntimeException("Unknown object class "+objectClassAsString);
+				}
+			}
+			ObjectType objectType = new ObjectType(name, passability, isUsable, objectClass);
 			StaticData.add(objectType);
 		}
 	}

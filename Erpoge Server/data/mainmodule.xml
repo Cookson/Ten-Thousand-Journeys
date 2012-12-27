@@ -2,7 +2,7 @@
 <root>
 	<items>
 		<item>
-			<name>shortSword</name>
+			<name>short_sword</name>
 			<weight>3.0</weight>
 			<volume>3.0</volume>
 			<length>50</length>
@@ -13,7 +13,7 @@
 			<nonStackable/>
 		</item>
 		<item>
-			<name>shortBow</name>
+			<name>short_bow</name>
 			<aspects>
 				<rangedWeapon>
 					<ammo>arrow</ammo>
@@ -88,6 +88,17 @@
 			<nonStackable/>
 		</item>
 		<item>
+			<name>steel_morningstar</name>
+			<weight>13.0</weight>
+			<volume>5.0</volume>
+			<length>60</length>
+			<form>long</form>
+			<aerodynamics>3</aerodynamics>
+			<damage>blunt</damage>
+			<material>steel</material>
+			<nonStackable/>
+		</item>
+		<item>
 			<name>rifle_ammo</name>
 			<aspects>
 				<ammo/>
@@ -113,7 +124,7 @@
 			<nonStackable/>
 		</item>
 		<item>
-			<name>cuirass</name>
+			<name>iron_armor</name>
 			<aspects>
 				<apparel>
 					<covers>
@@ -141,7 +152,7 @@
 			<nonStackable/>
 		</item>
 		<item>
-			<name>mace</name>
+			<name>steel_mace</name>
 			<weight>6</weight>
 			<volume>6</volume>
 			<length>50</length>
@@ -332,8 +343,8 @@
 	</characters>
 	<objects>
 		<object>
-			<name>wall_grey_stone</name>
-			<type>wall</type>
+			<name>wall_gray_stone</name>
+			<class>wall</class>
 			<passability>
 				<none />
 			</passability>
@@ -341,8 +352,44 @@
 			<nonUsable/>
 		</object>
 		<object>
+			<name>wall_red_stone</name>
+			<class>wall</class>
+			<passability>
+				<none />
+			</passability>
+			<material>stone</material>
+			<nonUsable/>
+		</object>
+		<object>
+			<name>wall_wooden</name>
+			<class>wall</class>
+			<passability>
+				<none />
+			</passability>
+			<material>stone</material>
+			<nonUsable/>
+		</object>
+		<object>
+			<name>wall_cave</name>
+			<class>wall</class>
+			<passability>
+				<none />
+			</passability>
+			<material>stone</material>
+			<nonUsable/>
+		</object>
+		<object>
+			<name>lattice</name>
+			<class>wall</class>
+			<passability>
+				<visual />
+			</passability>
+			<material>stone</material>
+			<nonUsable/>
+		</object>
+		<object>
 			<name>door_blue</name>
-			<type>door</type>
+			<class>door</class>
 			<passability>
 				<none />
 			</passability>
@@ -351,7 +398,7 @@
 		</object>
 		<object>
 			<name>ladder_up</name>
-			<type>interlevel</type>
+			<class>interlevel</class>
 			<passability>
 				<all />
 			</passability>

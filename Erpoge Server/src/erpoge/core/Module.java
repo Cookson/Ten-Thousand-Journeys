@@ -5,6 +5,9 @@ import java.util.HashSet;
 public abstract class Module {
 	private Collection<String> dependencies;
 	public abstract void buildStaticData();
+	protected Module() {
+		
+	}
 	public Collection<String> getDependencies() {
 		return dependencies;
 	}

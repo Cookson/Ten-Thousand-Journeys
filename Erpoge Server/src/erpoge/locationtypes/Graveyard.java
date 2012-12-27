@@ -67,10 +67,10 @@ package erpoge.locationtypes;
 //				int sx = Chance.rand(r.x, r.x + r.width - 6);
 //				int sy = Chance.rand(r.y, r.y + r.height - 6);
 //				square(sx, sy, 5, 5, ELEMENT_OBJECT, GameObjects.OBJ_VOID, true);
-//				setObject(sx, sy, GameObjects.OBJ_WALL_GREY_STONE);
-//				setObject(sx + 4, sy, GameObjects.OBJ_WALL_GREY_STONE);
-//				setObject(sx + 4, sy + 4, GameObjects.OBJ_WALL_GREY_STONE);
-//				setObject(sx, sy + 4, GameObjects.OBJ_WALL_GREY_STONE);
+//				setObject(sx, sy, GameObjects.OBJ_wall_gray_stone);
+//				setObject(sx + 4, sy, GameObjects.OBJ_wall_gray_stone);
+//				setObject(sx + 4, sy + 4, GameObjects.OBJ_wall_gray_stone);
+//				setObject(sx, sy + 4, GameObjects.OBJ_wall_gray_stone);
 //				setObject(sx + 2, sy + 2, GameObjects.OBJ_GRAVE_1);
 //				square(sx, sy, 5, 5, ELEMENT_FLOOR, GameObjects.FLOOR_STONE,
 //						true);

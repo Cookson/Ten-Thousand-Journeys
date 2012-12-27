@@ -10,7 +10,7 @@ import erpoge.core.terrain.settlements.BuildingPlace;
 public class Smithy extends Building {
 	public static final long serialVersionUID = 568456832L;
 	public void draw() {
-		int wallGreyStone = StaticData.getObjectType("wall_grey_stone").getId();
+		int wallGreyStone = StaticData.getObjectType("wall_gray_stone").getId();
 		
 		CustomRectangleSystem crs = new CustomRectangleSystem(x,y,width,height,1);
 		Side side = Side.S;

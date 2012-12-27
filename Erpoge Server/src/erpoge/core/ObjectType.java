@@ -10,15 +10,25 @@ import com.google.gson.JsonSerializationContext;
  * treated as {@link Item}s: trees, furniture, wall segments
  */
 public class ObjectType extends UniqueObject implements GsonForStaticDataSerializable {
+	public static final int CLASS_DEFAULT = 0;
+	public static final int CLASS_WALL = 1;
+	public static final int CLASS_DOOR = 2;
+	public static final int CLASS_INTERLEVEL = 3;
 	private final String name;
 	private final int passability;
 	private final boolean isUsable;
+	private final int cls;
 
-	public ObjectType(String name, int passability, boolean isUsable) {
+	public ObjectType(String name, int passability, boolean isUsable, int cls) {
 		super();
 		this.name = name;
 		this.passability = passability;
 		this.isUsable = isUsable;
+		this.cls = cls;
+	}
+	
+	public int getObjectClass() {
+		return cls;
 	}
 
 	public int getPassability() {

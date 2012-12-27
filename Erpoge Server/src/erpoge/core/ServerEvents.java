@@ -10,18 +10,18 @@ import com.google.gson.JsonSerializationContext;
 
 /**
  * ServerEvents is a factory that creates intermediate representations of game
- * obejcts to be serialized into JSON. ServerEvents creates objects of two
+ * objects to be serialized into JSON. ServerEvents creates objects of two
  * classes: {@link ServerEventGson} to be serialized using {@link Gson}, and
  * {@link ServerEventPlain} to be serialized using simple text appending.
  */
-public class ServerEvents {
+final class ServerEvents {
 	/**
 	 * EventTypes registered with
 	 * {@link ServerEvents#registerServerEventType(String, String...)}
 	 */
 	private static HashMap<String, ServerEventType> eventTypes = new HashMap<String, ServerEventType>();
 	/**
-	 * Instance of singletone.
+	 * Instance of singleton.
 	 */
 	private static final ServerEvents instance = new ServerEvents();
 	/**
@@ -35,7 +35,7 @@ public class ServerEvents {
 	 *            Names of JSON object properties.
 	 * @example 
 	 * ServerEvents.registerServerEventType("fart", "loudness", "flavor", "tone"); 
-	 * ServerEvent e = ServerEvents.createEvent("fart", new Loudness(100), new Flovor("mint"), new Tone("D#"));
+	 * ServerEvent e = ServerEvents.createEvent("fart", new Loudness(100), new Flavor("mint"), new Tone("D#"));
 	 * timeStream.addEvent(e);
 	 * timeStream.flushEvents(); // Sends [{e:"fart", "loudness":100, "flavor": "mint", "tone":"D#"}] to clients
 	 */
@@ -70,9 +70,9 @@ public class ServerEvents {
 		return instance.new ServerEventPlain(name, data);
 	}
 
-	class ServerEventGson implements ServerEvent, GsonForStaticDataSerializable {
-		ServerEventType type;
-		GsonForStaticDataSerializable[] data;
+	final class ServerEventGson implements ServerEvent, GsonForStaticDataSerializable {
+		final ServerEventType type;
+		final GsonForStaticDataSerializable[] data;
 
 		ServerEventGson(ServerEventType type, GsonForStaticDataSerializable... data) {
 			this.type = type;
@@ -95,9 +95,9 @@ public class ServerEvents {
 		}
 	}
 
-	class ServerEventPlain implements ServerEvent {
-		private String name;
-		private String data;
+	final class ServerEventPlain implements ServerEvent {
+		private final String name;
+		private final String data;
 
 		public ServerEventPlain(String name, String data) {
 			this.name = name;
@@ -109,10 +109,10 @@ public class ServerEvents {
 		}
 	}
 	
-	class ServerEventCustomGson implements ServerEvent {
-		String name;
-		Object object;
-		Gson gson;
+	final class ServerEventCustomGson implements ServerEvent {
+		final String name;
+		final Object object;
+		final Gson gson;
 		@Override
 		public String toJson() {
 			return gson.toJson(object);
@@ -120,12 +120,13 @@ public class ServerEvents {
 		public ServerEventCustomGson(String name, Object object, Gson gson) {
 			this.name = name;
 			this.object = object;
+			this.gson = gson;
 		}
 	}
 
-	class ServerEventType {
-		String name;
-		String[] fields;
+	final class ServerEventType {
+		final String name;
+		final String[] fields;
 
 		ServerEventType(String name, String... fields) {
 			this.name = name;

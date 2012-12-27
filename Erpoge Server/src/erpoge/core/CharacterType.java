@@ -59,6 +59,9 @@ public class CharacterType implements GsonForStaticDataSerializable {
 	public void setHeight(double height) {
 		this.height = height;
 	}
+	public String toString() {
+		return name;
+	}
 	@Override
 	public JsonElement serialize(JsonSerializationContext context) {
 		JsonArray jArray = new JsonArray();
