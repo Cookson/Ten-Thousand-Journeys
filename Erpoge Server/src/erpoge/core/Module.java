@@ -29,8 +29,6 @@ public abstract class Module {
 	 * are loaded by {@link erpoge.core.ModuleLoader}.
 	 */
 	void checkForDependencies() throws DependencyNotSatisfiedException {
-		HashSet<String> lol = new HashSet<String>();
-		lol.add("aaargh");
 		HashSet<String> unsatisfiedDependencies = new HashSet<String>();
 		for (String dependency : dependencies) {
 			if (!ModuleLoader.moduleNames.contains(dependency)) {

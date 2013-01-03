@@ -3,12 +3,13 @@ package erpoge.buildings;
 import java.awt.Rectangle;
 
 import erpoge.core.Building;
+import erpoge.core.EnhancedRectangle;
+import erpoge.core.RectangleArea;
+import erpoge.core.RectangleSystem;
 import erpoge.core.StaticData;
 import erpoge.core.TerrainBasics;
-import erpoge.core.graphs.CustomRectangleSystem;
 import erpoge.core.meta.Coordinate;
 import erpoge.core.meta.Side;
-import erpoge.core.net.RectangleArea;
 import erpoge.core.terrain.settlements.BuildingPlace;
 
 public class Temple extends Building {
@@ -34,22 +35,23 @@ public class Temple extends Building {
 		// }
 		
 		// For two of four sides we should revert width of cut rectangle
-		CustomRectangleSystem crs = new CustomRectangleSystem(x, y, width, height, 1);
-
-		crs.cutRectangleFromSide(0, side.opposite(), 4);
+		RectangleSystem crs = new RectangleSystem(1);
+		
+		RectangleArea initial = crs.addRectangleArea(x, y, width, height);
+		crs.cutRectangleFromSide(initial, side.opposite(), 4);
 		
 		// 0 - area behind altar, 1 - main area
-		int treesRec = crs.cutRectangleFromSide(0, side.counterClockwise(), 4);
-		crs.excludeRectangle(treesRec);
+		RectangleArea trees = crs.cutRectangleFromSide(initial, side.counterClockwise(), 4);
+		crs.excludeRectangle(trees);
 		
-		rectangleSystem = settlement.getGraph(crs);
+		terrainModifier = settlement.getTerrainModifier(crs);
 		buildBasis(wallGreyStone);
-		setLobby(1);
+		setLobby(trees);
 		
 		/* CONTENT */
 		// Althar and cathedra
-		RectangleArea mainRec = rectangleSystem.content.get(1);
-		RectangleArea backRec = rectangleSystem.content.get(0);
+		EnhancedRectangle mainRec = trees;
+		EnhancedRectangle backRec = initial;
 		Coordinate c = mainRec.getMiddleOfSide(side.opposite());
 		Coordinate c2 = new Coordinate(c);
 		c2.moveToSide(side,1);
@@ -91,7 +93,7 @@ public class Temple extends Building {
 		settlement.setObject(c.x, c.y, objStatueFemaleElf3);
 		
 		// Trees behind temple
-		Rectangle r = crs.excluded.get(treesRec);
+		Rectangle r = trees;
 		for (int rx = r.x; rx<r.x+r.width; rx += 2) {
 			for (int ry = r.y; ry<r.y+r.height; ry += 2) {
 				settlement.setObject(rx, ry, objTree1);
@@ -111,7 +113,7 @@ public class Temple extends Building {
 		}
 		
 		// Ceilings
-		for (Rectangle ceiling : rectangleSystem.content.values()) {
+		for (EnhancedRectangle ceiling : terrainModifier.getRectangleSystem().rectangleSet()) {
 			settlement.createCeiling(ceiling, 1);
 		}
 	}

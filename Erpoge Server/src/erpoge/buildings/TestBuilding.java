@@ -10,7 +10,7 @@ public class TestBuilding extends Building {
 	public void draw() {
 		int wallGreyStone = StaticData.getObjectType("wall_gray_stone").getId();
 		
-		getRectangleSystem(4);
+		getTerrainModifier(4);
 		buildBasis(wallGreyStone);
 		for (Side side : doorSides) {
 			placeFrontDoor(side);

@@ -1,14 +1,13 @@
 package erpoge.buildings;
 
-import java.awt.Rectangle;
-
 import erpoge.core.Building;
+import erpoge.core.EnhancedRectangle;
+import erpoge.core.RectangleArea;
+import erpoge.core.RectangleSystem;
 import erpoge.core.StaticData;
 import erpoge.core.TerrainBasics;
-import erpoge.core.graphs.CustomRectangleSystem;
 import erpoge.core.meta.Chance;
 import erpoge.core.meta.Coordinate;
-import erpoge.core.net.RectangleArea;
 
 public class Park extends Building {
 	public static final long serialVersionUID = 734683L;
@@ -22,28 +21,25 @@ public class Park extends Building {
 		int objTree1 = StaticData.getFloorType("tree1").getId();
 		int objTree2 = StaticData.getFloorType("tree2").getId();
 		
-		CustomRectangleSystem crs = new CustomRectangleSystem(x, y, width, height, 1);
-		int rightBottom = crs.cutRectangleFromSide(0, frontSide, crs.content.get(0).getDimensionBySide(frontSide)/2);
-		int leftTop = crs.cutRectangleFromSide(0, leftSide, crs.content.get(0).getDimensionBySide(leftSide)/2);
-		int leftBottom = crs.cutRectangleFromSide(1, leftSide, crs.content.get(1).getDimensionBySide(leftSide)/2);
-		int rightTop = 0;
+		RectangleSystem crs = new RectangleSystem(1);
+		RectangleArea rightTop = crs.addRectangleArea(x, y, width, height);
+		RectangleArea rightBottom = crs.cutRectangleFromSide(rightTop, frontSide, rightTop.getDimensionBySide(frontSide)/2);
+		RectangleArea leftTop = crs.cutRectangleFromSide(rightTop, leftSide, rightTop.getDimensionBySide(leftSide)/2);
+		RectangleArea leftBottom = crs.cutRectangleFromSide(rightBottom, leftSide, rightBottom.getDimensionBySide(leftSide)/2);
+		
 		
 		// Stretch rectangles to have free place between them (for statues etc)s
 		int centralPlaceSizeMod = 2; // Square of central place will be $centralPlaceSizeMod*2-1
 		if (centralPlaceSizeMod > 0) {
-			RectangleArea recRightTop = crs.content.get(rightTop);
-			recRightTop.stretch(leftSide, -centralPlaceSizeMod).stretch(frontSide, centralPlaceSizeMod);
-			RectangleArea recRightBottom = crs.content.get(rightBottom);
-			recRightBottom.stretch(backSide, -centralPlaceSizeMod).stretch(leftSide, centralPlaceSizeMod);
-			RectangleArea recLeftBottom = crs.content.get(leftBottom);
-			recLeftBottom.stretch(rightSide, -centralPlaceSizeMod).stretch(backSide, centralPlaceSizeMod);
-			RectangleArea recLeftTop = crs.content.get(leftTop);
-			recLeftTop.stretch(frontSide,-centralPlaceSizeMod).stretch(rightSide,centralPlaceSizeMod);
+			rightTop.stretch(leftSide, -centralPlaceSizeMod).stretch(frontSide, centralPlaceSizeMod);
+			rightBottom.stretch(backSide, -centralPlaceSizeMod).stretch(leftSide, centralPlaceSizeMod);
+			leftBottom.stretch(rightSide, -centralPlaceSizeMod).stretch(backSide, centralPlaceSizeMod);
+			leftTop.stretch(frontSide,-centralPlaceSizeMod).stretch(rightSide,centralPlaceSizeMod);
 			
 			// Central rectangle
-			Coordinate c1 = recLeftBottom.getCellFromSide(rightSide, backSide, 0).moveToSide(rightSide, 2);
-			Coordinate c2 = recRightTop.getCellFromSide(leftSide, frontSide, 0).moveToSide(leftSide, 2);
-			RectangleArea recCenter = RectangleArea.getRectangleFromTwoCorners(c1,c2);
+			Coordinate c1 = leftBottom.getCellFromSide(rightSide, backSide, 0).moveToSide(rightSide, 2);
+			Coordinate c2 = rightTop.getCellFromSide(leftSide, frontSide, 0).moveToSide(leftSide, 2);
+			EnhancedRectangle recCenter = EnhancedRectangle.getRectangleFromTwoCorners(c1, c2);
 			if (recCenter.width == 1) {
 				settlement.setObject(recCenter.x, recCenter.y, objStatueDefender1);
 			} else if (recCenter.width == 3) {
@@ -69,41 +65,41 @@ public class Park extends Building {
 				settlement.setObject(recCenter.x+recCenter.width/2, recCenter.y+recCenter.height/2, objStatueDefender1);
 				settlement.setFloor(recCenter.x+recCenter.width/2, recCenter.y+recCenter.height/2, floorGrass);
 			}
-			for (Rectangle r : crs.content.values()) {
+			for (EnhancedRectangle r : crs.rectangleSet()) {
 				settlement.fillRectangle(r, TerrainBasics.ELEMENT_OBJECT, objTree1, 10);
 				settlement.fillRectangle(r, TerrainBasics.ELEMENT_OBJECT, objTree2, 10);
 				settlement.fillRectangle(r, TerrainBasics.ELEMENT_FLOOR, floorDryGrass, 5);
 			}
 			// Get coordinates for roads and draw roads
-			c1 = recLeftTop
+			c1 = leftTop
 					.getCellFromSide(frontSide, leftSide, 0)
 					.moveToSide(frontSide, 1)
 					.moveToSide(leftSide, 1);
-			c2 = recLeftTop
+			c2 = leftTop
 				.getCellFromSide(frontSide, rightSide, 0)
 				.moveToSide(frontSide, 1)
 				.moveToSide(rightSide, 1);
-			Coordinate c3 = recRightTop
+			Coordinate c3 = rightTop
 				.getCellFromSide(leftSide, backSide, 0)
 				.moveToSide(leftSide, 1)
 				.moveToSide(backSide, 1);
-			Coordinate c4 = recRightTop
+			Coordinate c4 = rightTop
 				.getCellFromSide(leftSide, frontSide, 0)
 				.moveToSide(leftSide, 1)
 				.moveToSide(frontSide, 1);
-			Coordinate c5 = recRightBottom
+			Coordinate c5 = rightBottom
 				.getCellFromSide(backSide, leftSide, 0)
 				.moveToSide(backSide, 1)
 				.moveToSide(leftSide, 1);
-			Coordinate c6 = recRightBottom
+			Coordinate c6 = rightBottom
 				.getCellFromSide(backSide, rightSide, 0)
 				.moveToSide(backSide, 1)
 				.moveToSide(rightSide, 1);
-			Coordinate c7 = recLeftBottom
+			Coordinate c7 = leftBottom
 				.getCellFromSide(rightSide, backSide, 0)
 				.moveToSide(rightSide, 1)
 				.moveToSide(backSide, 1);
-			Coordinate c8 = recLeftBottom
+			Coordinate c8 = leftBottom
 				.getCellFromSide(rightSide, frontSide, 0)
 				.moveToSide(rightSide, 1)
 				.moveToSide(frontSide, 1);
@@ -111,10 +107,10 @@ public class Park extends Building {
 			settlement.line(c3.x, c3.y, c4.x, c4.y, TerrainBasics.ELEMENT_FLOOR, floorStone);
 			settlement.line(c5.x, c5.y, c6.x, c6.y, TerrainBasics.ELEMENT_FLOOR, floorStone);
 			settlement.line(c7.x, c7.y, c8.x, c8.y, TerrainBasics.ELEMENT_FLOOR, floorStone);
-			crs.addVertex(recCenter);
+//			crs.addRectangleArea(recCenter);
 		}
 		
 		
-		setRectangleSystem(crs);
+		setTerrainModifier(crs);
 	}
 }

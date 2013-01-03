@@ -4,6 +4,8 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 import erpoge.core.meta.Coordinate;
 import erpoge.core.terrain.Container;
 
@@ -60,7 +62,7 @@ public abstract class TerrainBasics {
 	}
 	
 	public boolean isContainer(int id) {
-		return id >= 60 && id <= 63;
+		throw new NotImplementedException();
 	}
 	public void createCeiling(Rectangle ceiling, int type) {
 		ceilings.add(new Ceiling(ceiling, type));
@@ -133,7 +135,7 @@ public abstract class TerrainBasics {
 		}
 	}
 	public boolean isDoor(int x, int y) {
-		return this.cells[x-this.x][y-this.y].isDoor();
+		return StaticData.getObjectType(this.cells[x-this.x][y-this.y].object).getObjectClass() == ObjectType.CLASS_DOOR;
 	}
 	public abstract int getWidth();
 	public abstract int getHeight();

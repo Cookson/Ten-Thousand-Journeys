@@ -2,28 +2,25 @@ package erpoge.core.terrain;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
+import java.util.Collection;
 
+import erpoge.core.ObjectType;
 import erpoge.core.StaticData;
 import erpoge.core.TerrainBasics;
 import erpoge.core.meta.Chance;
 import erpoge.core.meta.Coordinate;
 
 public class CellCollection {
-	// �����, ���������� � ��������� �������� - ��������, ��������� �� ���������
-	// ������ ������� [[x,y]xN]
 	private ArrayList<Coordinate> cells;
 	ArrayList<Coordinate> unoccupied;
 	boolean hasCells = true;
 	public TerrainBasics location;
 
-	public CellCollection(ArrayList<Coordinate> cls, TerrainBasics loc) {
-		// cls - ������ ��������� ������� [[x,y]xN]
-		// location - ������ Location, ��� ������� ��������� �������� ���
-		// CellCollection
+	public CellCollection(Collection<Coordinate> cls, TerrainBasics loc) {
 		if (cls.isEmpty()) {
-			throw new Error("������� ������ ������ ����");
+			throw new Error("Can't create an empty cell collection: argument is an empty collection");
 		}
-		cells = cls;
+		cells = new ArrayList<Coordinate>(cls);
 		location = loc;
 	}
 	public int size() {
@@ -59,20 +56,15 @@ public class CellCollection {
 //	}
 	public void removeCellsCloseTo(int x, int y, int distance) {
 		int size = cells.size();
-		for (int i=0;i<size;i++) {
-			if (cells.get(i).distance(x,y)<=distance) {
-				cells.remove(i);
-				i--;
+		for (Coordinate c : cells) {
+			if (c.distance(x,y)<=distance) {
+				cells.remove(c);
 				size--;
 			}
 		}
 	}
-	protected void unsetCell(int cellNum) {
-		// ������� ������ �� ������� ���������
-		// ����� �� ��������� ������� �����, �� ����� �������� ������ ��������
-		// ��������� ������ �������
-		// ���� ������� ���������, �� ������ �� ��������
-		cells.remove(cellNum);
+	protected void unsetCell(Coordinate cell) {
+		cells.remove(cell);
 		if (cells.isEmpty()) {
 			hasCells = false;
 		}
@@ -91,83 +83,44 @@ public class CellCollection {
 			location.setObject(coo.x, coo.y, StaticData.VOID);
 		}
 	}
-	public void forest(int density) {
-		// �������� ��������� ���������� ���������
-		// density - ����� �� 0 �� 100, ����� ������� ���������� ����� �������
-		if (density > 100 || density < 0) {
-			throw new Error(
-					"�������� ������� ���� ������ ������ � ��������� �� 0 �� 100 (����������� � "
-							+ density + ")");
-		}
-		int amount = Math.round(cells.size() / 100 * density);
-		for (int i = 0; i < amount; i++) {
-			if (!hasCells) {
-				// ���� � ������� ������ �� �������� ������ �� ����� ���������
-				// ������, ����� �� ���������� �������
-				// (������ ��������� ����� �������, ��� ��������� ��������
-				// this->cells[0] (��. ����� unsetCell))
-				return;
-			}
-			int cellIndex = Chance.rand(0, cells.size()-1);
-			Coordinate cell = cells.get(cellIndex);
-			// ��������� ���������
-			// location.setObject(cell.x, cell.y, Chance.rand(StaticData.get, GameObjects.OBJ_TREE_3));
-			unsetCell(cellIndex);
-		}
-	}
+	/**
+	 * Randomly puts some elements 
+	 * @param type Type of an element
+	 * @param val
+	 * @param amount
+	 */
 	public void setElements(int type, int val, int amount) {
 		for (int i = 0; i < amount; i++) {
 			if (!hasCells) {
-				// ���� � ������� ������ �� �������� ������ �� ����� ���������
-				// ������, ����� �� ���������� �������
-				// (������ ��������� ����� �������, ��� ��������� ��������
-				// this->cells[0] (��. ����� unsetCell))
-				throw new Error("No more cells");
+				throw new RuntimeException("CellCollection has no cells left");
 			}
 			int cellIndex = Chance.rand(0, cells.size()-1);
 			Coordinate cell = cells.get(cellIndex);
 			location.setElement(cell.x, cell.y, type, val);
-			unsetCell(cellIndex);
+			unsetCell(cell);
 		}
 	}
-	public void setObjects(int val, int amount) {
+	/**
+	 * 
+	 * @param val
+	 * @param amount
+	 */
+	public void setObjects(ObjectType type, int amount) {
 		for (int i = 0; i < amount; i++) {
 			if (!hasCells) {
-				// ���� � ������� ������ �� �������� ������ �� ����� ���������
-				// ������, ����� �� ���������� �������
-				// (������ ��������� ����� �������, ��� ��������� ��������
-				// this->cells[0] (��. ����� unsetCell))
-				throw new Error("No more cells");
+				throw new RuntimeException("CellCollection has no cells left");
 			}
 			int cellIndex = Chance.rand(0, cells.size()-1);
 			Coordinate cell = cells.get(cellIndex);
-			location.setObject(cell.x, cell.y, val);
-			unsetCell(cellIndex);
+			location.setObject(cell.x, cell.y, type.getId());
+			unsetCell(cell);
 		}
 	}
-	public void setObjects(ArrayList<Integer> objects, int amount) {
-		// ���������� � ������� ��������� amount ��������. �������� �������
-		// ���������� ��������� ������� �� objects
-		for (int i = 0; i < amount; i++) {
-			if (!hasCells) {
-				// ���� � ������� ������ �� �������� ������ �� ����� ���������
-				// ������, ����� �� ���������� �������
-				// (������ ��������� ����� �������, ��� ��������� ��������
-				// this->cells[0] (��. ����� unsetCell))
-				return;
-			}
-			int cellIndex = Chance.rand(0, cells.size()-1);
-			Coordinate cell = cells.get(cellIndex);
-
-			int objSize = objects.size() - 1;
-			location.setObject(cell.x, cell.y,
-					objects.get(Chance.rand(0, objSize)));
-			unsetCell(cellIndex);
-		}
-	}
+	
 	public Coordinate getRandomCell() {
 		return cells.get(Chance.rand(0,cells.size()-1));
 	}
+	
 	public void fillWithElements(int type, int val) {
 		// TODO Auto-generated method stub
 		for (Coordinate c : cells) {
@@ -178,16 +131,12 @@ public class CellCollection {
 		ArrayList<Coordinate> coords = new ArrayList<Coordinate>();
 		for (int i = 0; i < amount; i++) {
 			if (!hasCells) {
-				// ���� � ������� ������ �� �������� ������ �� ����� ���������
-				// ������, ����� �� ���������� �������
-				// (������ ��������� ����� �������, ��� ��������� ��������
-				// this->cells[0] (��. ����� unsetCell))
-				throw new Error("No more cells");
+				throw new RuntimeException("CellCollection has no cells left");
 			}
 			int cellIndex = Chance.rand(0, cells.size()-1);
 			Coordinate cell = cells.get(cellIndex);
 			location.setElement(cell.x, cell.y, type, val);
-			unsetCell(cellIndex);
+			unsetCell(cell);
 			coords.add(cell);
 		}
 		return coords;
@@ -203,7 +152,7 @@ public class CellCollection {
 		int cellIndex = Chance.rand(0, cells.size()-1);
 		Coordinate cell = cells.get(cellIndex);
 		location.setElement(cell.x, cell.y, type, val);
-		unsetCell(cellIndex);
+		unsetCell(cell);
 		return cell;
 	}
 	public Coordinate setObjectAndReport(int val) {
@@ -213,7 +162,7 @@ public class CellCollection {
 		int cellIndex = Chance.rand(0, cells.size()-1);
 		Coordinate cell = cells.get(cellIndex);
 		location.setObject(cell.x, cell.y, val);
-		unsetCell(cellIndex);
+		unsetCell(cell);
 		return cell;
 	}
 //	public Character setCharacter(String type, String name) {

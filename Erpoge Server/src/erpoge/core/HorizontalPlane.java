@@ -2,8 +2,6 @@ package erpoge.core;
 
 import java.util.HashMap;
 
-import erpoge.core.graphs.RectangleSystem;
-import erpoge.core.net.RectangleArea;
 import erpoge.locationtypes.BuildingTest;
 import erpoge.locationtypes.Empty;
 import erpoge.locationtypes.Forest;
@@ -163,8 +161,8 @@ public class HorizontalPlane {
 	}
 
 	public void generateTerrain(int x, int y, int width, int height) {
-		RectangleSystem graph = new RectangleSystem(x, y, width, height, 40, 0);
-		for (RectangleArea r : graph) {
+		RectangleSystem graph = new RandomRectangleSystem(x, y, width, height, 40, 0);
+		for (RectangleArea r : graph.rectangleSet()) {
 			generateLocation(r.x, r.y, r.width, r.height, "BuildingTest");
 		}
 	}

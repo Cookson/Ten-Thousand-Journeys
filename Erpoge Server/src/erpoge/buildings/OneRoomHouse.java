@@ -9,7 +9,7 @@ public class OneRoomHouse extends Building {
 	public void draw() {
 		int wallWoorden = StaticData.getObjectType("wall_wooden").getId();
 		
-		getRectangleSystem(900);	
+		getTerrainModifier(900);	
 		buildBasis(wallWoorden);
 		
 		placeFrontDoor(getDoorSide());

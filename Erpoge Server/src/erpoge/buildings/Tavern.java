@@ -25,10 +25,9 @@ public class Tavern extends Building {
 		
 		buildBasis(wallGreyStone);
 		placeFrontDoor(Side.ANY_SIDE);
-		Rectangle lobbyRec = rectangleSystem.content.get(lobby);
-		for (int sx=lobbyRec.x; sx<lobbyRec.x+lobbyRec.width; sx++) {
-			if (!settlement.isDoor(sx, lobbyRec.y-1)) {
-				settlement.setObject(sx, lobbyRec.y, objVineshelf);
+		for (int sx=lobby.x; sx<lobby.x+lobby.width; sx++) {
+			if (!settlement.isDoor(sx, lobby.y-1)) {
+				settlement.setObject(sx, lobby.y, objVineshelf);
 			}
 		}
 		
@@ -69,8 +68,8 @@ public class Tavern extends Building {
 		youAreAnother.addAnswer("Спасибо, пока!", hello, true);
 		// innkeeper.setDialogue(dialogue);
 		Rectangle tablesArea = new Rectangle(
-				lobbyRec.x+1, lobbyRec.y+1, 
-				lobbyRec.width-2, lobbyRec.height-2);
+				lobby.x+1, lobby.y+1, 
+				lobby.width-2, lobby.height-2);
 		for (int i=tablesArea.x+Chance.rand(0,1); i<tablesArea.x+tablesArea.width-1;i+=Chance.rand(1,2)) {
 			for (int j=tablesArea.y+Chance.rand(0,1); j<tablesArea.y+tablesArea.height-1;j+=Chance.rand(1,2)) {
 				settlement.setElement(i, j, TerrainBasics.ELEMENT_OBJECT, objChair1);

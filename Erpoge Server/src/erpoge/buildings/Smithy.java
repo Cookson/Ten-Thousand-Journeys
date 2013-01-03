@@ -1,23 +1,25 @@
 package erpoge.buildings;
 
 import erpoge.core.Building;
+import erpoge.core.RectangleArea;
+import erpoge.core.RectangleSystem;
 import erpoge.core.StaticData;
-import erpoge.core.graphs.CustomRectangleSystem;
 import erpoge.core.meta.Side;
 import erpoge.core.terrain.settlements.BuildingPlace;
 
-
 public class Smithy extends Building {
 	public static final long serialVersionUID = 568456832L;
+
 	public void draw() {
 		int wallGreyStone = StaticData.getObjectType("wall_gray_stone").getId();
-		
-		CustomRectangleSystem crs = new CustomRectangleSystem(x,y,width,height,1);
+
+		RectangleSystem crs = new RectangleSystem(1);
 		Side side = Side.S;
-		crs.cutRectangleFromSide(0, side, 5);
-		crs.cutRectangleFromSide(1, side.clockwise(), 5);
-		crs.excludeRectangle(2);
-		rectangleSystem = settlement.getGraph(crs);
+		RectangleArea initialRec = crs.addRectangleArea(x, y, width, height);
+		RectangleArea r1 = crs.cutRectangleFromSide(initialRec, side, 5);
+		RectangleArea r2 = crs.cutRectangleFromSide(r1, side.clockwise(), 5);
+		crs.excludeRectangle(r2);
+		terrainModifier = settlement.getTerrainModifier(crs);
 		buildBasis(wallGreyStone);
 	}
 

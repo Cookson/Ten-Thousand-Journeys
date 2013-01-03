@@ -1,4 +1,5 @@
 package erpoge.core;
+
 import static org.w3c.dom.Node.ELEMENT_NODE;
 
 import java.io.File;
@@ -32,13 +33,14 @@ public class LoadStaticDataFromXML {
 			return new DefaultEdge();
 		}
 	};
+
 	/**
-	 * Reads .xml file with game objects' text descriptions and loads
-	 * the descriptions into memory as data structures to be used in
-	 * in-game calculations and client-side static data building.
+	 * Reads .xml file with game objects' text descriptions and loads the
+	 * descriptions into memory as data structures to be used in in-game
+	 * calculations and client-side static data building.
 	 * 
 	 * @param filename
-	 * 			Path to .xml data file.
+	 *            Path to .xml data file.
 	 */
 	public static void loadGameDataFromXml(String filename) {
 		try {
@@ -64,9 +66,10 @@ public class LoadStaticDataFromXML {
 			e.printStackTrace();
 		}
 	}
+
 	private static void removeWhitespaceTextNodes(Node node) {
 		NodeList nlChildren = node.getChildNodes();
-		for (int i=nlChildren.getLength()-1; i>-1; i--) {
+		for (int i = nlChildren.getLength() - 1; i > -1; i--) {
 			Node nChild = nlChildren.item(i);
 			if (nChild.getNodeType() == Node.ELEMENT_NODE) {
 				removeWhitespaceTextNodes(nChild);
@@ -76,7 +79,9 @@ public class LoadStaticDataFromXML {
 			}
 		}
 	}
-	public static boolean validate(String inputXml, String schemaLocation) throws SAXException, IOException {
+
+	public static boolean validate(String inputXml, String schemaLocation)
+		throws SAXException, IOException {
 		SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/2001/XMLSchema");
 		File schemaFile = new File(schemaLocation);
 		Schema schema = factory.newSchema(schemaFile);
@@ -94,13 +99,10 @@ public class LoadStaticDataFromXML {
 
 		return isValid;
 	}
+
 	private static void loadSounds(Element eRoot) {
 		Element eSounds = (Element) eRoot.getElementsByTagName("sounds").item(0);
-		for (
-			Element eSound = (Element) eSounds.getFirstChild();
-			eSound != null;
-			eSound = (Element) eSound.getNextSibling()
-		) {
+		for (Element eSound = (Element) eSounds.getFirstChild(); eSound != null; eSound = (Element) eSound.getNextSibling()) {
 			String name = eSound.getElementsByTagName("name").item(0).getFirstChild().getNodeValue();
 			int bass = Integer.parseInt(eSound.getElementsByTagName("bass").item(0).getFirstChild().getNodeValue());
 			int mid = Integer.parseInt(eSound.getElementsByTagName("mid").item(0).getFirstChild().getNodeValue());
@@ -109,38 +111,29 @@ public class LoadStaticDataFromXML {
 			StaticData.add(soundType);
 		}
 	}
+
 	private static void loadCharacters(Element eRoot) {
 		Element eCharacters = (Element) eRoot.getElementsByTagName("characters").item(0);
-		for (
-			Element eCharacter = (Element) eCharacters.getFirstChild();
-			eCharacter != null;
-			eCharacter = (Element) eCharacter.getNextSibling()
-		) {
-		// Form a CharacterType object
+		for (Element eCharacter = (Element) eCharacters.getFirstChild(); eCharacter != null; eCharacter = (Element) eCharacter.getNextSibling()) {
+			// Form a CharacterType object
 			String name = eCharacter.getElementsByTagName("name").item(0).getFirstChild().getNodeValue();
 			double weight = Double.parseDouble(eCharacter.getElementsByTagName("weight").item(0).getFirstChild().getNodeValue());
 			double height = Double.parseDouble(eCharacter.getElementsByTagName("height").item(0).getFirstChild().getNodeValue());
 			HashSet<CharacterAspect> aspects = new HashSet<CharacterAspect>();
-			for (
-				Element eAspect = (Element) eCharacter.getElementsByTagName("aspects").item(0).getFirstChild();
-				eAspect != null;
-				eAspect = (Element) eAspect.getNextSibling()
-			) {
-			// For each aspect inside XML element <aspects/> add a CharacterAspect to CharacterType
+			for (Element eAspect = (Element) eCharacter.getElementsByTagName("aspects").item(0).getFirstChild(); eAspect != null; eAspect = (Element) eAspect.getNextSibling()) {
+				// For each aspect inside XML element <aspects/> add a
+				// CharacterAspect to CharacterType
 				aspects.add(CharacterAspect.getByName(eAspect.getTagName()));
 			}
-			DirectedGraph<BodyPartTypeInstance, DefaultEdge> bodyGraph = xml2BodyGraph((Element)eCharacter.getElementsByTagName("body").item(0).getFirstChild());
+			DirectedGraph<BodyPartTypeInstance, DefaultEdge> bodyGraph = xml2BodyGraph((Element) eCharacter.getElementsByTagName("body").item(0).getFirstChild());
 			CharacterType characterType = new CharacterType(name, aspects, weight, height, bodyGraph);
 			StaticData.add(characterType);
 		}
 	}
+
 	private static void loadMaterials(Element eRoot) {
 		Element eMaterials = (Element) eRoot.getElementsByTagName("materials").item(0);
-		for (
-			Element eMaterial = (Element) eMaterials.getFirstChild();
-			eMaterial != null;
-			eMaterial = (Element) eMaterial.getNextSibling()
-		) {
+		for (Element eMaterial = (Element) eMaterials.getFirstChild(); eMaterial != null; eMaterial = (Element) eMaterial.getNextSibling()) {
 			int durability = Integer.parseInt(eMaterial.getElementsByTagName("durability").item(0).getFirstChild().getNodeValue());
 			String name = eMaterial.getElementsByTagName("name").item(0).getFirstChild().getNodeValue();
 			int density = Integer.parseInt(eMaterial.getElementsByTagName("density").item(0).getFirstChild().getNodeValue());
@@ -148,34 +141,27 @@ public class LoadStaticDataFromXML {
 			StaticData.add(material);
 		}
 	}
+
 	private static void loadObjects(Element eRoot) {
 		Element eObjects = (Element) eRoot.getElementsByTagName("objects").item(0);
-		
-		for (
-			Element eObject = (Element) eObjects.getFirstChild();
-			eObject != null;
-			eObject = (Element) eObject.getNextSibling()
-		) {
+
+		for (Element eObject = (Element) eObjects.getFirstChild(); eObject != null; eObject = (Element) eObject.getNextSibling()) {
 			String name = eObject.getElementsByTagName("name").item(0).getFirstChild().getNodeValue();
 			Element ePassability = (Element) eObject.getElementsByTagName("passability").item(0);
 			int passability = StaticData.PASSABILITY_NONE;
 			boolean isUsable;
-			for (
-				Element ePassType = (Element) ePassability.getFirstChild();
-				ePassType != null;
-				ePassType = (Element) ePassType.getNextSibling()
-			) {
-			/* 
-			 * <passability /> element can contain several flag elements, that 
-			 * determine what types of passability this ObjectType has: visual,
-			 * walkable.
-			 */
+			for (Element ePassType = (Element) ePassability.getFirstChild(); ePassType != null; ePassType = (Element) ePassType.getNextSibling()) {
+				/*
+				 * <passability /> element can contain several flag elements,
+				 * that determine what types of passability this ObjectType has:
+				 * visual, walkable.
+				 */
 				if (ePassType.getTagName().equals("none")) {
 					passability = StaticData.PASSABILITY_NONE;
 					break;
 				}
 				if (ePassType.getTagName().equals("all")) {
-					passability = StaticData.PASSABILITY_VISUAL+StaticData.PASSABILITY_WALKABLE;
+					passability = StaticData.PASSABILITY_VISUAL + StaticData.PASSABILITY_WALKABLE;
 					break;
 				}
 				if (ePassType.getTagName().equals("visual")) {
@@ -199,25 +185,31 @@ public class LoadStaticDataFromXML {
 				} else if (objectClassAsString.equals("interlevel")) {
 					objectClass = ObjectType.CLASS_INTERLEVEL;
 				} else {
-					throw new RuntimeException("Unknown object class "+objectClassAsString);
+					throw new RuntimeException("Unknown object class " + objectClassAsString);
 				}
 			}
 			ObjectType objectType = new ObjectType(name, passability, isUsable, objectClass);
 			StaticData.add(objectType);
+			if (objectClass == ObjectType.CLASS_DOOR) {
+				/*
+				 * There are 2 ObjectTypes associated with each door: open and
+				 * closed. The default one is closed, then we should register
+				 * the open one.
+				 */
+				StaticData.add(new ObjectType(name + "_open", StaticData.PASSABILITY_PENETRABLE + StaticData.PASSABILITY_VISUAL + StaticData.PASSABILITY_WALKABLE, isUsable, objectClass));
+			}
 		}
 	}
+
 	private static void loadFloors(Element eRoot) {
 		Element eFloors = (Element) eRoot.getElementsByTagName("floors").item(0);
-		for (
-			Element eFloor = (Element) eFloors.getFirstChild();
-			eFloor != null;
-			eFloor = (Element) eFloor.getNextSibling()
-		) {
+		for (Element eFloor = (Element) eFloors.getFirstChild(); eFloor != null; eFloor = (Element) eFloor.getNextSibling()) {
 			String name = eFloor.getElementsByTagName("name").item(0).getFirstChild().getNodeValue();
 			FloorType floorType = new FloorType(name);
 			StaticData.add(floorType);
 		}
 	}
+
 	private static Element getChild(Element parent, String name) {
 		for (Node child = parent.getFirstChild(); child != null; child = child.getNextSibling()) {
 			if (child instanceof Element && name.equals(child.getNodeName())) {
@@ -225,13 +217,10 @@ public class LoadStaticDataFromXML {
 			}
 		}
 		return null;
-	}	
+	}
+
 	private static void loadItems(Element eRoot) {
-		for (
-			Element eItem = (Element) eRoot.getElementsByTagName("items").item(0).getFirstChild();
-			eItem != null;
-			eItem = (Element) eItem.getNextSibling()
-		) {
+		for (Element eItem = (Element) eRoot.getElementsByTagName("items").item(0).getFirstChild(); eItem != null; eItem = (Element) eItem.getNextSibling()) {
 			// Parsing item type's properties
 			String name = eItem.getElementsByTagName("name").item(0).getFirstChild().getNodeValue();
 			String materialName = getChild(eItem, "material").getFirstChild().getNodeValue();
@@ -251,11 +240,7 @@ public class LoadStaticDataFromXML {
 			// Parsing item type's aspects
 			Node nAspects = eItem.getElementsByTagName("aspects").item(0);
 			if (nAspects != null) {
-				for (
-					Element eAspect = (Element) nAspects.getFirstChild();
-					eAspect != null; 
-					eAspect = (Element) eAspect.getNextSibling()
-				) {
+				for (Element eAspect = (Element) nAspects.getFirstChild(); eAspect != null; eAspect = (Element) eAspect.getNextSibling()) {
 					if (eAspect.getNodeType() != ELEMENT_NODE) {
 						continue;
 					}
@@ -267,27 +252,19 @@ public class LoadStaticDataFromXML {
 						aspects.add(new AspectRangedWeapon(iReloadTime, iAimTime, iMagazine, sAmmoType));
 					}
 					if (eAspect.getTagName().equals("craftable")) {
-						
+
 					}
 					if (eAspect.getTagName().equals("apparel")) {
-						Graph<BodyPartTypeInstance, DefaultEdge> form = xml2BodyGraph((Element)eAspect.getElementsByTagName("form").item(0).getFirstChild());
+						Graph<BodyPartTypeInstance, DefaultEdge> form = xml2BodyGraph((Element) eAspect.getElementsByTagName("form").item(0).getFirstChild());
 						HashSet<BodyPartType> covers = new HashSet<BodyPartType>();
 						HashSet<BodyPartType> blocks = new HashSet<BodyPartType>();
 						if (eAspect.getElementsByTagName("covers").getLength() > 0) {
-							for (
-								Element eCovers = (Element) eAspect.getElementsByTagName("covers").item(0).getFirstChild();
-								eCovers != null;
-								eCovers = (Element) eCovers.getNextSibling()
-							) {
+							for (Element eCovers = (Element) eAspect.getElementsByTagName("covers").item(0).getFirstChild(); eCovers != null; eCovers = (Element) eCovers.getNextSibling()) {
 								covers.add(BodyPartType.string2BodyPart(eCovers.getTagName()));
 							}
 						}
 						if (eAspect.getElementsByTagName("blocks").getLength() > 0) {
-							for (
-								Element eBlocks = (Element) eAspect.getElementsByTagName("blocks").item(0).getFirstChild();
-								eBlocks != null;
-								eBlocks = (Element) eBlocks.getNextSibling()
-							) {
+							for (Element eBlocks = (Element) eAspect.getElementsByTagName("blocks").item(0).getFirstChild(); eBlocks != null; eBlocks = (Element) eBlocks.getNextSibling()) {
 								blocks.add(BodyPartType.string2BodyPart(eBlocks.getTagName()));
 							}
 						}
@@ -305,20 +282,17 @@ public class LoadStaticDataFromXML {
 					}
 				}
 			}
-			ItemType itemType = new ItemType(
-				name, 
-				aspects, 
-				weight, 
-				volume,
-				material,
-				stackable
-			);
+			ItemType itemType = new ItemType(name, aspects, weight, volume, material, stackable);
 			StaticData.add(itemType);
 		}
 	}
+
 	/**
-	 * Creates a graph of body organs from xml. 
-	 * @param eRoot The root element of a body organ structure (not <form/> element, but the root body organ).
+	 * Creates a graph of body organs from xml.
+	 * 
+	 * @param eRoot
+	 *            The root element of a body organ structure (not <form/>
+	 *            element, but the root body organ).
 	 * @return
 	 */
 	private static DirectedGraph<BodyPartTypeInstance, DefaultEdge> xml2BodyGraph(Element eRoot) {
@@ -328,27 +302,23 @@ public class LoadStaticDataFromXML {
 		xml2Graph(eRoot, graph, rootVertex);
 		return graph;
 	}
+
 	/**
-	 * A recursive helper method for {@link LoadStaticDataFromXML#xml2BodyGraph(Element)}.
+	 * A recursive helper method for
+	 * {@link LoadStaticDataFromXML#xml2BodyGraph(Element)}.
 	 * 
 	 * @param eRoot
 	 * @param graph
 	 * @param rootVertex
 	 */
 	private static void xml2Graph(Element eRoot, DefaultDirectedGraph<BodyPartTypeInstance, DefaultEdge> graph, BodyPartTypeInstance rootVertex) {
-		for (
-			Element eChild = (Element) eRoot.getFirstChild();
-			eChild != null; 
-			eChild = (Element) eChild.getNextSibling()
-		) {
+		for (Element eChild = (Element) eRoot.getFirstChild(); eChild != null; eChild = (Element) eChild.getNextSibling()) {
 			BodyPartTypeInstance newVertex = new BodyPartTypeInstance(BodyPartType.string2BodyPart(eChild.getTagName()));
 			graph.addVertex(newVertex);
 			try {
 				graph.addEdge(rootVertex, newVertex);
 			} catch (IllegalArgumentException e) {
-				System.out.println("error adding "+newVertex.type+" to "+rootVertex.type);
-				System.out.println(graph.vertexSet());
-				e.printStackTrace();
+				throw new RuntimeException("error adding " + newVertex.type + " to " + rootVertex.type);
 			}
 			xml2Graph(eChild, graph, newVertex);
 		}

@@ -343,7 +343,7 @@
 	</characters>
 	<objects>
 		<object>
-			<name>wall_gray_stone</name>
+			<name>wall_grey_stone</name>
 			<class>wall</class>
 			<passability>
 				<none />
