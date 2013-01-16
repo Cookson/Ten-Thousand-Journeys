@@ -1,6 +1,8 @@
 package erpoge.core;
 
 import java.awt.Rectangle;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -10,6 +12,7 @@ import java.util.Iterator;
 
 import erpoge.core.meta.Chance;
 import erpoge.core.meta.Coordinate;
+import erpoge.core.meta.Direction;
 import erpoge.core.meta.Side;
 import erpoge.core.net.Chat;
 import erpoge.core.terrain.CellCollection;
@@ -28,13 +31,12 @@ public class Location extends TerrainBasics {
 	 * sending. A character does his actions, all the events like attacks,
 	 * spells, item manipulations, environment changes and so on are being
 	 * written into location's/world's serverEvents and then flushed
-	 * (Location.flushEvents) as json to all the needed players (either near
+	 * (Location.flushEvents) as JSON to all the needed players (either near
 	 * enough in location or in the world)
 	 */
 	private HorizontalPlane plane;
 
-	public Location(HorizontalPlane plane, int x, int y, int width, int height,
-		String type) {
+	public Location(HorizontalPlane plane, int x, int y, int width, int height, String type) {
 		super(x, y);
 		this.cells = plane.getCells(x, y, width, height);
 		this.type = type;
@@ -94,7 +96,7 @@ public class Location extends TerrainBasics {
 
 	public void square(int startX, int startY, int w, int h, int type, int name, boolean fill) {
 		if (startX + w > getWidth() || startY + h > getHeight()) {
-			throw new Error("Square " + startX + "," + startY + "," + w + "," + h + " goes out of location borders "+startX+" "+startY+" "+getHeight()+" "+getWidth());
+			throw new Error("Square " + startX + "," + startY + "," + w + "," + h + " goes out of location borders " + startX + " " + startY + " " + getHeight() + " " + getWidth());
 		}
 		// ��������� ����
 		if (w == 1) {
@@ -147,7 +149,28 @@ public class Location extends TerrainBasics {
 		}
 		return answer;
 	}
-
+	/**
+	 * Uses a {@link Segment} to draw a rectangle. This method is almost
+	 * identical to {@link Location#square(int, int, int, int, int, int)}, it is
+	 * just more convenient to use when Segments are often used. The drawn
+	 * rectangle's top-left cell will be {segment.x;segment.y}.
+	 * 
+	 * @param segment
+	 * @param width
+	 *            Defines width (if segment.getDirection() == Direction.V) of
+	 *            height (if segment.getDirection() == Direction.H) of the drawn
+	 *            rectangle.
+	 * @param type
+	 * @param name
+	 */
+	public void drawSegment(Segment segment, int width, int type, int name) {
+		if (segment.direction == Direction.H) {
+			square(segment.x, segment.y, segment.length, width, type, name, true);
+		} else {
+			// if segment.direction == Direction.V
+			square(segment.x, segment.y, width, segment.length, type, name, true);
+		}
+	}
 	public void circle(int cX, int cY, int r, int type, int name) {
 		circle(cX, cY, r, type, name, false);
 	}
@@ -199,8 +222,8 @@ public class Location extends TerrainBasics {
 		return new TerrainModifier(this, startX, startY, width, height, minRectangleWidth, borderWidth);
 	}
 
-	public TerrainModifier getTerrainModifier(RectangleSystem crs) {
-		return new TerrainModifier(this, crs);
+	public TerrainModifier getTerrainModifier(RectangleSystem rs) {
+		return new TerrainModifier(this, rs);
 	}
 
 	public CellCollection getCellCollection(ArrayList<Coordinate> cls) {
@@ -219,7 +242,7 @@ public class Location extends TerrainBasics {
 		this.plane = plane;
 	}
 
-	public Building placeBuilding(Class<? extends Building> building, int x, int y, int width, int height, Side side) {
+	public <T extends Building> void placeBuilding(T building) {
 		/**
 		 * Places building when current location is not Settlement.
 		 * 
@@ -227,11 +250,7 @@ public class Location extends TerrainBasics {
 		 *            What side a building is rotated to.
 		 */
 		BuildingPlace place = new BuildingPlace(x, y, width, height);
-		try {
-			return building.newInstance().setProperties(this, place);
-		} catch (Exception e) {
-			throw new Error("Couldn't place building");
-		}
+		building.draw();
 	}
 
 	// From TerrainGenerator
@@ -240,15 +259,8 @@ public class Location extends TerrainBasics {
 	}
 
 	public ArrayList<Coordinate> polygon(ArrayList<Coordinate> coords, boolean mode) {
-		// ���������� ��������� ������ ��������������
-		// �������� � ��������� � ����������� ����������������, �� �������� �
-		// ����������������, � ������� ������������ �������
-		// coords - [[x,y]xN]
-		// mode: 0|undefined - ���������� ������� � �������, 1 - ������� ������
-		// ����� ������ �������
 		ArrayList<Coordinate> answer = new ArrayList<Coordinate>();
 
-		// �������� �������, ������� � � ������ answer
 		int size = coords.size();
 		Coordinate[] v;
 		int vSize;
@@ -261,15 +273,9 @@ public class Location extends TerrainBasics {
 				answer.add(v[j]);
 			}
 		}
-		// ���� �����������, ������������ ������� ����� ������� ���������,
-		// � ���� �����, ���������� ������� - ������� �������������� ���������
-		// ���� ��� ������
-		// (��� �������������� ����� ������ ������������)
 		int startX = (int) Math.floor((coords.get(0).x + coords.get(1).x + coords.get(2).x) / 3);
 		int startY = (int) Math.floor((coords.get(0).y + coords.get(1).y + coords.get(2).y) / 3);
 		if (mode == false) {
-			// ������� � ���������� ������� (�������������� ������ � ��� ������,
-			// ���� ����� �������� mode)
 			HashSet<Coordinate> oldFront = new HashSet<Coordinate>();
 			HashSet<Coordinate> newFront = new HashSet<Coordinate>();
 			newFront.add(new Coordinate(startX, startY));
@@ -286,12 +292,9 @@ public class Location extends TerrainBasics {
 			do {
 				oldFront = newFront;
 				newFront = new HashSet<Coordinate>();
-				size = oldFront.size(); // ������ ����� ������� � ����������,
-										// ������ ��� �� ���������� �� ����
-										// ���������� �����
+				size = oldFront.size();
 				it = oldFront.iterator();
 				while (it.hasNext()) {
-					// ������� ����� �� ������ ��������� ������ �� ������ ������
 					Coordinate cell = it.next();
 					int x = cell.x;
 					int y = cell.y;
@@ -304,8 +307,6 @@ public class Location extends TerrainBasics {
 							continue;
 						}
 						if (thisNumX < 0 || thisNumX >= getWidth() || thisNumY < 0 || thisNumY >= getHeight()) {
-							// �� ������� ������ �� �������, ������� ������� ��
-							// ������� ���� ��� �������� ��� ���������
 							continue;
 						}
 						// if (thisNumX<=0 || thisNumX>=w-1 || thisNumY<=0 ||
@@ -325,7 +326,7 @@ public class Location extends TerrainBasics {
 		}
 		return answer;
 	}
-	
+
 	public void fillWithCells(int floorId, int objectId) {
 		for (int i = 0; i < width; i++) {
 			for (int j = 0; j < height; j++) {
@@ -336,10 +337,6 @@ public class Location extends TerrainBasics {
 	}
 
 	public ArrayList<Coordinate> closeCells(int startX, int startY, int length, int pass, boolean noDiagonal) {
-		// �������� ������ �� ��������� ������ � passability==%pass%,
-		// ����������� � length
-		// ����� �� ���������
-		// ������: [[x,y]xN]
 		ArrayList<Coordinate> oldFront = new ArrayList<Coordinate>();
 		ArrayList<Coordinate> newFront = new ArrayList<Coordinate>();
 		ArrayList<Coordinate> answer = new ArrayList<Coordinate>();
@@ -900,12 +897,4 @@ public class Location extends TerrainBasics {
 		return height;
 	}
 
-	public void showLocation() {
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				Main.out((cells[x][y] == null) ? "." : "#");
-			}
-			Main.outln();
-		}
-	}
 }

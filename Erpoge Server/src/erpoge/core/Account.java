@@ -21,9 +21,9 @@ public class Account {
 	}
 	
 	public void accountStatistic() {
-		Main.log("Characters on account "+login+" "+this);
+		Main.outln("Characters on account "+login+" "+this);
 		for (PlayerCharacter player : characters) {
-			Main.log(player.name+" "+player.getCls());
+			Main.outln(player.name+" "+player.getCls());
 		}
 	}
 

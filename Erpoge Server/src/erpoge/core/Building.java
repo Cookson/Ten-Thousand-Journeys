@@ -15,52 +15,61 @@ import erpoge.core.meta.Side;
 import erpoge.core.terrain.settlements.BuildingPlace;
 import erpoge.core.terrain.settlements.Settlement.RoadSystem.Road;
 
-public abstract class Building extends Rectangle {
-	private static final long serialVersionUID = 5353413789986742155L;
-	public static final int SIDE_N = 1, SIDE_E = 2, SIDE_S = 3, SIDE_W = 4;
-	public Location settlement;
-	public Collection<RectangleArea> rooms;
-	public TerrainModifier terrainModifier;
-	public EnhancedRectangle lobby;
-	public ArrayList<Side> doorSides = new ArrayList<Side>();
-	public Coordinate frontDoor;
-	public ArrayList<Road> closeRoads;
-	private boolean hasSettlement;
+public abstract class Building {
+	protected Location settlement;
+	protected Collection<RectangleArea> rooms;
+	protected TerrainModifier terrainModifier;
+	protected EnhancedRectangle lobby;
+	protected ArrayList<Side> doorSides = new ArrayList<Side>();
+	protected Coordinate frontDoor;
+
+	protected final int x;
+	protected final int y;
+	protected final int width;
+	protected final int height;
+	protected final Side frontSide;
+	protected final Side leftSide;
+	protected final Side rightSide;
+	protected final Side backSide;
+
 	private static HashMap<String, Class<? extends Building>> buildingClasses;
 	/**
 	 * ArrayList of rectangleIds
 	 */
 	private ArrayList<Integer> hallways = new ArrayList<Integer>();
 
-	protected Side frontSide;
-	protected Side leftSide;
-	protected Side rightSide;
-	protected Side backSide;
-
-	public Building setProperties(Location settlement, BuildingPlace place) {
+	/**
+	 * Sets the main properties of Building. This method must have been the
+	 * class'es constructor, but this would require each subclass of building to
+	 * have an explicit constructor with the same signature.
+	 * 
+	 * @param location
+	 *            The {@link Location} in which the Building is built.
+	 * @param place
+	 *            Where exactly in location the Building is built.
+	 * @param frontSide
+	 *            From which cardinal side is the front door.
+	 */
+	public Building(Location location, BuildingPlace place, Side frontSide) {
+		if (!Side.EACH_CARDINAL_SIDE.contains(frontSide)) {
+			throw new IllegalArgumentException("Only a cardinal side may be the front side of a building");
+		}
 		this.x = place.x + 1;
 		this.y = place.y + 1;
 		this.width = place.width - 2;
 		this.height = place.height - 2;
-		this.closeRoads = place.closeRoads;
-		this.settlement = settlement;
-		hasSettlement = true;
-		getDoorSides();
-		// frontSide = doorSides.get(0);
-		frontSide = Side.S;
-		leftSide = frontSide.clockwise();
-		rightSide = frontSide.counterClockwise();
-		backSide = frontSide.opposite();
-		return this;
-	}
-
-	private void getDoorSides() {
-		for (Road road : closeRoads) {
-			Side side = road.getSideOfRectangle(this);
+		this.settlement = location;
+		for (Road road : place.closeRoads) {
+			Side side = road.getSideOfRectangle(new Rectangle(x, y, width, height));
 			if (!doorSides.contains(side)) {
 				doorSides.add(side);
 			}
 		}
+		// frontSide = doorSides.get(0);
+		this.frontSide = frontSide;
+		leftSide = frontSide.clockwise();
+		rightSide = frontSide.counterClockwise();
+		backSide = frontSide.opposite();
 	}
 
 	public Side getDoorSide() {
@@ -138,10 +147,6 @@ public abstract class Building extends Rectangle {
 		lobby = r;
 		frontDoor = doorCoord;
 		return frontDoor;
-	}
-
-	public boolean hasSettlement() {
-		return hasSettlement;
 	}
 
 	public HashMap<Integer, Integer> findDoorAppropriateCells(Side side) {
@@ -311,7 +316,7 @@ public abstract class Building extends Rectangle {
 		//
 		// }
 
-		modifier.drawInnerBorders(1, wallType, false);
+		modifier.drawInnerBorders(1, wallType);
 		int floorType = StaticData.getFloorType("stone").getId();
 		int objDoorBlue = StaticData.getObjectType("door_blue").getId();
 		for (Rectangle r : rs.rectangleSet()) {
@@ -333,7 +338,7 @@ public abstract class Building extends Rectangle {
 		return settlement.getTerrainModifier(crs);
 	}
 
-	public Coordinate connectRoomsWithDoor(Rectangle r1, Rectangle r2, int doorObjectId) {
+	protected Coordinate connectRoomsWithDoor(Rectangle r1, Rectangle r2, int doorObjectId) {
 		int x, y;
 		if (r1.x + r1.width + 1 == r2.x || r2.x + r2.width + 1 == r1.x) {
 			// Vertical
@@ -349,11 +354,11 @@ public abstract class Building extends Rectangle {
 		return new Coordinate(x, y);
 	}
 
-	public void fillFloor(Rectangle r, int floorId) {
+	protected void fillFloor(Rectangle r, int floorId) {
 		settlement.square(r.x, r.y, r.width, r.height, 0, floorId, true);
 	}
 
-	public ArrayList<Coordinate> getCellsNearWalls(Rectangle r) {
+	protected ArrayList<Coordinate> getCellsNearWalls(Rectangle r) {
 		ArrayList<Coordinate> answer = new ArrayList<Coordinate>();
 		for (int i = r.x + 1; i < r.x + r.width - 1; i++) {
 			if (!settlement.isDoor(i, r.y - 1)) {
@@ -421,8 +426,8 @@ public abstract class Building extends Rectangle {
 		return answer;
 	}
 	/**
-	 * Mark room as hallway so other rooms will prefer to connect to this
-	 * room when buildBasis is called
+	 * Mark room as hallway so other rooms will prefer to connect to this room
+	 * when buildBasis is called
 	 */
 	public void markAsHallway(int rectangleId) {
 		hallways.add(rectangleId);
@@ -488,15 +493,12 @@ public abstract class Building extends Rectangle {
 	}
 
 	public static boolean registerClass(Class<? extends Building> cls) {
-		Main.log("Register " + cls.getName());
+		Main.outln("Register " + cls.getName());
 		buildingClasses.put(cls.getName(), cls);
-
 		return true;
 	}
 
-	public boolean fitsToPlace(BuildingPlace place) {
-		return true;
-	}
+	public abstract boolean fitsToPlace(BuildingPlace place);
 
 	public abstract void draw();
 }

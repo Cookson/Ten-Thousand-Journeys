@@ -61,7 +61,7 @@ public class StaticData implements GsonForStaticDataSerializable {
 	}
 
 	public static void showData() {
-		System.out.println(GsonArbitraryArrays.getGson().toJson(instance));
+		Main.outln(GsonArbitraryArrays.getGson().toJson(instance));
 	}
 	public static CharacterType getCharacterType(int characterTypeId) {
 		return instance.characterTypes.get(characterTypeId);

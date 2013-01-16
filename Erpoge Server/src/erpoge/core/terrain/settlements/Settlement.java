@@ -1,6 +1,8 @@
 package erpoge.core.terrain.settlements;
 
 import java.awt.Rectangle;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,20 +42,26 @@ public class Settlement extends Location {
 		super(plane, x, y, width, height, "Settlement");
 		quarterSystem = new QuarterSystem(this);
 	}
-	public void placeBuilding(BuildingPlace place, Class<? extends Building> cls) {
+	public void placeBuilding(BuildingPlace place, Class<? extends Building> cls, Side side) {
 		Building building;
 		try {
-			building = cls.newInstance();
+			Constructor<? extends Building> ctor = (Constructor<? extends Building>) cls.getDeclaredConstructors()[0];
+			building = ctor.newInstance(this, place, side);
 			if (building.fitsToPlace(place)) {
-				building.setProperties(this, place);
 				building.draw();
 				buildings.add(building);
 			} else {
-				Main.log("Coundn't place building " + cls.getSimpleName());
+				throw new RuntimeException("Coundn't place building " + cls.getSimpleName());
 			}
 		} catch (InstantiationException e) {
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvocationTargetException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -170,18 +178,17 @@ public class Settlement extends Location {
 		}
 
 		public void printStatistics() {
-			Main.log("Roads: " + roads.size());
+			Main.outln("Roads: " + roads.size());
 			int count = 0;
 			for (ArrayList<Intersection> entity : branches.values()) {
 				count += entity.size();
 			}
-			Main.log("Branches: " + count);
+			Main.outln("Branches: " + count);
 			count = 0;
 			for (ArrayList<Intersection> entity : intersections.values()) {
 				count += entity.size();
 			}
-			Main.log("Intersections: " + count);
-
+			Main.outln("Intersections: " + count);
 		}
 
 		public ArrayList<Coordinate> getReferencePoints() {
@@ -440,6 +447,10 @@ public class Settlement extends Location {
 		}
 
 		public class Quarter extends Rectangle {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
 			public final QuarterSystem system;
 			public final ArrayList<Road> closeRoads = new ArrayList<Road>();
 

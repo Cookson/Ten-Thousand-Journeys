@@ -135,7 +135,7 @@ public abstract class TerrainBasics {
 		}
 	}
 	public boolean isDoor(int x, int y) {
-		return StaticData.getObjectType(this.cells[x-this.x][y-this.y].object).getObjectClass() == ObjectType.CLASS_DOOR;
+		return StaticData.getObjectType(this.cells[x][y].object).getObjectClass() == ObjectType.CLASS_DOOR;
 	}
 	public abstract int getWidth();
 	public abstract int getHeight();

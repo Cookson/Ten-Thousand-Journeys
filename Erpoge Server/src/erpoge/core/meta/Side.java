@@ -1,10 +1,24 @@
 package erpoge.core.meta;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Emum for representing cardinal directions
  *
  */
 public enum Side {
 	N,E,S,W,NE,NW,SE,SW,ANY_SIDE;
+	static {
+		Set<Side> sides = new HashSet<Side>();
+		sides.add(N);
+		sides.add(E);
+		sides.add(S);
+		sides.add(W);
+		EACH_CARDINAL_SIDE = Collections.unmodifiableSet(sides);
+	}
+	public static Set<Side> EACH_CARDINAL_SIDE;
 	public static Side int2side(int side) {
 	/**
 	 * Returns Side corresponding to number side.
@@ -215,6 +229,13 @@ public enum Side {
 		default:
 			throw new Error("Cannot be horizontal or vertical");
 		}
+	}
+	/**
+	 * Checks if this side is cardinal, not ordinal.
+	 * @return true if this side is N, E, S or W; false if this side is NE, SE, SW or NW.
+	 */
+	public boolean isCardinal() {
+		return this == N || this == E || this == S || this == W;
 	}
 	public static Side getOrdinalDirection(Side side1, Side side2) {
 	/**

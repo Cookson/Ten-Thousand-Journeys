@@ -86,7 +86,7 @@ public class Utils {
 		return atan;
 	}
 	public static int integersRangeIntersection(int a1, int a2, int b1, int b2) {
-	// Returns amount of integers that is insode of intersection of 2 integer ranges
+	// Returns amount of integers that is inside of intersection of 2 integer ranges
 	// example: intersection of (3,9) and (5,11) is (5,9), that is 7 numbers: [5,6,7,8,9,10,11]
 		return Math.max(a2, b2)-Math.min(a1, b1)-Math.abs(a1-b1)-Math.abs(a2-b2)+1;
 	}

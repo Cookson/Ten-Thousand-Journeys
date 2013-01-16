@@ -167,7 +167,6 @@ public class PlayerHandler extends PlayerCharacter {
 	}
 	public void aShootMissile(String message) throws InterruptedException {
 		ClientMessageShootMissile data = gson.fromJson(message, ClientMessageShootMissile.class);
-		Main.console(data.x+" "+data.y+" "+data.missile+" "+data.unique);
 		if (data.unique) {
 			shootMissile(data.x, data.y, inventory.getUnique(data.missile));
 		} else {

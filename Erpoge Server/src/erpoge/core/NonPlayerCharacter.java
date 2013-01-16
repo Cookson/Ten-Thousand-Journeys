@@ -276,7 +276,7 @@ public class NonPlayerCharacter extends Character {
 				destX = activeEnemy.x;
 				destY = activeEnemy.y;
 				setDestNearEntity(activeEnemy.x, activeEnemy.y);
-				Main.console(name + " goes to " + destX + " " + destY
+				Main.outln(name + " goes to " + destX + " " + destY
 						+ " near " + activeEnemy.x + " " + activeEnemy.y);
 				if (destX == x && destY == y) {
 					idle();
@@ -290,7 +290,6 @@ public class NonPlayerCharacter extends Character {
 				}
 			} else {
 				// If sees enemy, but path to him is blocked
-				Main.console("ELSE");
 				/* */// Maybe this part should be main, and main part should be
 						// deleted?!
 				// If we always use imaginary table.

@@ -58,15 +58,14 @@ public class HorizontalPlane {
 	}
 
 	public Chunk getChunkWithCell(int x, int y) {
-		int chX = (x < 0) ? x - ((x % Chunk.WIDTH == 0) ? 0 : Chunk.WIDTH) - x
-				% Chunk.WIDTH : x - x % Chunk.WIDTH;
-		int chY = (y < 0) ? y - ((y % Chunk.WIDTH == 0) ? 0 : Chunk.WIDTH) - y
-				% Chunk.WIDTH : y - y % Chunk.WIDTH;
+		int chX = (x < 0) ? x - ((x % Chunk.WIDTH == 0) ? 0 : Chunk.WIDTH) - x % Chunk.WIDTH
+			: x - x % Chunk.WIDTH;
+		int chY = (y < 0) ? y - ((y % Chunk.WIDTH == 0) ? 0 : Chunk.WIDTH) - y % Chunk.WIDTH
+			: y - y % Chunk.WIDTH;
 		try {
 			return chunks.get(chX).get(chY);
 		} catch (NullPointerException e) {
-			Main.log("No chunk " + chX + ":" + chY + " with cell " + x + ":"
-					+ y);
+			System.out.println("No chunk " + chX + ":" + chY + " with cell " + x + ":" + y);
 			return null;
 		}
 	}
@@ -76,13 +75,10 @@ public class HorizontalPlane {
 	}
 
 	public boolean hasChunk(int x, int y) {
-		return chunks.containsKey(x - x % Chunk.WIDTH)
-				&& chunks.get(x - x % Chunk.WIDTH).containsKey(
-						y - y % Chunk.WIDTH);
+		return chunks.containsKey(x - x % Chunk.WIDTH) && chunks.get(x - x % Chunk.WIDTH).containsKey(y - y % Chunk.WIDTH);
 	}
 
-	public Location generateLocation(int x, int y, int width, int height,
-			String type) {
+	public Location generateLocation(int x, int y, int width, int height, String type) {
 		// Create new chunks
 		for (int j = getChunkRoundedCoord(y); j <= y + height; j += Chunk.WIDTH) {
 			for (int i = getChunkRoundedCoord(x); i <= x + width; i += Chunk.WIDTH) {
@@ -115,12 +111,10 @@ public class HorizontalPlane {
 				// For each chunk in the selected zone
 				Chunk chunk = getChunkByCoord(chunkX, chunkY);
 				int dxInResult = 0;
-				for (int k = currX - chunkX; k < Chunk.WIDTH
-						&& chunkX + k != endX; k++) {
+				for (int k = currX - chunkX; k < Chunk.WIDTH && chunkX + k != endX; k++) {
 					// Fill answer array with cells from chunk
 					int dyInResult = 0;
-					for (int l = currY - chunkY; l < Chunk.WIDTH
-							&& chunkY + l != endY; l++) {
+					for (int l = currY - chunkY; l < Chunk.WIDTH && chunkY + l != endY; l++) {
 						answer[currX - x + dxInResult][currY - y + dyInResult++] = chunk.cells[k][l];
 					}
 					dxInResult++;
@@ -141,9 +135,8 @@ public class HorizontalPlane {
 	 * @return Rounded coordinate value.
 	 */
 	public int getChunkRoundedCoord(int coord) {
-		return (coord < 0) ? coord
-				- ((coord % Chunk.WIDTH == 0) ? 0 : Chunk.WIDTH) - coord
-				% Chunk.WIDTH : coord - coord % Chunk.WIDTH;
+		return (coord < 0) ? coord - ((coord % Chunk.WIDTH == 0) ? 0
+			: Chunk.WIDTH) - coord % Chunk.WIDTH : coord - coord % Chunk.WIDTH;
 	}
 
 	public void showTerrain(int x, int y, int width, int height) {
@@ -179,11 +172,9 @@ public class HorizontalPlane {
 		}
 	}
 
-	public NonPlayerCharacter createCharacter(int absX, int absY,
-			int characterTypeId, String name, int fraction) {
+	public NonPlayerCharacter createCharacter(int absX, int absY, int characterTypeId, String name, int fraction) {
 		Chunk chunk = getChunkWithCell(absX, absY);
-		return chunk.createCharacter(absX - chunk.x, absY - chunk.y,
-				characterTypeId, name, fraction);
+		return chunk.createCharacter(absX - chunk.x, absY - chunk.y, characterTypeId, name, fraction);
 	}
 
 	public void addItem(ItemPile pile, int x, int y) {
@@ -208,6 +199,6 @@ public class HorizontalPlane {
 
 	public ItemCollection getItems(int x, int y) {
 		Chunk chunk = getChunkWithCell(x, y);
-		return chunk.getItems(x-chunk.x, y-chunk.y);
+		return chunk.getItems(x - chunk.x, y - chunk.y);
 	}
 }

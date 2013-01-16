@@ -82,7 +82,7 @@ public class ConnectionServer {
 		connections.add(ws);
 	}
 	public static void onMessage(Connection connection, String message) {
-		Main.log(message);
+		Main.outln(message);
 		int action = gson.fromJson(message, ClientMessageAction.class).a;
 		PlayerHandler player = connection.getPlayerHandler();
 		try {
